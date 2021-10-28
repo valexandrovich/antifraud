@@ -1,0 +1,29 @@
+{
+  "properties": [
+    {
+      "name": "spring.rabbitmq.queue",
+      "type": "java.lang.String",
+      "description": "Queue name in RabbitMQ."
+    },
+    {
+      "name": "ftp.host",
+      "type": "java.lang.String",
+      "description": "FTP host."
+    },
+    {
+      "name": "ftp.port",
+      "type": "java.lang.Integer",
+      "description": "FTP Port."
+    },
+    {
+      "name": "ftp.user",
+      "type": "java.lang.String",
+      "description": "FTP Username."
+    },
+    {
+      "name": "ftp.password",
+      "type": "java.lang.String",
+      "description": "FTP Password."
+    }
+  ]
+}

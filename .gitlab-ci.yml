@@ -19,7 +19,7 @@ build:
   environment:
     name: $ENVIRONMENT
   script:
-    - sh "${mvn}/bin/mvn clean"
+    - 'mvn clean'
   cache:
     paths:
       - ./target

@@ -19,19 +19,9 @@ build:
   environment:
     name: $ENVIRONMENT
   script:
-    - 'mvn --settings compile'
+    - sh "${mvn}/bin/mvn clean"
   cache:
     paths:
       - ./target
       - ./.m2
-  when: manual
-
-deploy:
-  stage: deploy
-  image: nexus.otpbank.com.ua:10443/repository/tools/helm-kubectl:3.3.1
-  before_script:
-    - echo ${KUBECONFIG_CONTENT} | base64 -d > ${KUBECONFIG}
-    - kubectl config use-context ${KUBE_CONTEXT}
-  script:
-    - echo "Apply"
   when: manual

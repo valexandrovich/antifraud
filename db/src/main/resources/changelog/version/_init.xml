@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+	    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+    <changeSet author="AIS (generated)" id="1635907957041-1">
+        <sql>CREATE EXTENSION IF NOT EXISTS "uuid-ossp";</sql>
+    </changeSet>
+
+    <changeSet author="AIS (generated)" id="1635907957041-2">
+        <createTable tableName="importSource">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importSource_pk"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="apiKey" type="VARCHAR(255)"/>
+            <column name="pipelineInfo" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-3">
+        <createTable tableName="tmpResource">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="tmpResource_pkey"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="kod_pdv" type="VARCHAR(128)"/>
+            <column name="dat_reestr" type="VARCHAR(20)"/>
+            <column name="d_reestr_sg" type="VARCHAR(128)"/>
+            <column name="dat_anul" type="VARCHAR(20)"/>
+            <column name="name_anul" type="VARCHAR(255)"/>
+            <column name="name_oper" type="VARCHAR(255)"/>
+            <column name="kved" type="VARCHAR(128)"/>
+            <column name="d_anul_sg" type="VARCHAR(128)"/>
+            <column name="d_pdv_sg" type="VARCHAR(128)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-4">
+        <createTable tableName="importRevision">
+            <column defaultValueComputed="uuid_generate_v4()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importRevision_pk"/>
+            </column>
+            <column name="source" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revision_date" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pipeline_info" type="JSONB"/>
+            <column name="url" type="VARCHAR(1024)"/>
+            <column name="filename" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-5">
+        <createTable tableName="importRevisionGroup">
+            <column defaultValueComputed="uuid_generate_v4()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importRevisionGroup_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kind" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="completed" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="handled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-6">
+        <createTable tableName="importRevisionGroupErrors">
+            <column defaultValueComputed="uuid_generate_v4()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importRevisionGroupErrors_pk"/>
+            </column>
+            <column name="revision_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="line" type="BIGINT"/>
+            <column name="col" type="BIGINT"/>
+            <column name="file_offset" type="BIGINT"/>
+            <column name="text" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-7">
+        <createTable tableName="importRevisionGroupRows">
+            <column defaultValueComputed="uuid_generate_v4()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importSourcePackageItemRows_pk"/>
+            </column>
+            <column name="revision_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSONB"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-8">
+        <addUniqueConstraint columnNames="name" constraintName="importSource_name" tableName="importSource"/>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-9">
+        <addUniqueConstraint columnNames="source, revision_date" constraintName="importRevision_unique" tableName="importRevision"/>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1635907957041-10">
+        <addUniqueConstraint columnNames="revision, kind" constraintName="importRevisionGroup_unique" tableName="importRevisionGroup"/>
+    </changeSet>
+</databaseChangeLog>

@@ -11,6 +11,7 @@
 		<module>downloader</module>
 		<module>db</module>
 		<module>web</module>
+		<module>pipeline</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>

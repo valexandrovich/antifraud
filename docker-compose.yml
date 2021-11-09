@@ -1,0 +1,97 @@
+version: "3.9"
+services:
+  web:
+    container_name: otp-web
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=web/target/*.jar
+    image: otp-web:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - otp-etl-network
+  downloader:
+    container_name: otp-downloader
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=downloader/target/*.jar
+        - spring.datasource.url=jdbc:postgresql://db:5432/otp
+        - spring.rabbitmq.host=queue
+    image: otp-downloader:latest
+    depends_on:
+      - db
+      - queue
+    networks:
+      - otp-etl-network
+  importer:
+    container_name: otp-importer
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=importer/target/*.jar
+        - spring.datasource.url=jdbc:postgresql://db:5432/otp
+        - spring.rabbitmq.host=queue
+    image: otp-importer:latest
+    depends_on:
+      - db
+      - queue
+    networks:
+      - otp-etl-network
+  scheduler:
+    container_name: otp-scheduler
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=scheduler/target/*.jar
+        - spring.datasource.url=jdbc:postgresql://db:5432/otp
+        - spring.rabbitmq.host=queue
+    image: otp-scheduler:latest
+    depends_on:
+      - db
+      - queue
+    networks:
+      - otp-etl-network
+  scheduler_test:
+    container_name: otp-scheduler_test
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=scheduler_test/target/*.jar
+        - spring.datasource.url=jdbc:postgresql://db:5432/otp
+        - spring.rabbitmq.host=queue
+    image: otp-scheduler_test:latest
+    depends_on:
+      - db
+      - queue
+    networks:
+      - otp-etl-network
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: otp
+      POSTGRES_USER: otp
+      POSTGRES_PASSWORD: otp
+    networks:
+      - otp-etl-network
+  queue:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - /etc/so/rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro
+      - /etc/so/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks:
+        - otp-etl-network
+networks:
+  otp-etl-network:
+    driver: bridge

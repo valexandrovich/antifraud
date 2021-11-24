@@ -1,5 +1,8 @@
 package ua.com.solidity.common;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -172,18 +175,22 @@ public class ValueParser {
         return null;
     }
 
-    public static Object parse(String value) {
+    @SuppressWarnings("unused")
+    public static JsonNode parse(String value) {
         if (value == null || isNull(value)) return null;
         Object obj;
-        if ((obj = getDatetime(value)) == null &&
-                (obj = getBoolean(value)) == null &&
-                (obj = getFloat(value)) == null &&
-                (obj = getInteger(value)) == null) {
-            return null;
+        if ((obj = getDatetime(value)) != null) {
+            return JsonNodeFactory.instance.textNode(formatDateTime((ZonedDateTime) obj));
+        } else if ((obj = getBoolean(value)) != null) {
+            return JsonNodeFactory.instance.booleanNode((Boolean) obj);
+        } else if ((obj = getFloat(value)) != null) {
+            return JsonNodeFactory.instance.numberNode((Double) obj);
+        } else if ((obj = getInteger(value)) != null) {
+            return JsonNodeFactory.instance.numberNode((long) obj);
         }
-        return obj;
+        return JsonNodeFactory.instance.textNode(value);
     }
-    
+
     public static String formatDateTime(ZonedDateTime datetime) {
 		return datetime.format(dateTimeOutputFormat);
     }

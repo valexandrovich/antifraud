@@ -50,30 +50,45 @@ public final class Item {
         List<String> items = inputJointsDesc == null ? null : inputJointsDesc.getOrDefault(nameOfSet, null);
         if (items != null && !items.isEmpty()) {
             for (String item : items) {
-                addJoint(nameOfSet, item, clazz);
+                addInput(nameOfSet, item, clazz);
             }
         }
     }
 
     public <T> T getLocalData(String name, Class<? extends T> clazz) {
-        return getLocalDataDef(name, clazz, null);
+        return getLocalData(name, clazz, null);
     }
 
     public Object getLocalData(String name) {
         return getLocalData(name, Object.class);
     }
 
-    public <T> T getLocalDataDef(String name, Class<? extends T> clazz, T defaultValue) {
-        return clazz.cast(localData.getOrDefault(name, defaultValue));
+    public <T> T getLocalData(String name, Class<? extends T> clazz, T defaultValue) {
+        T res;
+        try {
+            res = clazz.cast(localData.getOrDefault(name, defaultValue));
+        } catch (Exception e) {
+            res = defaultValue;
+        }
+        return res;
     }
 
     @SuppressWarnings("unused")
-    public Object getLocalDataDef(String name, Object value) {
-        return getLocalDataDef(name, Object.class, value);
+    public Object getLocalData(String name, Object value) {
+        return getLocalData(name, Object.class, value);
     }
 
     public void setLocalData(String name, Object value) {
         localData.put(name, value);
+    }
+
+    public void incLocalData(String name, long delta) {
+        Long value = getLocalData(name, Long.class);
+        setLocalData(name, value == null ? delta : value + delta);
+    }
+
+    public void incLocalData(String name) {
+        incLocalData(name, 1);
     }
 
     @SuppressWarnings("unused")
@@ -81,7 +96,7 @@ public final class Item {
         localData.clear();
     }
 
-    public void addJoint(String nameOfSet, String itemName, Class<?> inputClass) {
+    public void addInput(String nameOfSet, String itemName, Class<?> inputClass) {
         Input res = new Input(this, nameOfSet, itemName, inputClass);
         inputs.add(res);
         List<Input> list = jointSet.computeIfAbsent(nameOfSet, key -> new ArrayList<>());
@@ -90,31 +105,30 @@ public final class Item {
     }
 
     @SuppressWarnings("unused")
-    public int getJointCount(String nameOfSet) {
-        List<Input> list = getJoints(nameOfSet);
+    public int getInputCount(String nameOfSet) {
+        List<Input> list = getInputs(nameOfSet);
         return list == null ? 0 : list.size();
     }
 
-    public Input getJoint(String nameOfSet, int index) {
-        List<Input> list = getJoints(nameOfSet);
+    public Input getInput(String nameOfSet, int index) {
+        List<Input> list = getInputs(nameOfSet);
         return index < 0 || list == null || index >= list.size() ? null : list.get(index);
     }
 
-    public List<Input> getJoints(String nameOfSet) {
+    public List<Input> getInputs(String nameOfSet) {
         return jointSet.getOrDefault(nameOfSet, null);
     }
 
-    public <T> T getJointValue(String nameOfSet, int index, Class<? extends T> clazz) {
-        Input input = getJoint(nameOfSet, index);
+    public <T> T getInputValue(String nameOfSet, int index, Class<? extends T> clazz) {
+        Input input = getInput(nameOfSet, index);
         return input == null ? null : input.getValue(clazz);
     }
 
     @SuppressWarnings("unused")
-    public Object getJointValue(String nameOfSet, int index) {
-        return getJointValue(nameOfSet, index, Object.class);
+    public Object getInputValue(String nameOfSet, int index) {
+        return getInputValue(nameOfSet, index, Object.class);
     }
 
-    @SuppressWarnings("unused")
     public <T> T getPipelineParam(String name, Class<? extends T> clazz) {
         return pipeline.getParam(name, clazz);
     }
@@ -132,7 +146,7 @@ public final class Item {
         return clazz.cast(outputValue);
     }
 
-    void prepareJoints() {
+    void prepareInputs() {
         for (Input input : inputs) {
             if (!input.prepare()) {
                 terminate();
@@ -141,7 +155,7 @@ public final class Item {
     }
 
     boolean tryToExecute() {
-        if (completed || visited) return false;
+        if (completed || visited || terminated()) return false;
 
         for (Input input : inputs) {
             if (!input.isCompleted()) return false;
@@ -198,7 +212,6 @@ public final class Item {
     void doClose() {
         if (closed) return;
         try {
-
             prototype.close(this);
         } catch (Exception e) {
             log.warn("Pipeline item error on close {}", name);

@@ -29,9 +29,9 @@ public class Input {
 
     final boolean prepare() {
         if (!joinedItemNeeded()) {
-            if (inputItem == null)
+            if (inputItem == null) {
                 log.warn("Pipeline illegal item reference from item({}) to ({})", item.name, inputItemName);
-            else if (inputItem == item) {
+            } else if (inputItem == item) {
                 log.warn("Pipeline can't join item input to itself item({}) to ({})", item.name, inputItemName);
             } else {
                 log.warn("Pipeline incompatible types in reference from item({}) to ({})", item.name, inputItemName);

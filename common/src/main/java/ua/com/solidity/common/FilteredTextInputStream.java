@@ -1,5 +1,6 @@
 package ua.com.solidity.common;
 
+import com.fasterxml.jackson.core.JsonLocation;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,12 +20,12 @@ import java.util.Scanner;
 public class FilteredTextInputStream extends InputStream {
     private static final byte BYTE_LINE_FEED = 10;
     private static final byte BYTE_CARRIAGE_RETURN = 13;
-    private static final String STR_PREFIX = "...";
+    private static final int ERROR_MARKER_SHIFT = 1;
+    private static final String ERROR_MARKER = " ^ (ERROR) ";
 
     private enum CRLFState {
         NORMAL,
-        CARRIAGE_RETURN,
-        LINE_FEED
+        CARRIAGE_RETURN
     }
 
     @Getter
@@ -40,6 +41,7 @@ public class FilteredTextInputStream extends InputStream {
 
         public Location(Location copy) {
             copyFrom(copy);
+            buffer = copy.buffer;
         }
 
         public final void copyFrom(Location location) {
@@ -47,6 +49,7 @@ public class FilteredTextInputStream extends InputStream {
             col = location.col;
             position = location.position;
             state = location.state;
+            bufferPos = location.bufferPos;
         }
 
         private void newLine() {
@@ -59,12 +62,11 @@ public class FilteredTextInputStream extends InputStream {
             boolean deferredNewLine = false;
             if (state == CRLFState.NORMAL) {
                 if (value == BYTE_LINE_FEED) {
-                    state = CRLFState.LINE_FEED;
+                    deferredNewLine = true;
                 } else if (value == BYTE_CARRIAGE_RETURN) {
                     state = CRLFState.CARRIAGE_RETURN;
                 }
-            } else if ((state == CRLFState.CARRIAGE_RETURN && value == BYTE_LINE_FEED) ||
-                    (state == CRLFState.LINE_FEED && value == BYTE_CARRIAGE_RETURN)) {
+            } else if ((state == CRLFState.CARRIAGE_RETURN && value == BYTE_LINE_FEED)) {
                 deferredNewLine = true;
             } else {
                 newLine();
@@ -77,68 +79,52 @@ public class FilteredTextInputStream extends InputStream {
                 ++col;
             }
         }
-    }
 
-    private static class LineStream extends ByteArrayInputStream {
-        public LineStream(byte[] buf) {
-            super(buf);
-        }
-        public final int position() {
-            return pos;
+        public final void align() {
+            while (col > 0 && bufferPos > 0) {
+                --bufferPos;
+                --position;
+                --col;
+            }
         }
     }
 
     @Getter
     @Setter
     private static class LineBuffer {
+        private static final String ELLIPSIS = "...";
         public final long line;
         public final long position;
         public final long col;
         public final byte[] bytes;
         private int size;
+        private boolean terminated;
         public LineBuffer(long position, long line, long col, byte[] bytes) {
             this.position = position;
             this.line = line;
             this.col = col;
             this.bytes = bytes;
             this.size = this.bytes.length;
+            terminated = false;
             while (size > 0 && (bytes[size - 1] == BYTE_LINE_FEED || bytes[size - 1] == BYTE_CARRIAGE_RETURN)) {
                 size--;
+                terminated = true;
             }
         }
 
-        public final boolean hasPrefix() {
-            return col > 0;
+        public final String getPrefix() {
+            return col > 0 ? ELLIPSIS : "";
+        }
+
+        public final String getSuffix() {
+            return terminated ? "" : ELLIPSIS;
         }
 
         public final String getString(String encoding) {
-            LineStream stream = new LineStream(bytes);
+            ByteArrayInputStream stream = new ByteArrayInputStream(bytes, 0, size);
             InputStreamReader reader = new InputStreamReader(stream, Charset.availableCharsets().getOrDefault(encoding, StandardCharsets.UTF_8));
             Scanner scanner = new Scanner(reader);
             return scanner.nextLine();
-        }
-
-        public final String getPositionString(long charIndex) {
-            int index = (int) (charIndex - col);
-            return " ".repeat(index) + "^";
-        }
-
-        public final String getPositionString(long byteIndex, String encoding) {
-            byteIndex -= col;
-            StringBuilder builder = new StringBuilder();
-            LineStream stream = new LineStream(bytes);
-            InputStreamReader reader = new InputStreamReader(stream, Charset.availableCharsets().getOrDefault(encoding, StandardCharsets.UTF_8));
-            try {
-                while (stream.position() < byteIndex) {
-                    //noinspection ResultOfMethodCallIgnored
-                    reader.read();
-                    if (stream.position() < byteIndex) builder.append(" ");
-                }
-                builder.append("^");
-            } catch (Exception e) {
-                log.warn("<INTERNAL> Illegal character found.");
-            }
-            return builder.toString();
         }
     }
 
@@ -147,6 +133,7 @@ public class FilteredTextInputStream extends InputStream {
     private static class Buffer {
         private final byte[] byteBuffer;
         private int size = 0;
+        boolean eof = false;
         Location start = new Location();
         Location finish = new Location();
 
@@ -154,10 +141,6 @@ public class FilteredTextInputStream extends InputStream {
             byteBuffer = new byte[bufferSize];
             start.setBuffer(this);
             finish.setBuffer(this);
-        }
-
-        public final boolean full() {
-            return size == byteBuffer.length;
         }
 
         public final void prepareNextBuffer(Buffer buf) {
@@ -169,17 +152,24 @@ public class FilteredTextInputStream extends InputStream {
 
         public final boolean loadBuffer(InputStream stream) {
             try {
-                size = stream.read(byteBuffer);
-                if (size > 0) {
-                    for (int i = 0; i < size; ++i) {
-                        int value = byteBuffer[i] & 0xff;
-                        if (value < 32 && value != 9 && value != 10 && value != 13) byteBuffer[i] = 32;
-                        finish.pushByte(byteBuffer[i]);
+                size = 0;
+                while (size < byteBuffer.length) {
+                    int count = stream.read(byteBuffer, size, byteBuffer.length - size);
+                    if (count > 0) {
+                        for (int i = 0; i < count; ++i) {
+                            int value = byteBuffer[i + size] & 0xff;
+                            if (value < 32 && value != 9 && value != 10 && value != 13) byteBuffer[i + size] = 32;
+                            finish.pushByte(byteBuffer[i + size]);
+                        }
+                        size += count;
+                    } else if (count < 0) {
+                        eof = true;
+                        break;
                     }
                 }
                 return size > 0;
             } catch (Exception e) {
-                log.warn("Read error", e);
+                log.error("Read error", e);
             }
             return false;
         }
@@ -201,6 +191,7 @@ public class FilteredTextInputStream extends InputStream {
             for (int i = location.bufferPos; i < size && location.line == res.line; ++i) {
                 res.pushByte(byteBuffer[i]);
             }
+            if (location.line != res.line) res.align();
             return res;
         }
     }
@@ -215,12 +206,12 @@ public class FilteredTextInputStream extends InputStream {
         buffers = new Buffer[2];
         buffers[0] = new Buffer(bufferSize);
         buffers[1] = new Buffer(bufferSize);
-        if (stream != null) getCurrentBuffer().loadBuffer(stream);
+        if (stream != null) buffers[1].loadBuffer(stream);
     }
 
     private boolean swapBuffers() {
+        if (buffers[1].eof) return false;
         currentBufferPosition = 0;
-        if (!buffers[1].full()) return false;
         Buffer temp = buffers[0];
         buffers[0] = buffers[1];
         buffers[1] = temp;
@@ -229,12 +220,8 @@ public class FilteredTextInputStream extends InputStream {
         return (buffers[1].loadBuffer(stream));
     }
 
-    protected final Buffer getCurrentBuffer() {
-        return buffers[1];
-    }
-
     public final long getPosition() {
-        return getCurrentBuffer().start.getPosition() + currentBufferPosition;
+        return buffers[1].start.getPosition() + currentBufferPosition;
     }
 
     private Location[] getLineLocations(long line) {
@@ -256,7 +243,10 @@ public class FilteredTextInputStream extends InputStream {
         int last = locations[1] != null ? 1 : 0;
         int[] sizes = {0, 0};
         Location next = locations[last].buffer.searchNextLine(locations[last]);
-        if (next == null) return null;
+        if (next == null) {
+            log.warn("Internal error: can't find a next line cursor position.");
+            return null;
+        }
         int sizeIndex = 0;
         if (last > 0) {
             sizes[sizeIndex++] = locations[0].buffer.size - locations[0].bufferPos;
@@ -274,17 +264,41 @@ public class FilteredTextInputStream extends InputStream {
     }
 
     private void pushPrefix(LineBuffer buffer, StringBuilder builder) {
-        if (buffer.getCol() > 0) builder.append(STR_PREFIX);
+        builder.append(buffer.getPrefix());
+    }
+
+    private void pushSuffix(LineBuffer buffer, StringBuilder builder) {
+        builder.append(buffer.getSuffix());
+        builder.append("\n");
     }
 
     private void pushLine(LineBuffer buffer, StringBuilder builder, String encoding) {
         if (buffer == null) return;
-        builder.append(MessageFormat.format("(line: {0}, col: {1})\n", buffer.line, buffer.col));
+        builder.append(MessageFormat.format("(pos: {0}, line: {1}, col: {2})\n", buffer.position, buffer.line + 1, buffer.col + 1));
         pushPrefix(buffer, builder);
         builder.append(buffer.getString(encoding));
+        pushSuffix(buffer, builder);
     }
 
-    public String getInfoNearLocation(long line, long col, int delta, boolean byBytes, String encoding) {
+    public ErrorReport getErrorReport(JsonLocation location, String encoding) {
+        LineBuffer buffer = getLine(location.getLineNr() - 1L);
+        if (buffer != null) {
+            String prefix = buffer.getPrefix();
+            String suffix = buffer.getSuffix();
+            String text = prefix +
+                    buffer.getString(encoding) +
+                    suffix;
+            long locationCol = location.getColumnNr();
+            return new ErrorReport(buffer.line + 1, locationCol,
+                    location.getByteOffset(), location.getCharOffset(),
+                    locationCol - buffer.col + prefix.length() + 1, text, null);
+        }
+
+        return new ErrorReport(location.getLineNr(), location.getColumnNr(), location.getByteOffset(), location.getCharOffset(), -1,
+                "<out of buffer>", null);
+    }
+
+    public String getInfoNearLocation(long line, long col, int delta, String encoding) {
         int count = (delta << 1) + 1;
         LineBuffer[] lines = new LineBuffer[count];
 
@@ -301,15 +315,14 @@ public class FilteredTextInputStream extends InputStream {
                 if (lines[i] == null) {
                     builder.append("WARNING: Can't display string near the position (grow up buffer size (application.properties -> filteredTextInputStream.bufferSize)");
                 } else {
+                    builder.append("error line : ");
                     pushLine(lines[i], builder, encoding);
-                    builder.append("\n");
                     pushPrefix(lines[i], builder);
-                    if (byBytes) {
-                        builder.append(lines[i].getPositionString(col, encoding));
-                    } else {
-                        builder.append(lines[i].getPositionString(col));
-                    }
-                    // hex push around
+                    long spaceCount = col - lines[i].col - ERROR_MARKER_SHIFT;
+                    builder.append(".".repeat((int) spaceCount)).append(ERROR_MARKER);
+                    spaceCount = lines[i].size - spaceCount - ERROR_MARKER.length();
+                    builder.append(".".repeat((int) spaceCount));
+                    pushSuffix(lines[i], builder);
                 }
             }
         }
@@ -322,7 +335,7 @@ public class FilteredTextInputStream extends InputStream {
     }
 
     private int rest() {
-        return getCurrentBuffer().size - currentBufferPosition;
+        return buffers[1].size - currentBufferPosition;
     }
 
     private int doRead(byte[] buf, int off, int len) {
@@ -331,17 +344,17 @@ public class FilteredTextInputStream extends InputStream {
             int rest = this.rest();
             int count = Math.min(rest, len);
             if (count > 0) {
-                System.arraycopy(getCurrentBuffer().byteBuffer, currentBufferPosition, buf, off, count);
+                System.arraycopy(buffers[1].byteBuffer, currentBufferPosition, buf, off, count);
                 res += count;
                 off += count;
                 len -= count;
                 currentBufferPosition += count;
-                if (len > 0 && !swapBuffers()) {
-                    break;
-                }
+            }
+            if (len > 0 && !swapBuffers()) {
+                break;
             }
         }
-        return res;
+        return res == 0 ? -1 : res;
     }
 
     private int doRead() {

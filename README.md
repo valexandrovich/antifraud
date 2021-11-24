@@ -57,3 +57,10 @@ Run: `docker run -p 8080:8080 solidity/otp`
 Note: Requires separate Postgres available for solidity/otp container. For this on Windows update `pg_hba.conf` to include local IP/network:
 
 `host    all             all             10.0.1.14/32            md5`
+
+---
+
+## Run JARs with properties
+
+Importer:
+`xc`

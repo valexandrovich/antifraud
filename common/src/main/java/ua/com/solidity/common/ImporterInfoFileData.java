@@ -36,11 +36,13 @@ public class ImporterInfoFileData {
     }
     
     @JsonIgnore
+    @SuppressWarnings("unused")
     public Instant getInstant() {
 		return revisionDateTime == null ? null : revisionDateTime.toInstant();
     }
     
     @JsonIgnore
+    @SuppressWarnings("unused")
     public void setInstant(Instant value) {
     	revisionDateTime = value == null ? null : value.atZone(ZoneId.systemDefault()); 
     }
@@ -48,7 +50,8 @@ public class ImporterInfoFileData {
     public void setRevision(String value) {
 		revisionDateTime = ValueParser.getDatetime(value);
     }
-    
+
+    @SuppressWarnings("unused")
     public String getRevision() {
     	return revisionDateTime == null ? null : ValueParser.formatDateTime(revisionDateTime);
     }

@@ -135,7 +135,7 @@ public class Scheduler {
     }
 
     private void sendMessage(Task task) {
-        rabbitTemplate.convertAndSend(task.topic, task.routingKey, task.data);
+        rabbitTemplate.convertAndSend(task.topic, task.routingKey, task.data.toString());
         log.info(LOG_HANDLED, task.topic, task.routingKey, task.data);
     }
 

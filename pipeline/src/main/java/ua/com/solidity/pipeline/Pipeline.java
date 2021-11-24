@@ -20,6 +20,7 @@ public class Pipeline {
     private Map<String, Object> params;
     boolean terminated = false;
     boolean invalid = false;
+    boolean executed = false;
 
     protected Pipeline(PipelinePrototypeProvider provider, String jsonString) {
         initialize(provider, jsonString);
@@ -30,7 +31,8 @@ public class Pipeline {
         try {
             initializeItems((new ObjectMapper()).readTree(jsonString));
         } catch (Exception e) {
-            log.warn("Error during parsing Pipeline Json", e);
+            log.warn("Error during parse Pipeline Json", e);
+            invalid = true;
         }
     }
 
@@ -47,6 +49,16 @@ public class Pipeline {
 
     public final Object getParam(String name) {
         return params == null ? null : params.getOrDefault(name, null);
+    }
+
+    public final <T> T getItemData(String name, String value, Class<T> clazz) {
+        Item item = itemByName.getOrDefault(name, null);
+        return item == null ? null : item.getLocalData(value, clazz);
+    }
+
+    public final <T> T getItemData(String name, String value, Class<T> clazz, T defaultValue) {
+        T res = getItemData(name, value, clazz);
+        return res == null ? defaultValue : res;
     }
 
     private List<String> handleParsedInput(JsonNode value) {
@@ -98,13 +110,13 @@ public class Pipeline {
     private void prepareItems() {
         for (Item item : items) {
             item.visited = false;
-            item.prepareJoints();
+            item.prepareInputs();
             if (terminated) break;
         }
     }
 
     protected final void initializeItems(JsonNode node) {
-        invalid = terminated = false;
+        executed = invalid = terminated = false;
         if (node == null) return;
         if (node.isObject() && node.hasNonNull(KEY_PIPELINE)) {
             node = node.get(KEY_PIPELINE);
@@ -115,10 +127,8 @@ public class Pipeline {
         }
         prepareItems();
         invalid = terminated;
-        if (!invalid) {
-            topologicalSort();
-            prepareDependencies();
-        }
+        if (!invalid) invalid = !topologicalSort();
+        if (!invalid) prepareDependencies();
     }
 
     protected void addItem(Item node) {
@@ -145,9 +155,9 @@ public class Pipeline {
     }
 
     public final boolean execute() {
-        terminated = invalid;
+        terminated = invalid || executed;
         if (terminated) {
-            log.warn("Pipeline is invalid. Execution terminated.");
+            log.warn("Pipeline is invalid or already executed. Execution terminated.");
             return true;
         }
 
@@ -167,6 +177,7 @@ public class Pipeline {
             }
             item.closed = true;
         }
+        executed = true;
         return !terminated;
     }
 
@@ -177,7 +188,19 @@ public class Pipeline {
         }
     }
 
-    private void topologicalSort() {
+    private boolean topologyValidate(List<Item> items) {
+        for (Item item : items) {
+            for (Input input : item.inputs) {
+                if (input.inputItem.index >= item.index) {
+                    log.error("Pipeline topology conflict between item input from {} and item {}", input.inputItem.name, item.name);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean topologicalSort() {
         List<Item> order = new ArrayList<>();
         for (Item item : items) {
             item.visited = false;
@@ -187,7 +210,12 @@ public class Pipeline {
             doTopologicalSort(order, items.get(0));
         }
 
-        replaceItems(order);
+        if (topologyValidate(order)) {
+            replaceItems(order);
+            return true;
+        }
+
+        return false;
     }
 
     private void doTopologicalSort(List<Item> order, Item item) {
@@ -197,6 +225,7 @@ public class Pipeline {
                 doTopologicalSort(order, input.inputItem);
             }
         }
+        item.index = order.size();
         order.add(item);
         items.remove(item);
     }

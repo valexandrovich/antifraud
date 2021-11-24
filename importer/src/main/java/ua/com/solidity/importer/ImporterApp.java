@@ -5,6 +5,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import ua.com.solidity.common.ImporterMessageData;
 import ua.com.solidity.common.Utils;
 
 @Slf4j
@@ -23,7 +24,7 @@ public class ImporterApp {
 
     public void run() {
         Utils.startRabbitMQContainer(connectionFactory, config.getQueueName(), receiver);
-        log.info("=== Importer started and wait for a message. ===");
+        log.info("=== Importer started and waits for a message. ===");
     }
 
     public static void main(String[] args) {

@@ -19,8 +19,8 @@ services:
       context: .
       args:
         - JAR_FILE=downloader/target/*.jar
-        - spring.datasource.url=jdbc:postgresql://db:5432/otp
-        - spring.rabbitmq.host=queue
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
     image: otp-downloader:latest
     depends_on:
       - db
@@ -34,8 +34,8 @@ services:
       context: .
       args:
         - JAR_FILE=importer/target/*.jar
-        - spring.datasource.url=jdbc:postgresql://db:5432/otp
-        - spring.rabbitmq.host=queue
+    environment:
+        - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
     image: otp-importer:latest
     depends_on:
       - db
@@ -49,8 +49,8 @@ services:
       context: .
       args:
         - JAR_FILE=scheduler/target/*.jar
-        - spring.datasource.url=jdbc:postgresql://db:5432/otp
-        - spring.rabbitmq.host=queue
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
     image: otp-scheduler:latest
     depends_on:
       - db
@@ -64,8 +64,8 @@ services:
       context: .
       args:
         - JAR_FILE=scheduler_test/target/*.jar
-        - spring.datasource.url=jdbc:postgresql://db:5432/otp
-        - spring.rabbitmq.host=queue
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
     image: otp-scheduler_test:latest
     depends_on:
       - db
@@ -73,12 +73,13 @@ services:
     networks:
       - otp-etl-network
   db:
-    image: postgres
+    image: postgres:10
     restart: always
     environment:
-      POSTGRES_DB: otp
-      POSTGRES_USER: otp
-      POSTGRES_PASSWORD: otp
+      - POSTGRES_USER=otp
+      - POSTGRES_PASSWORD=otp
+    ports:
+      - "5432:5432"
     networks:
       - otp-etl-network
   queue:

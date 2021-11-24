@@ -23,8 +23,4 @@ public class ImporterConfiguration {
     Binding binding(Config config, Queue queue, TopicExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(config.getRoutingKey());
     }
-    @Bean
-    CSVParams defaultParams() {
-        return new CSVParams("UTF-8", false, true,";", "\"", "\b\r\f\t ");
-    }
 }

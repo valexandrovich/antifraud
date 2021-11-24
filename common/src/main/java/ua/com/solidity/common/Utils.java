@@ -3,6 +3,7 @@ package ua.com.solidity.common;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -20,12 +21,12 @@ import java.text.SimpleDateFormat;
 public class Utils {
     public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSXXX";
 
-    public static DateFormat outputDateTimeFormat() {
-        return new SimpleDateFormat(OUTPUT_DATETIME_FORMAT);
+    private Utils() {
+        //nothing
     }
 
-    private Utils () {
-
+    public static DateFormat outputDateTimeFormat() {
+        return new SimpleDateFormat(OUTPUT_DATETIME_FORMAT);
     }
 
     public static String removeIgnoredChars(String value, String ignoredChars) {
@@ -66,6 +67,16 @@ public class Utils {
         return null;
     }
 
+    public static JsonNode getJsonNode(Object value) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.valueToTree(value);
+        } catch (Exception e) {
+            log.error("JSON convert object to jsonNode error: {}", value, e);
+        }
+        return null;
+    }
+
     public static JsonNode getJsonNode(String value) {
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -99,14 +110,19 @@ public class Utils {
     }
 
     public static <T> T jsonToValue(JsonNode node, Class<T> value) {
-        if (node == null || value == null) return null;
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.treeToValue(node, value);
-        } catch (Exception e) {
-            log.warn("Error on parsing object {}", value.getName(), e);
+        return jsonToValueDef(node, value, null);
+    }
+
+    public static <T> T jsonToValueDef(JsonNode node, Class<T> value, T def) {
+        if (node != null && value != null) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                return mapper.treeToValue(node, value);
+            } catch (Exception e) {
+                log.warn("Error on parsing object {}", value.getName(), e);
+            }
         }
-        return null;
+        return def;
     }
 
     public static String objectToJsonString(Object object) {
@@ -117,6 +133,30 @@ public class Utils {
             log.warn("Can't write object to JSON", e);
         }
         return "";
+    }
+
+    @SuppressWarnings("unused")
+    public static JsonNode getNodeValue(JsonNode node, String name) {
+        return node.has(name) ? node.get(name) : JsonNodeFactory.instance.nullNode();
+    }
+
+    public static <T> T getNodeValue(JsonNode node, String name, Class<T> clazz, T defaultValue) {
+        if (node == null || name == null || name.length() == 0 || !node.hasNonNull(name)) return defaultValue;
+        return jsonToValueDef(node.get(name), clazz, defaultValue);
+    }
+
+    public static <T> T getNodeValue(JsonNode node, String name, Class<T> clazz) {
+        return getNodeValue(node, name, clazz,null);
+    }
+
+    public static <T> T getNodeValue(JsonNode node, int index, Class<T> clazz, T defaultValue) {
+        if (node == null || index < 0 || index >= node.size() || !node.hasNonNull(index)) return defaultValue;
+        return jsonToValueDef(node.get(index), clazz, defaultValue);
+    }
+
+    @SuppressWarnings("unused")
+    public static <T> T getNodeValue(JsonNode node, int index, Class<T> clazz) {
+        return getNodeValue(node, index, clazz, null);
     }
 
     public static File checkFolder(String folder) {

@@ -26,12 +26,12 @@ public class Receiver {
 
     public final void receiveMessage(String message) {
         ImporterMessageData data = Utils.jsonToValue(message, ImporterMessageData.class);
-        if (data == null || data.dataFileName == null) {
+        if (data == null || data.getDataFileName() == null) {
             log.warn("Empty command received.");
         } else {
-            log.info("File import requested: {}.", data.dataFileName);
+            log.info("File import requested: {}.", data.getDataFileName());
             importer.doImport(data);
-            ReserveCopyMessageData msg = new ReserveCopyMessageData(data.dataFileName, data.infoFileName);
+            ReserveCopyMessageData msg = new ReserveCopyMessageData(data.getDataFileName(), data.getInfoFileName());
             rabbitTemplate.convertAndSend(config.getReserveCopyTopic(), config.getReserveCopyRoutingKey(), Utils.objectToJsonString(msg));
         }
     }

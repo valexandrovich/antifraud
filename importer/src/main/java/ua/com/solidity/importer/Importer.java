@@ -5,78 +5,75 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.DurationPrinter;
 import ua.com.solidity.common.ImporterMessageData;
-
-import java.io.FileInputStream;
+import ua.com.solidity.common.OutputStats;
+import ua.com.solidity.common.prototypes.PPCustomDBWriter;
+import ua.com.solidity.pipeline.Pipeline;
+import ua.com.solidity.pipeline.PipelineFactory;
 
 @Slf4j
 @Component
 public class Importer {
     private static final String LOG_DELIMITER = "-------------------------------------------------------";
-    private static final String LOG_INTERNAL_DELIMITER = "- - - - - - - - - -";
-    private final CSVParams params;
+    private static final String LOG_INTERNAL_DELIMITER = "- - - - - - - - - - - - - - - - - -";
+
+    private static final String TEST_PIPELINE = ("{'pipeline': [" +
+            "{'prototype' : 'InputStream', 'name' : 'stream'}," +
+            "{'prototype': 'CSVParser', 'name': 'csvParser', 'inputs': {'stream' : 'stream'}, 'data': {'parseFieldNames' : true, 'quote': '\\\"', 'encoding': 'UTF-8', 'delimiter' : ';', 'splitMode' : true, 'ignoreCharsNearDelimiter': '\\b\\r\\f\\t '}}," +
+            "{'prototype' : 'TmpSourceImporter', 'name' : 'handler', 'inputs': {'input': 'csvParser'}, 'data': {'group': 'tmpSource'}}" +
+            "]}").replace("'", "\"");
+
+    private final PipelineFactory importerFactory;
     private final ModelRepository repository;
 
-    private long parseErrorsCount;
-    private long insertErrorsCount;
-    private long totalRowsCount;
-
     @Autowired
-    public Importer(CSVParams defaultParams, ModelRepository repository) {
-        this.params = defaultParams;
+    public Importer(PipelineFactory importerFactory, ModelRepository repository) {
+        this.importerFactory = importerFactory;
         this.repository = repository;
     }
-
-    private boolean beginImport(CSVParser parser) {
-        if (!parser.open()) return false;
-        return repository.truncate();
-    }
-
-    private void handleRow(CSVParser parser) {
-        ++totalRowsCount;
-        if (parser.dataFields.size() < parser.fieldNames.size()) {
-            log.warn("Parse error: {}", parser.lastRow());
-            ++parseErrorsCount;
-        } else {
-            try {
-                repository.insertRow(parser);
-            } catch (Exception e) {
-                log.warn("DB Insertion failed: {}. row: \n{}", e.getMessage(), parser.lastRow());
-                ++insertErrorsCount;
-            }
-        }
-    }
-
     public void doImport(ImporterMessageData data) {
-        totalRowsCount = parseErrorsCount = insertErrorsCount = 0;
+        DurationPrinter elapsedTime = new DurationPrinter();
+        Pipeline pipeline = importerFactory.createPipeline(TEST_PIPELINE);
+        if (pipeline == null || !pipeline.isValid()) {
+            log.error("Pipeline is invalid.");
+            return;
+        }
+        pipeline.setParam("FileName", data.getDataFileName());
+        pipeline.setParam("repository", repository);
         log.info(LOG_DELIMITER);
         log.info("Import started");
         log.info(LOG_DELIMITER);
-
-        DurationPrinter elapsedTime = new DurationPrinter();
-        try (FileInputStream stream = new FileInputStream(data.dataFileName)) {
-            CSVParser parser = new CSVParser(stream, params);
-            if (beginImport(parser)) {
-                while (!parser.eof()) {
-                    handleRow(parser);
-                    parser.next();
-                }
-                elapsedTime.stop();
-                long count = totalRowsCount - parseErrorsCount - insertErrorsCount;
-                log.info(LOG_DELIMITER);
-                log.info("Import completed.");
-                log.info(LOG_INTERNAL_DELIMITER);
-                log.info("  Total rows: {}", totalRowsCount);
-                log.info("  Parse errors: {}", parseErrorsCount);
-                log.info("  DB insert errors: {}", insertErrorsCount);
-                log.info(LOG_INTERNAL_DELIMITER);
-                log.info("Inserted: {} ({}%)", count, String.format("%.03f", (float)((double)count/totalRowsCount * 100)));
-                log.info("Elapsed time: {}", elapsedTime.getDurationString());
-                log.info(LOG_DELIMITER);
+        try {
+            boolean res = pipeline.execute();
+            if (!res) {
+                log.error("Pipeline execution failed.");
             } else {
-                log.error("CSV-parser not opened properly.");
+                log.info("Pipeline execution completed.");
             }
-        } catch(Exception e) {
-            log.error("Error while parsing file {}", data.dataFileName, e);
-         }
+            log.info(LOG_DELIMITER);
+        } catch (Exception e) {
+            log.error("Error due pipeline execution.", e);
+        }
+
+        elapsedTime.stop();
+
+        OutputStats stats = pipeline.getParam(PPCustomDBWriter.OUTPUT_STATS, OutputStats.class);
+
+        if (stats != null) {
+            for (OutputStats.Group group : stats.items.values()) {
+                log.info("target group: {}", group.getName());
+                log.info(LOG_DELIMITER);
+                log.info("  Total rows: {}", group.getTotalRowCount());
+                log.info("  Parse errors: {}", group.getParseErrorCount());
+                log.info("  DB insert errors: {}", group.getInsertErrorCount());
+                log.info("  DB insert error info errors: {}", group.getInsertErrorInfoCount());
+                log.info(LOG_INTERNAL_DELIMITER);
+                log.info("Inserted: {} ({}%)", group.getInsertCount(), String.format("%.03f", group.getHandledPercent()));
+                log.info("Errors handled: {} ({}%)", group.getParseErrorCount(), String.format("%.03f", group.getErrorHandledPercent()));
+                log.info(LOG_DELIMITER);
+            }
+        }
+
+        log.info("Elapsed time: {}", elapsedTime.getDurationString());
+        log.info("Import completed.");
     }
 }

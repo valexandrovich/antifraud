@@ -12,6 +12,6 @@ import lombok.Setter;
 public class ImporterMessageData {
     private String format;
     private long size;
-    public String dataFileName;
-    public String infoFileName;
+    private String dataFileName;
+    private String infoFileName;
 }

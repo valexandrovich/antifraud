@@ -50,7 +50,7 @@ class PipelineTest {
         @Override
         protected Object execute(@NotNull Item item) {
             item.yieldBegin();
-            ArrayNode node = item.getJointValue(LINK, 0, ArrayNode.class);
+            ArrayNode node = item.getInputValue(LINK, 0, ArrayNode.class);
             if (node != null) {
                for (int i = 0; i < node.size(); ++i) {
                     item.yieldResult(node.get(i).asText(), false);
@@ -79,7 +79,7 @@ class PipelineTest {
 
         @Override
         protected Object execute(@NotNull Item item) {
-            String value = item.getJointValue(LINK, 0, String.class);
+            String value = item.getInputValue(LINK, 0, String.class);
             if (value != null) {
                 log.info("item found: {}", value);
             }
@@ -106,7 +106,7 @@ class PipelineTest {
 
         @Override
         protected Object execute(@NotNull Item item) {
-            Input input = item.getJoint(LINK, 0);
+            Input input = item.getInput(LINK, 0);
             ArrayNode node = item.getLocalData("items", ArrayNode.class);
             if (input != null && input.isIterator() && node != null) {
                 if (input.isBOF()) node.removeAll();
@@ -138,8 +138,8 @@ class PipelineTest {
 
         @Override
         protected Object execute(@NotNull Item item) {
-            ArrayNode source = item.getJointValue(LINK, 0, ArrayNode.class);
-            ArrayNode target = item.getJointValue(LINK, 1, ArrayNode.class);
+            ArrayNode source = item.getInputValue(LINK, 0, ArrayNode.class);
+            ArrayNode target = item.getInputValue(LINK, 1, ArrayNode.class);
             if (source != null && target != null) {
                 boolean different;
 
@@ -172,11 +172,11 @@ class PipelineTest {
 
     PipelineFactory factory = new PipelineFactory(provider);
     String jsonString = ("{'pipeline': [" +
-            "{'prototype': 'array', 'name': 'arraySource', 'data': ['Hello world', 'Hello world, again']}," +
             "{'prototype' : 'enumerator', 'name' : 'enumSource', 'inputs': {'link': 'arraySource'}}," +
+            "{'prototype': 'array', 'name': 'arraySource', 'data': ['Hello world', 'Hello world, again']}," +
+            "{'prototype' : 'comparer', 'name' : 'comparer', 'inputs': {'link': ['arraySource', 'collector']}}," +
             "{'prototype' : 'logger', 'name' : 'logger', 'inputs': {'link': 'enumSource'}}," +
-            "{'prototype' : 'collector', 'name' : 'collector', 'inputs': {'link': 'enumSource'}}," +
-            "{'prototype' : 'comparer', 'name' : 'comparer', 'inputs': {'link': ['arraySource', 'collector']}}" +
+            "{'prototype' : 'collector', 'name' : 'collector', 'inputs': {'link': 'enumSource'}}" +
         "]}").replace("'", "\"");
 
     @Test

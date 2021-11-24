@@ -24,7 +24,7 @@ public class DownloaderApp {
     public final void run() {
         Utils.startRabbitMQContainer(connectionFactory, config.getQueueName(), receiver);
         log.info("output folder: {}", config.getDownloaderOutputFolder());
-        log.info("=== Downloader started and wait for messages ===");
+        log.info("=== Downloader started and waits for messages ===");
     }
 
     public static void main(String[] args) {

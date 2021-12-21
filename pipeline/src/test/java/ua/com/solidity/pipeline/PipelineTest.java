@@ -3,8 +3,8 @@ package ua.com.solidity.pipeline;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +14,6 @@ class PipelineTest {
     private static final String ARRAY = "array";
 
     private static class ArrayPrototype extends Prototype {
-
         @Override
         public Class<?> getOutputClass() {
             return ArrayNode.class;
@@ -26,7 +25,7 @@ class PipelineTest {
         }
 
         @Override
-        protected Object execute(@NotNull Item item) {
+        protected Object execute(@NonNull Item item) {
             return item.getLocalData(ARRAY);
         }
 
@@ -48,7 +47,7 @@ class PipelineTest {
         }
 
         @Override
-        protected Object execute(@NotNull Item item) {
+        protected Object execute(@NonNull Item item) {
             item.yieldBegin();
             ArrayNode node = item.getInputValue(LINK, 0, ArrayNode.class);
             if (node != null) {
@@ -78,7 +77,7 @@ class PipelineTest {
         }
 
         @Override
-        protected Object execute(@NotNull Item item) {
+        protected Object execute(@NonNull Item item) {
             String value = item.getInputValue(LINK, 0, String.class);
             if (value != null) {
                 log.info("item found: {}", value);
@@ -105,12 +104,12 @@ class PipelineTest {
         }
 
         @Override
-        protected Object execute(@NotNull Item item) {
+        protected Object execute(@NonNull Item item) {
             Input input = item.getInput(LINK, 0);
             ArrayNode node = item.getLocalData("items", ArrayNode.class);
             if (input != null && input.isIterator() && node != null) {
                 if (input.isBOF()) node.removeAll();
-                if (!input.isEOF()) {
+                if (input.hasData()) {
                     node.add(input.getValue(String.class));
                     item.stayUncompleted();
                     return null;
@@ -137,7 +136,7 @@ class PipelineTest {
         }
 
         @Override
-        protected Object execute(@NotNull Item item) {
+        protected Object execute(@NonNull Item item) {
             ArrayNode source = item.getInputValue(LINK, 0, ArrayNode.class);
             ArrayNode target = item.getInputValue(LINK, 1, ArrayNode.class);
             if (source != null && target != null) {

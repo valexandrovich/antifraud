@@ -1,10 +1,10 @@
 package ua.com.solidity.scheduler;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import ua.com.solidity.common.Utils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -16,14 +16,13 @@ import java.util.Objects;
 
 @Slf4j
 public class Scheduler {
-    public static final String KEY_TOPIC = "topic";
-    public static final String KEY_ROUTE = "routingKey";
+    public static final String KEY_EXCHANGE = "exchange";
     public static final String KEY_SCHEDULE = "schedule";
     public static final String KEY_DATA = "data";
 
     public static final String MSG_REFRESH = "init";
 
-    public static final String LOG_HANDLED = "handled: task for topic={} routingKey={} : {}";
+    public static final String LOG_HANDLED = "handled: task for exchange={} : {}";
 
     @Autowired
     private Config config;
@@ -34,29 +33,27 @@ public class Scheduler {
         public static final int EQUAL = 0;
 
         public final Schedule schedule;
-        public final String topic;
-        public final String routingKey;
+        public final String exchange;
         public final JsonNode data;
         private LocalDateTime datetime = null;
         private boolean mIsActive = true;
 
-        private Task(Schedule schedule, String topic, String routingKey, JsonNode data) {
+        private Task(Schedule schedule, String exchange, JsonNode data) {
             this.schedule = schedule;
-            this.topic = topic;
-            this.routingKey = routingKey;
+            this.exchange = exchange;
             this.data = data;
         }
 
-        public static Task createTask(Schedule schedule, String topic, String routingKey, JsonNode data) {
+        public static Task createTask(Schedule schedule, String exchange, JsonNode data) {
             if (schedule == null) return null;
-            return new Task(schedule, topic, routingKey, data);
+            return new Task(schedule, exchange, data);
         }
 
-        public final boolean isActive() { return mIsActive && datetime != null; }
+        public final synchronized boolean isActive() { return mIsActive && datetime != null; }
 
         @Override
         public int hashCode() {
-            return Objects.hash(topic, routingKey, schedule, data);
+            return Objects.hash(exchange, schedule, data);
         }
 
         @Override
@@ -66,7 +63,7 @@ public class Scheduler {
         }
 
         @Override
-        public int compareTo(@NotNull Scheduler.Task o) {
+        public int compareTo(@NonNull Scheduler.Task o) {
             if (o.datetime == null || !o.mIsActive) {
                 return BEFORE;
             } else if (datetime == null || mIsActive) {
@@ -74,10 +71,7 @@ public class Scheduler {
             } else {
                 int compareResult = datetime.compareTo(o.datetime);
                 if (compareResult == EQUAL) {
-                    compareResult = o.topic.compareTo(topic);
-                    if (compareResult == EQUAL) {
-                        compareResult = o.routingKey.compareTo(routingKey);
-                    }
+                    compareResult = o.exchange.compareTo(exchange);
                 }
 
                 return compareResult;
@@ -99,7 +93,7 @@ public class Scheduler {
         }
 
         private boolean exitFromNextTask() {
-            long seconds = now.toEpochSecond(ZoneOffset.UTC) - datetime.toEpochSecond(ZoneOffset.UTC);
+            long seconds = datetime.toEpochSecond(ZoneOffset.UTC) - now.toEpochSecond(ZoneOffset.UTC);
             if (seconds > 0) {
                 try {
                     sleep(seconds * 1000);
@@ -122,26 +116,25 @@ public class Scheduler {
     }
 
     private final List<Task> mTasks = new ArrayList<>();
-    private final RabbitTemplate rabbitTemplate;
-    private SendThread mSender;
-
-    public Scheduler(RabbitTemplate rabbitTemplate) {
-        this.rabbitTemplate = rabbitTemplate;
-    }
+     private SendThread mSender;
 
     public final void clear() {
-        stopSenderThread();
-        mTasks.clear();
+        synchronized (mTasks) {
+            stopSenderThread();
+            mTasks.clear();
+        }
     }
 
     private void sendMessage(Task task) {
-        rabbitTemplate.convertAndSend(task.topic, task.routingKey, task.data.toString());
-        log.info(LOG_HANDLED, task.topic, task.routingKey, task.data);
+        synchronized (mTasks) {
+            Utils.sendRabbitMQMessage(task.exchange, task.data.toString());
+        }
+        log.info(LOG_HANDLED, task.exchange, task.data);
     }
 
     public final void refresh() {
         synchronized(mTasks) {
-            rabbitTemplate.convertAndSend(config.getTopicExchangeName(), config.getInitRoutingKey(), MSG_REFRESH);
+            Utils.sendRabbitMQMessage(config.getInitName(), MSG_REFRESH);
         }
     }
 
@@ -178,19 +171,21 @@ public class Scheduler {
         }
     }
 
-    public final synchronized void initialize() {
-        stopSenderThread();
-        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-        for (Task task : mTasks) {
-            task.datetime = task.schedule.nearest(now, false);
+    public final void initialize() {
+        synchronized (mTasks) {
+            stopSenderThread();
+            LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+            for (Task task : mTasks) {
+                task.datetime = task.schedule.nearest(now, false);
+            }
+            Collections.sort(mTasks);
+            log.info("Invalidate accepted. {} tasks loaded", mTasks.size());
+            startSenderThread();
         }
-        Collections.sort(mTasks);
-        log.info("Invalidate accepted. {} tasks loaded", mTasks.size());
-        startSenderThread();
     }
 
-    private void addTask(Schedule schedule, String topic, String routingKey, JsonNode data) {
-        Task task = Task.createTask(schedule, topic, routingKey, data);
+    private void addTask(Schedule schedule, String exchange, JsonNode data) {
+        Task task = Task.createTask(schedule, exchange, data);
         if (task != null) mTasks.add(task);
     }
 
@@ -201,42 +196,42 @@ public class Scheduler {
                 log.warn("Schedule JSON parse error");
                 return;
              }
-            String topic = task.get(KEY_TOPIC).asText();
-            String route = task.get(KEY_ROUTE).asText();
+            String exchange = task.get(KEY_EXCHANGE).asText();
             JsonNode data = task.get(KEY_DATA);
-            addTask(schedule, topic, route, data);
+            addTask(schedule, exchange, data);
         } catch (Exception e) {
             log.warn("Error Scheduler Task parsing from JSON", e);
         }
     }
 
     public final void updateTasks(JsonNode arr) {
-        clear();
-        if (arr == null) return;
+        synchronized (mTasks) {
+            clear();
+            if (arr == null) return;
 
-        for (JsonNode obj : arr) {
-            if (obj.isObject()) {
-                addTask(obj);
+            for (JsonNode obj : arr) {
+                if (obj.isObject()) {
+                    addTask(obj);
+                }
             }
+            initialize();
         }
-        initialize();
     }
 
-    private Task getTask(String topic, String routingKey) {
-
+    private Task getTask(String exchange) {
         for (Task task : mTasks) {
-            if (task.topic.equals(topic) && task.routingKey.equals(routingKey)) {
+            if (task.exchange.equals(exchange)) {
                 return task;
             }
         }
 
-        log.warn("Task not found (topic=\"{}\", routingKey=\"{}\")", topic, routingKey);
+        log.warn("Task not found (exchange=\"{}\")", exchange);
         return null;
     }
 
-    public final void setTaskActive(String topic, String routingKey, boolean isActive) {
+    public final void setTaskActive(String exchange, boolean isActive) {
         synchronized(mTasks) {
-            Task task = getTask(topic, routingKey);
+            Task task = getTask(exchange);
             if (task == null) return;
             if (task.mIsActive != isActive) {
                 task.mIsActive = isActive;
@@ -245,20 +240,20 @@ public class Scheduler {
         }
     }
 
-    public final void setTaskActive(@NotNull JsonNode obj, boolean isActive) {
-        setTaskActive(obj.get(KEY_TOPIC).asText(), obj.get(KEY_ROUTE).asText(), isActive);
+    public final void setTaskActive(@NonNull JsonNode obj, boolean isActive) {
+        setTaskActive(obj.get(KEY_EXCHANGE).asText(), isActive);
     }
 
-    public final void taskForceExecute(String topic, String routingKey) {
+    public final void taskForceExecute(String topic) {
         synchronized(mTasks) {
-            Task task = getTask(topic, routingKey);
+            Task task = getTask(topic);
             if (task == null) return;
             sendMessage(task);
         }
     }
 
-    public final void taskForceExecute(@NotNull JsonNode obj) {
-        taskForceExecute(obj.get(KEY_TOPIC).asText(), obj.get(KEY_ROUTE).asText());
+    public final void taskForceExecute(@NonNull JsonNode obj) {
+        taskForceExecute(obj.get(KEY_EXCHANGE).asText());
     }
 }
 

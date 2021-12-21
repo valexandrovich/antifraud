@@ -1,8 +1,8 @@
 package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
@@ -23,7 +23,7 @@ public class PPInputStream extends Prototype {
     }
 
     @Override
-    protected Object execute(@NotNull Item item) {
+    protected Object execute(@NonNull Item item) {
         InputStream stream;
         String fileName = item.getPipelineParam("FileName", String.class);
 

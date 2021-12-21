@@ -11,18 +11,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @NoArgsConstructor
 public class Config {
-    @Value("${scheduler.rabbitmq.topic}")
-    private String topicExchangeName;
-    @Value("${scheduler.rabbitmq.queue.init}")
-    private String queueNameForInit;
-    @Value("${scheduler.rabbitmq.queue.test}")
-    private String queueNameForTest;
-    @Value("${scheduler.rabbitmq.init.routingKey}")
-    private String initRoutingKey;
-    @Value("${scheduler.rabbitmq.routingKey}")
-    private String actionRoutingKey;
-    @Value("${scheduler.rabbitmq.test.routingKey}")
-    private String testRoutingKey;
+    @Value("${scheduler.rabbitmq.name}")
+    private String name;
+    @Value("${scheduler.rabbitmq.scheduler}")
+    private String scheduler;
+    @Value("${scheduler.rabbitmq.test}")
+    private String test;
     @Value("${scheduler.schedulerInitFile}")
     private String schedulerInitFile;
+    @Value("${scheduler.rabbitmq.collectMSecs}")
+    private int collectMSecs;
 }

@@ -2,8 +2,7 @@
   "action" : "update",
   "data" : [
     {
-      "topic": "scheduler",
-      "routingKey": "scheduler.test",
+      "exchange": "otp-etl.scheduler.test",
       "data": "ping 1min",
       "schedule":
       {
@@ -16,8 +15,7 @@
       }
     },
     {
-      "topic": "scheduler",
-      "routingKey": "scheduler.test",
+      "exchange": "otp-etl.scheduler.test",
       "data": "ping 2min",
       "schedule":
       {
@@ -31,8 +29,7 @@
     },
 
     {
-      "topic": "scheduler",
-      "routingKey": "scheduler.test",
+      "exchange": "otp-etl.scheduler.test",
       "data": "ping 3min",
       "schedule":
       {
@@ -46,11 +43,29 @@
     },
 
     {
-      "topic": "downloader",
-      "routingKey": "downloader",
-      "data": {
-        "apiKey" : "46ec7001-f492-4af8-8cae-00ba5e5537ce",
-        "attemptsLeft": 3
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua1",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 5
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua18",
+        "attemptsLeft" : 3
       },
 
       "schedule":
@@ -63,5 +78,6 @@
         }
       }
     }
+
   ]
 }

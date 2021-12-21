@@ -11,18 +11,9 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 public class Config {
-    @Value("${importer.rabbitmq.topic}")
-    private String topicExchangeName;
-
     @Value("${importer.rabbitmq.queue}")
     private String queueName;
 
-    @Value("${importer.rabbitmq.routingKey}")
-    private String routingKey;
-
-    @Value("${reservecopy.rabbitmq.topic}")
-    private String reserveCopyTopic;
-
-    @Value("${reservecopy.rabbitmq.routingKey}")
-    private String reserveCopyRoutingKey;
+    @Value("${reservecopy.rabbitmq.queue}")
+    private String reserveCopyQueue;
 }

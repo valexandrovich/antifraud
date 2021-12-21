@@ -5,10 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import ua.com.solidity.common.RabbitMQReceiver;
 
 @Slf4j
 @Component
-public class Receiver {
+public class Receiver extends RabbitMQReceiver {
     public static final String KEY_ACTION = "action";
     public static final String KEY_DATA = "data";
     public static final String ACTION_UPDATE = "update";
@@ -24,7 +25,8 @@ public class Receiver {
         this.scheduler = mainScheduler;
     }
 
-    public final void receiveMessage(String message) {
+    @Override
+    protected Object handleMessage(String queue, String message) {
         try {
             JsonNode node = new ObjectMapper().readTree(message);
 
@@ -57,5 +59,6 @@ public class Receiver {
         } catch (Exception e) {
             log.error("Receive message error.", e);
         }
+        return true;
     }
 }

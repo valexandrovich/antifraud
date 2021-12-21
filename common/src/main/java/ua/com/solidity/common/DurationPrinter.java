@@ -8,10 +8,14 @@ public class DurationPrinter {
     Instant finish = null;
 
     public DurationPrinter() {
+        reset();
+    }
+
+    public final void reset() {
         start = Instant.now();
     }
 
-    public void stop() {
+    public final void stop() {
         finish = Instant.now();
     }
 

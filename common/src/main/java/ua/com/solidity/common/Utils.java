@@ -4,25 +4,78 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.rabbitmq.client.BuiltinExchangeType;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.context.ApplicationContext;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @Slf4j
 public class Utils {
     public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSXXX";
+    private static final String RABBITMQ_LOG_ERROR_WITH_MESSAGE = "sendRabbitMQMessage: {} . ({}:{}) : {}";
+    private static final String RABBITMQ_LOG_ERROR = "sendRabbitMQMessage: {} . ({}:{})";
+    private static final long TRY_TO_SEND_DELTA = 180000; // 3 min
+    private static final Timer timer = new Timer("Utils.timer");
+    private static ApplicationContext context = null;
+    private static com.rabbitmq.client.ConnectionFactory factory;
+    private static Connection connection;
+    private static Channel channel;
+
+    private static final Set<String> topics = new HashSet<>();
+
+    private static class DeferredExecutionTimerTask extends TimerTask {
+        DeferredProcedure proc;
+        public DeferredExecutionTimerTask(DeferredProcedure proc) {
+            this.proc = proc;
+        }
+        @Override
+        public void run() {
+            proc.execute();
+        }
+    }
 
     private Utils() {
         //nothing
+    }
+
+    public static void setApplicationContext(ApplicationContext context) {
+        Utils.context = context;
+    }
+
+    public static boolean checkApplicationContext() {
+        if (context != null) return true;
+        log.error("Utils ApplicationContext not assigned. Use Utils.setApplicationContext(ApplicationContext) before.");
+        return false;
+    }
+
+    public static ApplicationContext getApplicationContext() {
+        return context;
+    }
+
+    @SuppressWarnings("unused")
+    public static <T> T saveEntity(T entity, Class<? extends JpaRepository<T, ?>> repositoryType) {
+        if (checkApplicationContext()) {
+            JpaRepository<T, ?> repository = context.getBean(repositoryType);
+            try {
+                return repository.save(entity);
+            } catch (Exception e) {
+                log.error("Error on save data.", e);
+            }
+        }
+        return null;
     }
 
     public static DateFormat outputDateTimeFormat() {
@@ -55,12 +108,16 @@ public class Utils {
         return value;
     }
 
+    public static String getFileExtension(String fileName) {
+        int pos = fileName.lastIndexOf('.');
+        return pos >= 0 ? fileName.substring(pos + 1) : "";
+    }
+
     public static InputStream getStreamFromUrl(String url) {
         URL u;
         try {
             u = new URL(url);
-            HttpURLConnection httpConnection = (HttpURLConnection) u.openConnection();
-            return httpConnection.getInputStream();
+            return u.openStream();
         } catch (Exception e) {
             log.error("Can't read url {}", url, e);
         }
@@ -181,16 +238,92 @@ public class Utils {
         return true;
     }
 
-    public static SimpleMessageListenerContainer createRabbitMQContainer(ConnectionFactory connectionFactory, String queueName, Object receiver) {
-        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-        container.setConnectionFactory(connectionFactory);
-        container.setQueueNames(queueName);
-        container.setMessageListener(new MessageListenerAdapter(receiver, "receiveMessage"));
-        return container;
+    static synchronized void getRabbitMQConnectionFactory() {
+        if (factory == null && checkApplicationContext()) {
+            factory = new com.rabbitmq.client.ConnectionFactory();
+            factory.setHost(context.getEnvironment().getProperty("spring.rabbitmq.host", "localhost"));
+            factory.setPort(Integer.parseInt(context.getEnvironment().getProperty("spring.rabbitmq.port", "5672")));
+            factory.setUsername(context.getEnvironment().getProperty("spring.rabbitmq.username", "guest"));
+            factory.setPassword(context.getEnvironment().getProperty("spring.rabbitmq.password", "guest"));
+        }
     }
 
-    public static void startRabbitMQContainer(ConnectionFactory connectionFactory, String queueName, Object receiver) {
-        SimpleMessageListenerContainer container = createRabbitMQContainer(connectionFactory, queueName, receiver);
-        container.start();
+    static synchronized void getRabbitMQConnection() {
+        getRabbitMQConnectionFactory();
+        if (connection == null && factory != null) {
+            try {
+                connection = factory.newConnection();
+            } catch (Exception e) {
+                log.error("RabbitMQ Connection creation error.", e);
+            }
+        }
+    }
+
+    static synchronized Channel createRabbitMQChannel() {
+        Channel channel = null;
+        getRabbitMQConnection();
+        if (connection != null) {
+            try {
+                channel = connection.createChannel();
+            } catch (Exception e) {
+                log.error("RabbitMQ Channel creation error.", e);
+            }
+        }
+        return channel;
+    }
+
+    private static synchronized boolean channelNeeded() {
+        if (channel == null) channel = createRabbitMQChannel();
+        return channel != null;
+    }
+
+    private static synchronized void rabbitMQLogError(String header, String topic, String routingKey, String message, Exception e) {
+        if (message != null) {
+            if (e != null) {
+                log.error(RABBITMQ_LOG_ERROR_WITH_MESSAGE, header, topic, routingKey, message, e);
+            } else {
+                log.error(RABBITMQ_LOG_ERROR_WITH_MESSAGE, header, topic, routingKey, message);
+            }
+        } else {
+            if (e != null) {
+                log.error(RABBITMQ_LOG_ERROR, header, topic, routingKey, e);
+            } else {
+                log.error(RABBITMQ_LOG_ERROR, header, topic, routingKey);
+            }
+        }
+    }
+
+    static synchronized boolean prepareRabbitMQQueue(String queue) {
+        if (topics.contains(queue)) return true;
+        if (channelNeeded()) {
+            try {
+                channel.exchangeDeclare(queue, BuiltinExchangeType.TOPIC, true);
+                channel.queueDeclare(queue, true, false, false, null);
+                channel.queueBind(queue, queue, queue);
+                topics.add(queue);
+                return true;
+            } catch (Exception e) {
+                rabbitMQLogError("Exchange creation failed", queue, queue, null, e);
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public static synchronized void sendRabbitMQMessage(String queue, String message) {
+        if (prepareRabbitMQQueue(queue)) {
+            try {
+                channel.basicPublish(queue, queue, null, message.getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                rabbitMQLogError("Can't send a message", queue, queue, message, e);
+            }
+        } else {
+            rabbitMQLogError("Can't send a message now, waiting.", queue, queue, message, null);
+            deferredExecute(TRY_TO_SEND_DELTA, ()-> sendRabbitMQMessage(queue, message));
+        }
+    }
+
+    public static synchronized void deferredExecute(long milliseconds, DeferredProcedure proc) {
+        timer.schedule(new DeferredExecutionTimerTask(proc), milliseconds);
     }
 }

@@ -21,7 +21,6 @@ public class XMLParser extends CustomParser {
     private final XMLInputFactory factory = XMLInputFactory.newInstance();
     private final XmlMapper mapper = new XmlMapper();
     private JsonNode lastNode;
-    private boolean mEOF = false;
     private final XMLParams params;
 
     public XMLParser(XMLParams params) {
@@ -32,9 +31,8 @@ public class XMLParser extends CustomParser {
     @Override
     protected boolean doOpen() {
         mainStream = new FilteredTextInputStream(stream,8192);
-        mEOF = !readNode();
         try {
-            reader = factory.createXMLStreamReader(stream);
+            reader = factory.createXMLStreamReader(mainStream);
             return true;
         } catch (Exception e) {
             return false;
@@ -59,9 +57,11 @@ public class XMLParser extends CustomParser {
             while (reader.hasNext()) {
                 switch (reader.next()) {
                     case XMLStreamConstants.START_ELEMENT:
-                        if (params.push(reader.getName().toString())) {
+                        if (params.isReady()) {
                             lookupNode();
                             return true;
+                        } else {
+                            params.push(reader.getName().toString());
                         }
                         break;
                     case XMLStreamConstants.END_ELEMENT:
@@ -80,11 +80,6 @@ public class XMLParser extends CustomParser {
     @Override
     public JsonNode getNode() {
         return lastNode;
-    }
-
-    @Override
-    public boolean hasData() {
-        return !mEOF;
     }
 
     @Override

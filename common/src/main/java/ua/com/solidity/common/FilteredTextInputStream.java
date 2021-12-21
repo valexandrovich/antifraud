@@ -3,9 +3,9 @@ package ua.com.solidity.common;
 import com.fasterxml.jackson.core.JsonLocation;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -220,6 +220,7 @@ public class FilteredTextInputStream extends InputStream {
         return (buffers[1].loadBuffer(stream));
     }
 
+    @SuppressWarnings("unused")
     public final long getPosition() {
         return buffers[1].start.getPosition() + currentBufferPosition;
     }
@@ -363,7 +364,7 @@ public class FilteredTextInputStream extends InputStream {
     }
 
     @Override
-    public int read(byte @NotNull [] b, int off, int len) {
+    public int read(byte @NonNull [] b, int off, int len) {
         return doRead(b, off, len);
     }
 

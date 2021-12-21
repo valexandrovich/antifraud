@@ -22,15 +22,17 @@ public class CSVParams {
     private String quote = DEFAULT_QUOTE;
     private String ignoreCharsNearDelimiter = DEFAULT_IGNORE_CHARS_NEAR_DELIMITER;
     private boolean escapeUsing;
+    private boolean autoTrim;
 
-    public CSVParams(boolean splitMode, String encoding, boolean parseFieldNames, String delimiter, String quote, String ignoreCharsNearDelimiter, boolean escapeUsing) {
+    public CSVParams(boolean splitMode, String encoding, boolean parseFieldNames, String delimiter, String quote, String ignoreCharsNearDelimiter, boolean escapeUsing, boolean autoTrim) {
         this.splitMode = splitMode;
         setEncoding(encoding);
         this.parseFieldNames = parseFieldNames;
         setDelimiter(delimiter);
-        setQuote(quote);
+        setQuoteString(quote);
         setIgnoreCharsNearDelimiter(ignoreCharsNearDelimiter);
         this.escapeUsing = escapeUsing;
+        this.autoTrim = autoTrim;
     }
 
     @JsonIgnore
@@ -60,7 +62,7 @@ public class CSVParams {
 
     @SuppressWarnings("unused")
     public final void setQuoteString(String value) {
-        this.delimiter = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_QUOTE);
+        this.quote = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_QUOTE);
     }
 
     @SuppressWarnings("unused")

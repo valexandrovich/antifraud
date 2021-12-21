@@ -26,6 +26,11 @@ public class Pipeline {
         initialize(provider, jsonString);
     }
 
+    protected Pipeline(PipelinePrototypeProvider provider, JsonNode node) {
+        this.provider = provider;
+        initializeItems(node);
+    }
+
     private void initialize(PipelinePrototypeProvider provider, String jsonString) {
         this.provider = provider;
         try {
@@ -56,6 +61,7 @@ public class Pipeline {
         return item == null ? null : item.getLocalData(value, clazz);
     }
 
+    @SuppressWarnings("unused")
     public final <T> T getItemData(String name, String value, Class<T> clazz, T defaultValue) {
         T res = getItemData(name, value, clazz);
         return res == null ? defaultValue : res;

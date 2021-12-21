@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Component;
+import ua.com.solidity.common.ImporterInfoFileData;
+import ua.com.solidity.common.ImporterMessageData;
 import ua.com.solidity.common.Utils;
 
 import java.io.File;
@@ -16,7 +17,6 @@ import java.text.MessageFormat;
 import java.util.UUID;
 
 @Slf4j
-@ComponentScan(basePackages = {"ua.com.solidity.common"})
 @Component
 public class Downloader {
     private final File targetFolder;
@@ -29,9 +29,9 @@ public class Downloader {
         }
     }
 
-    public String download(DataGovUaSourceInfo info) {
+    public ImporterMessageData download(ImporterInfoFileData info, DownloaderTask task) {
         if (!info.isValid()) return null;
-        String fileName = UUID.randomUUID().toString();
+        String fileName = task.getPrefix() + UUID.randomUUID();
 
         String dataFileName = fileName + info.getExtension();
         String infoFileName = fileName + "_info.json";
@@ -64,6 +64,6 @@ public class Downloader {
             return null;
         }
 
-        return info.getQuery(dataFileName, infoFileName);
+        return task.sendImportQuery(info, dataFileName, infoFileName);
     }
 }

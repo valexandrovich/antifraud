@@ -11,20 +11,24 @@ public abstract class CustomParser implements Closeable {
 
     private int prefixCounter = 0;
     protected InputStream stream = null;
+    private boolean eof = false;
     private boolean opened = false;
     private ErrorReport errorReport = null;
 
     public boolean open(InputStream stream) {
-        if (opened || stream == null) return false;
+        if (opened || stream == null) {
+            return false;
+        }
         this.stream = stream;
         opened = doOpen();
+        if (opened) {
+            next();
+        }
         return opened;
     }
 
     protected abstract boolean doOpen();
-
     public abstract JsonNode getNode();
-    public abstract boolean hasData();
     protected abstract boolean doNext();
 
     protected String generateName() {
@@ -44,9 +48,13 @@ public abstract class CustomParser implements Closeable {
         stream = null;
     }
 
-    public final boolean next() {
+    public final void next() {
         clearError();
-        return doNext();
+        eof = !doNext();
+    }
+
+    public final boolean hasData() {
+        return !eof;
     }
 
     public final boolean isErrorReporting() {

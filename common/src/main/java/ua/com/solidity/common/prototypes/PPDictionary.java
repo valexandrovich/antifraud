@@ -16,7 +16,7 @@ public class PPDictionary extends Prototype {
     @Override
     protected void initialize(Item item, JsonNode node) {
         if (node != null && node.hasNonNull(INPUT)) {
-                item.addInput(INPUT, node.get(INPUT).asText(), JsonNode.class);
+            item.addInput(INPUT, node.get(INPUT).asText(), JsonNode.class);
         }
     }
 

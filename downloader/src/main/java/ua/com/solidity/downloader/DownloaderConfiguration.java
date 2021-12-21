@@ -1,26 +1,23 @@
 package ua.com.solidity.downloader;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ua.com.solidity.common.RabbitMQListener;
 
 @Configuration
 public class DownloaderConfiguration {
     @Bean
-    Queue queue(Config config) {
-        return new Queue(config.getQueueName(), false);
+    DownloaderTaskHandler dataGovUa(DataGovUaSourceInfo info) {
+        return new DownloaderTaskGovUaHandler(info);
     }
 
     @Bean
-    TopicExchange exchange(Config config) {
-        return new TopicExchange(config.getTopicExchangeName());
+    DownloaderTaskHandler simpleFile() {
+        return new DownloaderFileHandler();
     }
 
     @Bean
-    Binding binding(Config config, Queue queue, TopicExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with(config.getRoutingKey());
+    RabbitMQListener listener(Config config, Receiver receiver) {
+        return new RabbitMQListener(receiver, true, config.getCollectMSecs(), config.getName());
     }
 }

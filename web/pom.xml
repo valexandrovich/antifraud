@@ -5,9 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>2.3.38-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <version>2.3.39-SNAPSHOT</version>
 
     <artifactId>web</artifactId>
 
@@ -21,6 +22,10 @@
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
         <sonar.language>java</sonar.language>
+        <!-- JS Properties -->
+        <frontend-src-dir>${project.basedir}</frontend-src-dir>
+        <node.version>v14.15.2</node.version>
+        <yarn.version>v1.22.5</yarn.version>
     </properties>
 
     <dependencies>
@@ -28,17 +33,18 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
@@ -70,7 +76,6 @@
             <version>RELEASE</version>
             <scope>compile</scope>
         </dependency>
-
         <dependency>
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
@@ -86,10 +91,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.12.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -116,6 +117,43 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ua.com.solidity</groupId>
+            <artifactId>db</artifactId>
+            <version>2.3.39-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>2.8.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>2.8.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>2.3.0</version>
         </dependency>
     </dependencies>
 
@@ -150,6 +188,44 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.12.0</version>
+                <configuration>
+                    <nodeVersion>${node.version}</nodeVersion>
+                    <yarnVersion>${yarn.version}</yarnVersion>
+                    <workingDirectory>${frontend-src-dir}/src/main/frontend</workingDirectory>
+                    <installDirectory>${project.build.directory}</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-frontend-tools</id>
+                        <goals>
+                            <goal>install-node-and-yarn</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>yarn-install</id>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-frontend</id>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <arguments>build</arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

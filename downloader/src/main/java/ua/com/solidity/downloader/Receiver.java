@@ -1,64 +1,45 @@
 package ua.com.solidity.downloader;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.common.*;
+import ua.com.solidity.common.DownloaderMessageData;
+import ua.com.solidity.common.RabbitMQReceiver;
+import ua.com.solidity.common.Utils;
 
 @Slf4j
+@Getter
+@Setter
 @Component
-public class Receiver {
-    RabbitTemplate rabbitTemplate;
-    Downloader downloader;
-    Config config;
-    DataGovUaSourceInfo mainSourceInfo;
+public class Receiver extends RabbitMQReceiver {
+    private Downloader downloader;
+    private Config config;
+    private DataGovUaSourceInfo mainSourceInfo;
+    private ApplicationContext context;
+    private DownloaderHandlerFactory downloaderHandlerFactory;
 
-    public Receiver(RabbitTemplate rabbitTemplate, Downloader downloader, Config config, DataGovUaSourceInfo mainSourceInfo) {
-        this.rabbitTemplate = rabbitTemplate;
+    @Autowired
+    public Receiver(DownloaderHandlerFactory downloaderHandlerFactory, Downloader downloader, Config config, DataGovUaSourceInfo mainSourceInfo) {
         this.downloader = downloader;
         this.config = config;
         this.mainSourceInfo = mainSourceInfo;
+        this.downloaderHandlerFactory = downloaderHandlerFactory;
     }
 
-    private void handleError(DownloaderMessageData data) {
-        if (data.decrementAttemptsLeft()) {
-            rabbitTemplate.convertAndSend(config.getTopicExchangeName(), config.getRoutingKey(), Utils.objectToJsonString(data));
-        } else {
-            DownloaderErrorMessageData msgData = new DownloaderErrorMessageData(data.getApiKey());
-            RabbitmqLogMessage message = new RabbitmqLogMessage("downloader", "E001", msgData);
-            rabbitTemplate.convertAndSend(config.getLogExchangeName(), config.getLogRoutingKey(), Utils.objectToJsonString(message));
+    @Override
+    public Object handleMessage(String queue, String message) {
+        DownloaderMessageData data = null;
+        try {
+            data = Utils.jsonToValue(message, DownloaderMessageData.class);
+        } catch (Exception e) {
+            log.error("Message parsing error.", e);
         }
-    }
-
-    public final void receiveMessage(String message) {
-        DownloaderMessageData data = Utils.jsonToValue(message, DownloaderMessageData.class);
-
-        if (data != null && data.isValid()) {
-            log.info("Request received. ApiKey: {}", data.getApiKey());
-            log.info("Waiting data from https://data.gov.ua ...");
-            if (mainSourceInfo.initialize(data.getApiKey())) {
-                log.info("File found: size: {}, url: {}", mainSourceInfo.getSize(), mainSourceInfo.getUrl());
-                DurationPrinter elapsedTime = new DurationPrinter();
-                log.info("Downloading started.");
-                String query = downloader.download(mainSourceInfo);
-                if (query != null) {
-                    elapsedTime.stop();
-                    log.info("- - - - - - - - - - - - -");
-                    log.info("download completed.");
-                    log.info("elapsed time: {}", elapsedTime.getDurationString());
-                    log.info("- - - - - - - - - - - - -");
-                    rabbitTemplate.convertAndSend(config.getImporterTopicExchangeName(), config.getImporterRoutingKey(), query);
-                    log.info("Message sent to importer.");
-                } else {
-                    log.warn("error while downloading file.");
-                    handleError(data);
-                }
-            } else {
-                log.error("Invalid source: {}", mainSourceInfo);
-                handleError(data);
-            }
-        } else {
-            log.warn("Illegal data received.{}", message);
+        if (data != null) {
+            return new DownloaderTask(this, data);
         }
+        return true;
     }
 }

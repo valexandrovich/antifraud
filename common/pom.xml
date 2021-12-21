@@ -5,9 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>2.3.38-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <version>2.3.38-SNAPSHOT</version>
 
     <artifactId>common</artifactId>
 
@@ -62,12 +63,6 @@
             <version>5.13.1</version>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>${jacoco.version}</version>
@@ -117,7 +112,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>pipeline</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>2.3.38-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -128,6 +123,10 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
         </dependency>
     </dependencies>
 

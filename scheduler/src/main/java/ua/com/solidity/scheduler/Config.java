@@ -9,12 +9,8 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 public class Config {
-    @Value("${scheduler.rabbitmq.topic}")
-    private String topicExchangeName;
-    @Value("${scheduler.rabbitmq.queue}")
-    private String queueName;
-    @Value("${scheduler.rabbitmq.routingKey}")
-    private String routingKey;
-    @Value("${scheduler.rabbitmq.init.routingKey}")
-    private String initRoutingKey;
+    @Value("${scheduler.rabbitmq.name}")
+    private String name;
+    @Value("${scheduler.rabbitmq.init}")
+    private String initName;
 }

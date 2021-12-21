@@ -87,6 +87,7 @@ public final class Item {
         setLocalData(name, value == null ? delta : value + delta);
     }
 
+    @SuppressWarnings("unused")
     public void incLocalData(String name) {
         incLocalData(name, 1);
     }
@@ -196,8 +197,18 @@ public final class Item {
         flags &= ~(FLAG_ERROR | FLAG_BOF);
     }
 
+    @SuppressWarnings("unused")
+    public void setError() {
+        flags |= FLAG_ERROR;
+    }
+
     public void stayUncompleted() {
         completed = false;
+    }
+
+    @SuppressWarnings("unused")
+    public void continueCompleted() {
+        completed = true;
     }
 
     public void terminate() {

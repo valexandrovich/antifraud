@@ -15,12 +15,7 @@ import ua.com.solidity.pipeline.PipelineFactory;
 public class Importer {
     private static final String LOG_DELIMITER = "-------------------------------------------------------";
     private static final String LOG_INTERNAL_DELIMITER = "- - - - - - - - - - - - - - - - - -";
-
-    private static final String TEST_PIPELINE = ("{'pipeline': [" +
-            "{'prototype' : 'InputStream', 'name' : 'stream'}," +
-            "{'prototype': 'CSVParser', 'name': 'csvParser', 'inputs': {'stream' : 'stream'}, 'data': {'parseFieldNames' : true, 'quote': '\\\"', 'encoding': 'UTF-8', 'delimiter' : ';', 'splitMode' : true, 'ignoreCharsNearDelimiter': '\\b\\r\\f\\t '}}," +
-            "{'prototype' : 'TmpSourceImporter', 'name' : 'handler', 'inputs': {'input': 'csvParser'}, 'data': {'group': 'tmpSource'}}" +
-            "]}").replace("'", "\"");
+    private static final String PERCENT_FIELD = "%.03f";
 
     private final PipelineFactory importerFactory;
     private final ModelRepository repository;
@@ -30,13 +25,15 @@ public class Importer {
         this.importerFactory = importerFactory;
         this.repository = repository;
     }
+
     public void doImport(ImporterMessageData data) {
         DurationPrinter elapsedTime = new DurationPrinter();
-        Pipeline pipeline = importerFactory.createPipeline(TEST_PIPELINE);
+        Pipeline pipeline = importerFactory.createPipelineByNode(data.getPipelineInfo());
         if (pipeline == null || !pipeline.isValid()) {
             log.error("Pipeline is invalid.");
             return;
         }
+        pipeline.setParam("data", data);
         pipeline.setParam("FileName", data.getDataFileName());
         pipeline.setParam("repository", repository);
         log.info(LOG_DELIMITER);
@@ -64,11 +61,18 @@ public class Importer {
                 log.info(LOG_DELIMITER);
                 log.info("  Total rows: {}", group.getTotalRowCount());
                 log.info("  Parse errors: {}", group.getParseErrorCount());
-                log.info("  DB insert errors: {}", group.getInsertErrorCount());
-                log.info("  DB insert error info errors: {}", group.getInsertErrorInfoCount());
+                log.info("  Rows inserted: {}", group.getInsertCount());
+                log.info("  Rows ignored: {}", group.getInsertIgnoreCount());
                 log.info(LOG_INTERNAL_DELIMITER);
-                log.info("Inserted: {} ({}%)", group.getInsertCount(), String.format("%.03f", group.getHandledPercent()));
-                log.info("Errors handled: {} ({}%)", group.getParseErrorCount(), String.format("%.03f", group.getErrorHandledPercent()));
+                log.info("  Insert errors: {}", group.getInsertErrorCount());
+                log.info("  Errors on error publication: {}", group.getInsertErrorInfoCount());
+                log.info(LOG_INTERNAL_DELIMITER);
+                log.info("Inserted: {} ({}%)", group.getInsertCount(), String.format(PERCENT_FIELD, group.getInsertedPercent()));
+                log.info("Ignored: {} ({}%)", group.getInsertIgnoreCount(), String.format(PERCENT_FIELD, group.getIgnoredPercent()));
+                log.info("Errors handled: {} ({}%)", group.getParseErrorCount(), String.format(PERCENT_FIELD, group.getErrorHandledPercent()));
+                log.info("Errors not handled: {} ({}%)", group.getInsertErrorInfoCount(), String.format(PERCENT_FIELD, group.getErrorNotHandledPercent()));
+                log.info(LOG_INTERNAL_DELIMITER);
+                log.info("Rows handled: {}/{} ({}%)", group.getInsertCount() + group.getInsertIgnoreCount(), group.getTotalRowCount(), String.format(PERCENT_FIELD, group.getHandledPercent()));
                 log.info(LOG_DELIMITER);
             }
         }

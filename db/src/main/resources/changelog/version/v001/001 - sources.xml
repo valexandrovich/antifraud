@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet id="1637986265842-1" author="AIS">
+        <sql>
+            insert into import_source(name, pipeline_info, source_info)
+            values ('govua1', '{
+  "pipeline": [
+    {
+      "name": "stream",
+      "prototype": "InputStream"
+    },
+    {
+      "data": {
+        "quote": "\"",
+        "encoding": "UTF-8",
+        "delimiter": "\\t",
+        "splitMode": false,
+        "parseFieldNames": true,
+        "ignoreCharsNearDelimiter": "\\b\\r\\f "
+      },
+      "name": "csvParser",
+      "inputs": {
+        "stream": "stream"
+      },
+      "prototype": "CSVParser"
+    },
+    {
+      "data": {
+        "group": "default"
+      },
+      "name": "handler",
+      "inputs": {
+        "input": "csvParser"
+      },
+      "prototype": "RowImporter"
+    }
+  ]
+}', '{
+  "apiKey": "vidomosti-pro-spravi-pro-bankrutstvo-1",
+  "handler": "dataGovUa"
+}');
+        </sql>
+        <sql>
+            insert into import_source(name, pipeline_info, source_info)
+            values ('govua18', '{
+  "pipeline": [
+    {
+      "name": "stream",
+      "prototype": "InputStream"
+    },
+    {
+      "data": {
+        "quote": "\"",
+        "encoding": "UTF-8",
+        "delimiter": ";",
+        "splitMode": true,
+        "parseFieldNames": true,
+        "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "
+      },
+      "name": "csvParser",
+      "inputs": {
+        "stream": "stream"
+      },
+      "prototype": "CSVParser"
+    },
+    {
+      "data": {
+        "group": "default"
+      },
+      "name": "handler",
+      "inputs": {
+        "input": "csvParser"
+      },
+      "prototype": "RowImporter"
+    }
+  ]
+}', '{
+  "apiKey": "46ec7001-f492-4af8-8cae-00ba5e5537ce",
+  "handler": "dataGovUa"
+}');
+        </sql>
+        <sql>
+            insert into import_source(name, pipeline_info, source_info)
+            values ('v1', '{
+  "pipeline": [
+    {
+      "name": "stream",
+      "prototype": "InputStream"
+    },
+    {
+      "data": {
+        "quote": "\"",
+        "encoding": "UTF-8",
+        "delimiter": ";",
+        "splitMode": true,
+        "parseFieldNames": true,
+        "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "
+      },
+      "name": "csvParser",
+      "inputs": {
+        "stream": "stream"
+      },
+      "prototype": "CSVParser"
+    },
+    {
+      "data": {
+        "group": "default"
+      },
+      "name": "handler",
+      "inputs": {
+        "input": "csvParser"
+      },
+      "prototype": "RowImporter"
+    }
+  ]
+}', '{
+  "handler": "simpleFile"
+}');
+        </sql>
+        <rollback>
+            truncate table import_source restart identity;
+            truncate table import_source_group restart identity;
+            truncate table import_revision;
+            truncate table import_revision_group;
+            truncate table import_revision_group_rows;
+            truncate table import_revision_group_errors;
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

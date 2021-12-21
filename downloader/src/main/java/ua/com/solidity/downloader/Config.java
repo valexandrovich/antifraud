@@ -2,13 +2,11 @@ package ua.com.solidity.downloader;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Slf4j
 @Getter
 @Setter
 @Component
@@ -25,26 +23,17 @@ public class Config {
     @Value("${downloader.outputFolder}")
     private String outputFolder;
 
-    @Value("${importer.rabbitmq.topic}")
+    @Value("${downloader.rabbitmq.collectMSecs}")
+    private int collectMSecs;
+
+    @Value("${importer.rabbitmq.name}")
     private String importerTopicExchangeName;
 
-    @Value("${importer.rabbitmq.routingKey}")
-    private String importerRoutingKey;
+    @Value("${downloader.rabbitmq.name}")
+    private String name;
 
-    @Value("${downloader.rabbitmq.topic}")
-    private String topicExchangeName;
-
-    @Value("${downloader.rabbitmq.queue}")
-    private String queueName;
-
-    @Value("${downloader.rabbitmq.routingKey}")
-    private String routingKey;
-
-    @Value("${log.rabbitmq.topic}")
+    @Value("${log.rabbitmq.name}")
     private String logExchangeName;
-
-    @Value("${log.rabbitmq.routingKey}")
-    private String logRoutingKey;
 
     private String downloaderOutputFolder = null;
 

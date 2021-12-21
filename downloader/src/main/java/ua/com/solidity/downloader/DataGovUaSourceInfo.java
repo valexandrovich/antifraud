@@ -2,14 +2,12 @@ package ua.com.solidity.downloader;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.ImporterInfoFileData;
-import ua.com.solidity.common.ImporterMessageData;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.ValueParser;
 
@@ -24,7 +22,6 @@ import java.util.List;
 @Getter
 @Component
 public class DataGovUaSourceInfo extends ImporterInfoFileData {
-
     public static final String KEY_RESULT = "result";
     public static final String KEY_RESOURCES = "resources";
     public static final String KEY_REVISIONS = "resource_revisions";
@@ -52,7 +49,7 @@ public class DataGovUaSourceInfo extends ImporterInfoFileData {
         }
 
         @Override
-        public int compareTo(@NotNull DataGovUaSourceInfo.SourceDataNodeInfo o) {
+        public int compareTo(@NonNull DataGovUaSourceInfo.SourceDataNodeInfo o) {
             return datetime.compareTo(o.datetime);
         }
 
@@ -69,6 +66,9 @@ public class DataGovUaSourceInfo extends ImporterInfoFileData {
 
     @JsonIgnore
     private final Config config;
+
+    @JsonIgnore
+    private String apiKey;
 
     @JsonIgnore
     private JsonNode apiDataNode = null;
@@ -98,6 +98,7 @@ public class DataGovUaSourceInfo extends ImporterInfoFileData {
     }
     
     @JsonIgnore
+    @Override
     public boolean isValid() {
         return url != null && (format != null || mimeType != null) && revisionDateTime != null;
     }
@@ -110,18 +111,21 @@ public class DataGovUaSourceInfo extends ImporterInfoFileData {
 
     private boolean handleApiInfo(JsonNode apiData) {
         JsonNode node = apiData.has(KEY_RESULT) ? apiData.get(KEY_RESULT) : null;
-        if (node != null && node.isObject()) {
-            JsonNode resources = node.has(KEY_RESOURCES) ? node.get(KEY_RESOURCES) : null;
-            if (resources != null && resources.isArray()) {
-                JsonNode last = resources.get(resources.size() - 1);
-                if (last != null && last.has(KEY_ID)) {
-                    resourceId = last.get(KEY_ID).textValue();
-                    format = last.has(KEY_FORMAT) ? last.get(KEY_FORMAT).textValue() : null;
-                    mimeType = last.has(KEY_MIMETYPE) ? last.get(KEY_MIMETYPE).textValue() : null;
-                    return true;
-                }
+        if (node == null || !node.isObject()) {
+            return false;
+        }
+
+        JsonNode resources = node.has(KEY_RESOURCES) ? node.get(KEY_RESOURCES) : null;
+        if (resources != null && resources.isArray()) {
+            JsonNode last = resources.get(resources.size() - 1);
+            if (last != null && last.has(KEY_ID)) {
+                resourceId = last.get(KEY_ID).textValue();
+                format = last.has(KEY_FORMAT) ? last.get(KEY_FORMAT).textValue() : null;
+                mimeType = last.has(KEY_MIMETYPE) ? last.get(KEY_MIMETYPE).textValue() : null;
+                return true;
             }
         }
+
         return false;
     }
 
@@ -180,26 +184,6 @@ public class DataGovUaSourceInfo extends ImporterInfoFileData {
             if (format.length() == 0) format = "zip";
         }
         mimeType = item.has(KEY_MIMETYPE) ? item.get(KEY_MIMETYPE).textValue() : mimeType;
-    }
-
-    public final String getExtension() {
-        if (format != null && format.length() > 0) return "." + format.toLowerCase();
-        if (mimeType != null && mimeType.length() > 0) {
-            String[] values = mimeType.split("/");
-            if (values.length > 0) return "." + values[values.length - 1].toLowerCase();
-        }
-        return "";
-    }
-
-    public final String getQuery(String dataFileName, String infoFileName) {
-        ImporterMessageData data = new ImporterMessageData(format, size, dataFileName, infoFileName);
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.writeValueAsString(data);
-        } catch (Exception e) {
-            log.warn("Can't serialize object", e);
-        }
-        return null;
     }
 
     @Override

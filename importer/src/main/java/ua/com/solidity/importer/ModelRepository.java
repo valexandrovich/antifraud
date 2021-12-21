@@ -2,6 +2,7 @@ package ua.com.solidity.importer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ua.com.solidity.common.Utils;
@@ -10,20 +11,18 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 @Slf4j
+@Component
 @Repository
 public class ModelRepository {
-
     @PersistenceContext
     private EntityManager entityManager;
 
     @Transactional
-    public boolean truncate() {
+    public void truncate() {
         try {
             entityManager.createNativeQuery("truncate table \"tmpResource\" RESTART IDENTITY").executeUpdate();
-            return true;
         } catch (Exception e) {
             log.error("DB tmpResource truncate failed", e);
-            return false;
         }
     }
 
@@ -43,7 +42,7 @@ public class ModelRepository {
                     .setParameter(10, Utils.getNodeValue(node, "d_pdv_sg", String.class))
                     .executeUpdate();
         } catch (Exception e) {
-            log.warn("DB insert failed {}.", e.getMessage());
+            log.warn("DB insert failed.", e);
         }
     }
 }

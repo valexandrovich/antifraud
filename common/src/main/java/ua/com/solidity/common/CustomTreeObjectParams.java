@@ -9,19 +9,23 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CustomTreeObjectParams {
+    private List<String> path;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private List<String> path;
     private int equalsCount = 0;
-    private int index = -1;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private int index = 0;
 
-    public final boolean push(String name) {
+    public final boolean isReady() {
+        return equalsCount == index && equalsCount == (path == null ? 0 : path.size());
+    }
+    public final void push(String name) {
         ++index;
-        if (path == null || index >= path.size()) return false;
-        if (name.equals(path.get(index))) {
+        if (path == null || index > path.size()) return;
+        if (name.equals(path.get(index - 1))) {
             ++equalsCount;
         }
-        return equalsCount == path.size();
     }
 
     public final void pop() {

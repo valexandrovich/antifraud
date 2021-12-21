@@ -23,11 +23,11 @@ public class ErrorReport {
     }
     private Location location;
     private String info;
-    private Object clarification;
+    private String clarification;
 
-    public ErrorReport(long row, long col, long byteOffset, long charOffset, long infoOffset, String info, Object clarifaction) {
+    public ErrorReport(long row, long col, long byteOffset, long charOffset, long infoOffset, String info, String clarification) {
         this.location = new Location(row, col, byteOffset, charOffset, infoOffset);
         this.info = info;
-        this.clarification = clarifaction;
+        this.clarification = clarification;
     }
 }

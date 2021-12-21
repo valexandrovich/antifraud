@@ -16,6 +16,7 @@ public class OutputStats {
         long totalRowCount = 0;
         long parseErrorCount = 0;
         long insertCount = 0;
+        long insertIgnoreCount = 0;
         long insertErrorCount = 0;
         long insertErrorInfoCount = 0;
         public Group(String name) {
@@ -23,35 +24,57 @@ public class OutputStats {
         }
 
         public void clear() {
-            totalRowCount = parseErrorCount = insertCount = insertErrorCount = 0;
+            totalRowCount = parseErrorCount = insertCount = insertIgnoreCount = insertErrorCount = 0;
         }
 
-        public final void incTotalRowCount() {
-            ++totalRowCount;
+        public final void incParseErrorCount(int count) {
+            parseErrorCount += count;
+            totalRowCount += count;
         }
 
-        public final void incParseErrorCount() {
-            ++parseErrorCount;
+        public final void incInsertCount(int count) {
+            insertCount += count;
+            totalRowCount += count;
         }
 
-        public final void incInsertCount() {
-            ++insertCount;
+        public final void incInsertIgnoreCount(int count) {
+            insertIgnoreCount += count;
+            totalRowCount += count;
         }
 
-        public final void incInsertErrorCount() {
-            ++insertCount;
+        public final void incInsertErrorCount(int count) {
+            insertErrorCount += count;
+            totalRowCount += count;
         }
 
-        public final void incInsertErrorInfoCount() {
-            ++insertErrorInfoCount;
+        public final void incInsertErrorInfoCount(int count) {
+            insertErrorInfoCount += count;
+            totalRowCount += count;
         }
 
-        public final double getHandledPercent() {
+        public final double getInsertedPercent() {
             return totalRowCount == 0 ? 0 : (double) insertCount / totalRowCount * 100;
         }
 
+        public final double getIgnoredPercent() {
+            return totalRowCount == 0 ? 0 : (double) insertIgnoreCount / totalRowCount * 100;
+        }
+
+        public final long getTotalErrorCount() {
+            return insertErrorCount + insertErrorInfoCount;
+        }
+
         public final double getErrorHandledPercent() {
-            return parseErrorCount == 0 ? 100 : (double) insertErrorInfoCount / parseErrorCount * 100;
+            return totalRowCount == 0 ? 100 : (double) insertErrorCount / getTotalErrorCount();
+        }
+
+        @SuppressWarnings("unused")
+        public final double getErrorNotHandledPercent() {
+            return 100 - getErrorHandledPercent();
+        }
+
+        public final double getHandledPercent() {
+            return totalRowCount == 0 ? 0 : (double) (insertCount + insertIgnoreCount) / totalRowCount * 100;
         }
     }
 

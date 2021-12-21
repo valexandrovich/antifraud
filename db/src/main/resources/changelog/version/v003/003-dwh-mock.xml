@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1639960381747-2" author="Dmitry Rumyantsev (generated)">
+        <createTable tableName="contragent">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_contragent"/>
+            </column>
+            <column name="name" type="VARCHAR(254)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contragenttypeid" type="CHAR(5)"/>
+            <column name="insiderid" type="BIGINT"/>
+            <column name="countryid" type="BIGINT"/>
+            <column name="ownershiptypeid" type="BIGINT"/>
+            <column name="identifycode" type="VARCHAR(14)"/>
+            <column name="address" type="VARCHAR(254)"/>
+            <column name="businesstype1" type="BIGINT"/>
+            <column name="businesstype2" type="BIGINT"/>
+            <column name="businesstype3" type="BIGINT"/>
+            <column name="businesstype4" type="BIGINT"/>
+            <column name="businesstype5" type="BIGINT"/>
+            <column name="contragentstateid" type="BIGINT"/>
+            <column name="alternatename" type="VARCHAR(38)"/>
+            <column name="registerdate" type="DATE"/>
+            <column name="nalogregisterdate" type="DATE"/>
+            <column name="juridicaladdress" type="VARCHAR(254)"/>
+            <column name="stateregisterno" type="VARCHAR(38)"/>
+            <column name="stateregisterdate" type="DATE"/>
+            <column name="stateregisterplace" type="VARCHAR(254)"/>
+            <column name="addr_countryid" type="BIGINT"/>
+            <column name="addr_postcode" type="VARCHAR(10)"/>
+            <column name="addr_region" type="VARCHAR(40)"/>
+            <column name="addr_district" type="VARCHAR(40)"/>
+            <column name="addr_city" type="VARCHAR(60)"/>
+            <column name="addr_street" type="VARCHAR(50)"/>
+            <column name="addr_houseno" type="VARCHAR(30)"/>
+            <column name="addr_flat" type="VARCHAR(20)"/>
+            <column name="juraddr_countryid" type="BIGINT"/>
+            <column name="juraddr_postcode" type="VARCHAR(10)"/>
+            <column name="juraddr_region" type="VARCHAR(40)"/>
+            <column name="juraddr_district" type="VARCHAR(40)"/>
+            <column name="juraddr_city" type="VARCHAR(60)"/>
+            <column name="juraddr_street" type="VARCHAR(50)"/>
+            <column name="juraddr_houseno" type="VARCHAR(30)"/>
+            <column name="juraddr_flat" type="VARCHAR(20)"/>
+            <column name="closedate" type="DATE"/>
+            <column name="lastmodified" type="DATE"/>
+            <column name="passporttype" type="BIGINT"/>
+            <column name="passportissuedate" type="DATE"/>
+            <column name="passportissueplace" type="VARCHAR(120)"/>
+            <column name="clientname" type="VARCHAR(38)"/>
+            <column name="clientpatronymicname" type="VARCHAR(38)"/>
+            <column name="clientlastname" type="VARCHAR(38)"/>
+            <column name="clientbirthday" type="DATE"/>
+            <column name="birthplace" type="VARCHAR(60)"/>
+            <column name="gender" type="VARCHAR(1)"/>
+            <column name="phones" type="VARCHAR(120)"/>
+            <column name="mobilephone" type="VARCHAR(60)"/>
+            <column name="email" type="VARCHAR(60)"/>
+            <column name="bad_status_flag" type="BIGINT"/>
+            <column name="passport_serial" type="VARCHAR(9)"/>
+            <column name="passport_no" type="VARCHAR(25)"/>
+            <column name="phone_home" type="VARCHAR(25)"/>
+            <column name="family_statusid" type="BIGINT"/>
+            <column name="lastname_lat" type="VARCHAR(38)"/>
+            <column name="firstname_lat" type="VARCHAR(38)"/>
+            <column name="citizenshipcountryid" type="BIGINT"/>
+            <column name="workplace" type="VARCHAR(254)"/>
+            <column name="ispublicperson" type="BIGINT"/>
+            <column name="workposition" type="VARCHAR(254)"/>
+            <column name="passportphotoexists" type="INT"/>
+            <column name="passportenddate" type="DATE"/>
+            <column name="businesstype6" type="BIGINT"/>
+            <column name="businesstype7" type="BIGINT"/>
+            <column name="businesstype8" type="BIGINT"/>
+            <column name="businesstype9" type="BIGINT"/>
+            <column name="businesstype10" type="BIGINT"/>
+            <column name="citizenshipcountryid2" type="BIGINT"/>
+            <column name="fop" type="VARCHAR(254)"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

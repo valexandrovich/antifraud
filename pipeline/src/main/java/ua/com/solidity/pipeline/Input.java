@@ -63,8 +63,8 @@ public class Input {
         return isIterator() && (inputItem.flags & Item.FLAG_BOF) == Item.FLAG_BOF;
     }
 
-    public final boolean isEOF() {
-        return isIterator() && (inputItem.flags & Item.FLAG_EOF) == Item.FLAG_EOF;
+    public final boolean hasData() {
+        return isIterator() && (inputItem.flags & Item.FLAG_EOF) != Item.FLAG_EOF;
     }
 
     public final boolean isCompleted() {

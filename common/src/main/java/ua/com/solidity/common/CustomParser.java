@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.Closeable;
 import java.io.InputStream;
+import java.util.Locale;
 
 public abstract class CustomParser implements Closeable {
     public static final String PREFIX = "#";
@@ -31,16 +32,32 @@ public abstract class CustomParser implements Closeable {
     public abstract JsonNode getNode();
     protected abstract boolean doNext();
 
-    protected String generateName() {
-        int counter = prefixCounter;
+    protected final int parseGeneratedName(String name) {
+        if (name == null) return -1;
+        name = name.trim().toUpperCase(Locale.ROOT);
+        if (name.startsWith(PREFIX)) name = name.substring(PREFIX.length());
+        int index = 0;
+        for (int i = 0; i < name.length(); ++i) {
+            index *= DEFAULT_NAMES.length();
+            int idx = DEFAULT_NAMES.indexOf(name.charAt(i));
+            if (idx < 0) return -1;
+            index += idx;
+        }
+        return index;
+    }
+
+    protected final String generateNameForCounter(int counter) {
         StringBuilder builder = new StringBuilder();
         builder.append(PREFIX);
         do {
             builder.append(DEFAULT_NAMES.charAt(counter % DEFAULT_NAMES.length()));
             counter /= DEFAULT_NAMES.length();
         } while (counter != 0);
-        ++prefixCounter;
         return builder.toString();
+    }
+
+    protected final String generateName() {
+        return generateNameForCounter(prefixCounter++);
     }
 
     public void close() {

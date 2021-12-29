@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
@@ -34,7 +35,7 @@ public class PPInputStream extends Prototype {
         }
 
         try {
-            stream = new FileInputStream(fileName);
+            stream = new BufferedInputStream(new FileInputStream(fileName), 32768);
             item.setLocalData(STREAM, stream);
             return stream;
         } catch (Exception e) {
@@ -49,6 +50,7 @@ public class PPInputStream extends Prototype {
         if (stream != null) {
             try {
                 stream.close();
+                log.info("InputStream closed.");
             } catch (Exception e) {
                 log.warn("Can't close input stream.");
             }

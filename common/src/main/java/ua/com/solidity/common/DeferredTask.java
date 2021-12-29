@@ -1,7 +1,11 @@
 package ua.com.solidity.common;
-public interface DeferredTask {
-    DeferredAction compareWith(DeferredTask task);
-    boolean execute();
-    long getTag();
-    void setTag(long tag);
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public abstract class DeferredTask {
+    protected abstract DeferredAction compareWith(DeferredTask task);
+    public abstract void execute();
 }

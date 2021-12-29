@@ -4,8 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
+import ua.com.solidity.common.Utils;
 
 @Getter
 @Setter
@@ -39,13 +38,7 @@ public class Config {
 
     public final String getDownloaderOutputFolder() {
         if (downloaderOutputFolder == null) {
-            if (outputFolder == null || outputFolder.length() == 0) {
-                if (defaultEnvironmentVariableForOutputFolder != null && defaultEnvironmentVariableForOutputFolder.length() > 0) {
-                    Map<String, String> map = System.getenv();
-                    downloaderOutputFolder = map.getOrDefault(defaultEnvironmentVariableForOutputFolder, null);
-                    if (downloaderOutputFolder == null) downloaderOutputFolder = System.getProperty("java.io.tmpdir");
-                }
-            } else downloaderOutputFolder = outputFolder;
+            downloaderOutputFolder = Utils.getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder);
         }
         return downloaderOutputFolder;
     }

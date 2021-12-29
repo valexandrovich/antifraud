@@ -10,7 +10,6 @@ import java.util.Map;
 
 @Slf4j
 public class RabbitMQListener {
-
     private static class InternalDeferredTasks extends DeferredTasks {
         RabbitMQListener listener;
         public InternalDeferredTasks(RabbitMQListener listener, boolean startupOnly, long milliSeconds) {
@@ -23,7 +22,11 @@ public class RabbitMQListener {
             DeferredTask task = tasks.isEmpty() ? null : tasks.get(0);
 
             for (int i = 1; i < tasks.size(); ++i) {
-                markTaskCompletion(tasks.get(i), false);
+                DeferredTask currentTask = tasks.get(i);
+                if (currentTask instanceof RabbitMQTask) {
+                    RabbitMQTask rabbitMQTask = (RabbitMQTask) currentTask;
+                    rabbitMQTask.acknowledge(false);
+                }
             }
 
             tasks.clear();
@@ -33,8 +36,19 @@ public class RabbitMQListener {
         }
 
         @Override
-        protected synchronized void markTaskCompletion(DeferredTask task, boolean value) {
-            listener.doAcknowledge(task.getTag(), value);
+        protected synchronized void markTaskCompletion(DeferredTask task) {
+            if (task instanceof RabbitMQTask) {
+                RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
+                rabbitMQTask.acknowledge(true);
+            }
+        }
+
+        @Override
+        protected void executeTask(DeferredTask task) {
+            if (task instanceof RabbitMQTask) {
+                RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
+                rabbitMQTask.rabbitMQExecute();
+            }
         }
     }
 
@@ -47,12 +61,22 @@ public class RabbitMQListener {
     private int deferredTimeoutMSecs;
     private RabbitMQReceiver receiver;
 
+    long lockCount = 0;
+
     public RabbitMQListener(RabbitMQReceiver receiver, boolean deferredFirstLoopOnly, int deferredTimeoutMSecs, String ...queues) {
         initialize(receiver, deferredFirstLoopOnly, deferredTimeoutMSecs, queues);
     }
 
     public RabbitMQListener(RabbitMQReceiver receiver, String ... queues) {
         initialize(receiver, true, 0, queues);
+    }
+
+    final synchronized void lock() {
+        ++lockCount;
+    }
+
+    final synchronized void unlock() {
+        if (lockCount > 0) --lockCount;
     }
 
     protected final void initialize(RabbitMQReceiver receiver, boolean startupOnly, int deferredTimeoutMSecs, String[] queues) {
@@ -67,11 +91,10 @@ public class RabbitMQListener {
     public final void start() {
         if (started || receiver == null) return;
         started = true;
-        channelNeeded();
         if (deferredTimeoutMSecs > 0) {
-            deferredTimeoutMSecs = Math.max(deferredTimeoutMSecs, 100);
-            tasks = new InternalDeferredTasks(this, startupOnly, deferredTimeoutMSecs);
+            tasks = new InternalDeferredTasks(this, startupOnly, Math.max(deferredTimeoutMSecs, 100));
         }
+        channelNeeded();
     }
 
     @SuppressWarnings("unused")
@@ -119,7 +142,7 @@ public class RabbitMQListener {
         }
     }
 
-    private synchronized void doAcknowledge(long deliveryTag, boolean ack) {
+    synchronized void doAcknowledge(long deliveryTag, boolean ack) {
         channelNeeded();
         if (channel != null) {
             try {
@@ -140,26 +163,40 @@ public class RabbitMQListener {
     }
 
     private void doHandleDeliverCallback(String consumerTag, Delivery message) {
-        boolean handled;
-        DeferredTask task;
+        long deliveryTag = message.getEnvelope().getDeliveryTag();
+
+        synchronized(this) {
+            if (lockCount > 0) {
+                doAcknowledge(deliveryTag, false);
+                return;
+            }
+        }
+
+        RabbitMQTask task;
         String queue = message.getEnvelope().getRoutingKey();
         String msg = new String(message.getBody(), StandardCharsets.UTF_8);
 
         try {
             Object res = receiver == null ? null : receiver.handleMessage(queue, msg);
-            if (res instanceof DeferredTask) {
-                task = (DeferredTask) res;
-                if (tasks != null) {
-                    task.setTag(message.getEnvelope().getDeliveryTag());
-                    tasks.append(task);
-                    return;
-                } else {
-                    handled = task.execute();
+            if (res instanceof RabbitMQTask) {
+                lock();
+                try {
+                    task = (RabbitMQTask) res;
+                    task.setContext(this, deliveryTag);
+                    if (tasks != null) {
+                        tasks.append(task);
+                    } else {
+                        task.rabbitMQExecute();
+                    }
+                } finally {
+                    unlock();
                 }
-            } else handled = res != null && !res.equals(false);
+                return;
+            }
         } catch (Exception e) {
-            handled = true;
+            log.error("RabbitMQReceiver error on message handling.", e);
         }
-        doAcknowledge(message.getEnvelope().getDeliveryTag(), handled);
+
+        doAcknowledge(message.getEnvelope().getDeliveryTag(), true);
     }
 }

@@ -48,6 +48,9 @@ public class PipelineConfiguration {
     public PPJSONParser ppJSONParser() { return new PPJSONParser(); }
 
     @Bean
+    public PPXLSParser ppXLSParser() { return new PPXLSParser(); }
+
+    @Bean
     public PPDictionary ppDictionary() {
         return new PPDictionary();
     }

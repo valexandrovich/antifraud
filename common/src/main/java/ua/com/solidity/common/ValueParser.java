@@ -180,7 +180,7 @@ public class ValueParser {
         if (value == null || isNull(value)) return null;
         Object obj;
         if ((obj = getDatetime(value)) != null) {
-            return JsonNodeFactory.instance.textNode(formatDateTime((ZonedDateTime) obj));
+            return JsonNodeFactory.instance.textNode(formatZonedDateTime((ZonedDateTime) obj));
         } else if ((obj = getBoolean(value)) != null) {
             return JsonNodeFactory.instance.booleanNode((Boolean) obj);
         } else if ((obj = getFloat(value)) != null) {
@@ -191,7 +191,15 @@ public class ValueParser {
         return JsonNodeFactory.instance.textNode(value);
     }
 
-    public static String formatDateTime(ZonedDateTime datetime) {
+    public static String formatZonedDateTime(ZonedDateTime datetime) {
 		return datetime.format(dateTimeOutputFormat);
+    }
+
+    public static String formatInstant(Instant instant) {
+        return dateTimeOutputFormat.format(instant);
+    }
+
+    public static String formatLocalDateTime(LocalDateTime datetime, ZoneOffset offset) {
+        return formatInstant(datetime.toInstant(offset));
     }
 }

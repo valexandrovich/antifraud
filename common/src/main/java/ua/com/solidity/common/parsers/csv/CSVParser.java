@@ -21,6 +21,7 @@ public class CSVParser extends CustomParser {
 
     private final StringBuilder mBuilder = new StringBuilder();
     private int colCount = -1;
+    private JsonNode lastNode = null;
 
     private final ParseRowData data;
 
@@ -34,6 +35,7 @@ public class CSVParser extends CustomParser {
         boolean quoted = false;
         int start = 0;
         int offset = 0;
+        char delimiter = 0;
         CSVParams params;
 
         ParseRowData(CSVParams params) {
@@ -45,6 +47,7 @@ public class CSVParser extends CustomParser {
             dataLineNumber = lineNumber;
             lineColumn = 0;
             start = offset = 0;
+            delimiter = 0;
             cache.clear();
             cache.add(row);
             this.row = row;
@@ -63,7 +66,7 @@ public class CSVParser extends CustomParser {
         }
 
         void ignoreCharsNearDelimiter() {
-            while (notEOL() && params.isIgnoredChar(row.charAt(offset))) {
+            while (notEOL() && isNotDelimiter() && params.isIgnoredChar(row.charAt(offset))) {
                 ++offset;
                 ++start;
                 ++lineColumn;
@@ -86,12 +89,27 @@ public class CSVParser extends CustomParser {
             return row.substring(start, offset);
         }
 
-        boolean isQuote() {
-            return getChar() == params.getQuoteChar();
+        final boolean isQuote() {
+            return isQuote(getChar());
+        }
+
+        final boolean isQuote(char ch) {
+            return params.getQuoteChar() == ch;
         }
 
         boolean isNotDelimiter() {
-            return getChar() != params.getDelimiterChar();
+            return isNotDelimiter(getChar());
+        }
+
+        boolean isNotDelimiter(char ch) {
+            if (delimiter != 0) {
+                return ch != delimiter;
+            }
+            if (params.isDelimiter(ch)) {
+                delimiter = ch;
+                return false;
+            }
+            return true;
         }
 
         void ignore() {
@@ -167,9 +185,9 @@ public class CSVParser extends CustomParser {
     private void recoverValue(StringBuilder builder, String row, int fieldStart, int fieldEnd) {
         int fieldEndCache = fieldEnd;
         try {
-            while (fieldEnd > 0 && data.params.isIgnoredChar(row.charAt(fieldEnd - 1))) --fieldEnd;
-            if (row.charAt(fieldStart) == data.params.getQuoteChar() && fieldEnd > fieldStart && row.charAt(fieldEnd - 1) == data.params.getQuoteChar()) { // fieldEnd-1 changed to fieldEnd
-                String content = row.substring(fieldStart + 1, fieldEnd - 1).replace(String.valueOf(data.params.getQuoteChar()) + data.params.getQuoteChar(), String.valueOf(data.params.getQuoteChar()));
+            while (fieldEnd > fieldStart && data.params.isIgnoredChar(row.charAt(fieldEnd - 1))) --fieldEnd;
+            if (data.isQuote(row.charAt(fieldStart)) && fieldEnd > fieldStart && data.isQuote(row.charAt(fieldEnd - 1))) { // fieldEnd-1 changed to fieldEnd
+                String content = row.substring(fieldStart + 1, fieldEnd - 1).replace(String.valueOf(data.params.getQuoteChar() + data.params.getQuoteChar()), String.valueOf(data.params.getQuoteChar()));
                 if (content.length() != builder.length()) {
                     builder.setLength(0);
                     builder.append(content);
@@ -312,14 +330,18 @@ public class CSVParser extends CustomParser {
 
     @Override
     public JsonNode getNode() {
-        ObjectNode res = JsonNodeFactory.instance.objectNode();
-        for (int i = 0; i < dataFields.size(); ++i) {
-            res.put(getFieldName(i), dataFields.get(i)); // use ValueParser.parse
+        if (lastNode == null && hasData()) {
+            ObjectNode res = JsonNodeFactory.instance.objectNode();
+            for (int i = 0; i < dataFields.size(); ++i) {
+                res.put(getFieldName(i), dataFields.get(i)); // use ValueParser.parse
+            }
+            lastNode = res;
         }
-        return res;
+        return lastNode;
     }
 
     protected boolean doNext() {
+        lastNode = null;
         return parseRow();
     }
 

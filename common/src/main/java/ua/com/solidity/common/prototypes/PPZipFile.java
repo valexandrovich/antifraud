@@ -46,6 +46,7 @@ public class PPZipFile extends Prototype {
         if (zipFile != null) {
             try {
                 zipFile.close();
+                log.info("ZipFile closed.");
             } catch (Exception e) {
                 log.warn("Can't close Zip file.");
             }

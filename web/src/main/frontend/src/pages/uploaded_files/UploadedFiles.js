@@ -28,21 +28,38 @@ const UploadedFiles = () => {
     <div className="wrapped">
       <PageTitle title={"uploaded_files"} />
       <div className="card">
-        <ul className="list-group list-group-flush">
-          {currentFile.map((el) => (
-            <li
-              className="list-group-item"
-              id={el.uuid}
-              key={el.uuid}
-              onClick={(e) => {
-                getInfo(e.target.id);
-              }}
-            >
-              <h3>{el.description ? el.description : el.uuid}</h3>{" "}
-              <h4>{el.created}</h4>
-            </li>
-          ))}
-        </ul>
+        <table className="table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>UUID</th>
+              <th>ІМ'Я</th>
+              <th>ЧАС</th>
+              <th>КІЛЬКІСТЬ РЯДКІВ</th>
+              <th>КОРОТКИЙ ОПИС</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentFile.map((el) => {
+              return (
+                <tr key={el.uuid}>
+                  <td
+                    id={el.uuid}
+                    onClick={(e) => {
+                      getInfo(e.target.id);
+                    }}
+                  >
+                    {el.uuid}
+                  </td>
+
+                  <td>{el.user || "USER"}</td>
+                  <td>{el.created}</td>
+                  <td>{el.rowCount || "не вказано"}</td>
+                  <td>{el.description}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
       <Pagination
         filesPerPage={filesPerPage}

@@ -11,6 +11,7 @@ import Search from "./pages/search/Search";
 import Aside from "./pages/aside/Aside";
 import DbCheck from "./pages/dbCheck/DbCheck";
 import UploadedFiles from "./pages/uploaded_files/UploadedFiles";
+import Card from "./components/Card";
 
 class App extends Component {
   render() {
@@ -24,7 +25,7 @@ class App extends Component {
             <Route path="/search" component={Search} />
             <Route path="/db_check" component={DbCheck} />
             <Route path="/uploaded_files" component={UploadedFiles} />
-
+            <Route path="/card/:id" component={<Card />} />
             <Route component={ErrorPage} />
           </Switch>
         </BrowserRouter>

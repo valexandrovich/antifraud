@@ -31,7 +31,7 @@ public class DeferredTasks {
                     DeferredTask task = tasks.tasks.isEmpty() ? null : tasks.tasks.get(0);
                     if (task != null) {
                         try {
-                            tasks.executeTask(task);
+                            tasks.doExecuteTask(task);
                         } catch (Exception e) {
                             log.error("Deferred Task Execution error.", e);
                         }
@@ -105,23 +105,27 @@ public class DeferredTasks {
         // Nothing yet
     }
 
-    protected synchronized void markTaskCompletion(DeferredTask task, boolean value) {
+    protected synchronized void markTaskCompletion(DeferredTask task) {
         // Nothing yet
     }
 
-    private void completedTask(DeferredTask task) {
-        markTaskCompletion(task, true);
+    private void doCompletedTask(DeferredTask task) {
+        markTaskCompletion(task);
         tasks.remove(task);
     }
 
-    private void executeTask(DeferredTask task) {
+    private void doExecuteTask(DeferredTask task) {
         tasks.remove(task);
-        markTaskCompletion(task, task.execute());
+        executeTask(task);
+    }
+
+    protected void executeTask(DeferredTask task) {
+        task.execute();
     }
 
     public final synchronized void append(DeferredTask task) {
         if (startupOnly && firstLoopExecuted) {
-            executeTask(task);
+            doExecuteTask(task);
             return;
         }
         try {
@@ -130,14 +134,14 @@ public class DeferredTasks {
                 DeferredAction action = registeredTask.compareWith(task);
                 switch (action) {
                     case IGNORE:
-                        completedTask(task);
+                        doCompletedTask(task);
                         return;
                     case REPLACE:
                         tasks.set(i, task);
-                        completedTask(registeredTask);
+                        doCompletedTask(registeredTask);
                         return;
                     case REMOVE_AND_APPEND:
-                        completedTask(registeredTask);
+                        doCompletedTask(registeredTask);
                         tasks.add(task);
                         return;
                     default:

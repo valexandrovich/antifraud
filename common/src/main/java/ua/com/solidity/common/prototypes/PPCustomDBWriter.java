@@ -84,6 +84,7 @@ public abstract class PPCustomDBWriter extends Prototype {
     }
 
     private void doExecuteOnNotEOF(Item item, Input input, OutputCache cache, JsonNode value) {
+        cache.getGroup().incTotalRowCount();
         if (input.isError()) {
             try {
                 ErrorReport report = Utils.jsonToValue(value, ErrorReport.class);
@@ -105,18 +106,21 @@ public abstract class PPCustomDBWriter extends Prototype {
         if (input.isBOF()) {
             doExecuteOnBOF(item, cache);
         }
-        if (input.hasData()) {
-            doExecuteOnNotEOF(item, input, cache, input.getValue(JsonNode.class));
-            item.stayUncompleted();
-        } else {
-            internalFlushOutputObjects(item, cache);
-            internalFlushErrors(item, cache);
-            try {
-                afterOutput(item, cache);
-            } catch (Exception e) {
-                log.error("Error on afterOutput for source {}", cache.getGroup().getName(), e);
+        if (!item.terminated()) {
+            if (input.hasData()) {
+                doExecuteOnNotEOF(item, input, cache, input.getValue(JsonNode.class));
+                item.stayUncompleted();
+            } else {
+                internalFlushOutputObjects(item, cache);
+                internalFlushErrors(item, cache);
+                try {
+                    afterOutput(item, cache);
+                } catch (Exception e) {
+                    log.error("Error on afterOutput for source {}", cache.getGroup().getName(), e);
+                }
             }
         }
+
         return null;
     }
 

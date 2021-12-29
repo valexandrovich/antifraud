@@ -17,7 +17,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Slf4j
-public class DownloaderTask implements DeferredTask {
+public class DownloaderTask extends RabbitMQTask {
     private static final String DOWNLOADER_LOG_DELIMITER = "- - - - - - - - - - - - -";
     private static final String HANDLER = "handler";
     private Receiver receiver;
@@ -28,10 +28,10 @@ public class DownloaderTask implements DeferredTask {
     private boolean isError = false;
     private int errors = 0;
     private int completed = 0;
-    private long tag;
     private final ImportRevisionRepository importRevisionRepository;
 
     protected DownloaderTask(Receiver receiver, DownloaderMessageData msgData) {
+        super(true, false);
         this.receiver = receiver;
         this.msgData = msgData;
         ApplicationContext context = Utils.getApplicationContext();
@@ -140,7 +140,7 @@ public class DownloaderTask implements DeferredTask {
     }
 
     @Override
-    public boolean execute() {
+    public void execute() {
         log.info("Request received. Ident: \"{}\", attempts left: {}", msgData.getIdent(), msgData.getAttemptsLeft());
         source = ImportSource.findImportSourceByName(msgData.getIdent());
         if (source == null) {
@@ -164,16 +164,5 @@ public class DownloaderTask implements DeferredTask {
                 }
             }
         }
-        return true;
-    }
-
-    @Override
-    public long getTag() {
-        return tag;
-    }
-
-    @Override
-    public void setTag(long tag) {
-        this.tag = tag;
     }
 }

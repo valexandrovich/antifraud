@@ -55,10 +55,11 @@ public class OutputCache {
     }
 
     public final void objectCacheHandled(int committed) {
-        int ignored = committed - getHandledObjectCount();
-        group.incInsertCount(committed);
+        int inserted = getHandledObjectCount();
+        int ignored = committed - inserted;
+        group.incInsertCount(getHandledObjectCount());
         group.incInsertIgnoreCount(ignored);
-        group.incInsertErrorCount(objectCacheSize - ignored - committed);
+        group.incInsertErrorCount(objectCacheSize - ignored - inserted);
         Arrays.fill(objectCache, null);
         Arrays.fill(handledObjects, null);
         handledObjectsCount = 0;
@@ -69,6 +70,12 @@ public class OutputCache {
     public final void addHandledObject(Object obj) {
         if (obj != null) {
             handledObjects[handledObjectsCount++] = obj;
+        }
+    }
+
+    public final void addHandledObjectByIndex(int index) {
+        if (index >= 0 && index < objectCacheSize) {
+            handledObjects[handledObjectsCount++] = objectCache[index];
         }
     }
 

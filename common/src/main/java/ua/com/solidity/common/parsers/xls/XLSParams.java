@@ -1,5 +1,6 @@
 package ua.com.solidity.common.parsers.xls;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,8 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @NoArgsConstructor
 public class XLSParams {
-    private String sheetName;
-    private long firstRow;
-    private long lastRow;
-    private int[] columns;
+    private int sheet;
+    private int rowForColumnNames = -1;
+    private int firstRow = 0;
+    private String[] columns;
+    private String[] names;
 }

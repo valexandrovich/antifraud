@@ -15,6 +15,11 @@ public class CSVParams {
     public static final String DEFAULT_QUOTE = "\"";
     public static final String DEFAULT_IGNORE_CHARS_NEAR_DELIMITER = "\b\r\f\t ";
 
+    public static final int FLAG_SPLIT_MODE = 1;
+    public static final int FLAG_PARSE_FIELD_NAMES = 2;
+    public static final int FLAG_ESCAPE_USING = 4;
+    public static final int FLAG_AUTO_TRIM = 8;
+
     private boolean splitMode;
     private String encoding = DEFAULT_ENCODING;
     private boolean parseFieldNames;
@@ -24,15 +29,24 @@ public class CSVParams {
     private boolean escapeUsing;
     private boolean autoTrim;
 
-    public CSVParams(boolean splitMode, String encoding, boolean parseFieldNames, String delimiter, String quote, String ignoreCharsNearDelimiter, boolean escapeUsing, boolean autoTrim) {
-        this.splitMode = splitMode;
+    public CSVParams(String encoding, String delimiter, String quote, String ignoreCharsNearDelimiter, int flags) {
+        this.splitMode = (flags & FLAG_SPLIT_MODE) != 0;
         setEncoding(encoding);
-        this.parseFieldNames = parseFieldNames;
+        this.parseFieldNames = (flags & FLAG_PARSE_FIELD_NAMES) != 0;
         setDelimiter(delimiter);
         setQuoteString(quote);
         setIgnoreCharsNearDelimiter(ignoreCharsNearDelimiter);
-        this.escapeUsing = escapeUsing;
-        this.autoTrim = autoTrim;
+        this.escapeUsing = (flags & FLAG_ESCAPE_USING) != 0;
+        this.autoTrim = (flags & FLAG_AUTO_TRIM) != 0;
+    }
+
+    public static int flags(boolean splitMode, boolean parseFieldNames, boolean escapeUsing, boolean autoTrim) {
+        int res = 0;
+        if (splitMode) res |= FLAG_SPLIT_MODE;
+        if (parseFieldNames) res |= FLAG_PARSE_FIELD_NAMES;
+        if (escapeUsing) res |= FLAG_ESCAPE_USING;
+        if (autoTrim) res |= FLAG_AUTO_TRIM;
+        return res;
     }
 
     @JsonIgnore
@@ -52,22 +66,26 @@ public class CSVParams {
         this.delimiter = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_DELIMITER);
     }
 
-    public final char getDelimiterChar() {
-        return nullOrEmpty(delimiter, DEFAULT_DELIMITER).charAt(0);
-    }
-
-    public final char getQuoteChar() {
-        return nullOrEmpty(quote, DEFAULT_QUOTE).charAt(0);
-    }
-
     @SuppressWarnings("unused")
     public final void setQuoteString(String value) {
         this.quote = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_QUOTE);
     }
 
+    public final char getQuoteChar() {
+        return quote.charAt(0);
+    }
+
     @SuppressWarnings("unused")
     public final void setIgnoreCharsNearDelimiter(String value) {
         this.ignoreCharsNearDelimiter = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_IGNORE_CHARS_NEAR_DELIMITER);
+    }
+
+    public final char getDelimiter() {
+        return delimiter.charAt(0);
+    }
+
+    public final boolean isDelimiter(char value) {
+        return delimiter.indexOf(value) >= 0;
     }
 
     public final boolean isIgnoredChar(char value) {

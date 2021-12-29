@@ -91,7 +91,7 @@ public class XslxService {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Opening an InputStream from xlsx file failed", e);
         }
         return uuid;
     }

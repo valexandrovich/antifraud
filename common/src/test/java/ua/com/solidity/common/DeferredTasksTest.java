@@ -14,12 +14,11 @@ class DeferredTasksTest {
     private static final List<String> WaitingResult = Arrays.asList("Hello", "World", "!");
     private final List<String> target = new ArrayList<>();
 
-    private static class TestTask implements DeferredTask {
+    private static class TestTask extends DeferredTask {
         private final List<String> target;
         private final DeferredAction action;
         private final String ident;
         private final String data;
-        private long tag;
 
         public TestTask(List<String> target, DeferredAction action, String ident, String data) {
             this.target = target;
@@ -39,19 +38,8 @@ class DeferredTasksTest {
         }
 
         @Override
-        public boolean execute() {
+        public void execute() {
             target.add(this.data);
-            return true;
-        }
-
-        @Override
-        public long getTag() {
-            return tag;
-        }
-
-        @Override
-        public void setTag(long tag) {
-            this.tag = tag;
         }
     }
 

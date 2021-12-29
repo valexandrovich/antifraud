@@ -144,16 +144,14 @@ public class Pipeline {
     }
 
     final void doExecute(int from) {
-        boolean handled;
-        do {
+        boolean handled = true;
+        while (handled && !terminated) {
             handled = false;
             for (int i = from; i < items.size(); ++i) {
                 Item item = items.get(i);
-                if (item.tryToExecute()) {
-                    handled = true;
-                }
+                handled |= item.tryToExecute();
             }
-        } while (handled && !terminated);
+        }
     }
 
     public final boolean isValid() {
@@ -174,14 +172,8 @@ public class Pipeline {
 
         doExecute(0);
 
-        for (Item item : items) {
-            try {
-                item.doClose();
-            } catch (Exception e) {
-                log.warn("Can't close item {}", item.name);
-                terminated = true;
-            }
-            item.closed = true;
+        for (int i = items.size() - 1; i >= 0; --i) {
+            items.get(i).doClose();
         }
         executed = true;
         return !terminated;

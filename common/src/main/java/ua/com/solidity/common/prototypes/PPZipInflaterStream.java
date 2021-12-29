@@ -3,11 +3,14 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -16,8 +19,10 @@ import java.util.zip.ZipFile;
 public class PPZipInflaterStream extends Prototype {
     private static final String MATCH = "match";
     private static final String ZIP = "zip";
-    private static final String INPUT = "input";
     private static final String STREAM = "stream";
+    private static final String OUTPUT_FOLDER = "OutputFolder";
+    private static final String EXTRACT = "extract";
+    private static final String FILE = "file";
 
     @Override
     public Class<?> getOutputClass() {
@@ -26,16 +31,58 @@ public class PPZipInflaterStream extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        if (node != null && node.isObject()) {
-            if (node.hasNonNull(INPUT)) {
-                item.addInput(ZIP, node.get(INPUT).asText(), ZipFile.class);
-            } else {
-                item.terminate();
-                return;
-            }
-
-            item.setLocalData(MATCH, node.hasNonNull(MATCH) ? node.get(MATCH).asText() : "^.+$");
+        boolean extract = false;
+        if (node != null && node.isObject() && node.hasNonNull(EXTRACT)) {
+            JsonNode extractNode = node.get(EXTRACT);
+            extract = extractNode.isBoolean() && extractNode.booleanValue();
         }
+        item.mapInputs(ZIP, ZipFile.class);
+        item.setLocalData(MATCH, node != null && node.isObject() && node.hasNonNull(MATCH) ? node.get(MATCH).asText() : "^.+$");
+        item.setLocalData(EXTRACT, extract);
+    }
+
+    private boolean doExtractFile(File output, InputStream stream) {
+        try (FileOutputStream target = new FileOutputStream(output, false)) {
+            if (!Utils.streamCopy(stream, target)) {
+                log.warn("Error on file extracting.");
+            } else {
+                log.info("extracting completed.");
+                return true;
+            }
+        } catch (Exception e) {
+            log.error("Error on extracting file.", e);
+        }
+        finally {
+            try {
+                stream.close();
+            } catch (Exception e) {
+                log.error("Error on close Inflater stream.", e);
+            }
+        }
+        return false;
+    }
+
+    private InputStream doCreateInputStream(Item item, ZipFile zipFile, ZipEntry entry, boolean extract) {
+        try {
+            InputStream stream = new BufferedInputStream(zipFile.getInputStream(entry), 32768);
+            if (!extract) return stream;
+
+            String outputFileName = UUID.randomUUID() + ".tmp";
+            File output = new File(item.getPipelineParam(OUTPUT_FOLDER, String.class), outputFileName);
+            if (output.createNewFile()) {
+                log.info("Start extracting file {} from {}", outputFileName, entry);
+
+                if (doExtractFile(output, stream)) {
+                    item.setLocalData(FILE, output);
+                    return new BufferedInputStream(new FileInputStream(output), 32768);
+                }
+            } else {
+                log.error("Internal error on extracting file. File already exists.");
+            }
+        } catch (Exception e) {
+            log.warn("Can't open Zip file inflater stream {}:{}", zipFile.getName(), entry.getName());
+        }
+        return null;
     }
 
     @Override
@@ -61,14 +108,9 @@ public class PPZipInflaterStream extends Prototype {
             log.warn("Too many items in zip file matches for {}, first selected.", match);
         }
 
-        try {
-            InputStream stream = zipFile.getInputStream(found.get(0));
-            item.setLocalData(STREAM, stream);
-            return stream;
-        } catch (Exception e) {
-            log.warn("Can't open Zip file inflater stream {}:{}", zipFile.getName(), found.get(0).getName());
-            return null;
-        }
+        InputStream stream = doCreateInputStream(item, zipFile, found.get(0), Boolean.TRUE.equals(item.getLocalData(EXTRACT, Boolean.class)));
+        item.setLocalData(STREAM, stream);
+        return stream;
     }
 
     @Override
@@ -77,10 +119,20 @@ public class PPZipInflaterStream extends Prototype {
         if (stream != null) {
             try {
                 stream.close();
+                log.info("ZipInflaterStream closed.");
             } catch (Exception e) {
                 log.warn("Can't close zip inflater input stream.");
             }
             item.setLocalData(STREAM, null);
+        }
+
+        File file = item.getLocalData(FILE, File.class);
+        if (file != null) {
+            try {
+                java.nio.file.Files.delete(Path.of(file.getAbsolutePath()));
+            } catch (Exception e) {
+                log.error("Can't delete temporary file {}", file.getAbsolutePath());
+            }
         }
     }
 }

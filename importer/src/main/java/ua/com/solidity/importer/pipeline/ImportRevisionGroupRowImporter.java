@@ -11,6 +11,7 @@ import ua.com.solidity.common.prototypes.PPCustomDBWriter;
 import ua.com.solidity.db.entities.ImportRevisionGroup;
 import ua.com.solidity.db.entities.ImportRevisionGroupError;
 import ua.com.solidity.db.entities.ImportRevisionGroupRow;
+import ua.com.solidity.importer.Config;
 import ua.com.solidity.pipeline.Item;
 
 import java.math.BigInteger;
@@ -22,14 +23,18 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     private static final String DATA = "data";
     private static final String REVISION_GROUP = "revision_group";
     private static final String QUERY_START = "insert_import_revision_group_row(?::uuid,?::uuid,?,?::jsonb,"; // id, import_revision_group, source_group, data (json)
+    @Autowired
+    Config config;
 
     private static class CachedQuery {
         int size;
         String query;
         String selectQuery;
         Object[] args;
+        Config config;
 
-        public CachedQuery(int size, String query) {
+        public CachedQuery(int size, String query, Config config) {
+            this.config = config;
             this.size = size;
             this.query = query;
             this.selectQuery = "select " + query;
@@ -47,10 +52,15 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
                 args[idx] = row.getData().toString();
             }
             try {
-                BigInteger v = template.queryForObject(selectQuery, BigInteger.class, args);
-                long mask = v.longValue();
-                for (int i = 0, m = 1; i < size; ++i, m <<= 1) {
-                    if ((mask & m) != 0) cache.addHandledObject(cache.getObject(size - i - 1));
+                long mask = -1;
+                if (config.canInsertData(cache)) {
+                    BigInteger v = template.queryForObject(selectQuery, BigInteger.class, args);
+                    assert v != null;
+                    mask = v.longValue();
+                }
+                long itemMask = 1;
+                for (int i = size - 1; i >= 0; --i, itemMask <<= 1) {
+                    if ((mask & itemMask) != 0) cache.addHandledObjectByIndex(i);
                 }
                 res = size;
             } catch (Exception e) {
@@ -62,25 +72,18 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
         }
     }
 
-    private static void checkQueries() {
+    private static void checkQueries(Config config) {
         if (queries != null) return;
         queries = new CachedQuery[64];
-        for (int i = 0; i < 64; ++i) {
-            queries[i] = new CachedQuery(i + 1, doGetQuery(i, i == 0 ? null : queries[i - 1].query));
-        }
-    }
-
-    private static String doGetQuery(int index, String nested) {
-        if (index == 0) {
-            return QUERY_START + "0)";
-        } else {
-            return QUERY_START + nested + ")";
+        queries[0] = new CachedQuery(1, QUERY_START + "0)", config);
+        for (int i = 1; i < 64; ++i) {
+            queries[i] = new CachedQuery(i + 1, QUERY_START + queries[i - 1].query + ")", config);
         }
     }
 
     public CachedQuery getQuery(int size) {
-        checkQueries();
-        return queries[size - 1];
+        checkQueries(config);
+        return size > 0 ? queries[size - 1] : null;
     }
     @Autowired
     private JdbcTemplate template;
@@ -120,10 +123,8 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
 
     @Override
     protected int flushObjects(Item item, OutputCache cache) {
-        int size = cache.getObjectCacheSize();
-        if (size == 0) return 0;
-        CachedQuery query = getQuery(size);
-        return query.handleCache(cache, template);
+        CachedQuery query = getQuery(cache.getObjectCacheSize());
+        return query != null ? query.handleCache(cache, template) : 0;
     }
 
     @Override
@@ -132,7 +133,7 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
         for (int i = 0; i < cache.getErrorCacheSize(); ++i) {
             ErrorReport errorReport = cache.getErrorReport(i);
             try {
-                outputError(item, errorReport);
+                outputError(item, cache, errorReport);
                 ++committed;
             } catch (Exception e) {
                 log.error("Error on flush error data {}.", errorReport, e);
@@ -141,14 +142,17 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
         cache.errorCacheHandled(committed);
         return committed;
     }
+
     @Override
     protected Object getObjectInstance(Item item, JsonNode value) {
         ImportRevisionGroup group = item.getLocalData(REVISION_GROUP, ImportRevisionGroup.class);
         return ImportRevisionGroupRow.create(group, value, false);
     }
 
-    protected void outputError(Item item, ErrorReport error) {
-        ImportRevisionGroup group = item.getLocalData(REVISION_GROUP, ImportRevisionGroup.class);
-        ImportRevisionGroupError.saveError(group.getId(), error);
+    protected void outputError(Item item, OutputCache cache, ErrorReport error) {
+        if (config.canInsertData(cache)) {
+            ImportRevisionGroup group = item.getLocalData(REVISION_GROUP, ImportRevisionGroup.class);
+            ImportRevisionGroupError.saveError(group.getId(), error);
+        }
     }
 }

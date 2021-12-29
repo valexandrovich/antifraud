@@ -3,10 +3,12 @@ package ua.com.solidity.common;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class OutputStats {
     @Getter
     @Setter
@@ -19,6 +21,7 @@ public class OutputStats {
         long insertIgnoreCount = 0;
         long insertErrorCount = 0;
         long insertErrorInfoCount = 0;
+        long lastTotalRowCount = 0;
         public Group(String name) {
             this.name = name;
         }
@@ -27,29 +30,32 @@ public class OutputStats {
             totalRowCount = parseErrorCount = insertCount = insertIgnoreCount = insertErrorCount = 0;
         }
 
+        public final void incTotalRowCount() {
+            ++totalRowCount;
+            if (totalRowCount >= lastTotalRowCount + 100000) {
+                lastTotalRowCount = (totalRowCount / 100000) * 100000;
+                log.info("...group {} rows handled: {}", name, lastTotalRowCount);
+            }
+        }
+
         public final void incParseErrorCount(int count) {
             parseErrorCount += count;
-            totalRowCount += count;
         }
 
         public final void incInsertCount(int count) {
             insertCount += count;
-            totalRowCount += count;
         }
 
         public final void incInsertIgnoreCount(int count) {
             insertIgnoreCount += count;
-            totalRowCount += count;
         }
 
         public final void incInsertErrorCount(int count) {
             insertErrorCount += count;
-            totalRowCount += count;
         }
 
         public final void incInsertErrorInfoCount(int count) {
             insertErrorInfoCount += count;
-            totalRowCount += count;
         }
 
         public final double getInsertedPercent() {
@@ -65,7 +71,8 @@ public class OutputStats {
         }
 
         public final double getErrorHandledPercent() {
-            return totalRowCount == 0 ? 100 : (double) insertErrorCount / getTotalErrorCount();
+            long totalErrorCount = getTotalErrorCount();
+            return parseErrorCount == 0 ? 100 : (double) totalErrorCount / parseErrorCount;
         }
 
         @SuppressWarnings("unused")

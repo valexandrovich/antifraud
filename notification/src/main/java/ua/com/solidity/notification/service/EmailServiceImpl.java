@@ -1,6 +1,7 @@
 package ua.com.solidity.notification.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.MailException;
@@ -14,6 +15,7 @@ import javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.util.Objects;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -35,7 +37,7 @@ public class EmailServiceImpl implements EmailService {
 
             emailSender.send(message);
         } catch (MailException exception) {
-            exception.printStackTrace();
+            log.error("An exception occurred in message sending for inform!", exception);
         }
     }
 
@@ -67,7 +69,7 @@ public class EmailServiceImpl implements EmailService {
 
             emailSender.send(message);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            log.error("An exception occurred in message sending for inform!", e);
         }
     }
 }

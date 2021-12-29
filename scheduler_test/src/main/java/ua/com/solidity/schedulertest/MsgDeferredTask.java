@@ -3,13 +3,14 @@ package ua.com.solidity.schedulertest;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.DeferredAction;
 import ua.com.solidity.common.DeferredTask;
+import ua.com.solidity.common.RabbitMQTask;
 
 @Slf4j
-public class MsgDeferredTask implements DeferredTask {
+public class MsgDeferredTask extends RabbitMQTask {
     private final String msg;
-    private long tag;
 
     public MsgDeferredTask(String msg) {
+        super(true, false);
         this.msg = msg;
     }
 
@@ -25,18 +26,7 @@ public class MsgDeferredTask implements DeferredTask {
     }
 
     @Override
-    public boolean execute() {
+    public void execute() {
         log.info("Receiver test msg: {}", msg);
-        return true;
-    }
-
-    @Override
-    public long getTag() {
-        return tag;
-    }
-
-    @Override
-    public void setTag(long tag) {
-        this.tag = tag;
     }
 }

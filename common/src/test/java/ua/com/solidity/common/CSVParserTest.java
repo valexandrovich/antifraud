@@ -37,20 +37,20 @@ class CSVParserTest {
     }
 
     public boolean doTestFirst() {
-        CSVParams params = new CSVParams(false, "UTF-8", true, ",", "\\\"",
-                "\\t ", false, false);
+        CSVParams params = new CSVParams("UTF-8", ",", "\\\"",
+                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES);
         return doTestAt(params, CSVTestFirst);
     }
 
     public boolean doSecondTest() {
-        CSVParams params = new CSVParams(true, "UTF-8", true, ",", "\\\"",
-                "\\t ", false, false);
+        CSVParams params = new CSVParams("UTF-8", ",", "\\\"",
+                "\\t ",CSVParams.FLAG_SPLIT_MODE | CSVParams.FLAG_PARSE_FIELD_NAMES);
         return doTestAt(params, CSVTestFirst);
     }
 
     public boolean doThirdTest() {
-        CSVParams params = new CSVParams(false, "UTF-8", true, ",", "\\\"",
-                "\\t ", false, true);
+        CSVParams params = new CSVParams("UTF-8", ",", "\\\"",
+                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM);
         return doTestAt(params, CSVTestSecond);
     }
 

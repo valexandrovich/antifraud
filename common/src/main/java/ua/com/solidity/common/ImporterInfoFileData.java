@@ -69,7 +69,7 @@ public class ImporterInfoFileData {
 
     @SuppressWarnings("unused")
     public String getRevision() {
-    	return revisionDateTime == null ? null : ValueParser.formatDateTime(revisionDateTime);
+    	return revisionDateTime == null ? null : ValueParser.formatZonedDateTime(revisionDateTime);
     }
 
     @JsonIgnore

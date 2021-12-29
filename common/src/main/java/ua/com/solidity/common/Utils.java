@@ -17,10 +17,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 @Slf4j
 public class Utils {
@@ -325,5 +325,31 @@ public class Utils {
 
     public static synchronized void deferredExecute(long milliseconds, DeferredProcedure proc) {
         timer.schedule(new DeferredExecutionTimerTask(proc), milliseconds);
+    }
+
+    public static String getOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder) {
+        if ((outputFolder == null || outputFolder.length() == 0) &&
+                defaultEnvironmentVariableForOutputFolder != null && defaultEnvironmentVariableForOutputFolder.length() > 0) {
+            Map<String, String> map = System.getenv();
+            outputFolder = map.getOrDefault(defaultEnvironmentVariableForOutputFolder, null);
+            if (outputFolder == null) outputFolder = System.getProperty("java.io.tmpdir");
+        }
+        return outputFolder;
+    }
+
+    public static ZipEntry getZipEntry(ZipFile zipFile, String match) {
+        List<ZipEntry> found = zipFile.stream().
+                filter(zipEntry -> !zipEntry.isDirectory() && zipEntry.getName().matches(match)).
+                collect(Collectors.toList());
+
+        if (found.isEmpty()) {
+            log.warn("No entries found in zip file for match {}", match);
+            return null;
+        }
+
+        if (found.size() > 1) {
+            log.warn("Too many items in zip file matches for {}, first selected.", match);
+        }
+        return found.get(0);
     }
 }

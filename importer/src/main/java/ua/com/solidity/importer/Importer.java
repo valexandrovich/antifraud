@@ -19,11 +19,17 @@ public class Importer {
 
     private final PipelineFactory importerFactory;
     private final ModelRepository repository;
+    private final Config config;
 
     @Autowired
-    public Importer(PipelineFactory importerFactory, ModelRepository repository) {
+    public Importer(PipelineFactory importerFactory, ModelRepository repository, Config config) {
         this.importerFactory = importerFactory;
         this.repository = repository;
+        this.config = config;
+    }
+
+    public final Config getConfig() {
+        return this.config;
     }
 
     public void doImport(ImporterMessageData data) {
@@ -35,6 +41,7 @@ public class Importer {
         }
         pipeline.setParam("data", data);
         pipeline.setParam("FileName", data.getDataFileName());
+        pipeline.setParam("OutputFolder", config.getImporterOutputFolder());
         pipeline.setParam("repository", repository);
         log.info(LOG_DELIMITER);
         log.info("Import started");

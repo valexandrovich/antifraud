@@ -88,3 +88,4 @@ helm-package:
     - helm package $CI_PROJECT_DIR/helm/main --version $TAG
     - find . -name main*.tgz -exec helm package upgrade main {} \;
     - find . -name main*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
+  when: manual

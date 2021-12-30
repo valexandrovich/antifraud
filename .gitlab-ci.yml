@@ -9,7 +9,6 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -DproxySet=true -DproxyHost=chckproxy.raiffeisenbank.com.ua -DproxyPort=8080"
   HTTP_PROXY: http://chckproxy.raiffeisenbank.com.ua:8080
   NO_PROXY: "otpbank.com.ua,raiffeisenbank.com.ua,localhost"
-  TAG: "2.3.38"
 
 
 maven-package:
@@ -21,13 +20,15 @@ maven-package:
     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
-    - echo $(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)
-    # - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
+    - echo "PARENT_VERSION=$(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)" >> parent.env
+    - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
   cache:
     paths:
       - .m2/repository
     key: $CI_BUILD_REF_NAME
   artifacts:
+    reports:
+      dotenv: parent.env
     paths:
       - downloader/target/*.jar
       - importer/target/*.jar
@@ -44,9 +45,8 @@ kaniko-build:
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
-  # needs:
-  #   - job: maven-package
-  #     artifacts: true
+  needs:
+    - maven-package
   before_script:
     - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
     - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
@@ -66,15 +66,13 @@ kaniko-build:
         --build-arg https_proxy=$HTTPS_PROXY || continue
         echo "Image $app_name:$version pushed!"
       done
-  when: manual
 
 
 helm-package:
   stage: helm-package
   image: nexus.otpbank.com.ua:10443/repository/tools/helm-kubectl:3.3.1
-  # needs:
-  #   - job: maven-package
-  #     artifacts: true
+  needs:
+    - maven-package
   script:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
@@ -88,7 +86,6 @@ helm-package:
         sed -i "s/name: $app_name/name: chart/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
         echo "Helm chart $app_name:$version pushed!"
       done
-    - helm package $CI_PROJECT_DIR/helm/main --version $TAG
+    - helm package $CI_PROJECT_DIR/helm/main --version $PARENT_VERSION
     - find . -name main*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
-    - echo "Helm chart main:$TAG pushed!"
-  when: manual
+    - echo "Helm chart main:$PARENT_VERSION pushed!"

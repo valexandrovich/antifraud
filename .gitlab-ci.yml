@@ -21,7 +21,8 @@ maven-package:
     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
-    - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
+    - echo $(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*')
+    # - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
   cache:
     paths:
       - .m2/repository
@@ -43,7 +44,9 @@ kaniko-build:
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
-  needs: [maven-package]
+  # needs:
+  #   - job: maven-package
+  #     artifacts: true
   before_script:
     - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
     - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
@@ -63,12 +66,15 @@ kaniko-build:
         --build-arg https_proxy=$HTTPS_PROXY || continue
         echo "Image $app_name:$version pushed!"
       done
+  when: manual
 
 
 helm-package:
   stage: helm-package
   image: nexus.otpbank.com.ua:10443/repository/tools/helm-kubectl:3.3.1
-  needs: [maven-package]
+  # needs:
+  #   - job: maven-package
+  #     artifacts: true
   script:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
@@ -85,3 +91,4 @@ helm-package:
     - helm package $CI_PROJECT_DIR/helm/main --version $TAG
     - find . -name main*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
     - echo "Helm chart main:$TAG pushed!"
+  when: manual

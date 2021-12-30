@@ -63,7 +63,6 @@ kaniko-build:
         --build-arg https_proxy=$HTTPS_PROXY || continue
         echo "Image $app_name:$version pushed!"
       done
-  when: manual
 
 
 helm-package:
@@ -86,4 +85,3 @@ helm-package:
     - helm package $CI_PROJECT_DIR/helm/main --version $TAG
     - find . -name main*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
     - echo "Helm chart main:$TAG pushed!"
-  when: manual

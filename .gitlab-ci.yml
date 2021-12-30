@@ -21,7 +21,7 @@ maven-package:
     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
-    - echo $(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1)
+    - echo $(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)
     # - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
   cache:
     paths:

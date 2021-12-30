@@ -78,11 +78,17 @@ helm-package:
         echo $file
         app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1)
         version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)
-        sed -i "s/name: chart/name: $APP_NAME/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
+        sed -i "s/name: chart/name: $app_name/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
+        echo "sed 1"
         sed -i "s/$app_name: version/$app_name: $version/g" $CI_PROJECT_DIR/helm/main/values.yaml
+        echo "sed 2"
         helm package $CI_PROJECT_DIR/helm/service --app-version $version --version $version
+        echo "helm package"
         find . -name $app_name*.tgz -exec helm package upgrade $app_name {} \;
+        echo "find helm package upgrade"
         find . -name $app_name*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
+        echo "find curl upload"
+        sed -i "s/name: $app_name/name: chart/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
         echo "Helm chart $app_name:$version pushed!"
       done
     - helm package $CI_PROJECT_DIR/helm/main --version $TAG

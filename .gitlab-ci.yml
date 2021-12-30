@@ -25,7 +25,6 @@ maven-package:
       - .m2/repository
     key: $CI_BUILD_REF_NAME
   artifacts:
-    expire_in: 1 hour
     paths:
       - downloader/target/*.jar
       - importer/target/*.jar

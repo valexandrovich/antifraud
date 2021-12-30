@@ -43,8 +43,7 @@ kaniko-build:
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
-  dependencies:
-    - maven-package
+  needs: [maven-package]
   before_script:
     - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
     - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
@@ -53,7 +52,7 @@ kaniko-build:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
-        app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1)
+        app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)
         /kaniko/executor \
         --context . \
@@ -70,13 +69,12 @@ kaniko-build:
 helm-package:
   stage: helm-package
   image: nexus.otpbank.com.ua:10443/repository/tools/helm-kubectl:3.3.1
-  dependencies:
-    - maven-package
+  needs: [maven-package]
   script:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
-        app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr _ -)
+        app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)
         sed -i "s/name: chart/name: $app_name/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
         sed -i "s/$app_name: version/$app_name: $version/g" $CI_PROJECT_DIR/helm/main/values.yaml

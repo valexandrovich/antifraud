@@ -13,17 +13,17 @@ spec:
   source:
     targetrevision:
       downloader: version
-      importer: version
+      import: version
       notification: version
       pipeline: version
       scheduler: version
-      scheduler-test: version
+      schedulertest: version
       web: version
     name:
       downloader: downloader
-      importer: importer
+      import: import
       notification: notification
       pipeline: pipeline
       scheduler: scheduler
-      scheduler-test: scheduler-test
+      schedulertest: schedulertest
       web: web

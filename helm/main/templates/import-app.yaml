@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .Values.spec.source.name.importer }}
+  name: {{ .Values.spec.source.name.import }}
   namespace: {{ .Values.spec.rootnamespace }}
   labels:
     argocd.argoproj.io/instance: {{ .Values.spec.project }}
@@ -13,7 +13,7 @@ spec:
     server: {{ .Values.spec.destination.server }}
   project: {{ .Values.spec.project }}
   source:
-    chart: {{ .Values.spec.source.name.importer }}
-    path: {{ .Values.spec.source.name.importer }}
+    chart: {{ .Values.spec.source.name.import }}
+    path: {{ .Values.spec.source.name.import }}
     repoURL: {{ .Values.spec.repourl }}
-    targetRevision: {{ .Values.spec.source.targetrevision.importer }}
+    targetRevision: {{ .Values.spec.source.targetrevision.import }}

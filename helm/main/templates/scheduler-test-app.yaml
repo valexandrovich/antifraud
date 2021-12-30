@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .Values.spec.source.name.scheduler_test }}
+  name: {{ .Values.spec.source.name.scheduler-test }}
   namespace: {{ .Values.spec.rootnamespace }}
   labels:
     argocd.argoproj.io/instance: {{ .Values.spec.project }}
@@ -13,7 +13,7 @@ spec:
     server: {{ .Values.spec.destination.server }}
   project: {{ .Values.spec.project }}
   source:
-    chart: {{ .Values.spec.source.name.scheduler_test }}
-    path: {{ .Values.spec.source.name.scheduler_test }}
+    chart: {{ .Values.spec.source.name.scheduler-test }}
+    path: {{ .Values.spec.source.name.scheduler-test }}
     repoURL: {{ .Values.spec.repourl }}
-    targetRevision: {{ .Values.spec.source.targetrevision.scheduler_test }}
+    targetRevision: {{ .Values.spec.source.targetrevision.scheduler-test }}

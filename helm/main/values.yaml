@@ -17,7 +17,7 @@ spec:
       notification: version
       pipeline: version
       scheduler: version
-      scheduler_test: version
+      scheduler-test: version
       web: version
     name:
       downloader: downloader
@@ -25,5 +25,5 @@ spec:
       notification: notification
       pipeline: pipeline
       scheduler: scheduler
-      scheduler_test: scheduler_test
+      scheduler-test: scheduler-test
       web: web

@@ -1,0 +1,25 @@
+name: "application"
+
+nameOverride: ""
+fullnameOverride: ""
+imagePullSecrets: []
+
+replicaCount: 1
+
+image:
+  repository: nexus.otpbank.com.ua:19443/repository/antifraud
+  pullPolicy: IfNotPresent
+
+spec:
+  destination:
+    server: "https://kubernetes.default.svc"
+  namespace: antifraud-dev
+  project: antifraud
+  imagePullSecret: "antifraud-secret"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi

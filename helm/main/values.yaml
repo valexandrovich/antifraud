@@ -1,0 +1,29 @@
+---
+fullnameOverride: ""
+imagePullSecrets: []
+nameOverride: ""
+replicaCount: 1
+spec:
+  destination:
+    server: "https://kubernetes.default.svc"
+  namespace: default
+  rootnamespace: argocd
+  project: antifraud
+  repourl: "https://nexus.otpbank.com.ua:8443/repository/it-operations-helm"
+  source:
+    targetrevision:
+      downloader: version
+      importer: version
+      notification: version
+      pipeline: version
+      scheduler: version
+      scheduler_test: version
+      web: version
+    name:
+      downloader: downloader
+      importer: importer
+      notification: notification
+      pipeline: pipeline
+      scheduler: scheduler
+      scheduler_test: scheduler_test
+      web: web

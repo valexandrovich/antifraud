@@ -11,7 +11,7 @@ image:
 spec:
   destination:
     server: "https://kubernetes.default.svc"
-  namespace: antifraud-dev
+  namespace: antifraud
   project: antifraud
   imagePullSecret: "antifraud-secret"
   resources:

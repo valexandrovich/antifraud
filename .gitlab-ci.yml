@@ -80,12 +80,12 @@ helm-package:
         app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)
         sed -i "s/name: chart/name: $app_name/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
-        sed -i "s/$app_name: version/$app_name: $version/g" $CI_PROJECT_DIR/helm/main/values.yaml
+        sed -i "s/$app_name: version/$app_name: $version/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml
         helm package $CI_PROJECT_DIR/helm/service --app-version $version --version $version
         find . -name $app_name*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
         sed -i "s/name: $app_name/name: chart/g" $CI_PROJECT_DIR/helm/service/Chart.yaml
         echo "Helm chart $app_name:$version pushed!"
       done
-    - helm package $CI_PROJECT_DIR/helm/main --version $PARENT_VERSION
-    - find . -name main*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
-    - echo "Helm chart main:$PARENT_VERSION pushed!"
+    - helm package $CI_PROJECT_DIR/helm/antifraud --version $PARENT_VERSION
+    - find . -name antifraud*.tgz -exec curl -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
+    - echo "Helm chart antifraud:$PARENT_VERSION pushed!"

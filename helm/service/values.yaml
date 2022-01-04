@@ -1,6 +1,5 @@
 nameOverride: ""
 fullnameOverride: ""
-imagePullSecrets: []
 
 replicaCount: 1
 
@@ -9,8 +8,6 @@ image:
   pullPolicy: IfNotPresent
 
 spec:
-  destination:
-    server: "https://kubernetes.default.svc"
   namespace: antifraud
   project: antifraud
   imagePullSecret: "antifraud-secret"

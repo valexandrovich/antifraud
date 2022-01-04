@@ -1,11 +1,9 @@
----
-fullnameOverride: ""
-imagePullSecrets: []
 nameOverride: ""
+fullnameOverride: ""
+
 replicaCount: 1
+
 spec:
-  destination:
-    server: "https://kubernetes.default.svc"
   namespace: default
   rootnamespace: argocd
   project: antifraud

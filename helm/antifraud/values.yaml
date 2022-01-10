@@ -13,7 +13,6 @@ spec:
       downloader: version
       import: version
       notification: version
-      pipeline: version
       scheduler: version
       schedulertest: version
       web: version
@@ -21,7 +20,6 @@ spec:
       downloader: downloader
       import: import
       notification: notification
-      pipeline: pipeline
       scheduler: scheduler
       schedulertest: schedulertest
       web: web

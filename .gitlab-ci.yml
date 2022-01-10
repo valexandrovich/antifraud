@@ -33,7 +33,6 @@ maven-package:
       - downloader/target/*.jar
       - importer/target/*.jar
       - notification/target/*.jar
-      - pipeline/target/*.jar
       - scheduler/target/*.jar
       - scheduler_test/target/*.jar
       - web/target/*.jar

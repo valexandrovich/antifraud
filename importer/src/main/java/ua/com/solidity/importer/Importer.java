@@ -18,18 +18,12 @@ public class Importer {
     private static final String PERCENT_FIELD = "%.03f";
 
     private final PipelineFactory importerFactory;
-    private final ModelRepository repository;
     private final Config config;
 
     @Autowired
-    public Importer(PipelineFactory importerFactory, ModelRepository repository, Config config) {
+    public Importer(PipelineFactory importerFactory, Config config) {
         this.importerFactory = importerFactory;
-        this.repository = repository;
         this.config = config;
-    }
-
-    public final Config getConfig() {
-        return this.config;
     }
 
     public void doImport(ImporterMessageData data) {
@@ -40,9 +34,8 @@ public class Importer {
             return;
         }
         pipeline.setParam("data", data);
-        pipeline.setParam("FileName", data.getDataFileName());
+        pipeline.setParam("FileName", data.getData().getMainFile().getFileName());
         pipeline.setParam("OutputFolder", config.getImporterOutputFolder());
-        pipeline.setParam("repository", repository);
         log.info(LOG_DELIMITER);
         log.info("Import started");
         log.info(LOG_DELIMITER);
@@ -86,5 +79,6 @@ public class Importer {
 
         log.info("Elapsed time: {}", elapsedTime.getDurationString());
         log.info("Import completed.");
+        log.info(LOG_DELIMITER);
     }
 }

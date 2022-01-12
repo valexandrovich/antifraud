@@ -2,6 +2,8 @@ package ua.com.solidity.common;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,19 +38,28 @@ class DeferredTasksTest {
         }
 
         @Override
-        protected void execute() {
+        public void execute() {
             target.add(this.data);
+        }
+    }
+
+    private void await() {
+        Instant instant = Instant.now();
+        Instant waitingFor = instant.plus(300, ChronoUnit.MILLIS);
+        while (instant.compareTo(waitingFor) < 0) {
+            instant = Instant.now();
         }
     }
 
     @Test
     void firstTest() {
-        DeferredTasks tasks = new DeferredTasks(200);
+        DeferredTasks tasks = new DeferredTasks(false, 200);
         tasks.append(new TestTask(target, DeferredAction.APPEND, "id", "hello"));
         tasks.append(new TestTask(target, DeferredAction.APPEND, "id2", "World"));
         tasks.append(new TestTask(target, DeferredAction.REPLACE, "id", "Hello"));
-        tasks.waitForExecution();
+        await();
         tasks.append(new TestTask(target, DeferredAction.APPEND, "id", "!"));
+        tasks.waitForExecution();
         assertThat(target).isEqualTo(WaitingResult);
     }
 }

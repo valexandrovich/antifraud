@@ -10,11 +10,10 @@ export const SidebarData = [
     icon: <IoIcons.IoIosSearch />,
     cName: "nav-text",
   },
-
   {
-    title: "Завантажити",
-    path: "/add-file",
-    icon: <FaIcons.FaEnvelopeOpenText />,
+    title: "Перевірка БД",
+    path: "/db_check",
+    icon: <IoIcons.IoIosPaper />,
     cName: "nav-text",
   },
   {
@@ -23,19 +22,18 @@ export const SidebarData = [
     icon: <FaIcons.FaCartPlus />,
     cName: "nav-text",
   },
-  {
-    title: "Перевірка БД",
-    path: "/db_check",
-    icon: <IoIcons.IoIosPaper />,
-    cName: "nav-text",
-  },
   //   {
   //     title: "Team",
   //     path: "/team",
   //     icon: <IoIcons.IoMdPeople />,
   //     cName: "nav-text",
   //   },
-
+  {
+    title: "Завантажити",
+    path: "/add-file",
+    icon: <FaIcons.FaEnvelopeOpenText />,
+    cName: "nav-text",
+  },
   // {
   //   title: "Support",
   //   path: "/support",

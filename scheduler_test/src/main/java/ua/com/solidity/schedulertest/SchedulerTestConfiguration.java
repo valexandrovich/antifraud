@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 public class SchedulerTestConfiguration {
     @Bean
     RabbitMQListener listener(Config config, Receiver receiver) {
-        return new RabbitMQListener(receiver, config.getCollectMSecs(), config.getName(), config.getTest());
+        return new RabbitMQListener(receiver, true, config.getCollectMSecs(), config.getName(), config.getTest());
     }
 
     @Bean

@@ -3,12 +3,10 @@ package ua.com.solidity.otp.web.servise;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ua.com.solidity.db.entities.FileDescription;
@@ -18,22 +16,10 @@ import ua.com.solidity.db.repositories.PhysicalPersonRepository;
 import ua.com.solidity.otp.web.dto.PhysicalPersonDto;
 import ua.com.solidity.otp.web.exception.EntityNotFoundException;
 import ua.com.solidity.otp.web.request.SearchRequest;
-import ua.com.solidity.otp.web.response.ResponseBodyWithUserName;
-import ua.com.solidity.otp.web.security.RequestHeaders;
-import ua.com.solidity.otp.web.security.servise.JwtExtractor;
-import ua.com.solidity.otp.web.security.servise.JwtUtilService;
-import ua.com.solidity.otp.web.security.token.JwtToken;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,31 +27,20 @@ import java.util.stream.Collectors;
 @Service
 public class XslxService {
 
-    private final JwtUtilService jwtUtilService;
-    private final JwtExtractor jwtExtractor;
+
     private final ModelMapper modelMapper;
     private final PhysicalPersonRepository personRepository;
     private final FileDescriptionRepository fileDescriptionRepository;
 
-    public ResponseBodyWithUserName<UUID> upload(MultipartFile multipartFile, HttpServletRequest request) {
+    public UUID upload(MultipartFile request) {
         log.debug("Attempting to parse file in XlsxService for uploading into DB.");
         UUID uuid = UUID.randomUUID();
-        String pattern = "MM.dd.yyyy";
-        DateFormat df = new SimpleDateFormat(pattern);
         FileDescription fileDescription = new FileDescription();
         fileDescription.setUuid(uuid);
         fileDescription.setDescription("");
-
-        String header = request.getHeader(RequestHeaders.HEADER_PARAM_JWT_TOKEN);
-        String token = jwtExtractor.extract(header);
-        String login = jwtUtilService.extractUserLogin(new JwtToken(token));
-
-        fileDescription.setUserName(login);
         fileDescriptionRepository.save(fileDescription);
 
-        int rowCount = 0;
-
-        try (InputStream stream = multipartFile.getInputStream()) {
+        try (InputStream stream = request.getInputStream()) {
             XSSFWorkbook wb = new XSSFWorkbook(stream);
             XSSFSheet sheet = wb.getSheetAt(0);
             for (Row row : sheet) {
@@ -78,9 +53,7 @@ public class XslxService {
 
                 person.setUuid(fileDescription);
 
-
                 Iterator<Cell> cellIterator = row.cellIterator();
-                int cellCount = 0;
                 while (cellIterator.hasNext()) {
                     Cell cell = (Cell) cellIterator.next();
                     int rowIndex = cell.getRowIndex();
@@ -91,26 +64,21 @@ public class XslxService {
                     switch (cell.getCellType()) {
                         case STRING:
                             value = cell.getStringCellValue();
-                            if (value.isBlank() || value.isEmpty()) value = null; else cellCount++;
+                            if (value.isBlank() || value.isEmpty()) value = null;
 
                             valuesMap.put(columnIndex, value);
                             System.out.print(cell.getStringCellValue() + "\t\t\t");
                             break;
                         case NUMERIC:
-                            if (DateUtil.isCellDateFormatted(cell)) {
-                                value = df.format(cell.getDateCellValue());
-                            } else {
-                                value = Long.valueOf(Double.valueOf(cell.getNumericCellValue()).longValue()).toString();
-                            }
-
-                            if (value.isBlank() || value.isEmpty()) value = null; else cellCount++;
+                            value = Double.toString(cell.getNumericCellValue());
+                            if (value.isBlank() || value.isEmpty()) value = null;
 
                             valuesMap.put(columnIndex, value);
                             System.out.print(cell.getNumericCellValue() + "\t\t\t");
                             break;
                         case FORMULA:
                             value = cell.getStringCellValue();
-                            if (value.isBlank() || value.isEmpty()) value = null; else cellCount++;
+                            if (value.isBlank() || value.isEmpty()) value = null;
 
                             valuesMap.put(columnIndex, value);
                             System.out.print(cell.getStringCellValue() + "\t\t\t");
@@ -118,21 +86,14 @@ public class XslxService {
                         default:
                     }
                 }
-                if (cellCount > 0) {
-                    rowCount++;
-                    savePerson(person, valuesMap);
-                }
+                savePerson(person, valuesMap);
                 System.out.println("");
             }
 
         } catch (IOException e) {
             log.error("Opening an InputStream from xlsx file failed", e);
         }
-        FileDescription fileDescription1 = fileDescriptionRepository.findByUuid(uuid)
-                .orElseThrow(() -> new EntityNotFoundException(FileDescription.class, uuid));
-        fileDescription1.setRowCount(rowCount);
-        fileDescriptionRepository.save(fileDescription1);
-        return new ResponseBodyWithUserName<>(uuid, login, HttpStatus.OK.value(), "Uploaded");
+        return uuid;
     }
 
     public void upload(UUID uuid, String description) {

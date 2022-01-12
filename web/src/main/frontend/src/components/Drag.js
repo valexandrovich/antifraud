@@ -7,30 +7,21 @@ function Dropzone() {
   const [description, setDescription] = useState("");
   const [prevFile, setPrevFile] = useState(null);
 
-  const [token, setToken] = useState("");
-  useEffect(() => {
-    const authToken = localStorage.getItem("user");
-    setToken(authToken.replace(/"/g, ""));
-  }, []);
-  console.log(token);
   useEffect(() => {
     const handleSubmission = () => {
       const formData = new FormData();
 
       formData.append("fileName", filetoUpload[0]);
       fetch("/upload", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         method: "POST",
 
         body: formData,
       })
         .then((response) => response.json())
         .then((result) => {
-          fetch(`/getUploaded/${result.principal}`)
+          fetch(`/getUploaded/${result.uuid}`)
             .then((res) => res.json())
-            .then((file) => setPrevFile(file.principal));
+            .then((file) => setPrevFile(file.uuid));
         })
         .catch((error) => {
           console.error("Error:", error);

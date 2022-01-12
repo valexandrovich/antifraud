@@ -13,16 +13,16 @@ const UploadedFiles = () => {
   const indexOfFirstFile = indexOfLastFile - filesPerPage;
   const currentFile = resp.slice(indexOfFirstFile, indexOfLastFile);
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-  console.log(singleFile);
+
   useEffect(() => {
     fetch("/getUploaded")
       .then((response) => response.json())
-      .then((data) => setResp(data.principal));
+      .then((data) => setResp(data.uuid));
   }, []);
   const getInfo = (target) => {
     fetch(`/getUploaded/${target}`)
       .then((response) => response.json())
-      .then((data) => setSingleFile(data.principal));
+      .then((data) => setSingleFile(data.uuid));
   };
   return (
     <div className="wrapped">
@@ -51,7 +51,7 @@ const UploadedFiles = () => {
                     {el.uuid}
                   </td>
 
-                  <td>{el.userName || "USER"}</td>
+                  <td>{el.user || "USER"}</td>
                   <td>{el.created}</td>
                   <td>{el.rowCount || "не вказано"}</td>
                   <td>{el.description}</td>

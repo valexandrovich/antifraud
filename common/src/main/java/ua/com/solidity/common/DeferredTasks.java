@@ -11,6 +11,7 @@ public class DeferredTasks {
     protected final List<DeferredTask> tasks = new ArrayList<>();
     private final long milliSeconds;
     private long waitingFor;
+    private final boolean startupOnly;
     private boolean firstLoopExecuted = false;
     private WaitingThread thread = null;
 
@@ -21,30 +22,23 @@ public class DeferredTasks {
             this.tasks = tasks;
         }
 
-        private void execute(boolean terminated) {
+        private void execute() {
             boolean loopIsActive = true;
             boolean firstExecuted = false;
-            DeferredTask task;
-
-            tasks.beforeExecutionLoop(terminated);
-
-            if (terminated) return;
-
-            while (loopIsActive) {
-                synchronized(tasks) {
-                    task = tasks.tasks.isEmpty() ? null : tasks.tasks.get(0);
-                }
-                if (task != null) {
-                    try {
-                         tasks.doExecuteTask(task);
-                    } catch (Exception e) {
-                        log.error("Deferred Task Execution error.", e);
+            synchronized(tasks) {
+                tasks.beforeExecutionLoop();
+                while (loopIsActive) {
+                    DeferredTask task = tasks.tasks.isEmpty() ? null : tasks.tasks.get(0);
+                    if (task != null) {
+                        try {
+                            tasks.doExecuteTask(task);
+                        } catch (Exception e) {
+                            log.error("Deferred Task Execution error.", e);
+                        }
+                        firstExecuted = true;
                     }
-                    firstExecuted = true;
+                    else loopIsActive = false;
                 }
-                else loopIsActive = false;
-            }
-            synchronized (tasks) {
                 tasks.firstLoopExecuted = firstExecuted;
                 tasks.thread = null;
             }
@@ -53,9 +47,7 @@ public class DeferredTasks {
         @Override
         public void run() {
             boolean continueLoop = true;
-
             while (continueLoop) {
-                continueLoop = false;
                 long sleepTime;
                 synchronized (tasks) {
                     sleepTime = tasks.waitingFor - Instant.now().toEpochMilli();
@@ -63,17 +55,20 @@ public class DeferredTasks {
                 if (sleepTime > 0) {
                     try {
                         sleep(sleepTime);
-                        continueLoop = true;
                     } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        continueLoop = false;
+                        interrupt();
                     }
-                }
+                } else continueLoop = false;
+                if (interrupted()) break;
             }
-            execute(isInterrupted());
+
+            execute();
         }
     }
 
-    public DeferredTasks(long milliSeconds) {
+    public DeferredTasks(boolean startupOnly, long milliSeconds) {
+        this.startupOnly = startupOnly;
         this.milliSeconds = milliSeconds;
     }
 
@@ -90,12 +85,11 @@ public class DeferredTasks {
         try {
             thread.join();
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            thread.interrupt();
         }
     }
 
     public synchronized void clear() {
-        tasks.clear();
         if (thread != null) {
             thread.interrupt();
             try {
@@ -104,13 +98,10 @@ public class DeferredTasks {
                 Thread.currentThread().interrupt();
             }
         }
+        tasks.clear();
     }
 
-    public synchronized boolean collectionMode() {
-        return !firstLoopExecuted;
-    }
-
-    protected synchronized void beforeExecutionLoop(boolean terminated) {
+    protected synchronized void beforeExecutionLoop() {
         // Nothing yet
     }
 
@@ -123,17 +114,17 @@ public class DeferredTasks {
         tasks.remove(task);
     }
 
-    private synchronized void doExecuteTask(DeferredTask task) {
+    private void doExecuteTask(DeferredTask task) {
         tasks.remove(task);
         executeTask(task);
     }
 
     protected void executeTask(DeferredTask task) {
-        task.run();
+        task.execute();
     }
 
     public final synchronized void append(DeferredTask task) {
-        if (firstLoopExecuted) {
+        if (startupOnly && firstLoopExecuted) {
             doExecuteTask(task);
             return;
         }

@@ -81,17 +81,5 @@
                                  referencedColumnNames="uuid"
                                  referencedTableName="file_description"/>
     </changeSet>
-    <changeSet id="1640045346403-7" author="Kyrylo Chornobryvets">
-        <addColumn tableName="file_description">
-            <column name="row_count"
-                    type="bigint"/>
-        </addColumn>
-    </changeSet>
-    <changeSet id="1640045646123-8" author="Kyrylo Chornobryvets">
-        <addColumn tableName="file_description">
-            <column name="user_name"
-                    type="VARCHAR(255)"/>
-        </addColumn>
-    </changeSet>
 
 </databaseChangeLog>

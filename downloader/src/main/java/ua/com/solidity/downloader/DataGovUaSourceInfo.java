@@ -1,29 +1,27 @@
 package ua.com.solidity.downloader;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.common.ResourceInfoData;
-import ua.com.solidity.common.ResourceInfoFileData;
+import ua.com.solidity.common.ImporterInfoFileData;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.ValueParser;
 
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Getter
 @Component
-public class DataGovUaSourceInfo extends ResourceInfoData {
+public class DataGovUaSourceInfo extends ImporterInfoFileData {
     public static final String KEY_RESULT = "result";
     public static final String KEY_RESOURCES = "resources";
     public static final String KEY_REVISIONS = "resource_revisions";
@@ -36,36 +34,6 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     public static final String KEY_SIZE = "size";
     public static final String KEY_DIGEST = "file_hash_sum";
     public static final String KEY_REVISION = "revision";
-    public static final String API_KEY = "apiKey";
-    public static final String FILE_MASK = "mask";
-    public static final String SCHEMA = "schema";
-    public static final String NAME = "name";
-
-    static class ResourceInfo {
-        JsonNode resource;
-        boolean isMain;
-        String name;
-        ResourceInfoFileData data = new ResourceInfoFileData();
-
-        public ResourceInfo(JsonNode resource, boolean isMain, String name) {
-            this.resource = resource;
-            this.isMain = isMain;
-            this.name = name;
-            data.setResourceId(getResourceId());
-        }
-
-        public final String getResourceId() {
-            return resource.get(KEY_ID).textValue();
-        }
-
-        public final String getFormat() {
-            return resource.has(KEY_FORMAT) ? resource.get(KEY_FORMAT).textValue() : null;
-        }
-
-        public final String getMimeType() {
-            return resource.has(KEY_MIMETYPE) ? resource.get(KEY_MIMETYPE).textValue() : null;
-        }
-    }
 
     private static class SourceDataNodeInfo implements Comparable<SourceDataNodeInfo> {
         public final JsonNode node;
@@ -103,19 +71,11 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     private String apiKey;
 
     @JsonIgnore
-    private String fileMask;
-
-    @JsonIgnore
-    private Map<String, String> dictionaryMap = null;
-
-    @JsonIgnore
     private JsonNode apiDataNode = null;
-
     @JsonIgnore
-    private final List<ResourceInfo> resources = new ArrayList<>();
-
+    private JsonNode resourceNode = null;
     @JsonIgnore
-    private ResourceInfo mainResource = null;
+    @Getter private JsonNode revisionNode = null;
 
     @Autowired
     public DataGovUaSourceInfo(Config config) {
@@ -127,167 +87,110 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     @Override
     public void clear() {
         super.clear();
-        resources.clear();
-        mainResource = null;
-        apiDataNode = null;
+        apiDataNode = resourceNode = revisionNode = null;
+        revisionDateTime = null;
     }
 
-    public final boolean initialize(JsonNode sourceInfo) {
+    public final boolean initialize(String apiKey) {
         clear();
-        if (sourceInfo.hasNonNull(API_KEY)) {
-            this.apiKey = sourceInfo.get(API_KEY).asText();
-            this.fileMask = sourceInfo.hasNonNull(FILE_MASK) ? sourceInfo.get(FILE_MASK).asText() : null;
-            JsonNode schema = sourceInfo.hasNonNull(SCHEMA) ? sourceInfo.get(SCHEMA) : null;
-            if (schema != null && !schema.isObject()) {
-                schema = null;
-            }
-
-            if (schema != null) {
-                dictionaryMap = new ObjectMapper().convertValue(schema, new TypeReference<>() {
-                });
-            }
-
-            return loadApiInfo() && isValid();
-        }
-        return false;
+        this.apiKey = apiKey;
+        return loadResourceInfo() && loadRevisionInfo() && isValid();
+    }
+    
+    @JsonIgnore
+    @Override
+    public boolean isValid() {
+        return url != null && (format != null || mimeType != null) && revisionDateTime != null;
     }
 
-    private boolean loadApiInfo() {
+    private boolean loadResourceInfo() {
         String url = MessageFormat.format(config.getDataGovUaApiUrl(), apiKey);
         apiDataNode = Utils.getJsonNode(url, "UTF-8");
         return apiDataNode != null && handleApiInfo(apiDataNode);
     }
 
-    private boolean prepareMainFileAndDictionaries() {
-        if (mainResource != null) {
-            setMainFile(mainResource.data);
-        }
-
-        for (ResourceInfo info : resources) {
-            if (info != mainResource) {
-                dictionaries.put(info.name, info.data);
-            }
-        }
-        return mainResource != null;
-    }
-
     private boolean handleApiInfo(JsonNode apiData) {
         JsonNode node = apiData.has(KEY_RESULT) ? apiData.get(KEY_RESULT) : null;
-        if (node != null && node.isObject()) {
-            JsonNode resourcesNode = node.has(KEY_RESOURCES) ? node.get(KEY_RESOURCES) : null;
-            if (resourcesNode != null && resourcesNode.isArray()) {
-                handleApiInfoResources(resourcesNode);
+        if (node == null || !node.isObject()) {
+            return false;
+        }
+
+        JsonNode resources = node.has(KEY_RESOURCES) ? node.get(KEY_RESOURCES) : null;
+        if (resources != null && resources.isArray()) {
+            JsonNode last = resources.get(resources.size() - 1);
+            if (last != null && last.has(KEY_ID)) {
+                resourceId = last.get(KEY_ID).textValue();
+                format = last.has(KEY_FORMAT) ? last.get(KEY_FORMAT).textValue() : null;
+                mimeType = last.has(KEY_MIMETYPE) ? last.get(KEY_MIMETYPE).textValue() : null;
+                return true;
             }
-            return prepareMainFileAndDictionaries();
+        }
+
+        return false;
+    }
+
+    private boolean loadRevisionInfo() {
+        String url = MessageFormat.format(config.getDataGovUaResourceUrl(), resourceId);
+        resourceNode = Utils.getJsonNode(url, "UTF-8");
+        return resourceNode != null && handleResourceInfo();
+    }
+
+    private boolean handleResourceInfo() {
+        JsonNode node = resourceNode.has(KEY_RESULT) ? resourceNode.get(KEY_RESULT) : null;
+        if (node != null && node.isObject()) {
+            JsonNode revisions = node.has(KEY_REVISIONS) ? node.get(KEY_REVISIONS) : null;
+            if (revisions != null && revisions.isArray() && revisions.size() > 0) {
+                return handleRevisions(revisions);
+            } else {
+                assignCommonFields(node);
+                setRevision(node.get(KEY_LAST_MODIFIED).textValue());
+                return revisionDateTime != null;
+            }
         }
         return false;
     }
 
-    @JsonIgnore
-    private boolean isMainResourceName(String name) {
-        return fileMask == null || name.matches(fileMask);
-    }
-
-    @JsonIgnore
-    private String getDictionaryItemName(String name) {
-        if (dictionaryMap != null && !dictionaryMap.isEmpty()) {
-            for (var entry : dictionaryMap.entrySet()) {
-                if (name.matches(entry.getValue())) return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    private void doPushResource(JsonNode info, boolean isMain, String name) {
-        ResourceInfo resourceInfo = new ResourceInfo(info, isMain, name);
-        handleResource(resourceInfo);
-        if (resourceInfo.data.isValid()) {
-            if (isMain) {
-                mainResource = resourceInfo;
-            }
-            resources.add(resourceInfo);
-        }
-    }
-
-    private void handleApiInfoResources(JsonNode resourcesNode) {
-        for (int i = 0; i < resourcesNode.size(); ++i) {
-            JsonNode info = resourcesNode.get(i);
-            String name = info.hasNonNull(NAME) ? StringEscapeUtils.unescapeJava(info.get(NAME).asText("")) : "";
-            String dictName = getDictionaryItemName(name);
-            boolean isMain = dictName == null && isMainResourceName(name);
-
-            if (isMain && mainResource != null) {
-                log.warn("Only one resource can be used as main (other ignored). Assign mask or schema fields.");
-                continue;
-            }
-            if (isMain || dictName != null) {
-                doPushResource(info, isMain, isMain ? name : dictName);
-            }
-        }
-    }
-
-    private void handleResource(ResourceInfo info) {
-        if (info != null && info.resource.has(KEY_ID)) {
-            String resId = info.resource.get(KEY_ID).textValue();
-            String url = MessageFormat.format(config.getDataGovUaResourceUrl(), resId);
-            JsonNode revisions = Utils.getJsonNode(url, "UTF-8");
-            if (revisions != null && revisions.has(KEY_RESULT)) {
-                revisions = revisions.get(KEY_RESULT);
-                JsonNode revisionsNode = revisions.isObject() && revisions.has(KEY_REVISIONS) ? revisions.get(KEY_REVISIONS) : null;
-                if (revisionsNode != null && revisionsNode.isArray() && revisionsNode.size() > 0) {
-                    handleRevisions(info, revisionsNode);
-                } else {
-                    assignCommonFields(info, revisions);
-                    info.data.setRevision(revisions.get(KEY_LAST_MODIFIED).textValue());
-                }
-            }
-        }
-    }
-
-    private void handleRevisions(ResourceInfo info, JsonNode revisionsArray) {
+    private boolean handleRevisions(JsonNode revisions) {
         List<SourceDataNodeInfo> nodes = new ArrayList<>();
-        for (JsonNode revision : revisionsArray) {
+
+        for (JsonNode revision : revisions) {
             nodes.add(new SourceDataNodeInfo(revision,
                     ValueParser.getDatetime(revision.get(KEY_RESOURCE_CREATED).textValue()),
                     revision.get(KEY_SIZE).asLong()));
         }
-        Collections.sort(nodes);
-        SourceDataNodeInfo node = nodes.get(nodes.size() - 1);
-        info.data.setRevisionDateTime(node.datetime);
-        assignCommonFields(info, node.node);
+
+        if (!nodes.isEmpty()) {
+            Collections.sort(nodes);
+            SourceDataNodeInfo node = nodes.get(nodes.size() - 1);
+            revisionDateTime = node.datetime;
+            revisionNode = node.node;
+            assignCommonFields(node.node);
+        }
+        return revisionNode != null;
     }
 
-    private void assignCommonFields(ResourceInfo info, JsonNode item) {
-        info.data.setUrl(item.has(KEY_URL) ? item.get(KEY_URL).textValue() : null);
-        info.data.setSize(item.has(KEY_SIZE) ? item.get(KEY_SIZE).asLong() : -1);
-        info.data.setDigest(item.has(KEY_DIGEST) ? item.get(KEY_DIGEST).textValue() : null);
-        info.data.setFormat(item.has(KEY_FORMAT) ? item.get(KEY_FORMAT).textValue() : Objects.requireNonNull(info.getFormat()));
-        info.data.setMimeType(item.has(KEY_MIMETYPE) ? item.get(KEY_MIMETYPE).textValue() : info.getMimeType());
+    private void assignCommonFields(JsonNode item) {
+        url = item.has(KEY_URL) ? item.get(KEY_URL).textValue() : null;
+        size = item.has(KEY_SIZE) ? item.get(KEY_SIZE).asLong() : -1;
+        digest = item.has(KEY_DIGEST) ? item.get(KEY_DIGEST).textValue() : null;
+        format = item.has(KEY_FORMAT) ? item.get(KEY_FORMAT).textValue() : format;
+        format = Utils.normalizeString(format, '\"', " \r\t");
+        if (format.startsWith(".")) format = format.substring(1);
+        format = format.toLowerCase();
+        int zipIndex = format.indexOf("zip");
+        if (zipIndex >= 0) {
+            zipped = true;
+            format = (format.substring(0, zipIndex) + " " + format.substring(zipIndex + 3)).trim();
+            if (format.length() == 0) format = "zip";
+        }
+        mimeType = item.has(KEY_MIMETYPE) ? item.get(KEY_MIMETYPE).textValue() : mimeType;
     }
 
     @Override
     public String toString() {
-        String prefix = "";
-        String mid = ",";
-        String data;
-        String suffix = "";
-
-        if (resources.size() > 2) {
-            prefix = "\n";
-            mid = ":\n [";
-            suffix = "]\n";
-            StringBuilder builder = new StringBuilder();
-            for (ResourceInfo info : resources) {
-                builder.append("  ");
-                builder.append(info.toString());
-                builder.append("\n");
-            }
-            data = builder.toString();
-        } else {
-            data = resources.isEmpty() ? "no resources" : resources.get(0).data.toString();
-        }
-
-        return MessageFormat.format("{0}DataGovUa: api: {1}{2}{3}{4}",
-                prefix, apiKey, mid, data, suffix);
+        return MessageFormat.format("DataGovUaSourceInfo[api: {0}, resource: {1}, format: {2}, mimeType: {3}, revision: {4}, size: {5}, digest: {6}, url: {7}]",
+                apiKey, resourceId, format, mimeType, revisionDateTime, size, digest, url);
     }
 }
+
+

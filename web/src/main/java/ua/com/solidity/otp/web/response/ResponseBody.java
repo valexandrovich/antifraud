@@ -1,9 +1,8 @@
 package ua.com.solidity.otp.web.response;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@Getter
+
 public class ResponseBody<T> {
 
     private final T principal;
@@ -16,6 +15,18 @@ public class ResponseBody<T> {
         this.principal = principal;
         this.status = status.value();
         this.message = message;
+    }
+
+    public T getUuid() {
+        return this.principal;
+    }
+
+    public int getStatus() {
+        return this.status;
+    }
+
+    public String getMessage() {
+        return this.message;
     }
 
 }

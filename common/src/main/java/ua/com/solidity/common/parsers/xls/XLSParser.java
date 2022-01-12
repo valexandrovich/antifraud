@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import ua.com.solidity.common.CustomParser;
+import ua.com.solidity.common.ValueParser;
+
+import java.time.ZoneOffset;
 
 @Slf4j
 public class XLSParser extends CustomParser {
@@ -81,6 +85,13 @@ public class XLSParser extends CustomParser {
         }
         switch (type) {
             case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    if (cell.getLocalDateTimeCellValue().toInstant(ZoneOffset.UTC).equals(cell.getDateCellValue().toInstant())) {
+                        return factory.textNode(ValueParser.formatInstant(cell.getDateCellValue().toInstant()));
+                    } else {
+                        return factory.textNode(ValueParser.formatLocalDateTime(cell.getLocalDateTimeCellValue(), ZoneOffset.UTC));
+                    }
+                }
                 return factory.numberNode(cell.getNumericCellValue());
             case BLANK:
                 return null;

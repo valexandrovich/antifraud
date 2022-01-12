@@ -12,7 +12,7 @@ public class InitDeferredTask extends RabbitMQTask {
     private final String msg;
 
     public InitDeferredTask(Config config, String msg) {
-        super(true, false);
+        super(false);
         this.config = config;
         this.msg = msg;
     }
@@ -24,8 +24,9 @@ public class InitDeferredTask extends RabbitMQTask {
     }
 
     @Override
-    public void execute() {
+    protected void execute() {
         Utils.sendRabbitMQMessage(config.getScheduler(), msg);
+        acknowledge(true);
         log.info("Init request handled with message - {}", msg);
     }
 }

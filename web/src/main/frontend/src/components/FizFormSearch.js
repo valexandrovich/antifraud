@@ -91,7 +91,7 @@ const FizFormSearch = () => {
       body: JSON.stringify(values),
     })
       .then((res) => res.json())
-      .then((file) => setSearchResults(file.uuid))
+      .then((file) => setSearchResults(file.principal))
 
       .catch(function (res) {
         console.log(res);

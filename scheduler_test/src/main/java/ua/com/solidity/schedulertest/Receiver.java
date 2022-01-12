@@ -21,7 +21,9 @@ public class Receiver extends RabbitMQReceiver {
     protected Object handleMessage(String queue, String message) {
         if (queue.equals(config.getName())) {
             return new InitDeferredTask(config, schedulerInitMessage);
+        } else if (queue.equals(config.getTest())) {
+            return new MsgDeferredTask(message);
         }
-        return new MsgDeferredTask(message);
+        return false; // never executes
     }
 }

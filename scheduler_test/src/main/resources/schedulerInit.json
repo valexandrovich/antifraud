@@ -41,7 +41,6 @@
         }
       }
     },
-
     {
       "exchange": "otp-etl.downloader",
       "data":
@@ -56,11 +55,10 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
-
     {
       "exchange": "otp-etl.downloader",
       "data":
@@ -75,7 +73,26 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
+        }
+      }
+    },
+
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua4",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
         }
       }
     },
@@ -94,7 +111,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -113,7 +130,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -132,7 +149,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -151,7 +168,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -170,7 +187,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -189,7 +206,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -208,11 +225,480 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
 
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_01",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_02",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_03",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_04",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_05",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_06",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_07",
+        "attemptsLeft" : 10
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_08",
+        "attemptsLeft" : 10
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_09",
+        "attemptsLeft" : 10
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_10",
+        "attemptsLeft" : 10
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_11",
+        "attemptsLeft" : 10
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_12",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_13",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_14",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_15",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_16",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_17",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_18",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_19",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_20",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_21",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_22",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_23",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_24",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_25",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
+    {
+      "exchange": "otp-etl.downloader",
+      "data":
+      {
+        "ident": "govua12_26",
+        "attemptsLeft" : 3
+      },
+
+      "schedule":
+      {
+        "start": "2021-01-01T00:00",
+        "minutes":
+        {
+          "type": "periodic",
+          "value": 30
+        }
+      }
+    },
     {
       "exchange": "otp-etl.downloader",
       "data":
@@ -227,11 +713,10 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
-
     {
       "exchange": "otp-etl.downloader",
       "data":
@@ -246,11 +731,10 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
-
     {
       "exchange": "otp-etl.downloader",
       "data":
@@ -265,11 +749,10 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
-
     {
       "exchange": "otp-etl.downloader",
       "data":
@@ -284,7 +767,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -302,7 +785,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -320,7 +803,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     },
@@ -338,7 +821,7 @@
         "minutes":
         {
           "type": "periodic",
-          "value": 3
+          "value": 30
         }
       }
     }

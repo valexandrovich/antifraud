@@ -1,7 +1,10 @@
 package ua.com.solidity.downloader;
 
-import ua.com.solidity.common.ResourceInfoData;
+import ua.com.solidity.common.ImporterInfoFileData;
+
+import java.util.List;
 
 public interface DownloaderTaskHandler {
-    ResourceInfoData getData(DownloaderTask task);
+    List<ImporterInfoFileData> getFiles(DownloaderTask task);
+    boolean handleImporterInfo(ImporterInfoFileData data, DownloaderTask task);
 }

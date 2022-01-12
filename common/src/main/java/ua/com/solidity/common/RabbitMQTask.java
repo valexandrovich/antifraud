@@ -1,24 +1,42 @@
 package ua.com.solidity.common;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Getter
 public abstract class RabbitMQTask extends DeferredTask {
     private RabbitMQListener listener;
     private long deliveryTag;
     private final boolean autoAck;
+    private final boolean inThread;
     private boolean acknowledgeSent = false;
+    private RabbitMQExecutionThread thread = null;
 
-    protected RabbitMQTask(boolean autoAck) {
-        this.autoAck = autoAck;
+    private static class RabbitMQExecutionThread extends Thread {
+        private final RabbitMQTask task;
+        public RabbitMQExecutionThread(RabbitMQTask task) {
+            this.task = task;
+        }
+        @Override
+        public void run() {
+            task.internalExecute();
+        }
     }
 
-    final synchronized RabbitMQTask setContext(RabbitMQListener listener, long deliveryTag) {
+    protected RabbitMQTask(boolean autoAck, boolean inThread) {
+        this.autoAck = autoAck;
+        this.inThread = inThread;
+    }
+
+    public final void reset() {
+        if (thread != null && thread.isAlive()) {
+            thread.interrupt();
+            thread = null;
+        }
+    }
+
+    final synchronized void setContext(RabbitMQListener listener, long deliveryTag) {
         this.listener = listener;
         this.deliveryTag = deliveryTag;
-        return this;
     }
 
     private synchronized void internalExecute() {
@@ -28,19 +46,25 @@ public abstract class RabbitMQTask extends DeferredTask {
             log.error("RabbitMQTask execution error.", e);
         } finally {
             if (!acknowledgeSent) acknowledge(true);
+            thread = null;
+            listener.unlock();
             listener = null;
             deliveryTag = 0;
         }
     }
 
-    @Override
-    public void run() {
+    final void rabbitMQExecute() {
         if (listener != null) {
+            this.listener.lock();
             if (autoAck) {
                 listener.doAcknowledge(deliveryTag, true);
                 acknowledgeSent = true;
             }
-            internalExecute();
+
+            if (inThread) {
+                thread = new RabbitMQExecutionThread(this);
+                thread.start();
+            } else internalExecute();
         }
     }
 

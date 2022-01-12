@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ua.com.solidity.common.prototypes.*;
 import ua.com.solidity.importer.pipeline.ImportRevisionGroupRowImporter;
+import ua.com.solidity.importer.pipeline.TmpSourceImporter;
 import ua.com.solidity.pipeline.ContextPipelinePrototypeProvider;
 import ua.com.solidity.pipeline.PipelineFactory;
 
@@ -53,6 +54,9 @@ public class PipelineConfiguration {
     public PPDictionary ppDictionary() {
         return new PPDictionary();
     }
+
+    @Bean
+    public TmpSourceImporter ppTmpSourceImporter() {return new TmpSourceImporter(); }
 
     @Bean
     public ImportRevisionGroupRowImporter ppRowImporter(JdbcTemplate template) {

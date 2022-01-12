@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import ua.com.solidity.common.*;
 import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.repositories.ImportRevisionRepository;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -23,14 +26,16 @@ public class DownloaderTask extends RabbitMQTask {
     private JsonNode sourceInfo;
     private ImportSource source;
     private boolean isError = false;
+    private int errors = 0;
+    private int completed = 0;
     private final ImportRevisionRepository importRevisionRepository;
 
     protected DownloaderTask(Receiver receiver, DownloaderMessageData msgData) {
-        super(true);
+        super(true, false);
         this.receiver = receiver;
         this.msgData = msgData;
-        this.importRevisionRepository = Utils.checkApplicationContext() ?
-                Utils.getApplicationContext().getBean(ImportRevisionRepository.class) : null;
+        ApplicationContext context = Utils.getApplicationContext();
+        this.importRevisionRepository = context != null ? context.getBean(ImportRevisionRepository.class) : null;
     }
 
     public final String getPrefix() {
@@ -43,17 +48,17 @@ public class DownloaderTask extends RabbitMQTask {
             Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(msgData));
         } else {
             DownloaderErrorMessageData data = new DownloaderErrorMessageData(this.msgData.getIdent());
-            RabbitMQLogMessage message = new RabbitMQLogMessage("downloader", "E001", data);
+            RabbitmqLogMessage message = new RabbitmqLogMessage("downloader", "E001", data);
             Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(message));
         }
     }
 
-    public final ImporterMessageData createImporterMessageData(ResourceInfoData data) {
-        ImportRevision res = new ImportRevision(UUID.randomUUID(), source.getId(), data.getMainFile().getInstant(),
-                pipelineInfo, data.getMainFile().getUrl(), data.getMainFile().getFileName());
+    public final ImporterMessageData sendImportQuery(ImporterInfoFileData data, String dataFileName, String infoFileName) {
+        ImportRevision res = new ImportRevision(UUID.randomUUID(), source.getId(), data.getInstant(),
+                pipelineInfo, data.getUrl(), dataFileName);
         res = res.save();
         if (res != null) {
-            return new ImporterMessageData(source.getId(), res.getId(), data, pipelineInfo);
+            return data.getImporterMessageData(source.getId(), res.getId(), dataFileName, infoFileName, pipelineInfo);
         }
         return null;
     }
@@ -64,42 +69,78 @@ public class DownloaderTask extends RabbitMQTask {
         return otherTask != null && otherTask.msgData.getIdent().equals(msgData.getIdent()) ? DeferredAction.IGNORE : DeferredAction.APPEND;
     }
 
-    private void doExecuteHandlerInfo(ResourceInfoData data, DurationPrinter urlElapsedTime) {
-        urlElapsedTime.reset();
-        ImporterMessageData importerMessageData = receiver.getDownloader().download(data, this);
-        urlElapsedTime.stop();
-        if (importerMessageData != null) {
-            if (data.dictionaries.isEmpty()) {
-                log.info("Download completed.");
+    private void doExecuteHandlerInfo(ImporterInfoFileData file, DownloaderTaskHandler handler, DurationPrinter urlElapsedTime, boolean multiple) {
+        if (handler.handleImporterInfo(file, this)) {
+            log.info("Start downloading from {}", file.getUrl());
+            urlElapsedTime.reset();
+            ImporterMessageData data = receiver.getDownloader().download(file, this);
+            if (multiple) {
+                log.info("    - - - - - - - - - - -");
+                if (data != null) {
+                    log.info("    resource loaded to file {}", data.getDataFileName());
+                    ++completed;
+                } else {
+                    log.error("    Resource not loaded ({})", file.getUrl());
+                    ++errors;
+                }
+                log.info("    elapsed time: {}", urlElapsedTime.getDurationString());
             } else {
-                log.info("Download of {} files completed.", data.dictionaries.size() + 1);
+                if (data == null) {
+                    log.error("Download error.");
+                    ++errors;
+                }
             }
-            log.info("elapsed time: {}", urlElapsedTime.getDurationString());
-            importerMessageData.setPipelineInfo(pipelineInfo);
-            send(receiver.getConfig().getImporterTopicExchangeName(), Utils.objectToJsonString(importerMessageData));
-            log.info("Message sent to Importer.");
-        } else {
-            log.info("Downloading cancelled. All files removed.");
-            handleError();
+            urlElapsedTime.stop();
+            if (data != null) {
+                data.setPipelineInfo(pipelineInfo);
+                Utils.sendRabbitMQMessage(receiver.getConfig().getImporterTopicExchangeName(), Utils.objectToJsonString(data));
+            }
         }
-        log.info("===============================");
     }
 
     private void doExecute(DownloaderTaskHandler handler) {
         ImportRevision lastRevision = ImportRevision.findFirstBySourceName(source.getId());
-        ResourceInfoData data = handler.getData(this);
+        List<ImporterInfoFileData> files = handler.getFiles(this);
         if (isError) return;
-        if (lastRevision != null && lastRevision.getRevisionDate() != null &&
-                data.getMainFile().getRevisionDateTime().toInstant().compareTo(lastRevision.getRevisionDate()) <= 0) {
+        if (lastRevision != null && lastRevision.getRevisionDate() != null) {
+            files.removeIf(file -> file.getRevisionDateTime().toInstant().compareTo(lastRevision.getRevisionDate()) <= 0);
+        }
+
+        if (files.isEmpty()) {
             log.info("New files not found for source name = {}.", source.getName());
             return;
         }
+
         DurationPrinter elapsedTime = new DurationPrinter();
-        doExecuteHandlerInfo(data, elapsedTime);
+        DurationPrinter urlElapsedTime = new DurationPrinter();
+
+        files.sort(Comparator.comparing(ImporterInfoFileData::getRevisionDateTime));
+
+        completed = 0;
+        errors = 0;
+
+        for (ImporterInfoFileData file : files) {
+            doExecuteHandlerInfo(file, handler, urlElapsedTime, files.size() > 1);
+        }
+
+        if (files.size() > 1) {
+            log.info(DOWNLOADER_LOG_DELIMITER);
+            log.info("download completed for {} resources.", completed);
+            log.info("download errors found for {} resources.", errors);
+            log.info("total elapsed time: {}", elapsedTime.getDurationString());
+            log.info(DOWNLOADER_LOG_DELIMITER);
+        } else {
+            log.info(DOWNLOADER_LOG_DELIMITER);
+            log.info("download completed.");
+            log.info("elapsed time: {}", elapsedTime.getDurationString());
+            log.info(DOWNLOADER_LOG_DELIMITER);
+        }
+
+        if (errors > 0) handleError();
     }
 
     @Override
-    protected void execute() {
+    public void execute() {
         log.info("Request received. Ident: \"{}\", attempts left: {}", msgData.getIdent(), msgData.getAttemptsLeft());
         source = ImportSource.findImportSourceByName(msgData.getIdent());
         if (source == null) {

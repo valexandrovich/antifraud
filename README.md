@@ -63,15 +63,3 @@ docker-compose up -d --no-deps --build web
 ```
 docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
 ```
-
-## ElasticSearch
-
-Two configurations provided - single node (`elastic`) and cluster (`elastic01`, `elastic02`, `elastic03`).
-
-The unnecessary configuration could be commented out in Docker-Compose YAML.
-
-For Windows to run image(s) successfully, enter:
-```
-wsl -d docker-desktop
-sysctl -w vm.max_map_count=262144
-```

@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RabbitMQLogMessage {
+public class RabbitmqLogMessage {
     private String module;
     private String code;
     private Object data;

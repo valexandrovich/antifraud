@@ -18,6 +18,6 @@ public class DownloaderConfiguration {
 
     @Bean
     RabbitMQListener listener(Config config, Receiver receiver) {
-        return new RabbitMQListener(receiver, config.getCollectMSecs(), config.getName());
+        return new RabbitMQListener(receiver, true, config.getCollectMSecs(), config.getName());
     }
 }

@@ -1,9 +1,13 @@
 package ua.com.solidity.downloader;
 import lombok.extern.slf4j.Slf4j;
-import ua.com.solidity.common.ResourceInfoData;
+import ua.com.solidity.common.ImporterInfoFileData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class DownloaderTaskGovUaHandler implements DownloaderTaskHandler {
+    private static final String API_KEY = "apiKey";
     private final DataGovUaSourceInfo dataGovUaSourceInfo;
 
     public DownloaderTaskGovUaHandler(DataGovUaSourceInfo dataGovUaSourceInfo) {
@@ -11,14 +15,24 @@ public class DownloaderTaskGovUaHandler implements DownloaderTaskHandler {
     }
 
     @Override
-    public ResourceInfoData getData(DownloaderTask task) {
-        if (dataGovUaSourceInfo.initialize(task.getSourceInfo())) {
-            log.info("File found: size: {}, url: {}", dataGovUaSourceInfo.getMainFile().getSize(),
-                    dataGovUaSourceInfo.getMainFile().getUrl());
-            return dataGovUaSourceInfo;
+    public List<ImporterInfoFileData> getFiles(DownloaderTask task) {
+        List<ImporterInfoFileData> res = new ArrayList<>();
+        if (task.getSourceInfo().hasNonNull(API_KEY)) {
+            String apiKey = task.getSourceInfo().get(API_KEY).asText();
+            if (dataGovUaSourceInfo.initialize(apiKey)) {
+                log.info("File found: size: {}, url: {}", dataGovUaSourceInfo.getSize(), dataGovUaSourceInfo.getUrl());
+                res.add(dataGovUaSourceInfo);
+            } else {
+                task.handleError();
+            }
         } else {
-            task.handleError();
+            log.error("ApiKey not found.");
         }
-        return null;
+        return res;
+    }
+
+    @Override
+    public boolean handleImporterInfo(ImporterInfoFileData data, DownloaderTask task) {
+        return data == dataGovUaSourceInfo;
     }
 }

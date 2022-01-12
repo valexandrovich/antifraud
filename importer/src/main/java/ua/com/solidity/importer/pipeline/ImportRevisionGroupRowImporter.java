@@ -22,8 +22,7 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     private static CachedQuery[] queries;
     private static final String DATA = "data";
     private static final String REVISION_GROUP = "revision_group";
-    private static final String QUERY_START = "insert_import_revision_group_row(?::uuid,?::uuid,?,?,?::jsonb,"; // id, import_revision_group, source_group, digest (bytea), data (json)
-    private static final int ARGS_COUNT = 5;
+    private static final String QUERY_START = "insert_import_revision_group_row(?::uuid,?::uuid,?,?::jsonb,"; // id, import_revision_group, source_group, data (json)
     @Autowired
     Config config;
 
@@ -39,18 +38,17 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
             this.size = size;
             this.query = query;
             this.selectQuery = "select " + query;
-            this.args = new Object[ARGS_COUNT * size];
+            this.args = new Object[4 * size];
         }
 
         int handleCache(OutputCache cache, JdbcTemplate template) {
             int res;
             for (int i = size - 1; i >= 0; --i) {
                 ImportRevisionGroupRow row = cache.getObject(i, ImportRevisionGroupRow.class);
-                int idx = i * ARGS_COUNT;
+                int idx = i * 4;
                 args[idx++] = row.getId().toString();
                 args[idx++] = row.getRevisionGroup().toString();
                 args[idx++] = row.getSourceGroup();
-                args[idx++] = row.getDigest();
                 args[idx] = row.getData().toString();
             }
             try {

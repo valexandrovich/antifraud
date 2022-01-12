@@ -173,8 +173,6 @@ services:
       - /var/log:/var/log
       - ./docker/promtail/promtail-config.yaml:/etc/promtail/config.yaml
     command: -config.file=/etc/promtail/config.yaml
-    depends_on:
-      - loki
     networks:
       - otp-etl-network
 
@@ -206,8 +204,6 @@ services:
 #      - MTP_RELAY=smtp.gmail.com
 #      - MTP_USER=foo
 #      - MTP_PASS=secret
-    ports:
-          - "25:25"
     networks:
       - otp-etl-network
 
@@ -223,91 +219,6 @@ services:
     networks:
       - otp-etl-network
 
-  elastic:
-    image: elasticsearch:7.16.2
-    container_name: elastic01
-    # Ports should not be exposed on Prod environment
-    ports:
-      - "9200:9200"
-    #      - "9300:9300"
-    environment:
-      - node.name=elastic01
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=elastic02,elastic03
-      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - elastic-data01:/usr/share/elasticsearch/data
-    networks:
-      - otp-etl-network
-
-# Comment out single node ES above to run 3-node cluster below
-#  elastic01:
-#    image: elasticsearch:7.16.2
-#    container_name: elastic01
-## Ports should not be exposed on Prod environment
-#    ports:
-#      - "9200:9200"
-##      - "9300:9300"
-#    environment:
-#      - node.name=elastic01
-#      - cluster.name=es-docker-cluster
-#      - discovery.seed_hosts=elastic02,elastic03
-#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
-#      - bootstrap.memory_lock=true
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    volumes:
-#      - elastic-data01:/usr/share/elasticsearch/data
-#    networks:
-#      - otp-etl-network
-#
-#  elastic02:
-#    image: elasticsearch:7.16.2
-#    container_name: elastic02
-#    environment:
-#      - node.name=elastic02
-#      - cluster.name=es-docker-cluster
-#      - discovery.seed_hosts=elastic01,elastic03
-#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
-#      - bootstrap.memory_lock=true
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    volumes:
-#      - elastic-data02:/usr/share/elasticsearch/data
-#    networks:
-#      - otp-etl-network
-#
-#  elastic03:
-#    image: elasticsearch:7.16.2
-#    container_name: elastic03
-#    environment:
-#      - node.name=elastic03
-#      - cluster.name=es-docker-cluster
-#      - discovery.seed_hosts=elastic02,elastic01
-#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
-#      - bootstrap.memory_lock=true
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    volumes:
-#      - elastic-data03:/usr/share/elasticsearch/data
-#    networks:
-#      - otp-etl-network
-
 networks:
   otp-etl-network:
     driver: bridge
@@ -317,10 +228,3 @@ volumes:
   grafana-storage:
   psql-storage:
   tmp-storage:
-  elastic-data:
-  elastic-data01:
-    driver: local
-  elastic-data02:
-    driver: local
-  elastic-data03:
-    driver: local

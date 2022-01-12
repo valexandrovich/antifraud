@@ -7,8 +7,5 @@ import lombok.Setter;
 @Setter
 public abstract class DeferredTask {
     protected abstract DeferredAction compareWith(DeferredTask task);
-    public void run() {
-        execute();
-    }
-    protected abstract void execute();
+    public abstract void execute();
 }

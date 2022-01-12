@@ -3,7 +3,7 @@ package ua.com.solidity.otp.web.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ua.com.solidity.ad.entry.Person;
+import ua.com.solidity.db.ldap.Person;
 
 @NoArgsConstructor
 @Getter

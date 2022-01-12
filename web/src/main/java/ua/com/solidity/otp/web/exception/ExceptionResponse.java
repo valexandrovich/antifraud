@@ -2,11 +2,14 @@ package ua.com.solidity.otp.web.exception;
 
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.http.HttpStatus;
 
 @Data
 @Builder
 public class ExceptionResponse {
-    private String code;
-    private String text;
+
+    private int statusCode;
+    private HttpStatus status;
+    private String message;
 
 }

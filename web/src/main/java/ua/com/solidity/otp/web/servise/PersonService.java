@@ -3,15 +3,17 @@ package ua.com.solidity.otp.web.servise;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ua.com.solidity.db.ldap.Person;
-import ua.com.solidity.db.ldap.PersonRepository;
+import ua.com.solidity.ad.entry.Person;
+import ua.com.solidity.ad.repository.PersonRepository;
 import ua.com.solidity.otp.web.dto.PersonDto;
+import ua.com.solidity.otp.web.exception.PersonNotFoundException;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,11 +21,6 @@ import java.util.stream.Collectors;
 public class PersonService {
 
     private final PersonRepository personRepository;
-
-    public Boolean authenticate(final String username, final String password) {
-        Person person = personRepository.findByUsernameAndPassword(username, password);
-        return person != null;
-    }
 
     public List<String> search(final String username) {
         List<Person> personList = personRepository.findByUsernameLikeIgnoreCase(username);
@@ -42,14 +39,16 @@ public class PersonService {
     }
 
     public PersonDto findByUserName(String userName) {
-        Person person = personRepository.findByUsername(userName);
+        Optional<Person> personOptional = personRepository.findByUsername(userName);
+        Person person = personOptional.orElseThrow(() -> new PersonNotFoundException(userName));
         PersonDto personDto = new PersonDto(person);
         return personDto;
     }
 
 
-    public void modify(final String username, final String password) {
-        Person person = personRepository.findByUsername(username);
+    public void modify(final String userName, final String password) {
+        Optional<Person> personOptional = personRepository.findByUsername(userName);
+        Person person = personOptional.orElseThrow(() -> new PersonNotFoundException(userName));
         person.setPassword(password);
         personRepository.save(person);
     }

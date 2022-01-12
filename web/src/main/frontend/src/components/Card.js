@@ -9,9 +9,8 @@ const Card = ({ data }) => {
           <h5 className="card-title">{data.nameUk}</h5>
           <h5 className="card-title">{data.surnameRu}</h5>
           <p className="card-text">{data.inn}</p>
-
         </div>
-        <button className="btn btn-success mb-3">Деталі</button>
+        {/* <button className="btn btn-success mb-3">Деталі</button> */}
       </div>
     </>
   );

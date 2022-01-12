@@ -1,0 +1,326 @@
+version: "3.9"
+
+services:
+  web:
+    container_name: otp-web
+    volumes:
+      - tmp-storage:/tmp
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=web/target/*.jar
+    image: otp-web:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - otp-etl-network
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
+      - OTP_TEMP=/tmp
+
+  downloader:
+    container_name: otp-downloader
+    volumes:
+      - tmp-storage:/tmp
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=downloader/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
+      - OTP_TEMP=/tmp
+    image: otp-downloader:latest
+    depends_on:
+      - migration
+      - queue
+    networks:
+      - otp-etl-network
+
+  importer:
+    container_name: otp-importer
+    volumes:
+      - tmp-storage:/tmp
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=importer/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
+      - OTP_TEMP=/tmp
+    image: otp-importer:latest
+    depends_on:
+      - migration
+      - queue
+    networks:
+      - otp-etl-network
+
+  scheduler:
+    container_name: otp-scheduler
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=scheduler/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
+    image: otp-scheduler:latest
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
+    depends_on:
+      - migration
+      - queue
+    networks:
+      - otp-etl-network
+
+  scheduler_test:
+    container_name: otp-scheduler_test
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=scheduler_test/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
+    image: otp-scheduler_test:latest
+    depends_on:
+      - migration
+      - queue
+    networks:
+      - otp-etl-network
+
+  emailer:
+    container_name: otp-notification
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=notification/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
+    image: otp-notification:latest
+    depends_on:
+      - mail
+      - migration
+      - queue
+    networks:
+      - otp-etl-network
+
+  db:
+    image: postgres:10
+    # Uncomment following two lines to use persistent storage
+#    volumes:
+#      - psql-storage:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U otp" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - POSTGRES_USER=otp
+      - POSTGRES_PASSWORD=otp
+    ports:
+      - "5432:5432"
+    networks:
+      - otp-etl-network
+
+  queue:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    # Update RabbitMQ configuration and uncomment following lines to apply queue customizations
+#    volumes:
+#      - ./docker/rabbitmq/rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro
+#      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks:
+      - otp-etl-network
+
+  migration:
+    image: liquibase/liquibase
+    volumes:
+      - ./db/src/main/resources/changelog:/liquibase/changelog
+    command: --url=jdbc:postgresql://db:5432/otp --username=otp --password=otp --changeLogFile=changelog/db.changelog-master.yaml update
+    depends_on:
+      - db
+    networks:
+      - otp-etl-network
+
+  loki:
+    image: grafana/loki:2.4.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - otp-etl-network
+
+  promtail:
+    image: grafana/promtail:2.4.0
+    volumes:
+      - /var/log:/var/log
+      - ./docker/promtail/promtail-config.yaml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - otp-etl-network
+
+  prometheus:
+    image: prom/prometheus:v2.30.3
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      - otp-etl-network
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - otp-etl-network
+
+  mail:
+    image: eeacms/postfix
+    environment:
+      - MTP_HOST=otp.local
+      # Uncomment these three lines to send emails to real world
+#      - MTP_RELAY=smtp.gmail.com
+#      - MTP_USER=foo
+#      - MTP_PASS=secret
+    ports:
+          - "25:25"
+    networks:
+      - otp-etl-network
+
+  directory:
+    image: osixia/openldap
+    ports:
+      - "389:389"
+      - "636:636"
+    environment:
+      - LDAP_ORGANISATION="OTP"
+      - LDAP_DOMAIN="otp.com.ua"
+      - LDAP_ADMIN_PASSWORD="otp"
+    networks:
+      - otp-etl-network
+
+  elastic:
+    image: elasticsearch:7.16.2
+    container_name: elastic01
+    # Ports should not be exposed on Prod environment
+    ports:
+      - "9200:9200"
+    #      - "9300:9300"
+    environment:
+      - node.name=elastic01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=elastic02,elastic03
+      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elastic-data01:/usr/share/elasticsearch/data
+    networks:
+      - otp-etl-network
+
+# Comment out single node ES above to run 3-node cluster below
+#  elastic01:
+#    image: elasticsearch:7.16.2
+#    container_name: elastic01
+## Ports should not be exposed on Prod environment
+#    ports:
+#      - "9200:9200"
+##      - "9300:9300"
+#    environment:
+#      - node.name=elastic01
+#      - cluster.name=es-docker-cluster
+#      - discovery.seed_hosts=elastic02,elastic03
+#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
+#      - bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    volumes:
+#      - elastic-data01:/usr/share/elasticsearch/data
+#    networks:
+#      - otp-etl-network
+#
+#  elastic02:
+#    image: elasticsearch:7.16.2
+#    container_name: elastic02
+#    environment:
+#      - node.name=elastic02
+#      - cluster.name=es-docker-cluster
+#      - discovery.seed_hosts=elastic01,elastic03
+#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
+#      - bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    volumes:
+#      - elastic-data02:/usr/share/elasticsearch/data
+#    networks:
+#      - otp-etl-network
+#
+#  elastic03:
+#    image: elasticsearch:7.16.2
+#    container_name: elastic03
+#    environment:
+#      - node.name=elastic03
+#      - cluster.name=es-docker-cluster
+#      - discovery.seed_hosts=elastic02,elastic01
+#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
+#      - bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    volumes:
+#      - elastic-data03:/usr/share/elasticsearch/data
+#    networks:
+#      - otp-etl-network
+
+networks:
+  otp-etl-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-storage:
+  psql-storage:
+  tmp-storage:
+  elastic-data:
+  elastic-data01:
+    driver: local
+  elastic-data02:
+    driver: local
+  elastic-data03:
+    driver: local

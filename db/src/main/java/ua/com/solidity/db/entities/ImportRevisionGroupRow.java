@@ -2,19 +2,18 @@ package ua.com.solidity.db.entities;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.db.repositories.ImportRevisionGroupRowRepository;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.util.Base64;
 import java.util.UUID;
 
 @Slf4j
@@ -33,11 +32,14 @@ public class ImportRevisionGroupRow extends CustomEntity {
     @Column(name = "id", nullable = false)
     private UUID id;
 
+    @Column(name = "revision_group", nullable = false)
+    private UUID revisionGroup;
+
     @Column(name = "source_group", nullable = false)
     private long sourceGroup;
 
-    @Column(name = "revision_group", nullable = false)
-    private UUID revisionGroup;
+    @Column(name = "digest")
+    private String digest;
 
     @Type(type = "jsonb-node")
     @Column(name = "data")
@@ -62,6 +64,15 @@ public class ImportRevisionGroupRow extends CustomEntity {
             }
         }
         return null;
+    }
+
+    public void setData(JsonNode value) {
+        data = value;
+        rebuildDigest();
+    }
+
+    public final void rebuildDigest() {
+        digest = Base64.getEncoder().encodeToString(Utils.complexDigest(data));
     }
 
     @SuppressWarnings("unused")

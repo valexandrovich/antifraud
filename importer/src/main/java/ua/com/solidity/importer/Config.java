@@ -7,7 +7,6 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.OutputCache;
-import ua.com.solidity.common.Utils;
 import java.util.Map;
 
 @Slf4j
@@ -21,12 +20,6 @@ public class Config {
     @Value("${reservecopy.rabbitmq.queue}")
     private String reserveCopyQueue;
 
-    @Value("${importer.outputFolder}")
-    private String outputFolder;
-
-    @Value("${importer.defaultEnvironmentVariableForOutputFolder}")
-    private String defaultEnvironmentVariableForOutputFolder;
-
     @Value("${importer.environmentVariableForImportRestriction}")
     private String environmentVariableForImportRestriction;
 
@@ -36,13 +29,6 @@ public class Config {
     private String importerOutputFolder = null;
     private long importRestriction = -1;
     private boolean importRestrictionAssigned = false;
-
-    public final String getImporterOutputFolder() {
-        if (importerOutputFolder == null) {
-            importerOutputFolder = Utils.getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder);
-        }
-        return importerOutputFolder;
-    }
 
     public final long getInputRestriction() {
         if (!importRestrictionAssigned) {

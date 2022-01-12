@@ -1,5 +1,6 @@
 package ua.com.solidity.notification.config;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Queue;
@@ -7,18 +8,25 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import static ua.com.solidity.notification.utils.QueueCreds.QUEUE_NAME;
+import ua.com.solidity.common.RabbitMQListener;
+import ua.com.solidity.notification.listener.Receiver;
 
 @Slf4j
 @Configuration
+@RequiredArgsConstructor
 public class RabbitConfiguration {
+
+    @Value("${notification.rabbitmq.name}")
+    private String queueName;
+    @Value("${spring.rabbitmq.host}")
+    private String queueHost;
 
     @Bean
     public ConnectionFactory connectionFactory() {
-        return new CachingConnectionFactory("queue");
+        return new CachingConnectionFactory(queueHost);
     }
 
     @Bean
@@ -33,7 +41,12 @@ public class RabbitConfiguration {
 
     @Bean
     public Queue myQueue() {
-        return new Queue(QUEUE_NAME);
+        return new Queue(queueName);
+    }
+
+    @Bean
+    RabbitMQListener listener(Receiver receiver) {
+        return new RabbitMQListener(receiver, queueName);
     }
 
 }

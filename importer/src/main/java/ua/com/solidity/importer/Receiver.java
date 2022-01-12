@@ -20,9 +20,9 @@ public class Receiver extends RabbitMQReceiver {
     @Override
     public Object handleMessage(String queue, String message) {
         ImporterMessageData data = Utils.jsonToValue(message, ImporterMessageData.class);
-        if (data == null || data.getDataFileName() == null) {
-            log.warn("Empty command received.");
-            return null;
+        if (data == null || data.getData() == null || data.getData().getMainFile() == null) {
+            log.warn("Invalid command received.");
+            return true;
         }
         return new ImporterTask(importer, data);
     }

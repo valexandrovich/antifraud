@@ -5,7 +5,7 @@ import java.util.UUID;
 public class EntityNotFoundException extends RuntimeException {
 
     public EntityNotFoundException(Class type, UUID uuid) {
-        super("Could not find " + type.getName() + " with id " + uuid);
+        super("Could not find " + type.getSimpleName() + " with id " + uuid);
     }
 
     public EntityNotFoundException(Class type, String name) {

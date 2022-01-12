@@ -1,12 +1,10 @@
 package ua.com.solidity.downloader;
 
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.common.ImporterInfoFileData;
+import ua.com.solidity.common.ResourceInfoData;
+import ua.com.solidity.common.ResourceInfoFileData;
 import ua.com.solidity.common.ImporterMessageData;
 import ua.com.solidity.common.Utils;
 
@@ -19,6 +17,8 @@ import java.util.UUID;
 @Slf4j
 @Component
 public class Downloader {
+
+    private static final String DELIMITER = "- - - - - - - - - - - - - - -";
     private final File targetFolder;
 
     @Autowired
@@ -29,41 +29,60 @@ public class Downloader {
         }
     }
 
-    public ImporterMessageData download(ImporterInfoFileData info, DownloaderTask task) {
-        if (!info.isValid()) return null;
-        String fileName = task.getPrefix() + UUID.randomUUID();
-
-        String dataFileName = fileName + info.getExtension();
-        String infoFileName = fileName + "_info.json";
-
-        boolean infoSaved = false;
+    private boolean downloadFile(ResourceInfoFileData file, String baseName, String dictName) {
+        String fileName = baseName + (dictName == null ? "" : "-" + dictName) + "." + file.getExtension();
+        File output = new File(targetFolder, fileName);
+        boolean res = false;
         try {
-            File output = new File(targetFolder, infoFileName);
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectWriter writer = mapper.writer(new DefaultPrettyPrinter());
-            writer.writeValue(output, info);
-            infoFileName = output.getAbsolutePath();
-            infoSaved = true;
-
-            output = new File(targetFolder, dataFileName);
-            dataFileName = output.getAbsolutePath();
             if (!output.createNewFile()) {
-                log.warn("Can't create file name: {}", output.getAbsolutePath());
+                log.warn("Can't create file name: {}", file.getFileName());
             } else {
+                file.setFileName(output.getAbsolutePath());
+                log.info("    file: {}", fileName);
                 try (FileOutputStream target = new FileOutputStream(output, false)) {
-                    InputStream source = Utils.getStreamFromUrl(info.getUrl());
+                    InputStream source = Utils.getStreamFromUrl(file.getUrl());
                     if (!Utils.streamCopy(source, target)) {
                         log.warn("File not saved.");
-                        return null;
-                    }
+                    } else res = true;
                 }
             }
         } catch (Exception e) {
-            log.warn(infoSaved ? MessageFormat.format("Error on download: {}", info.getUrl()) :
-                    MessageFormat.format("Error on save info file for {}", info.getUrl()), e);
+            log.warn(MessageFormat.format("Error on download: {}", file.getUrl()));
+        }
+        return res;
+    }
+
+    public ImporterMessageData download(ResourceInfoData info, DownloaderTask task) {
+        if (!info.isValid()) {
+            log.info("ResourceInfoData is not valid. Downloading cancelled.");
             return null;
         }
+        log.info("=============================");
+        log.info("Start downloading...");
+        log.info(DELIMITER);
+        String fileName = task.getPrefix() + UUID.randomUUID();
+        boolean downloaded = true;
+        if (!info.dictionaries.isEmpty()) {
+            log.info("Schema file(s):");
+            for (var entry : info.dictionaries.entrySet()) {
+                if (!downloadFile(entry.getValue(), fileName, entry.getKey())) {
+                    downloaded = false;
+                    break;
+                }
+            }
+            log.info(DELIMITER);
+        }
 
-        return task.sendImportQuery(info, dataFileName, infoFileName);
+        if (downloaded) {
+            log.info("Main file:");
+            downloaded = downloadFile(info.getMainFile(), fileName, null);
+            log.info(DELIMITER);
+        }
+
+        if (!downloaded) {
+            info.removeAllFiles();
+            return null;
+        }
+        return task.createImporterMessageData(info);
     }
 }

@@ -1,28 +1,21 @@
 package ua.com.solidity.common.prototypes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.pipeline.Item;
-import ua.com.solidity.pipeline.Prototype;
 
 import java.util.zip.ZipFile;
 
 @Slf4j
-public class PPZipFile extends Prototype {
+public class PPZipFile extends PPInputStream {
     @Override
     public Class<?> getOutputClass() {
         return ZipFile.class;
     }
 
     @Override
-    protected void initialize(Item item, JsonNode node) {
-        // nothing yet
-    }
-
-    @Override
     protected Object execute(@NonNull Item item) {
-        String fileName = item.getPipelineParam("FileName", String.class);
+        String fileName = getFileName(item);
         if (fileName == null) {
             log.warn("Pipeline param not defined ('FileName')");
             item.terminate();

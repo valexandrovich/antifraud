@@ -1,13 +1,16 @@
 package ua.com.solidity.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,6 +18,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -24,6 +28,7 @@ import java.util.zip.ZipFile;
 
 @Slf4j
 public class Utils {
+    @SuppressWarnings("SpellCheckingInspection")
     public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSXXX";
     private static final String RABBITMQ_LOG_ERROR_WITH_MESSAGE = "sendRabbitMQMessage: {} . ({}:{}) : {}";
     private static final String RABBITMQ_LOG_ERROR = "sendRabbitMQMessage: {} . ({}:{})";
@@ -33,8 +38,17 @@ public class Utils {
     private static com.rabbitmq.client.ConnectionFactory factory;
     private static Connection connection;
     private static Channel channel;
+    private static ObjectMapper sortedMapper = null;
+    private static final char[] hexChars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    private static final String HEX_DIGITS = new String(hexChars);
 
     private static final Set<String> topics = new HashSet<>();
+    private static final InternalApplicationContextLookup contextLookup = new InternalApplicationContextLookup();
+
+    private static class InternalApplicationContextLookup {
+        @Autowired
+        ApplicationContext context;
+    }
 
     private static class DeferredExecutionTimerTask extends TimerTask {
         DeferredProcedure proc;
@@ -52,17 +66,57 @@ public class Utils {
     }
 
     public static void setApplicationContext(ApplicationContext context) {
+        if (Utils.context != null) return;
         Utils.context = context;
     }
 
     public static boolean checkApplicationContext() {
         if (context != null) return true;
+        if (contextLookup.context != null) {
+            context = contextLookup.context;
+            return true;
+        }
         log.error("Utils ApplicationContext not assigned. Use Utils.setApplicationContext(ApplicationContext) before.");
         return false;
     }
 
     public static ApplicationContext getApplicationContext() {
         return context;
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        if (bytes != null) {
+            char[] chars = new char[bytes.length * 2];
+            int j = 0;
+            for (byte b : bytes) {
+                int v = Byte.toUnsignedInt(b);
+                chars[j++] = hexChars[v >> 4];
+                chars[j++] = hexChars[v & 0x0f];
+            }
+            return String.valueOf(chars);
+        }
+        return null;
+    }
+
+    public static byte[] hexToBytes(String str) {
+        if (str != null) {
+            str = str.toUpperCase();
+            if ((str.length() % 2) != 0) str = '0' + str;
+            byte[] res = new byte[str.length() / 2];
+            int charIndex = 0;
+            boolean failed = false;
+            for (int i = 0; i < res.length; ++i) {
+                int idxHi = HEX_DIGITS.indexOf(str.charAt(charIndex++));
+                int idxLo = HEX_DIGITS.indexOf(str.charAt(charIndex++));
+                if (idxHi < 0 || idxLo < 0) {
+                    failed = true;
+                    break;
+                }
+                res[i] = (byte)((idxHi << 4) | idxLo);
+            }
+            if (!failed) return res;
+        }
+        return new byte[0];
     }
 
     @SuppressWarnings("unused")
@@ -110,7 +164,8 @@ public class Utils {
 
     public static String getFileExtension(String fileName) {
         int pos = fileName.lastIndexOf('.');
-        return pos >= 0 ? fileName.substring(pos + 1) : "";
+        String res = pos >= 0 && pos < fileName.length() - 1 ? fileName.substring(pos + 1) : "";
+        return res.indexOf('/') >= 0 || res.indexOf('\\') >= 0 ? "" : res;
     }
 
     public static InputStream getStreamFromUrl(String url) {
@@ -183,7 +238,9 @@ public class Utils {
     }
 
     public static String objectToJsonString(Object object) {
-        ObjectWriter writer = new ObjectMapper().writer(outputDateTimeFormat()).withDefaultPrettyPrinter();
+        ObjectWriter writer = new ObjectMapper().
+                configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).
+                writer(outputDateTimeFormat()).withDefaultPrettyPrinter();
         try {
             return writer.writeValueAsString(object);
         } catch (Exception e) {
@@ -351,5 +408,55 @@ public class Utils {
             log.warn("Too many items in zip file matches for {}, first selected.", match);
         }
         return found.get(0);
+    }
+
+    private static ObjectMapper getSortedMapper() {
+        if (sortedMapper == null) {
+            sortedMapper = new ObjectMapper().
+                    configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).
+                    configure(SerializationFeature.INDENT_OUTPUT, true).setDateFormat(outputDateTimeFormat());
+        }
+        return sortedMapper;
+    }
+
+    public static byte[] getJsonNodeBytes(JsonNode node) {
+        try {
+            ObjectMapper sortedMapper = getSortedMapper();
+            final Object obj = sortedMapper.treeToValue(node, Object.class);
+            return sortedMapper.writeValueAsBytes(obj);
+        } catch (JsonProcessingException e) {
+            log.error("Can't convert node to bytes.", e);
+        }
+        return new byte[0];
+    }
+
+    public static String getSortedJsonNodeString(JsonNode node) {
+        try {
+            ObjectMapper sortedMapper = getSortedMapper();
+            final Object obj = sortedMapper.treeToValue(node, Object.class);
+            return sortedMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("Can't convert node to Sorted String.", e);
+        }
+        return null;
+    }
+
+    public static byte[] complexDigest(JsonNode node) {
+        if (node != null) {
+            try {
+                MessageDigest md5 = MessageDigest.getInstance("MD5");
+                byte[] input = getJsonNodeBytes(node);
+                byte[] d1 = md5.digest(input);
+                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+                byte[] d2 = sha256.digest(input);
+                byte[] res = new byte[d1.length + d2.length];
+                System.arraycopy(d1, 0, res, 0, d1.length);
+                System.arraycopy(d2, 0, res, d1.length, d2.length);
+                return res;
+            } catch (Exception e) {
+                log.error("ComplexDigest error.", e);
+            }
+        }
+        return new byte[0];
     }
 }

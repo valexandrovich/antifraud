@@ -13,8 +13,8 @@ import org.springframework.ldap.core.support.LdapContextSource;
 @Configuration
 @PropertySource("classpath:application.properties")
 @RequiredArgsConstructor
-@EnableLdapRepositories(basePackages = "ua.com.solidity.db.ldap")
-public class AppConfig {
+@EnableLdapRepositories(basePackages = "ua.com.solidity.ad.repository")
+public class LdapConfig {
 
     private final Environment env;
 

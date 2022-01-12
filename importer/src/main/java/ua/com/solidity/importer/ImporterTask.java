@@ -8,7 +8,7 @@ public class ImporterTask extends RabbitMQTask {
     private final Importer importer;
     private final ImporterMessageData data;
     protected ImporterTask(Importer importer, ImporterMessageData data) {
-        super(true, false);
+        super(true);
         this.importer = importer;
         this.data = data;
     }
@@ -19,10 +19,9 @@ public class ImporterTask extends RabbitMQTask {
     }
 
     @Override
-    public void execute() {
-        log.info("File import requested: {}.", data.getDataFileName());
+    protected void execute() {
+        log.info("File import requested: {}.", data.getData().getMainFile().getFileName());
         importer.doImport(data);
-        ReserveCopyMessageData msg = new ReserveCopyMessageData(data.getDataFileName(), data.getInfoFileName());
-        send(importer.getConfig().getReserveCopyQueue(), Utils.objectToJsonString(msg));
+        data.getData().removeAllFiles();
     }
 }

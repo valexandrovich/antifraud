@@ -1,8 +1,8 @@
-import React, { Component } from "react";
+import React from "react";
 import "bootstrap/dist/css/bootstrap.css";
 import "./styles/Style.css";
-
-import { BrowserRouter, Switch, Route } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { HashRouter, Switch, Route } from "react-router-dom";
 
 import UploadFile from "./pages/upload/UploadFile";
 
@@ -12,12 +12,15 @@ import Aside from "./pages/aside/Aside";
 import DbCheck from "./pages/dbCheck/DbCheck";
 import UploadedFiles from "./pages/uploaded_files/UploadedFiles";
 import Card from "./components/Card";
+import Login from "./pages/login/Login";
 
-class App extends Component {
-  render() {
-    return (
-      <>
-        <BrowserRouter>
+const App = () => {
+  const isAuth = useSelector((state) => state.auth.isAuth);
+  console.log(isAuth);
+  return (
+    <>
+      {isAuth ? (
+        <HashRouter>
           <Aside />
           <Switch>
             <Route exact path="/" component={Search} />
@@ -28,10 +31,12 @@ class App extends Component {
             <Route path="/card/:id" component={<Card />} />
             <Route component={ErrorPage} />
           </Switch>
-        </BrowserRouter>
-      </>
-    );
-  }
-}
+        </HashRouter>
+      ) : (
+        <Route component={Login} />
+      )}
+    </>
+  );
+};
 
 export default App;

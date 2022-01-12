@@ -26,6 +26,12 @@ public class FileDescription {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "row_count")
+    private Integer rowCount;
+
+    @Column(name = "user_name")
+    private String userName;
+
     @Column(name = "created")
     private Date created = new Date(System.currentTimeMillis());
 

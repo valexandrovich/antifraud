@@ -1,4 +1,4 @@
-package ua.com.solidity.db.ldap;
+package ua.com.solidity.ad.entry;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

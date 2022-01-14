@@ -23,6 +23,9 @@ maven-package:
   script:
     - echo "PARENT_VERSION=$(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)" >> parent.env
     - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
+    - cd db
+    - ../mvnw $MAVEN_CLI_OPTS liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp"
+    - cd ..
   cache:
     paths:
       - .m2/repository

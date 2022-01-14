@@ -46,6 +46,7 @@ liquibase-update:
   before_script:
     - echo -n "$SSL_CHAIN" | base64 -d > /usr/local/share/ca-certificates/cert.crt && update-ca-certificates
     - keytool -importcert -file /usr/local/share/ca-certificates/cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
+    - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
     - ./mvnw $MAVEN_CLI_OPTS clean install -DskipTests

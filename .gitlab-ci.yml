@@ -51,7 +51,7 @@ liquibase-update:
   script:
     - ./mvnw $MAVEN_CLI_OPTS clean install -DskipTests
     - cd db
-    - ../mvnw $MAVEN_CLI_OPTS liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp"
+    - ../mvnw $MAVEN_CLI_OPTS liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp?sslmode=require"
     - cd ..
   when: manual
 

@@ -48,7 +48,7 @@ liquibase-update:
     - keytool -importcert -file /usr/local/share/ca-certificates/cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
     - chmod +x mvnw
   script:
-    - ./mvnw liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp"
+    - ./mvnw liquibase:update -pl db -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp"
   when: manual
 
 

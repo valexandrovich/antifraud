@@ -18,7 +18,6 @@ spec:
       scheduler: version
       schedulertest: version
       web: version
-      db: version
     name:
       downloader: downloader
       import: import
@@ -26,4 +25,3 @@ spec:
       scheduler: scheduler
       schedulertest: schedulertest
       web: web
-      db: db

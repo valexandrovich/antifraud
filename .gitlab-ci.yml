@@ -36,7 +36,6 @@ maven-package:
       - scheduler/target/*.jar
       - scheduler_test/target/*.jar
       - web/target/*.jar
-      - db/target/*.jar
   when: manual
 
 

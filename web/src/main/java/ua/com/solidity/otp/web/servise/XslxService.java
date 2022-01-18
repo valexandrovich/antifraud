@@ -50,7 +50,7 @@ public class XslxService {
     public ResponseBodyWithUserName<UUID> upload(MultipartFile multipartFile, HttpServletRequest request) {
         log.debug("Attempting to parse file in XlsxService for uploading into DB.");
         UUID uuid = UUID.randomUUID();
-        String pattern = "MM.dd.yyyy";
+        String pattern = "dd.MM.yyyy hh:mm:ss";
         DateFormat df = new SimpleDateFormat(pattern);
         FileDescription fileDescription = new FileDescription();
         fileDescription.setUuid(uuid);
@@ -82,7 +82,7 @@ public class XslxService {
                 Iterator<Cell> cellIterator = row.cellIterator();
                 int cellCount = 0;
                 while (cellIterator.hasNext()) {
-                    Cell cell = (Cell) cellIterator.next();
+                    Cell cell = cellIterator.next();
                     int rowIndex = cell.getRowIndex();
                     int columnIndex = cell.getColumnIndex();
                     String value;
@@ -91,26 +91,32 @@ public class XslxService {
                     switch (cell.getCellType()) {
                         case STRING:
                             value = cell.getStringCellValue();
-                            if (value.isBlank() || value.isEmpty()) value = null; else cellCount++;
+                            if (value.isBlank() || value.isEmpty()) value = null;
+                            else cellCount++;
 
                             valuesMap.put(columnIndex, value);
                             System.out.print(cell.getStringCellValue() + "\t\t\t");
                             break;
                         case NUMERIC:
+
                             if (DateUtil.isCellDateFormatted(cell)) {
                                 value = df.format(cell.getDateCellValue());
                             } else {
-                                value = Long.valueOf(Double.valueOf(cell.getNumericCellValue()).longValue()).toString();
+                                double d = cell.getNumericCellValue();
+                                long l = (long) d;
+                                value = Long.toString(l);
                             }
 
-                            if (value.isBlank() || value.isEmpty()) value = null; else cellCount++;
+                            if (value.isBlank() || value.isEmpty()) value = null;
+                            else cellCount++;
 
                             valuesMap.put(columnIndex, value);
                             System.out.print(cell.getNumericCellValue() + "\t\t\t");
                             break;
                         case FORMULA:
                             value = cell.getStringCellValue();
-                            if (value.isBlank() || value.isEmpty()) value = null; else cellCount++;
+                            if (value.isBlank() || value.isEmpty()) value = null;
+                            else cellCount++;
 
                             valuesMap.put(columnIndex, value);
                             System.out.print(cell.getStringCellValue() + "\t\t\t");
@@ -149,18 +155,15 @@ public class XslxService {
     public List<PhysicalPersonDto> getUploaded(UUID uuid) {
         FileDescription description = fileDescriptionRepository.findById(uuid)
                 .orElseThrow(() -> new EntityNotFoundException(FileDescription.class, uuid.toString()));
-        List<PhysicalPersonDto> personList = personRepository.findByUuid(description).stream()
+
+        return personRepository.findByUuid(description).stream()
                 .map(p -> modelMapper.map(p, PhysicalPersonDto.class))
                 .collect(Collectors.toList());
-
-
-        return personList;
     }
 
     public List<PhysicalPerson> search(SearchRequest searchRequest) {
 
-        List<PhysicalPerson> persons = personRepository.findByNameUkEquals(searchRequest.getName());
-//        List<PhysicalPerson> persons = personRepository.findBySurnameUkOrNameUkOrPatronymicUkOrSurnameRuOrNameRuOrPatronymicRuOrSurnameEnOrNameEnOrPatronymicEn(
+        //        List<PhysicalPerson> persons = personRepository.findBySurnameUkOrNameUkOrPatronymicUkOrSurnameRuOrNameRuOrPatronymicRuOrSurnameEnOrNameEnOrPatronymicEn(
 //                searchRequest.getSurname(),
 //                searchRequest.getName(),
 //                searchRequest.getPatronymic(),
@@ -171,7 +174,7 @@ public class XslxService {
 //                searchRequest.getName(),
 //                searchRequest.getPatronymic());
 
-        return persons;
+        return personRepository.findByNameUkEquals(searchRequest.getName());
     }
 
     private void savePerson(PhysicalPerson person, Map<Integer, String> values) {
@@ -221,7 +224,6 @@ public class XslxService {
 
         personRepository.save(person);
     }
-
 
 
 }

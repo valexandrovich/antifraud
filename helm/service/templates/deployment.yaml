@@ -1,33 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-<<<<<<< HEAD
-  name: {{ .Chart.Name }}
-  namespace: {{ .Values.spec.namespace }}
-spec:
-  replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      name: {{ .Chart.Name }}
-  template:
-    metadata:
-      labels:
-        name: {{ .Chart.Name }}
-        app: {{ .Chart.Name }}
-    spec:
-      imagePullSecrets:
-        - name: {{ .Values.spec.imagePullSecret }}
-      containers:
-        - name: {{ .Chart.Name }}
-          ports:
-            - containerPort: 8080
-              name: {{ .Chart.Name }}
-              protocol: TCP
-          image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"
-          imagePullPolicy: Always
-          resources:
-            {{- toYaml .Values.spec.resources | nindent 12 }}
-=======
   name: {{ include "service.name" . }}
   namespace: {{ .Values.namespace }}
   labels:
@@ -77,4 +50,3 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
->>>>>>> origin/new_releases

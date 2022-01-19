@@ -4,6 +4,11 @@ fullnameOverride: ""
 replicaCount: 1
 
 spec:
+<<<<<<< HEAD
+=======
+  destination:
+    server: "https://kubernetes.default.svc"
+>>>>>>> origin/new_releases
   namespace: default
   rootnamespace: argocd
   project: antifraud

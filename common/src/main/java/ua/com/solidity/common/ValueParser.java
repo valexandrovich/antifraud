@@ -16,9 +16,9 @@ public class ValueParser {
     private static final String PATTERN_FALSE = "^[Ff][Aa][Ll][Ss][Ee]$";
     private static final String PATTERN_NULL = "^[Nn][Uu][Ll][Ll]$";
     private static final String PATTERN_DOUBLE_INVALIDS = "[^.Ee+\\-0-9]+";
-    
+    @SuppressWarnings("SpellCheckingInspection")
     public static final DateTimeFormatter dateTimeOutputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'[HH:mm:ss.[SSS[SSS]]][XXX]");
-
+    @SuppressWarnings("SpellCheckingInspection")
     private static final String[] dateTimeFormatExpressions = new String[] {
             "yyyy-M-d[[' ']['T'][H:mm[:ss[.S]]]][XXX]",
             "yyyy-M-d[[' ']['T'][H:mm[:ss[.SS]]]][XXX]",

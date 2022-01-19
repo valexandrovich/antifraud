@@ -10,7 +10,7 @@ public class MsgDeferredTask extends RabbitMQTask {
     private final String msg;
 
     public MsgDeferredTask(String msg) {
-        super(true, false);
+        super(true);
         this.msg = msg;
     }
 
@@ -26,7 +26,7 @@ public class MsgDeferredTask extends RabbitMQTask {
     }
 
     @Override
-    public void execute() {
+    protected void execute() {
         log.info("Receiver test msg: {}", msg);
     }
 }

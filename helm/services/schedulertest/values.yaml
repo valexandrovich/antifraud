@@ -1,36 +1,17 @@
-<<<<<<< HEAD
-nameOverride: ""
-fullnameOverride: ""
-
-=======
->>>>>>> origin/new_releases
 replicaCount: 1
 
 image:
   repository: nexus.otpbank.com.ua:19443/repository/antifraud
   pullPolicy: IfNotPresent
 
-<<<<<<< HEAD
-spec:
-  namespace: antifraud
-  project: antifraud
-  imagePullSecret: "antifraud-secret"
-  resources:
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 100m
-      memory: 256Mi
-=======
 namespace: antifraud
 project: antifraud 
 
 imagePullSecrets: 
   - name: "antifraud-secret"
 
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: "schedulertest"
+fullnameOverride: "schedulertest"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -39,9 +20,14 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "d"
 
-podAnnotations: {}
+podAnnotations: 
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/agent-configmap: "schedulertest"
+  vault.hashicorp.com/agent-pre-populate-only: "true"
+  vault.hashicorp.com/tls-skip-verify: "true"
+  vault.hashicorp.com/agent-init-first: "true"
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -60,7 +46,7 @@ container:
       protocol: TCP
 
 service:
-  enabled: true
+  enabled: false
   type: ClusterIP
   port: 8080
 
@@ -93,4 +79,3 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
->>>>>>> origin/new_releases

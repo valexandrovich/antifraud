@@ -1,0 +1,6 @@
+  vault: 
+    vaultTemplate: '{{- with secret  "secret/data/antifraud/scheduler/" }}{{ .Data.data.properties }}{{ end }}'
+    vaultRole: "scheduler"
+    vaultAdress: "https://vault.otpbank.com.ua:443"
+    vaultMountPath: "auth/kubernetes/"
+    appPropertiesPath: "/vault/secrets/application.properties"

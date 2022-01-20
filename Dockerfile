@@ -1,6 +1,6 @@
 FROM openjdk:11-jre
 
-ENV JAVA_OPTS="-Dspring.datasource.url=jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp -Dspring.rabbitmq.host=rabbitmq.antifraud-deps.svc.cluster.local -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
+ENV JAVA_OPTS="-Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080 --spring.config.name=application --spring.config.location=$PATH_TO_PROPERTIES"
 ENV OTP_TEMP=/tmp
 ENV TZ=Europe/Kiev
 

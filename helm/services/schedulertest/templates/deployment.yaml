@@ -30,6 +30,9 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
+          env: 
+            - name: PATH_TO_PROPERTIES
+              value: {{ .Values.vault.appPropertiesPath | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"

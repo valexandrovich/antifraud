@@ -14,7 +14,7 @@ variables:
 
 workflow:
   rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
       variables:
         COMMIT_HASH_TAIL: "_$CI_COMMIT_SHORT_SHA"
     - when: always

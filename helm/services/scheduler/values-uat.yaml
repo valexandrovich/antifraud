@@ -1,6 +1,6 @@
   vault: 
     vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/scheduler/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "scheduler"
+    vaultRole: "antifraud-scheduler"
     vaultAdress: "https://vaulttest.otpbank.com.ua:443"
     vaultMountPath: "auth/test-cluster/"
     appPropertiesPath: "/vault/secrets/application.properties"

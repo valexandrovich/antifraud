@@ -1,6 +1,6 @@
   vault: 
     vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/web/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "web"
+    vaultRole: "antifraud-web"
     vaultAdress: "https://vaulttest.otpbank.com.ua:443"
     vaultMountPath: "auth/test-cluster/"
     appPropertiesPath: "/vault/secrets/application.properties"

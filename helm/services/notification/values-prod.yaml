@@ -1,6 +1,6 @@
   vault: 
     vaultTemplate: '{{- with secret  "secret/data/antifraud/notification/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "notification"
+    vaultRole: "antifraud-notification"
     vaultAdress: "https://vault.otpbank.com.ua:443"
     vaultMountPath: "auth/kubernetes/"
     appPropertiesPath: "/vault/secrets/application.properties"

@@ -9,6 +9,15 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -DproxySet=true -DproxyHost=chckproxy.raiffeisenbank.com.ua -DproxyPort=8080"
   HTTP_PROXY: http://chckproxy.raiffeisenbank.com.ua:8080
   NO_PROXY: "otpbank.com.ua,raiffeisenbank.com.ua,localhost"
+  COMMIT_HASH_TAIL: ""
+
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      variables:
+        COMMIT_HASH_TAIL: "_$CI_COMMIT_SHORT_SHA"
+    - when: always
 
 
 maven-package:
@@ -20,7 +29,7 @@ maven-package:
     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
-    - echo "PARENT_VERSION=$(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)" >> parent.env
+    - echo "PARENT_VERSION=$(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)$COMMIT_HASH_TAIL" >> parent.env
     - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
   cache:
     paths:
@@ -55,7 +64,7 @@ kaniko-build:
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
         app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
-        version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)
+        version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
         /kaniko/executor \
         --context . \
         --dockerfile $CI_PROJECT_DIR/Dockerfile \
@@ -77,7 +86,7 @@ helm-package:
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
         app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
-        version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)
+        version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
         sed -i "s/$app_name: version/$app_name: $version/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml
         helm package $CI_PROJECT_DIR/helm/services/$app_name --app-version $version --version $version
         find . -name $app_name*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;

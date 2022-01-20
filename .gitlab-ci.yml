@@ -29,9 +29,8 @@ maven-package:
     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
-    - echo "$CI_COMMIT_REF_NAME $CI_DEFAULT_BRANCH $CI_COMMIT_SHORT_SHA $COMMIT_HASH_TAIL"
     - echo "PARENT_VERSION=$(./mvnw --non-recursive help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -1 | cut -d'-' -f1)$COMMIT_HASH_TAIL" >> parent.env
-    # - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
+    - ./mvnw $MAVEN_CLI_OPTS clean package -DskipTests
   cache:
     paths:
       - .m2/repository
@@ -61,7 +60,6 @@ kaniko-build:
     - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
     - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
   script:
-    - echo $COMMIT_HASH_TAIL
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
@@ -84,7 +82,6 @@ helm-package:
   needs:
     - maven-package
   script:
-    - echo $COMMIT_HASH_TAIL
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file

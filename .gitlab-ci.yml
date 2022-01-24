@@ -75,6 +75,31 @@ kaniko-build:
         echo "Image $app_name:$version pushed!"
       done
 
+liquibase-build:
+  stage: kaniko-build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  needs:
+    - maven-package
+  only: 
+    changes:
+      - db/src/main/resources/changelog/*
+      - Dockerfile-liquibase
+  <<: *default-version-tail
+  before_script:
+    - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
+    - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
+    - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
+  script:
+    - >-
+      /kaniko/executor \
+      --context . \
+      --dockerfile $CI_PROJECT_DIR/Dockerfile-liquibase \
+      --destination "$NEXUS_IMAGE_REPO/liquibase:$PARENT_VERSION" \
+      --build-arg http_proxy=$HTTP_PROXY \
+      --build-arg https_proxy=$HTTPS_PROXY 
+    - echo "Image liquibase:$PARENT_VERSION pushed!"
 
 helm-package:
   stage: helm-package

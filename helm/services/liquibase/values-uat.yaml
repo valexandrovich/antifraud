@@ -1,0 +1,6 @@
+  vault: 
+    vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/downloader/" }}{{ .Data.data.properties }}{{ end }}'
+    vaultRole: "antifraud-downloader"
+    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
+    vaultMountPath: "auth/test-cluster/"
+    appPropertiesPath: "/vault/secrets/application.properties"

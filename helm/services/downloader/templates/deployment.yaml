@@ -37,6 +37,8 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
           ports:
             {{- toYaml .Values.container.ports | nindent 12 }}
           resources:
@@ -53,3 +55,8 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+

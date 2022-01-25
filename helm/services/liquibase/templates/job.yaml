@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "service.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "service.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.jobAnnotations | nindent 4 }}
+spec:
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "service.name" . }}
+      containers:
+        - name: {{ include "service.name" . }}
+          image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+      restartPolicy: {{ .Values.restartPolicy }}

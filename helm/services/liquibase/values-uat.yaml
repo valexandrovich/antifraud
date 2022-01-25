@@ -1,6 +1,13 @@
-  vault: 
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/downloader/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-downloader"
-    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/test-cluster/"
-    appPropertiesPath: "/vault/secrets/application.properties"
+podAnnotations: 
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/agent-pre-populate-only: "true"
+  vault.hashicorp.com/tls-skip-verify: "true"
+  vault.hashicorp.com/agent-init-first: "true"
+  vault.hashicorp.com/agent-inject-secret-liquibase: secret/data/antifraud/uat/liquibase/
+  vault.hashicorp.com/agent-inject-template-liquibase: |
+          {{ with secret "secret/data/antifraud/uat/liquibase/" -}}
+          export DB_URL={{ .Data.data.DB_URL }}
+          export DB_USER={{ .Data.data.DB_USER }}
+          export DB_PASSWORD={{ .Data.data.DB_PASSWORD }}
+          {{- end }}
+  vault.hashicorp.com/role: "antifraud-liquibase"

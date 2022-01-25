@@ -1,6 +1,15 @@
-  vault: 
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/import/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-import"
-    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/test-cluster/"
-    appPropertiesPath: "/vault/secrets/application.properties"
+vault: 
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/import/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-import"
+  vaultAddress: "https://vaulttest.otpbank.com.ua:443"
+  vaultMountPath: "auth/test-cluster/"
+  appPropertiesPath: "/vault/secrets/application.properties"
+
+volumes:
+- name: antifraud
+  nfs:
+    path: /zpool8t/antifraud/dev3
+    server: 10.244.14.30
+volumeMounts:
+- name: antifraud
+  mountPath: /tmp

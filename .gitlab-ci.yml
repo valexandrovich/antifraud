@@ -56,7 +56,7 @@ kaniko-build:
     - maven-package
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_COMMIT_REF_NAME != $CI_NEW_RELEASES_BRANCH
+    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
       variables:
         COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
   before_script:
@@ -92,7 +92,7 @@ liquibase-build:
       changes:
         - db/src/main/resources/changelog/*
         - Dockerfile-liquibase
-    - if: $CI_COMMIT_REF_NAME != $CI_NEW_RELEASES_BRANCH
+    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
       changes:
         - db/src/main/resources/changelog/*
         - Dockerfile-liquibase
@@ -120,7 +120,7 @@ helm-package:
     - maven-package
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_COMMIT_REF_NAME != $CI_NEW_RELEASES_BRANCH
+    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
       variables:
         COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
   script:

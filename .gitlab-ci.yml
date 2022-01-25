@@ -100,11 +100,11 @@ liquibase-build:
     - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
   script:
     - >-
-      /kaniko/executor \
-      --context . \
-      --dockerfile $CI_PROJECT_DIR/Dockerfile-liquibase \
-      --destination "$NEXUS_IMAGE_REPO/liquibase:$PARENT_VERSION" \
-      --build-arg http_proxy=$HTTP_PROXY \
+      /kaniko/executor 
+      --context . 
+      --dockerfile $CI_PROJECT_DIR/Dockerfile-liquibase 
+      --destination "$NEXUS_IMAGE_REPO/liquibase:$PARENT_VERSION" 
+      --build-arg http_proxy=$HTTP_PROXY 
       --build-arg https_proxy=$HTTPS_PROXY
     - echo "Image liquibase:$PARENT_VERSION pushed!"
 

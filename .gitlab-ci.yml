@@ -126,6 +126,10 @@ helm-package:
         find . -name $app_name*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
         echo "Helm chart $app_name:$version pushed!"
       done
+    - helm package $CI_PROJECT_DIR/helm/services/liquibase --app-version $PARENT_VERSION --version $PARENT_VERSION
+    - find . -name liquibase*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
+    - echo "Helm chart liquibase:$PARENT_VERSION pushed!"
+    - 'sed -i "s/liquibase: version/liquibase: $PARENT_VERSION/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml'
     - helm package $CI_PROJECT_DIR/helm/antifraud --version $PARENT_VERSION
     - find . -name antifraud*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
     - echo "Helm chart antifraud:$PARENT_VERSION pushed!"

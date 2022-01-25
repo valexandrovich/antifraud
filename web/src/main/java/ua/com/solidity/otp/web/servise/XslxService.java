@@ -83,10 +83,8 @@ public class XslxService {
                 int cellCount = 0;
                 while (cellIterator.hasNext()) {
                     Cell cell = cellIterator.next();
-                    int rowIndex = cell.getRowIndex();
                     int columnIndex = cell.getColumnIndex();
                     String value;
-                    System.out.print("row:" + rowIndex + " index:" + columnIndex + " - ");
 
                     switch (cell.getCellType()) {
                         case STRING:
@@ -95,7 +93,6 @@ public class XslxService {
                             else cellCount++;
 
                             valuesMap.put(columnIndex, value);
-                            System.out.print(cell.getStringCellValue() + "\t\t\t");
                             break;
                         case NUMERIC:
 
@@ -111,7 +108,6 @@ public class XslxService {
                             else cellCount++;
 
                             valuesMap.put(columnIndex, value);
-                            System.out.print(cell.getNumericCellValue() + "\t\t\t");
                             break;
                         case FORMULA:
                             value = cell.getStringCellValue();
@@ -119,7 +115,6 @@ public class XslxService {
                             else cellCount++;
 
                             valuesMap.put(columnIndex, value);
-                            System.out.print(cell.getStringCellValue() + "\t\t\t");
                             break;
                         default:
                     }
@@ -128,7 +123,6 @@ public class XslxService {
                     rowCount++;
                     savePerson(person, valuesMap);
                 }
-                System.out.println("");
             }
 
         } catch (IOException e) {

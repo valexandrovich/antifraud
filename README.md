@@ -75,3 +75,29 @@ For Windows to run image(s) successfully, enter:
 wsl -d docker-desktop
 sysctl -w vm.max_map_count=262144
 ```
+
+## JVM Debug
+
+##### 1. Add a configuration called `Remote JVM Debug`
+
+* Click on the `Run/Debug configuration` - dropdown list on the top bar
+to the right of the green hammer, and chose `Edit Configurations`.
+* Click + , and chose `Remote JVM Debug`.
+* Set
+  * Debugger mode `Attach to remoteJVM`
+  * Transport &ensp; &ensp; &emsp; `Socket`
+  * Host &emsp; &emsp; &emsp; &emsp; `localhost`
+  * Port &emsp; &emsp; &emsp; &ensp; &ensp; `8181` (or other)
+  * Click `Ok`
+
+##### 2. Use command line to run .jar file
+```
+java -agentlib:jdwp=transport=dt_socket,address=*:8181,server=y,suspend=n -jar web/target/*.jar
+```
+&emsp; &emsp;  `web/target/*.jar` - can be changed to `notification/target/*.jar`
+or another module.
+
+##### 3. Run Debug
+
+&emsp; &emsp;  After .jar file is started, run `Remote JVM Debug`
+by clicking on green bug.

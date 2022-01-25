@@ -9,20 +9,21 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -DproxySet=true -DproxyHost=chckproxy.raiffeisenbank.com.ua -DproxyPort=8080"
   HTTP_PROXY: http://chckproxy.raiffeisenbank.com.ua:8080
   NO_PROXY: "otpbank.com.ua,raiffeisenbank.com.ua,localhost"
+  COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
   CI_NEW_RELEASES_BRANCH: new_releases
 
+
+.default-rules: &default-rules
+  rules:
+    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == $CI_NEW_RELEASES_BRANCH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+      variables:
+        COMMIT_HASH_TAIL: ""
+    - when: on_success
 
 maven-package:
   stage: maven-package
   image: openjdk:11
-  rules:
-    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == $CI_NEW_RELEASES_BRANCH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
-    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
-      variables:
-        COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
-      when: manual
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-      when: manual
+  <<: *default-rules
   before_script:
     - echo -n "$SSL_CHAIN" | base64 -d > /usr/local/share/ca-certificates/cert.crt && update-ca-certificates
     - keytool -importcert -file /usr/local/share/ca-certificates/cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
@@ -54,11 +55,7 @@ kaniko-build:
     entrypoint: [""]
   needs:
     - maven-package
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
-      variables:
-        COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
+  <<: *default-rules
   before_script:
     - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
     - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
@@ -88,16 +85,15 @@ liquibase-build:
   needs:
     - maven-package
   rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-      changes:
-        - db/src/main/resources/changelog/*
-        - Dockerfile-liquibase
-    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
+    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == $CI_NEW_RELEASES_BRANCH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
       changes:
         - db/src/main/resources/changelog/*
         - Dockerfile-liquibase
       variables:
-        COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
+        COMMIT_HASH_TAIL: ""
+    - changes:
+        - db/src/main/resources/changelog/*
+        - Dockerfile-liquibase
   before_script:
     - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
     - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
@@ -118,11 +114,7 @@ helm-package:
   image: nexus.otpbank.com.ua:10443/repository/tools/helm-kubectl:3.3.1
   needs:
     - maven-package
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH
-      variables:
-        COMMIT_HASH_TAIL: "-$CI_COMMIT_SHORT_SHA"
+  <<: *default-rules
   script:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do

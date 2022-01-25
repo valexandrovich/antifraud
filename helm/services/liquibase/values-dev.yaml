@@ -11,3 +11,4 @@ podAnnotations:
           export DB_PASSWORD={{ .Data.data.DB_PASSWORD }}
           {{- end }}
   vault.hashicorp.com/role: "antifraud-liquibase"
+  vault.hashicorp.com/auth-path: "auth/test-cluster/"

@@ -17,7 +17,7 @@ import javax.naming.Name;
 @Entry(
         base = "ou=Flex Cube Implementation Department,ou=Software Development and IT Architecture,ou=ITS",
         objectClasses = {"posixAccount", "inetOrgPerson", "top"})
-public class Person {
+public final class Person {
     @Id
     @ToString.Exclude
     private Name id;

@@ -17,3 +17,8 @@ spec:
     path: {{ .Values.spec.source.name.import }}
     repoURL: {{ .Values.spec.repourl }}
     targetRevision: {{ .Values.spec.source.targetrevision.import }}
+    helm:
+      {{- with .Values.valueFiles }}
+      valueFiles:
+        {{- toYaml . | nindent 6 }}
+      {{- end }}

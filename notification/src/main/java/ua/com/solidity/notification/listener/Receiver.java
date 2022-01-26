@@ -19,10 +19,11 @@ public class Receiver extends RabbitMQReceiver {
     @Override
     public Object handleMessage(String queue, String message) {
         ObjectMapper objectMapper = new ObjectMapper();
-        SendEmailRequest sendEmailRequest = null;
+        SendEmailRequest sendEmailRequest;
         try {
             sendEmailRequest = objectMapper.readValue(message, SendEmailRequest.class);
         } catch (JsonProcessingException e) {
+            log.error("Couldn't read object from queue!", e);
             return false;
         }
 

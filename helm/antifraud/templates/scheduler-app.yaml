@@ -17,3 +17,8 @@ spec:
     path: {{ .Values.spec.source.name.scheduler }}
     repoURL: {{ .Values.spec.repourl }}
     targetRevision: {{ .Values.spec.source.targetrevision.scheduler }}
+    helm:
+      {{- with .Values.valueFiles }}
+      valueFiles:
+        {{- toYaml . | nindent 6 }}
+      {{- end }}

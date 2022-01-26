@@ -1,9 +1,10 @@
 FROM openjdk:11-jre
 
-ENV JAVA_OPTS="-Dspring.datasource.url=jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp -Dspring.rabbitmq.host=rabbitmq.antifraud-deps.svc.cluster.local -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
+ENV JAVA_OPTS="-Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttps.proxySet=true -Dhttps.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttps.proxyPort=8080 -Dhttp.proxySet=true -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
 ENV OTP_TEMP=/tmp
 ENV TZ=Europe/Kiev
-
+ENV HTTP_PROXY="chckproxy.raiffeisenbank.com.ua:8080"
+ENV HTTPS_PROXY="chckproxy.raiffeisenbank.com.ua:8080"
 VOLUME /tmp
 
 COPY cert.crt cert.crt
@@ -11,4 +12,6 @@ RUN keytool -importcert -file cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/
 
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar ${0} ${@}"]
+#ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar ${0} ${@}"]
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar --spring.config.name=application --spring.config.location=$PATH_TO_PROPERTIES ${0} ${@}"]
+

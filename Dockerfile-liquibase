@@ -1,0 +1,5 @@
+FROM liquibase/liquibase
+
+ADD db/src/main/resources/changelog /liquibase/changelog 
+
+CMD ["sh", "-c", "docker-entrypoint.sh --url=${DB_URL} --username=${DB_USERNAME} --password=${DB_PASSWORD} --classpath=/liquibase/changelog --changeLogFile=changelog/db.changelog-master.yaml update"]

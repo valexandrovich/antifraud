@@ -10,8 +10,8 @@ project: antifraud
 imagePullSecrets: 
   - name: "antifraud-secret"
 
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: "schedulertest"
+fullnameOverride: "schedulertest"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -20,9 +20,14 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "d"
 
-podAnnotations: {}
+podAnnotations: 
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/agent-configmap: "schedulertest"
+  vault.hashicorp.com/agent-pre-populate-only: "true"
+  vault.hashicorp.com/tls-skip-verify: "true"
+  vault.hashicorp.com/agent-init-first: "true"
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -41,7 +46,7 @@ container:
       protocol: TCP
 
 service:
-  enabled: true
+  enabled: false
   type: ClusterIP
   port: 8080
 

@@ -308,6 +308,17 @@ services:
 #    networks:
 #      - otp-etl-network
 
+  dwh-mock:
+    container_name: otp-dwh-mock
+    build:
+      dockerfile: Dockerfile
+      context: dwh_mock
+    image: otp-dwh-mock:latest
+    ports:
+      - "1521:1521"
+    networks:
+      - otp-etl-network
+
 networks:
   otp-etl-network:
     driver: bridge

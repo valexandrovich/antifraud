@@ -2,6 +2,7 @@ package ua.com.solidity.otp.web.security.provider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -16,12 +17,16 @@ import ua.com.solidity.otp.web.security.exception.ExtensionBadCredentialsExcepti
 import ua.com.solidity.otp.web.security.model.LoginUserDetails;
 import ua.com.solidity.otp.web.security.model.Role;
 
+import java.text.MessageFormat;
+
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoginAuthenticationProvider implements AuthenticationProvider {
 
+    @Value("${ldap.filter}")
+    private String ldapFilter;
     private final PersonRepository personRepository;
     private final LdapTemplate ldapTemplate;
 
@@ -41,19 +46,19 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 
         boolean authenticated = ldapTemplate
                 .authenticate("",
-                        "(uid=" + person.getUsername() + ")",
+                        MessageFormat.format(ldapFilter, person.getUsername()),
                         requestPassword);
 
         if(!authenticated) {
             throw new AuthenticationServiceException("Невірний пароль.");
         }
-        Role role = null;
+        Role role;
         switch (requestUserLogin) {
             case "BieloienkoV": role = Role.ADMIN; break;
             case "dr": role = Role.ADVANCED; break;
             case "kc": role = Role.ADVANCED; break;
             case "av": role = Role.ADVANCED; break;
-            default: if (role == null) role = Role.BASIC;
+            default: role = Role.BASIC;
         }
 
         LoginUserDetails userDetails = new LoginUserDetails(person, role);

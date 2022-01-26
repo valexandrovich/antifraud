@@ -60,10 +60,9 @@ liquibase-update:
     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
     - chmod +x mvnw
   script:
-    - ./mvnw $MAVEN_CLI_OPTS clean install -DskipTests
+    - ./mvnw $MAVEN_CLI_OPTS clean install -pl db --also-make -DskipTests
     - cd db
     - ../mvnw $MAVEN_CLI_OPTS liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp?sslmode=require"
-    - cd ..
   when: manual
 
 

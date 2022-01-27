@@ -13,6 +13,7 @@ imagePullSecrets:
 nameOverride: "liquibase"
 fullnameOverride: "liquibase"
 restartPolicy: "Never"
+backoffLimit: 2
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -85,3 +86,10 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
+
+vault: 
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/liquibase/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-liquibase"
+  vaultAddress: "https://vaulthost.otpbank.com.ua:443"
+  vaultMountPath: "auth/test-cluster/"
+  appPropertiesPath: "/vault/secrets/liquibase.properties"

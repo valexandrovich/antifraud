@@ -25,7 +25,7 @@ variables:
 
 maven-package:
   stage: maven-package
-  image: openjdk:11
+  image: nexus.otpbank.com.ua:19443/repository/openjdk:11
   <<: *default-rules
   before_script:
     - echo -n "$SSL_CHAIN" | base64 -d > /usr/local/share/ca-certificates/cert.crt && update-ca-certificates
@@ -69,7 +69,7 @@ maven-package:
 kaniko-build:
   stage: kaniko-build
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: nexus.otpbank.com.ua:19443/repository/kaniko:debug
     entrypoint: [""]
   needs:
     - maven-package
@@ -98,7 +98,7 @@ kaniko-build:
 liquibase-build:
   stage: kaniko-build
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: nexus.otpbank.com.ua:19443/repository/kaniko:debug
     entrypoint: [""]
   needs:
     - maven-package

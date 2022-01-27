@@ -1,0 +1,110 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet author="AIS (generated)" id="1641913124159-2">
+        <createTable tableName="import_revision_group_rows">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="import_revision_group_rows_pk"/>
+            </column>
+            <column name="source_group" type="BIGINT"/>
+            <column name="revision_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_revision_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="digest" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSONB"/>
+            <column defaultValueBoolean="false" name="handled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-3">
+        <createTable tableName="import_revision_group_errors">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importRevisionGroupErrors_pk"/>
+            </column>
+            <column name="revision_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="line" type="BIGINT"/>
+            <column name="col" type="BIGINT"/>
+            <column name="byte_offset" type="BIGINT"/>
+            <column name="char_offset" type="BIGINT"/>
+            <column name="info_offset" type="BIGINT"/>
+            <column name="info" type="TEXT"/>
+            <column name="clarification" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-4">
+        <createTable tableName="import_revision">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importRevision_pk"/>
+            </column>
+            <column name="source" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revision_date" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pipeline_info" type="JSONB"/>
+            <column name="url" type="VARCHAR(1024)"/>
+            <column name="filename" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-5">
+        <createTable tableName="import_source">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="importSource_pk"/>
+            </column>
+            <column name="name" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pipeline_info" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_info" type="JSONB"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-6">
+        <createTable tableName="import_revision_group">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="import_revision_group_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_group" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-7">
+        <createTable tableName="import_source_group">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="import_source_group_pkey"/>
+            </column>
+            <column name="source" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-8">
+        <addUniqueConstraint columnNames="id, source_group, revision_group, last_revision_group, digest, handled" constraintName="import_revision_group_rows_s1" tableName="import_revision_group_rows"/>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-9">
+        <addUniqueConstraint columnNames="source_group, digest" constraintName="import_revision_group_rows_uk" tableName="import_revision_group_rows"/>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-10">
+        <addUniqueConstraint columnNames="source, revision_date" constraintName="importRevision_unique" tableName="import_revision"/>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-11">
+        <addUniqueConstraint columnNames="name" constraintName="importSource_name" tableName="import_source"/>
+    </changeSet>
+    <changeSet author="AIS (generated)" id="1641913124159-12">
+        <addUniqueConstraint columnNames="source, name" constraintName="import_source_group_unique" tableName="import_source_group"/>
+    </changeSet>
+</databaseChangeLog>

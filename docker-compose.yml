@@ -11,6 +11,9 @@ services:
       args:
         - JAR_FILE=web/target/*.jar
     image: otp-web:latest
+    depends_on:
+      - migration
+      - queue
     ports:
       - "8080:8080"
     networks:
@@ -152,7 +155,7 @@ services:
   migration:
     image: liquibase/liquibase
     volumes:
-      - ./db/src/main/resources/changelog:/liquibase/changelog
+      - ./liquibase/src/main/resources/changelog:/liquibase/changelog
     command: --url=jdbc:postgresql://db:5432/otp --username=otp --password=otp --changeLogFile=changelog/db.changelog-master.yaml update
     depends_on:
       - db
@@ -316,6 +319,20 @@ services:
     image: otp-dwh-mock:latest
     ports:
       - "1521:1521"
+    networks:
+      - otp-etl-network
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "9411:9411"
     networks:
       - otp-etl-network
 

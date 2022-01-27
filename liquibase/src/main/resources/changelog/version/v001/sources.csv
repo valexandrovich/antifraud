@@ -1,2 +1,2 @@
 id|name|pipeline_info|source_info
-3|govua3|{\"pipeline\": [{\"name\": \"stream\", \"prototype\": \"InputStream\"}, {\"data\": {}, \"name\": \"parser\", \"inputs\": {\"stream\": \"stream\"}, \"prototype\": \"NoParser\"}, {\"data\": {\"group\": \"default\"}, \"name\": \"handler\", \"inputs\": {\"input\": \"parser\"}, \"prototype\": \"RowImporter\"}]}"|"{\"handler\": \"unknown\"}
+3|govua3|{\"pipeline\": [{\"name\": \"stream\", \"prototype\": \"InputStream\"}, {\"data\": {}, \"name\": \"parser\", \"inputs\": {\"stream\": \"stream\"}, \"prototype\": \"NoParser\"}, {\"data\": {\"group\": \"default\"}, \"name\": \"handler\", \"inputs\": {\"input\": \"parser\"}, \"prototype\": \"RowImporter\"}]}|{\"handler\": \"unknown\"}

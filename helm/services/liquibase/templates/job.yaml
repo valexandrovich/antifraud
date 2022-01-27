@@ -24,4 +24,7 @@ spec:
         - name: {{ include "service.name" . }}
           image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env: 
+          - name: PATH_TO_PROPERTIES
+            value: {{ .Values.vault.appPropertiesPath | quote }}
       restartPolicy: {{ .Values.restartPolicy }}

@@ -17,7 +17,6 @@ public class PersonDto {
         this.surname = person.getSurname();
         this.fullname = person.getFullname();
         this.displayname = person.getDisplayname();
-        this.password = person.getPassword();
     }
 
     private String id;
@@ -29,5 +28,4 @@ public class PersonDto {
     private String surname;
     private String fullname;
     private String displayname;
-    private String password;
 }

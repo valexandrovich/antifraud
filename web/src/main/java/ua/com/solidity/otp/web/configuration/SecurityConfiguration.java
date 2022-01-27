@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,7 +18,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import ua.com.solidity.otp.web.security.filter.LoginRequestFilter;
+import ua.com.solidity.otp.web.security.provider.LoginAuthenticationProvider;
+
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -34,6 +41,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Qualifier("authSkipList")
     private final String[] authSkipList;
 
+    private final LoginAuthenticationProvider loginAuthenticationProvider;
+
     private final AuthenticationSuccessHandler successHandler;
 
     private final AuthenticationFailureHandler failureHandler;
@@ -42,10 +51,28 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private final ObjectMapper objectMapper;
 
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) {
+        log.debug("Enabling Login Authentication Provider");
+        auth.authenticationProvider(loginAuthenticationProvider);
+    }
+
     @Bean(name = "authenticationManager")
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        configuration.addAllowedHeader("*");
+        configuration.addAllowedMethod("*");
+        configuration.addExposedHeader("Location");
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Override

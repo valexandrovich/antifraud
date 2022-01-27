@@ -45,14 +45,6 @@ public class PersonService {
         return personDto;
     }
 
-
-    public void modify(final String userName, final String password) {
-        Optional<Person> personOptional = personRepository.findByUsername(userName);
-        Person person = personOptional.orElseThrow(() -> new PersonNotFoundException(userName));
-        person.setPassword(password);
-        personRepository.save(person);
-    }
-
     private String digestSHA(final String password) {
         String base64;
         try {

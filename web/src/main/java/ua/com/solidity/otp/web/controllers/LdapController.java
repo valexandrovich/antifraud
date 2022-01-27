@@ -23,4 +23,5 @@ public class LdapController {
     public PersonDto find(@PathVariable String name) {
         return personService.findByUserName(name);
     }
+
 }

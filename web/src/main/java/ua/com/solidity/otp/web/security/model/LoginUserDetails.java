@@ -13,13 +13,11 @@ import java.util.stream.Stream;
 public class LoginUserDetails implements UserDetails {
 
     private final String username;
-    private final String password;
     private final boolean active;
     private final List<GrantedAuthority> authorities;
 
     public LoginUserDetails(Person person, Role role) {
         this.username = person.getDisplayname();
-        this.password = person.getPassword();
         this.active = true;
         this.authorities = Stream.of(role.getRole())
                 .map(SimpleGrantedAuthority::new)
@@ -37,7 +35,7 @@ public class LoginUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return password;
+        return null;
     }
 
     @Override

@@ -25,6 +25,8 @@ import java.text.MessageFormat;
 @RequiredArgsConstructor
 public class LoginAuthenticationProvider implements AuthenticationProvider {
 
+    @Value("${person.base}")
+    private String personBase;
     @Value("${ldap.filter}")
     private String ldapFilter;
     private final PersonRepository personRepository;
@@ -45,8 +47,8 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
                 .orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
 
         boolean authenticated = ldapTemplate
-                .authenticate("",
-                        MessageFormat.format(ldapFilter, person.getUsername()),
+                .authenticate(personBase,
+                        MessageFormat.format(ldapFilter, requestUserLogin),
                         requestPassword);
 
         if(!authenticated) {
@@ -55,6 +57,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
         Role role;
         switch (requestUserLogin) {
             case "BieloienkoV": role = Role.ADMIN; break;
+            case "vb": role = Role.ADMIN; break;
             case "dr": role = Role.ADVANCED; break;
             case "kc": role = Role.ADVANCED; break;
             case "av": role = Role.ADVANCED; break;

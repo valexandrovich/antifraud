@@ -1,5 +1,0 @@
-FROM nexus.otpbank.com.ua:19443/repository/liquibase:latest
-
-ADD liquibase/src/main/resources/changelog /liquibase/changelog 
-
-CMD ["sh", "-c", "docker-entrypoint.sh --defaultsFile=$PATH_TO_PROPERTIES update"]

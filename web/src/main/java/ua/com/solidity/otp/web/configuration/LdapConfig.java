@@ -23,6 +23,8 @@ public class LdapConfig {
         LdapContextSource contextSource = new LdapContextSource();
         contextSource.setUrl(env.getRequiredProperty("spring.ldap.urls"));
         contextSource.setBase(env.getRequiredProperty("spring.ldap.base"));
+        contextSource.setUserDn(env.getRequiredProperty("spring.ldap.username"));
+        contextSource.setPassword(env.getRequiredProperty("spring.ldap.password"));
         return contextSource;
     }
 

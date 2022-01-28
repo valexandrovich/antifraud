@@ -51,19 +51,19 @@ maven-package:
       - web/target/*.jar
 
 
-# liquibase-update:
-#   stage: liquibase-update
-#   image: openjdk:11
-#   before_script:
-#     - echo -n "$SSL_CHAIN" | base64 -d > /usr/local/share/ca-certificates/cert.crt && update-ca-certificates
-#     - keytool -importcert -file /usr/local/share/ca-certificates/cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
-#     - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
-#     - chmod +x mvnw
-#   script:
-#     - ./mvnw $MAVEN_CLI_OPTS clean install -pl liquibase --also-make -DskipTests
-#     - cd liquibase
-#     - ../mvnw $MAVEN_CLI_OPTS liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp?sslmode=require"
-#   when: manual
+liquibase-update:
+  stage: liquibase-update
+  image: openjdk:11
+  before_script:
+    - echo -n "$SSL_CHAIN" | base64 -d > /usr/local/share/ca-certificates/cert.crt && update-ca-certificates
+    - keytool -importcert -file /usr/local/share/ca-certificates/cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
+    - 'echo "cafile: \"/usr/local/share/ca-certificates/cert.crt\"" > ~/.yarnrc'
+    - chmod +x mvnw
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS clean install -pl liquibase --also-make -DskipTests
+    - cd liquibase
+    - ../mvnw $MAVEN_CLI_OPTS liquibase:update -Dliquibase.url="jdbc:postgresql://antifrauddbdev.raiffeisenbank.com.ua:5432/otp?sslmode=require"
+  when: manual
 
 
 kaniko-build:

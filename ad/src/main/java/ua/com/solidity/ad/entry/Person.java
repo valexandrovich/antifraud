@@ -15,7 +15,6 @@ import javax.naming.Name;
 @NoArgsConstructor
 @ToString
 @Entry(
-        base = "CN=Users",
         objectClasses = {"user", "top", "organizationalPerson"})
 public final class Person {
     @Id

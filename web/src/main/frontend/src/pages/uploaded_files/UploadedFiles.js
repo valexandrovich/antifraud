@@ -51,7 +51,7 @@ const UploadedFiles = () => {
                     {el.uuid}
                   </td>
 
-                  <td>{el.userName || "USER"}</td>
+                  <td>{el.userName=== "Incognito" ? "test" : el.userName}</td>
                   <td>{el.created}</td>
                   <td>{el.rowCount || "не вказано"}</td>
                   <td>{el.description}</td>

@@ -7,7 +7,7 @@ import { IconContext } from "react-icons";
 import * as IoIcons from "react-icons/io";
 import { logoutUserThunk } from "../../store/reducers/AuthReducer";
 function Aside() {
-  const userName = localStorage.getItem("userName");
+  const userName = localStorage.getItem("userName") || "test";
   const dispatch = useDispatch();
   return (
     <>
@@ -15,7 +15,7 @@ function Aside() {
         <div className="navbar">
           <div className="d-flex col-md-12 justify-content-end align-items-center">
             <h3 className="nav-title">Антифрод</h3>
-            <span className="text-white p-2">{userName.replace(/"/g, "")}</span>
+            <span className="text-white p-2">{userName?.replace(/"/g, "") }</span>
 
             <IoIcons.IoMdExit
               onClick={() => dispatch(logoutUserThunk())}

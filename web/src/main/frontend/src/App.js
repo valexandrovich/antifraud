@@ -16,7 +16,7 @@ import Login from "./pages/login/Login";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
-  console.log(isAuth);
+
   return (
     <>
       {isAuth ? (

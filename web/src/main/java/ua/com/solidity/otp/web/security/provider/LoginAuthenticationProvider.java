@@ -3,6 +3,8 @@ package ua.com.solidity.otp.web.security.provider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ldap.core.AuthenticatedLdapEntryContextMapper;
+import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -31,6 +33,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
     private String ldapFilter;
     private final PersonRepository personRepository;
     private final LdapTemplate ldapTemplate;
+    private final AuthenticatedLdapEntryContextMapper<DirContextOperations> mapper;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -45,8 +48,15 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 
         Person person = personRepository.findByUsername(requestUserLogin)
                 .orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
+        boolean authenticated;
 
-        boolean authenticated = ldapTemplate
+//            DirContextOperations dco = ldapTemplate.authenticate(
+//                    LdapQueryBuilder.query().where("sAMAccountName").is(requestUserLogin),
+//                    requestPassword,
+//                    mapper);
+//            authenticated = ((dco!=null) && dco.getStringAttribute(requestUserLogin).equals(requestUserLogin));
+
+        authenticated = ldapTemplate
                 .authenticate(personBase,
                         MessageFormat.format(ldapFilter, requestUserLogin),
                         requestPassword);

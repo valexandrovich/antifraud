@@ -7,8 +7,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.data.ldap.repository.config.EnableLdapRepositories;
+import org.springframework.ldap.core.AuthenticatedLdapEntryContextMapper;
+import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
+
+import javax.naming.NamingException;
 
 @Configuration
 @PropertySource("classpath:application.properties")
@@ -30,7 +34,20 @@ public class LdapConfig {
 
     @Bean
     public LdapTemplate ldapTemplate() {
-        return new LdapTemplate(contextSource());
+        LdapTemplate ldapTemplate = new LdapTemplate(contextSource());
+        ldapTemplate.setIgnorePartialResultException(true);
+        return ldapTemplate;
+    }
+
+    @Bean
+    public AuthenticatedLdapEntryContextMapper<DirContextOperations> authenticatedLdapEntryContextMapper() {
+        return (dirContext, ldapEntryIdentification) -> {
+            try {
+                return (DirContextOperations) dirContext.lookup(ldapEntryIdentification.getRelativeName());
+            } catch (NamingException e) {
+                throw new RuntimeException("lookup failed for: " + ldapEntryIdentification.getRelativeName(), e);
+            }
+        };
     }
 
 }

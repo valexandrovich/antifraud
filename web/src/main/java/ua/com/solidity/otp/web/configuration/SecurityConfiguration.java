@@ -43,6 +43,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private final LoginAuthenticationProvider loginAuthenticationProvider;
 
+//    private final LdapContextSource ldapContextSource;
+//    private final LdapUserDetailsMapper ldapUserDetailsMapper;
+
     private final AuthenticationSuccessHandler successHandler;
 
     private final AuthenticationFailureHandler failureHandler;
@@ -52,7 +55,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     private final ObjectMapper objectMapper;
 
     @Override
-    protected void configure(AuthenticationManagerBuilder auth) {
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth
+//                .ldapAuthentication()
+//                .userSearchFilter("(sAMAccountName={0})")
+//                .userSearchBase("dc=raiffeisenbank,dc=com,dc=ua")
+//                .groupSearchBase("dc=raiffeisenbank,dc=com,dc=ua")
+//                .userDetailsContextMapper(ldapUserDetailsMapper)
+//                .contextSource(ldapContextSource)
+//        ;
         log.debug("Enabling Login Authentication Provider");
         auth.authenticationProvider(loginAuthenticationProvider);
     }
@@ -103,4 +114,5 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         loginRequestFilter.setAuthenticationManager((AuthenticationManager) context.getBean("authenticationManager"));
         return loginRequestFilter;
     }
+
 }

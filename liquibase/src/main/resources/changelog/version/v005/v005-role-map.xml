@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v0005-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v0005-0"/>
+    </changeSet>
+
+
+    <changeSet id="v0005-1" author="Kyrylo Chornobryvets">
+        <createTable tableName="role">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_role"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+        </createTable>
+
+        <insert tableName="role">
+            <column name="name" value="ADVANCED"/>
+        </insert>
+        <insert tableName="role">
+            <column name="name" value="BASIC"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="role"/>
+            <dropTable tableName="role"/>
+        </rollback>
+    </changeSet>
+
+
+    <changeSet id="v0005-2" author="Kyrylo Chornobryvets">
+        <createTable tableName="role_map">
+            <column name="dn" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_role_map"/>
+            </column>
+            <column name="role_id" type="INT"/>
+        </createTable>
+
+        <insert tableName="role_map">
+            <column name="dn" value="Risk Stand Advanced"/>
+            <column name="role_id" value="1"/>
+        </insert>
+        <insert tableName="role_map">
+            <column name="dn" value="Risk Stand Basic"/>
+            <column name="role_id" value="2"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="role_map"/>
+            <dropTable tableName="role_map"/>
+        </rollback>
+    </changeSet>
+
+
+    <changeSet id="v0005-3" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="role_id" baseTableName="role_map" constraintName="FK_ROLE_MAP_ON_ROLE"
+                                 referencedColumnNames="id" referencedTableName="role"/>
+    </changeSet>
+
+
+    <changeSet id="v0005-999" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v0005-999"/>
+    </changeSet>
+
+</databaseChangeLog>

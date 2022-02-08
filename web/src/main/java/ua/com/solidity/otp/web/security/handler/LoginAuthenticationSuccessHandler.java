@@ -51,7 +51,7 @@ public class LoginAuthenticationSuccessHandler implements AuthenticationSuccessH
 
     /**
      * Removes temporary authentication-related data which may have been stored
-     * in the session during the authentication process..
+     * in the session during the authentication process.
      */
     protected final void clearAuthenticationAttributes(HttpServletRequest request) {
         HttpSession session = request.getSession(false);

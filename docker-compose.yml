@@ -12,7 +12,7 @@ services:
         - JAR_FILE=web/target/*.jar
     image: otp-web:latest
     depends_on:
-      - migration
+      - migration-k8s
       - queue
     ports:
       - "8080:8080"
@@ -36,7 +36,7 @@ services:
       - OTP_TEMP=/tmp
     image: otp-downloader:latest
     depends_on:
-      - migration
+      - migration-k8s
       - queue
     networks:
       - otp-etl-network
@@ -55,7 +55,7 @@ services:
       - OTP_TEMP=/tmp
     image: otp-importer:latest
     depends_on:
-      - migration
+      - migration-k8s
       - queue
     networks:
       - otp-etl-network
@@ -77,7 +77,7 @@ services:
         reservations:
           memory: 512M
     depends_on:
-      - migration
+      - migration-k8s
       - queue
     networks:
       - otp-etl-network
@@ -93,7 +93,7 @@ services:
       - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest
     image: otp-scheduler_test:latest
     depends_on:
-      - migration
+      - migration-k8s
       - queue
     networks:
       - otp-etl-network
@@ -110,7 +110,7 @@ services:
     image: otp-notification:latest
     depends_on:
       - mail
-      - migration
+      - migration-k8s
       - queue
     networks:
       - otp-etl-network
@@ -152,11 +152,28 @@ services:
     networks:
       - otp-etl-network
 
-  migration:
-    image: liquibase/liquibase
-    volumes:
-      - ./liquibase/src/main/resources/changelog:/liquibase/changelog
-    command: --url=jdbc:postgresql://db:5432/otp --username=otp --password=otp --changeLogFile=changelog/db.changelog-master.yaml update
+# Migration based on standard Liquibase image (obsolete)
+#  migration:
+#    image: liquibase/liquibase
+#    volumes:
+#      - ./liquibase/src/main/resources/changelog:/liquibase/changelog
+#    command: --url=jdbc:postgresql://db:5432/otp --username=otp --password=otp --changeLogFile=changelog/db.changelog-master.yaml update
+#    depends_on:
+#      - db
+#    networks:
+#      - otp-etl-network
+
+# Variation of previous service that builds own image
+  migration-k8s:
+    container_name: otp-migration-k8s
+    build:
+      dockerfile: liquibase/Dockerfile
+      context: .
+    environment:
+      - URL=jdbc:postgresql://db:5432/otp
+      - USERNAME=otp
+      - PASSWORD=otp
+    image: otp-migration-k8s:latest
     depends_on:
       - db
     networks:

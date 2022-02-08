@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public enum Role {
-    ADMIN("Admin"),
-    ADVANCED("Advanced"),
-    BASIC("Basic");
+    ADVANCED("Risk Stand Advanced"),
+    BASIC("Risk Stand Basic");
 
     private final String role;
 

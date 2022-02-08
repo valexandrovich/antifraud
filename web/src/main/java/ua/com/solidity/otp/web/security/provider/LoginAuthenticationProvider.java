@@ -15,11 +15,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import ua.com.solidity.ad.entry.Person;
 import ua.com.solidity.ad.repository.PersonRepository;
+import ua.com.solidity.db.entities.RoleMap;
+import ua.com.solidity.db.repositories.RoleMapRepository;
+import ua.com.solidity.db.repositories.RoleRepository;
 import ua.com.solidity.otp.web.security.exception.ExtensionBadCredentialsException;
+import ua.com.solidity.otp.web.security.exception.NoSuchRoleException;
 import ua.com.solidity.otp.web.security.model.LoginUserDetails;
-import ua.com.solidity.otp.web.security.model.Role;
 
 import java.text.MessageFormat;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -27,12 +33,16 @@ import java.text.MessageFormat;
 @RequiredArgsConstructor
 public class LoginAuthenticationProvider implements AuthenticationProvider {
 
+    @Value("role.basic")
+    private String roleBasic;
     @Value("${person.base}")
     private String personBase;
     @Value("${ldap.filter}")
     private String ldapFilter;
     private final PersonRepository personRepository;
     private final LdapTemplate ldapTemplate;
+    private final RoleMapRepository roleMapRepository;
+    private final RoleRepository roleRepository;
     private final AuthenticatedLdapEntryContextMapper<DirContextOperations> mapper;
 
     @Override
@@ -48,8 +58,20 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 
         Person person = personRepository.findByUsername(requestUserLogin)
                 .orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
-        boolean authenticated;
+        List<String> personGroups = person.getMemberOf()
+                .stream()
+                .map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))
+                .collect(Collectors.toList());
+        List<RoleMap> roleMaps = roleMapRepository.findAllById(personGroups);
+        String role = null;
 
+        if (!roleMaps.isEmpty()) {
+            roleMaps.sort(Comparator.comparingInt(i -> i.getRole().getId()));
+            role = roleMaps.get(0).getRole().getName();
+        }
+
+        boolean authenticated;
+//                                ---FOR FURTHER USAGE---
 //            DirContextOperations dco = ldapTemplate.authenticate(
 //                    LdapQueryBuilder.query().where("sAMAccountName").is(requestUserLogin),
 //                    requestPassword,
@@ -61,17 +83,8 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
                         MessageFormat.format(ldapFilter, requestUserLogin),
                         requestPassword);
 
-        if(!authenticated) {
+        if (!authenticated) {
             throw new AuthenticationServiceException("Невірний пароль.");
-        }
-        Role role;
-        switch (requestUserLogin) {
-            case "BieloienkoV": role = Role.ADMIN; break;
-            case "vb": role = Role.ADMIN; break;
-            case "dr": role = Role.ADVANCED; break;
-            case "kc": role = Role.ADVANCED; break;
-            case "av": role = Role.ADVANCED; break;
-            default: role = Role.BASIC;
         }
 
         LoginUserDetails userDetails = new LoginUserDetails(person, role);

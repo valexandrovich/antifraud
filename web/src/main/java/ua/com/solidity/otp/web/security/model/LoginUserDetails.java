@@ -5,6 +5,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import ua.com.solidity.ad.entry.Person;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,16 +17,23 @@ public class LoginUserDetails implements UserDetails {
     private final boolean active;
     private final List<GrantedAuthority> authorities;
 
-    public LoginUserDetails(Person person, Role role) {
+    public LoginUserDetails(Person person, String role) {
         this.username = person.getDisplayname();
         this.active = true;
-        this.authorities = Stream.of(role.getRole())
+        if (role == null) { authorities = new ArrayList<>();
+        } else authorities = Stream.of(role)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
 
     public String getSimpleRole() {
-        return authorities.get(0).toString();
+        if (!authorities.isEmpty()) {
+            return authorities.get(0).toString();
+        } else return null;
+    }
+
+    public List<String> getRoles() {
+        return this.authorities.stream().map((s) -> toString()).collect(Collectors.toList());
     }
 
     @Override

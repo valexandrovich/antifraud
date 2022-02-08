@@ -9,6 +9,7 @@ import org.springframework.ldap.odm.annotations.Entry;
 import org.springframework.ldap.odm.annotations.Id;
 
 import javax.naming.Name;
+import java.util.ArrayList;
 
 @Getter
 @Setter
@@ -31,4 +32,8 @@ public final class Person {
     private String displayname;
     @Attribute(name = "sAMAccountName")
     private String username;
+
+    @Attribute(name = "memberOf")
+    private ArrayList<String> memberOf;
+
 }

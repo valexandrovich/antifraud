@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1643876222099-1" author="AIS">
+        <insert tableName="import_source">
+            <column name="id">10000</column>
+            <column name="name">v1</column>
+            <column name="pipeline_info">{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"data": {"quote": "\"", "encoding": "UTF-8", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\\\b\\\\r\\\\f\\\\t "}, "name": "csvParser", "inputs": {"stream": "stream"}, "prototype": "CSVParser"}, {"data": {"group": "default"}, "name": "handler", "inputs": {"input": "csvParser"}, "prototype": "RowImporter"}]}</column>
+            <column name="source_info">{"handler": "simpleFile"}</column>
+        </insert>
+
+        <insert tableName="import_source">
+            <column name="id">10001</column>
+            <column name="name">v2</column>
+            <column name="pipeline_info">{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"data": {"quote": "\"", "encoding": "UTF-8", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\\\b\\\\r\\\\f\\\\t "}, "name": "csvParser", "inputs": {"stream": "stream"}, "prototype": "CSVParser"}, {"data": {"group": "default"}, "name": "handler", "inputs": {"input": "csvParser"}, "prototype": "RowImporter"}]}</column>
+            <column name="source_info">{"handler": "simpleFile"}</column>
+        </insert>
+        <rollback>
+            <delete tableName="import_source">
+                <where>id=10000 or id=10001</where>
+            </delete>
+        </rollback>
+    </changeSet>
+    <changeSet id="1643876222099-2" author="AIS">
+        <tagDatabase tag="v006"/>
+    </changeSet>
+</databaseChangeLog>

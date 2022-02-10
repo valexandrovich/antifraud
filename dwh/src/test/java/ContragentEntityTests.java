@@ -1,5 +1,5 @@
 import org.junit.Test;
-import ua.com.solidity.db.entities.ContragentEntity;
+import ua.com.solidity.dwh.entity.ContragentEntity;
 
 import java.time.LocalDate;
 
@@ -55,7 +55,7 @@ public class ContragentEntityTests {
         ce.setPhoneHome("380638702767");
         ce.setIsPublicPerson(0L);
         ce.setPassportEndDate(LocalDate.of(2039, 2, 23));
-        ce.setFop("0");
+        ce.setFop(0L);
         ce.setWorkPosition("Висококваліфік. фахівець");
         ce.setCitizenshipCountryId(804L);
         ce.setWorkplace("ОТП Банк");

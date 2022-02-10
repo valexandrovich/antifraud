@@ -3,12 +3,20 @@ import authService from "../../api/AuthApi";
 const CHANGE_FORM_VALUE = "CHANGE_FORM_VALUE";
 const SUBMIT_AUTH = "SUBMIT_AUTH";
 const LOGOUT = "LOGOUT";
+const SET_ALERT_MESSAGE = "SET_ALERT_MESSAGE";
 let initialState = {
   authForm: {
     login: "",
     password: "",
   },
   isAuth: false,
+  role: null,
+  userName: null,
+  alert: {
+    active: false,
+    message: "",
+    type_message: "",
+  },
 };
 
 const AuthReducer = (state = initialState, action = {}) => {
@@ -25,11 +33,25 @@ const AuthReducer = (state = initialState, action = {}) => {
         ...state,
         authForm: initialState.authForm,
         isAuth: true,
+        // role: null,
+        role: action.role,
+        userName: action.userName,
       };
     case LOGOUT:
       return {
         ...state,
         isAuth: false,
+        role: null,
+        userName: null,
+      };
+    case SET_ALERT_MESSAGE:
+      return {
+        ...state,
+        alert: {
+          active: action.active,
+          message: action.message,
+          type_message: action.type_message,
+        },
       };
     default:
       return state;
@@ -44,9 +66,11 @@ export const changeFormValueAC = (input, value) => {
   };
 };
 
-export const submitUserAuth = () => {
+export const submitUserAuth = (role, userName) => {
   return {
     type: SUBMIT_AUTH,
+    role: role,
+    userName: userName,
   };
 };
 
@@ -57,25 +81,40 @@ export const logoutUser = () => {
 };
 
 export const submitUserAuthThunk = (authForm) => (dispatch) => {
-  if(authForm.login === "test" && authForm.password === "test" ){
+  if (authForm.login === "test" && authForm.password === "test") {
     dispatch(submitUserAuth());
-  }
-  else{
+  } else {
     authService
         .auth(authForm)
         .then((res) => {
-          dispatch(submitUserAuth());
+          dispatch(submitUserAuth(res.data.role, res.data.userName));
         })
+
         .catch((err) => {
-          console.log(err);
+          dispatch(setAlertMessageThunk(err.response.data.message, "danger"));
         });
   }
-
 };
 
 export const logoutUserThunk = () => (dispatch) => {
   authService.logout();
   dispatch(logoutUser());
+};
+
+export const setAlertMessage = (active, message, type_message) => {
+  return {
+    type: SET_ALERT_MESSAGE,
+    active: active,
+    message: message,
+    type_message: type_message,
+  };
+};
+
+export const setAlertMessageThunk = (message, type_message) => (dispatch) => {
+  dispatch(setAlertMessage(true, message, type_message));
+  setTimeout(function () {
+    dispatch(setAlertMessage(false, "", ""));
+  }, 5500);
 };
 
 export default AuthReducer;

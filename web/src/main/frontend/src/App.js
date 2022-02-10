@@ -13,29 +13,38 @@ import DbCheck from "./pages/dbCheck/DbCheck";
 import UploadedFiles from "./pages/uploaded_files/UploadedFiles";
 import Card from "./components/Card";
 import Login from "./pages/login/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
-
+  const alertMsg = useSelector((state) => state.auth.alert);
+  const role = useSelector((state) => state.auth.role);
   return (
-    <>
-      {isAuth ? (
-        <HashRouter>
-          <Aside />
-          <Switch>
-            <Route exact path="/" component={Search} />
-            <Route path="/add-file" component={UploadFile} />
-            <Route path="/search" component={Search} />
-            <Route path="/db_check" component={DbCheck} />
-            <Route path="/uploaded_files" component={UploadedFiles} />
-            <Route path="/card/:id" component={<Card />} />
-            <Route component={ErrorPage} />
-          </Switch>
-        </HashRouter>
-      ) : (
-        <Route component={Login} />
-      )}
-    </>
+      <>
+        {alertMsg.message && (
+            <div className={`row fixed-top bg-${alertMsg.type_message}`}>
+              <div className="container warning-block">
+                <p className="text-white text-center fs-2">{alertMsg.message}</p>
+              </div>
+            </div>
+        )}
+        {isAuth ? (
+            <HashRouter>
+              {role && <Aside />}
+              <Switch>
+                <ProtectedRoute exact path="/" component={Search} />
+                <ProtectedRoute path="/add-file" component={UploadFile} />
+                <ProtectedRoute path="/search" component={Search} />
+                <ProtectedRoute path="/db_check" component={DbCheck} />
+                <ProtectedRoute path="/uploaded_files" component={UploadedFiles} />
+                <ProtectedRoute path="/card/:id" component={Card} />
+                <Route path="/error" component={ErrorPage} />
+              </Switch>
+            </HashRouter>
+        ) : (
+            <Route component={Login} />
+        )}
+      </>
   );
 };
 

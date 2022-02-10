@@ -1,4 +1,4 @@
-package ua.com.solidity.db.entities;
+package ua.com.solidity.dwh.entity;
 
 import lombok.*;
 import org.hibernate.Hibernate;
@@ -9,6 +9,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 @Table(name = "contragent")
 @Entity
@@ -19,6 +20,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ContragentEntity {
     @Id
+    private UUID uuid;
     @Column(nullable = false)
     private Long id; // Код контрагента
     @Column(length = 254, nullable = false)
@@ -159,8 +161,10 @@ public class ContragentEntity {
     private Long businessType10; // ID вида экономической деятельности 10 // Not present in B2 description
     @Column(name = "citizenshipcountryid2")
     private Long citizenshipCountryId2; // страна 2го гражданства // Not present in B2 description
-    @Column(length = 254)
-    private String fop; // ФОП // Not present in B2 description
+    @Column
+    private Long fop; // ФОП // Not present in B2 description
+    @Column(name = "arcdate", columnDefinition = "DATE")
+    private LocalDate arcDate;
 
     @Override
     public boolean equals(Object o) {

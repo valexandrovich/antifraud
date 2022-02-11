@@ -18,6 +18,7 @@ spec:
       scheduler: version
       schedulertest: version
       web: version
+      dwh: version
       liquibase: version
     name:
       downloader: downloader
@@ -26,4 +27,5 @@ spec:
       scheduler: scheduler
       schedulertest: schedulertest
       web: web
+      dwh: dwh
       liquibase: liquibase

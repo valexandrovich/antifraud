@@ -1,7 +1,6 @@
 package ua.com.solidity.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.*;
 
 @Getter
@@ -11,8 +10,9 @@ import lombok.*;
 @ToString
 public class DownloaderMessageData {
     private String ident;
-    private JsonNode extra;
+    private String localPath;
     private int attemptsLeft;
+    private int delayMinutes = 0;
 
     @JsonIgnore
     @SuppressWarnings("unused")
@@ -21,7 +21,7 @@ public class DownloaderMessageData {
     }
 
     public final boolean decrementAttemptsLeft() {
-        if (attemptsLeft == 0) return false;
+        if (attemptsLeft <= 0) return false;
         --attemptsLeft;
         return true;
     }

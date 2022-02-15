@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1644832800708-1" author="AIS">
+        <sql>
+            insert into import_source(id,name,pipeline_info,source_info) values
+            (1002,'base_director','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}, "limits": {"batchRows": 16384, "batchErrors": 1024}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "base_director", "mapping": {"inn": "INN_BOSS", "okpo": "OKPO"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"extra": {"removeFiles": false}, "handler": "simpleFile"}'),
+            (1003,'base_drfo','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}, "limits": {"batchRows": 16384, "batchErrors": 1024}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "base_drfo", "mapping": {"fio": "ФИО", "inn": "инн", "address": "адрес - 1", "address2": "адрес - 2", "car_kind": "вид авто", "cars_all": "все авто", "pat_name": "отчество", "birthdate": "дата рождения", "last_name": "фамилия", "birthdate2": "Дата рождения", "car_number": "номер авто", "first_name": "имя", "all_addresses": "все адреса", "second_last_name": "другая фамилия", "residence_address": "адрес прописки"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"extra": {"removeFiles": false}, "handler": "simpleFile"}'),
+            (1004,'base_elections','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}, "limits": {"batchRows": 16384, "batchErrors": 1024}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "base_elections", "mapping": {"fio": "Ф.И.О.", "address": "Адрес", "birthdate": "Д.Р.", "polling_station": "Участок"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"extra": {"removeFiles": false}, "handler": "simpleFile"}'),
+            (1005,'base_creator','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "UTF-8", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}, "limits": {"batchRows": 16384, "batchErrors": 1024}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "base_creator", "mapping": {"inn": "ИНН", "okpo": "ОКПО"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"extra": {"removeFiles": false}, "handler": "simpleFile"}'),
+            (1006,'base_passports','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}, "limits": {"batchRows": 16384, "batchErrors": 1024}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "base_passports", "mapping": {"inn": "INN", "serial": "SERIAL", "pass_id": "NUMBER", "birthdate": "BIRTHDAY", "last_name": "LNAME", "first_name": "FNAME", "middle_name": "MNAME"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"extra": {"removeFiles": false}, "handler": "simpleFile"}'),
+            (1007,'base_fodb','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": "|", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}, "limits": {"batchRows": 16384, "batchErrors": 1024}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "base_fodb", "mapping": {"inn": "INN", "sex": "SEX", "birthdate": "BIRTHDAY", "live_phone": "LIVE_PHONE", "live_county": "LIVE_COUNTY", "live_region": "LIVE_REGION", "live_street": "LIVE_STREET", "birth_county": "BIRTH_COUNTY", "birth_region": "BIRTH_REGION", "last_name_ru": "LAST_NAME_RU", "last_name_ua": "LAST_NAME_UA", "live_city_ua": "LIVE_CITY_UA", "live_country": "LIVE_COUNTRY", "birth_city_ua": "BIRTH_CITY_UA", "birth_country": "BIRTH_COUNTRY", "first_name_ru": "FIRST_NAME_RU", "first_name_ua": "FIRST_NAME_UA", "live_city_type": "LIVE_CITY_TYPE", "middle_name_ru": "MIDDLE_NAME_RU", "middle_name_ua": "MIDDLE_NAME_UA", "birth_city_type": "BIRTH_CITY_TYPE", "date_inn_create": "DATE_INN_CREATE", "live_street_type": "LIVE_STREET_TYPE", "live_city_foreign": "LIVE_CITY_FOREIGN", "birth_city_foreign": "BIRTH_CITY_FOREIGN", "live_building_part": "LIVE_BUILDING_PART", "live_building_letter": "LIVE_BUILDING_LETTER", "live_building_number": "LIVE_BUILDING_NUMBER", "live_building_apartment": "LIVE_BUILDING_APARTMENT", "live_code_register_date": "LIVE_CODE_REGISTER_DATE"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"extra": {"removeFiles": false}, "handler": "simpleFile"}');
+        </sql>
+        <rollback>
+            <sql>
+                delete from import_source where id in (1002, 1003, 1004, 1005, 1006, 1007);
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="1644832800708-2" author="AIS">
+        <sql>
+            insert into scheduler(group_name,name,exchange,data,schedule,force_disabled,enabled) values
+                ('base','001.base_director','otp-etl.downloader','{"ident": "base_director", "localPath": "base/director.txt", "attemptsLeft": 3, "delayMinutes": 2}',null,false,false),
+                ('base','002.base_drfo','otp-etl.downloader','{"ident": "base_drfo", "localPath": "base/drfo.txt", "attemptsLeft": 3, "delayMinutes": 2}',null, false ,false),
+                ('base','003.base_creator','otp-etl.downloader','{"ident": "base_creator", "localPath": "base/okpo_creator.txt", "attemptsLeft": 3, "delayMinutes": 2}',null,false,false),
+                ('base','004.base_elections','otp-etl.downloader','{"ident": "base_elections", "localPath": "base/elections.txt", "attemptsLeft": 3, "delayMinutes": 2}',null,false,false),
+                ('base','005.base_fodb','otp-etl.downloader','{"ident": "base_fodb", "localPath": "base/fodb.txt", "attemptsLeft": 3, "delayMinutes": 2}',null,false,false),
+                ('base','006.passports','otp-etl.downloader','{"ident": "base_passports", "localPath": "base/passports.csv", "attemptsLeft": 3, "delayMinutes": 2}',null,false,false),
+                ('base','zzz.switch','otp-etl.scheduler','{"group": "test", "action": "switch"}',null,false,false);
+        </sql>
+        <rollback>
+            <sql>
+                delete from scheduler where group_name = 'base';
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="1644832800708-3" author="AIS">
+        <tagDatabase tag="v009"/>
+    </changeSet>
+</databaseChangeLog>

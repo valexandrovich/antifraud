@@ -1,6 +1,6 @@
 package ua.com.solidity.common;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import ua.com.solidity.common.data.DataObject;
 
 public class ZeroParser extends CustomParser {
     @Override
@@ -9,7 +9,7 @@ public class ZeroParser extends CustomParser {
     }
 
     @Override
-    public JsonNode getNode() {
+    public DataObject internalDataObject() {
         return null;
     }
 

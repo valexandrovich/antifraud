@@ -12,8 +12,8 @@ public class DownloaderConfiguration {
     }
 
     @Bean
-    DownloaderTaskHandler simpleFile() {
-        return new DownloaderFileHandler();
+    DownloaderTaskHandler simpleFile(Config config) {
+        return new DownloaderFileHandler(config);
     }
 
     @Bean

@@ -2,6 +2,7 @@ package ua.com.solidity.pipeline;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.helpers.MessageFormatter;
 
 import java.util.*;
 
@@ -26,6 +27,7 @@ public final class Item {
     int flags = 0;
     int index = -1;
     Object outputValue = null;
+    Object internalData = null;
 
     private Item(Prototype prototype, Pipeline pipeline, String name, Map<String, List<String>> inputs, JsonNode node) {
         this.prototype = prototype;
@@ -53,6 +55,20 @@ public final class Item {
                 addInput(nameOfSet, item, clazz);
             }
         }
+    }
+
+    public void setInternalData(Object value) {
+        internalData = value;
+    }
+
+    public <T> T getInternalData(Class<? extends T> clazz) {
+        T res;
+        try {
+            res = clazz.cast(internalData);
+        } catch (Exception e) {
+            res = null;
+        }
+        return res;
     }
 
     public <T> T getLocalData(String name, Class<? extends T> clazz) {
@@ -155,6 +171,12 @@ public final class Item {
         }
     }
 
+    boolean beforePipelineExecution() {
+        if (terminated()) return true;
+        prototype.beforePipelineExecution(this);
+        return terminated();
+    }
+
     boolean tryToExecute() {
         if (completed || visited || terminated()) return false;
 
@@ -228,5 +250,14 @@ public final class Item {
             log.warn("Pipeline item error on close {}", name);
         }
         closed = true;
+    }
+
+    private String doGetString(Object ... args) {
+        return MessageFormatter.arrayFormat("(name: {}, prototype: {})", args).getMessage();
+    }
+
+    @Override
+    public String toString() {
+        return doGetString(name, prototype.getClass().getName());
     }
 }

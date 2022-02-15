@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1644582379774-1" author="AIS">
+        <createTable tableName="import_revision_group_rows_cache">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="import_revision_group_rows_cache_pkey"/>
+            </column>
+            <column name="source_group" type="BIGINT"/>
+            <column name="revision_group" type="UUID"/>
+            <column name="digest" type="VARCHAR(80)"/>
+            <column name="data" type="JSONB"/>
+        </createTable>
+
+    </changeSet>
+    <changeSet id="1644582379774-2" author="AIS">
+        <createTable tableName="scheduler">
+            <column name="group_name" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="scheduler_pkey"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="scheduler_pkey"/>
+            </column>
+            <column name="exchange" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schedule" type="JSONB"/>
+            <column defaultValueBoolean="false" name="force_disabled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueBoolean="false" name="enabled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1644582379774-4" author="AIS">
+        <createTable tableName="import_source_session">
+            <column name="source" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="import_source_session_pkey1"/>
+            </column>
+            <column name="backend_start" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="pid" type="INTEGER"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1644582379774-5" author="AIS">
+        <addUniqueConstraint columnNames="source, backend_start, pid" constraintName="import_source_session_uc" tableName="import_source_session"/>
+    </changeSet>
+</databaseChangeLog>

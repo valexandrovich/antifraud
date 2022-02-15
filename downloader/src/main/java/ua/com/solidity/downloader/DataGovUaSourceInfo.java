@@ -37,7 +37,9 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     public static final String KEY_DIGEST = "file_hash_sum";
     public static final String KEY_REVISION = "revision";
     public static final String API_KEY = "apiKey";
+    public static final String EXTRA = "extra";
     public static final String FILE_MASK = "mask";
+    public static final String LAST = "last";
     public static final String SCHEMA = "schema";
     public static final String NAME = "name";
 
@@ -117,6 +119,9 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     @JsonIgnore
     private ResourceInfo mainResource = null;
 
+    @JsonIgnore
+    private boolean useLastResource = false;
+
     @Autowired
     public DataGovUaSourceInfo(Config config) {
         super();
@@ -132,11 +137,20 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         apiDataNode = null;
     }
 
+    private void initExtra(JsonNode sourceInfo) {
+        if (sourceInfo.hasNonNull(EXTRA)) {
+            JsonNode extraData = sourceInfo.get(EXTRA);
+            setExtraData(extraData.isObject() ? extraData : null);
+        }
+    }
+    
     public final boolean initialize(JsonNode sourceInfo) {
         clear();
+        initExtra(sourceInfo);
         if (sourceInfo.hasNonNull(API_KEY)) {
             this.apiKey = sourceInfo.get(API_KEY).asText();
             this.fileMask = sourceInfo.hasNonNull(FILE_MASK) ? sourceInfo.get(FILE_MASK).asText() : null;
+            this.useLastResource = sourceInfo.hasNonNull(LAST) && sourceInfo.get(LAST).asBoolean();
             JsonNode schema = sourceInfo.hasNonNull(SCHEMA) ? sourceInfo.get(SCHEMA) : null;
             if (schema != null && !schema.isObject()) {
                 schema = null;
@@ -203,6 +217,12 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         handleResource(resourceInfo);
         if (resourceInfo.data.isValid()) {
             if (isMain) {
+                if (mainResource != null) {
+                    int compareRes =resourceInfo.data.getRevisionDateTime().compareTo(mainResource.data.getRevisionDateTime());
+                    if (compareRes == 0) {
+                        log.warn("Found more then one resources with same last date. Only one can be handled.");
+                    }
+                }
                 mainResource = resourceInfo;
             }
             resources.add(resourceInfo);
@@ -216,7 +236,8 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
             String dictName = getDictionaryItemName(name);
             boolean isMain = dictName == null && isMainResourceName(name);
 
-            if (isMain && mainResource != null) {
+
+            if (isMain && mainResource != null && !useLastResource) {
                 log.warn("Only one resource can be used as main (other ignored). Assign mask or schema fields.");
                 continue;
             }
@@ -248,7 +269,7 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         List<SourceDataNodeInfo> nodes = new ArrayList<>();
         for (JsonNode revision : revisionsArray) {
             nodes.add(new SourceDataNodeInfo(revision,
-                    ValueParser.getDatetime(revision.get(KEY_RESOURCE_CREATED).textValue()),
+                    ValueParser.getZonedDateTime(revision.get(KEY_RESOURCE_CREATED).textValue()),
                     revision.get(KEY_SIZE).asLong()));
         }
         Collections.sort(nodes);

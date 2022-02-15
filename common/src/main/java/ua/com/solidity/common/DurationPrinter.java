@@ -27,6 +27,11 @@ public class DurationPrinter {
         }
     }
 
+    public final long getDurationMillis() {
+        Instant current = finish == null ? Instant.now() : finish;
+        return Duration.between(current, start).toMillis();
+    }
+
     public String getDurationString() {
         Instant current = finish == null ? Instant.now() : finish;
         StringBuilder builder = new StringBuilder();

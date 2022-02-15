@@ -1,0 +1,56 @@
+[
+  {
+    "exchange": "otp-etl.scheduler.test",
+    "data": "ping 1min",
+    "schedule":
+    {
+      "start": "2021-01-01T00:00",
+      "minutes":
+      {
+        "type": "periodic",
+        "value": 1
+      }
+    }
+  },
+  {
+    "exchange": "otp-etl.scheduler.test",
+    "data": "ping 2min",
+    "schedule":
+    {
+      "start": "2021-01-01T00:00",
+      "minutes":
+      {
+        "type": "periodic",
+        "value": 2
+      }
+    }
+  },
+
+  {
+    "exchange": "otp-etl.scheduler.test",
+    "data": "ping 3min",
+    "schedule":
+    {
+      "start": "2021-01-01T00:00",
+      "minutes":
+      {
+        "type": "periodic",
+        "value": 3
+      }
+    }
+  },
+  {
+    "exchange": "otp-etl.downloader",
+    "data": {
+      "ident": "govua10",
+      "attemptsLeft": 3
+    },
+    "schedule": {
+      "start": "2021-01-01T00:00",
+      "minutes": {
+        "type": "periodic",
+        "value": 3
+      }
+    }
+  }
+]

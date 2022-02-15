@@ -20,6 +20,7 @@ public class CustomTreeObjectParams {
     public final boolean isReady() {
         return equalsCount == index && equalsCount == (path == null ? 0 : path.size());
     }
+
     public final void push(String name) {
         ++index;
         if (path == null || index > path.size()) return;

@@ -17,8 +17,6 @@ import java.util.UUID;
 @Slf4j
 @Component
 public class Downloader {
-
-    private static final String DELIMITER = "- - - - - - - - - - - - - - -";
     private final File targetFolder;
 
     @Autowired
@@ -30,6 +28,7 @@ public class Downloader {
     }
 
     private boolean downloadFile(ResourceInfoFileData file, String baseName, String dictName) {
+        if (!file.downloadingNeeded()) return true;
         String fileName = baseName + (dictName == null ? "" : "-" + dictName) + "." + file.getExtension();
         File output = new File(targetFolder, fileName);
         boolean res = false;
@@ -38,11 +37,11 @@ public class Downloader {
                 log.warn("Can't create file name: {}", file.getFileName());
             } else {
                 file.setFileName(output.getAbsolutePath());
-                log.info("    file: {}", fileName);
+                file.setDownloaded(true);
                 try (FileOutputStream target = new FileOutputStream(output, false)) {
                     InputStream source = Utils.getStreamFromUrl(file.getUrl());
                     if (!Utils.streamCopy(source, target)) {
-                        log.warn("File not saved.");
+                        log.error("File {} not saved.", file.getFileName());
                     } else res = true;
                 }
             }
@@ -57,26 +56,20 @@ public class Downloader {
             log.info("ResourceInfoData is not valid. Downloading cancelled.");
             return null;
         }
-        log.info("=============================");
         log.info("Start downloading...");
-        log.info(DELIMITER);
         String fileName = task.getPrefix() + UUID.randomUUID();
         boolean downloaded = true;
         if (!info.dictionaries.isEmpty()) {
-            log.info("Schema file(s):");
             for (var entry : info.dictionaries.entrySet()) {
                 if (!downloadFile(entry.getValue(), fileName, entry.getKey())) {
                     downloaded = false;
                     break;
                 }
             }
-            log.info(DELIMITER);
         }
 
         if (downloaded) {
-            log.info("Main file:");
             downloaded = downloadFile(info.getMainFile(), fileName, null);
-            log.info(DELIMITER);
         }
 
         if (!downloaded) {

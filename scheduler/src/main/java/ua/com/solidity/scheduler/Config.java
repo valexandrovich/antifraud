@@ -13,4 +13,8 @@ public class Config {
     private String name;
     @Value("${scheduler.rabbitmq.init}")
     private String initName;
+    @Value("${scheduler.init}")
+    private String init;
+    @Value("${scheduler.schedulerInitFile}")
+    private String schedulerInitFile;
 }

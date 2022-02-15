@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1644581935657-1" author="AIS">
+        <sqlFile encoding="utf8"
+                 path="get_table_info.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS public.get_table_info(character varying, character varying, character varying);
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="1644581935657-2" author="AIS">
+        <sqlFile encoding="utf8"
+                 path="import_source_locker.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS public.import_source_locker(character varying, boolean);
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="1644581935657-3" author="AIS">
+        <sqlFile encoding="utf8"
+                 path="import_source_locker_by_id.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS public.import_source_locker_by_id(bigint, boolean);
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="1644581935657-4" author="AIS">
+        <sqlFile encoding="utf8"
+                 path="scheduler_activate.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS public.scheduler_activate(character varying);
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

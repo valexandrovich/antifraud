@@ -11,5 +11,7 @@ public class PipelineFactory {
     public Pipeline createPipeline(String jsonString) {
         return new Pipeline(provider, jsonString);
     }
-    public Pipeline createPipelineByNode(JsonNode node) {return new Pipeline(provider, node); }
+    public Pipeline createPipelineByNode(JsonNode node) {
+        return new Pipeline(provider, node);
+    }
 }

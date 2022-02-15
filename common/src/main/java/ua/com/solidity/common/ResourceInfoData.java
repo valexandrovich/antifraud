@@ -1,6 +1,7 @@
 package ua.com.solidity.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +17,12 @@ import java.util.Map;
 public class ResourceInfoData {
     public final Map<String, ResourceInfoFileData> dictionaries = new HashMap<>();
     ResourceInfoFileData mainFile;
+    JsonNode extraData;
 
     public void clear() {
         dictionaries.clear();
         mainFile = null;
+        extraData = null;
     }
 
     @JsonIgnore
@@ -30,7 +33,7 @@ public class ResourceInfoData {
     public final void removeAllFiles() {
         for (var entry : dictionaries.entrySet()) {
             try {
-                if (entry.getValue().fileName != null) {
+                if (entry.getValue().canRemoveFile()) {
                     Files.deleteIfExists(Path.of(entry.getValue().fileName));
                 }
             } catch (Exception e) {
@@ -38,7 +41,7 @@ public class ResourceInfoData {
             }
         }
 
-        if (mainFile != null && mainFile.fileName != null) {
+        if (mainFile != null && mainFile.canRemoveFile()) {
             try {
                 Files.deleteIfExists(Path.of(mainFile.fileName));
             } catch (Exception e) {

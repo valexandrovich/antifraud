@@ -1,10 +1,9 @@
 package ua.com.solidity.common.parsers.csv;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.CustomParser;
+import ua.com.solidity.common.data.DataHeader;
+import ua.com.solidity.common.data.DataObject;
 
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
@@ -14,15 +13,11 @@ import java.util.*;
 @Slf4j
 public class CSVParser extends CustomParser {
     private Scanner scanner;
-
+    private DataHeader header;
     public final Map<String, Integer> fieldNames = new HashMap<>();
-
     public final List<String> dataFields = new ArrayList<>();
-
     private final StringBuilder mBuilder = new StringBuilder();
     private int colCount = -1;
-    private JsonNode lastNode = null;
-
     private final ParseRowData data;
 
     private static class ParseRowData {
@@ -132,10 +127,10 @@ public class CSVParser extends CustomParser {
     }
 
     private String initFieldName(String fieldName) {
-        if (fieldName != null) fieldName = fieldName.trim();
-        else fieldName = "";
-        if (fieldName.isEmpty()) {
-            fieldName = generateName();
+        fieldName = fieldName == null ? "" : fieldName.trim();
+        if (fieldName.isEmpty() || fieldName.startsWith("#")) {
+            fieldName = "#" + (fieldNames.size() + 1);
+            fieldNames.put(fieldName, fieldNames.size());
         } else {
             if (fieldNames.containsKey(fieldName)) {
                 int delta = 1;
@@ -162,24 +157,6 @@ public class CSVParser extends CustomParser {
             }
         }
         return true;
-    }
-
-    @SuppressWarnings("unused")
-    public final String getFieldByName(String name) {
-        if (fieldNames.containsKey(name)) {
-            int index = fieldNames.get(name);
-            if (dataFields.size() > index) return dataFields.get(index);
-        }
-        return null;
-    }
-
-    private String getFieldName(int index) {
-        for (Map.Entry<String, Integer> entry : fieldNames.entrySet()) {
-            if (entry.getValue() == index) return entry.getKey();
-        }
-        String name = generateName();
-        fieldNames.put(name, index);
-        return name;
     }
 
     private void recoverValue(StringBuilder builder, String row, int fieldStart, int fieldEnd) {
@@ -299,7 +276,6 @@ public class CSVParser extends CustomParser {
     }
 
     private boolean parseRow() {
-        clearError();
         dataFields.clear();
         if (!scanner.hasNextLine()) {
             return false;
@@ -328,20 +304,24 @@ public class CSVParser extends CustomParser {
         return true;
     }
 
-    @Override
-    public JsonNode getNode() {
-        if (lastNode == null && hasData()) {
-            ObjectNode res = JsonNodeFactory.instance.objectNode();
-            for (int i = 0; i < dataFields.size(); ++i) {
-                res.put(getFieldName(i), dataFields.get(i)); // use ValueParser.parse
+    private void headerNeeded() {
+        if (header == null) {
+            if (fieldNames.isEmpty()) {
+                for (int i = 0; i < dataFields.size(); ++i) {
+                    initFieldName(null);
+                }
             }
-            lastNode = res;
+            header = new DataHeader(fieldNames);
         }
-        return lastNode;
+    }
+
+    @Override
+    protected DataObject internalDataObject() {
+        headerNeeded();
+        return CSVDataObject.create(header, dataFields);
     }
 
     protected boolean doNext() {
-        lastNode = null;
         return parseRow();
     }
 

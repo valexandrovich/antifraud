@@ -5,11 +5,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.input.BOMInputStream;
+import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,17 +25,23 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 @Slf4j
+@SuppressWarnings("unused")
 public class Utils {
     @SuppressWarnings("SpellCheckingInspection")
-    public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSXXX";
+    public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS[XXX]";
+    public static final String OUTPUT_DATE_FORMAT = "yyyy-MM-dd[XXX]";
+    public static final String OUTPUT_TIME_FORMAT = "hh:mm:ss.SSS[XXX]";
     private static final String RABBITMQ_LOG_ERROR_WITH_MESSAGE = "sendRabbitMQMessage: {} . ({}:{}) : {}";
     private static final String RABBITMQ_LOG_ERROR = "sendRabbitMQMessage: {} . ({}:{})";
     private static final long TRY_TO_SEND_DELTA = 180000; // 3 min
@@ -39,6 +51,7 @@ public class Utils {
     private static Connection connection;
     private static Channel channel;
     private static ObjectMapper sortedMapper = null;
+    private static XmlMapper xmlSortedMapper = null;
     private static final char[] hexChars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     private static final String HEX_DIGITS = new String(hexChars);
 
@@ -132,10 +145,6 @@ public class Utils {
         return null;
     }
 
-    public static DateFormat outputDateTimeFormat() {
-        return new SimpleDateFormat(OUTPUT_DATETIME_FORMAT);
-    }
-
     public static String removeIgnoredChars(String value, String ignoredChars) {
         int first = 0;
         while (first < value.length() && ignoredChars.indexOf(value.charAt(first)) >= 0) {
@@ -180,7 +189,7 @@ public class Utils {
     }
 
     public static JsonNode getJsonNode(Object value) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = getSortedMapper();
         try {
             return mapper.valueToTree(value);
         } catch (Exception e) {
@@ -190,7 +199,7 @@ public class Utils {
     }
 
     public static JsonNode getJsonNode(String value) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = getSortedMapper();
         try {
             return mapper.readTree(value);
         } catch (Exception e) {
@@ -200,7 +209,7 @@ public class Utils {
     }
 
     public static JsonNode getJsonNode(InputStream stream, String encoding) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = getSortedMapper();
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream,
                 Charset.availableCharsets().getOrDefault(encoding, StandardCharsets.UTF_8)));
         try {
@@ -227,7 +236,7 @@ public class Utils {
 
     public static <T> T jsonToValueDef(JsonNode node, Class<T> value, T def) {
         if (node != null && value != null) {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = getSortedMapper();
             try {
                 return mapper.treeToValue(node, value);
             } catch (Exception e) {
@@ -237,10 +246,40 @@ public class Utils {
         return def;
     }
 
+    private static DateTimeFormatter getOutputDateTimeFormat() {
+        return DateTimeFormatter.ofPattern(OUTPUT_DATETIME_FORMAT);
+    }
+
+    private static DateTimeFormatter getOutputDateFormat() {
+        return DateTimeFormatter.ofPattern(OUTPUT_DATE_FORMAT);
+    }
+
+    private static DateTimeFormatter getOutputTimeFormat() {
+        return DateTimeFormatter.ofPattern(OUTPUT_TIME_FORMAT);
+    }
+
+    private static SimpleDateFormat getJsonOutputDateTimeFormat() {
+        return new SimpleDateFormat(OUTPUT_DATETIME_FORMAT);
+    }
+
+    public static String localTimeToString(LocalTime time) {
+        return time == null ? null : time.format(getOutputTimeFormat());
+    }
+
+    public static String localDateToString(LocalDate date) {
+        return date == null ? null : date.format(getOutputDateFormat());
+    }
+
+    public static String zonedDateToString(ZonedDateTime datetime) {
+        return datetime == null ? null : datetime.format(getOutputDateFormat());
+    }
+
+    public static String zonedDateTimeToString(ZonedDateTime datetime) {
+        return datetime.format(getOutputDateTimeFormat());
+    }
+
     public static String objectToJsonString(Object object) {
-        ObjectWriter writer = new ObjectMapper().
-                configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).
-                writer(outputDateTimeFormat()).withDefaultPrettyPrinter();
+        ObjectWriter writer = getSortedMapper().writer().withDefaultPrettyPrinter();
         try {
             return writer.writeValueAsString(object);
         } catch (Exception e) {
@@ -410,20 +449,48 @@ public class Utils {
         return found.get(0);
     }
 
-    private static ObjectMapper getSortedMapper() {
+    private static class SortingNodeFactory extends JsonNodeFactory {
+        @Override
+        public ObjectNode objectNode() {
+            return new ObjectNode(this, new TreeMap<>());
+        }
+    }
+
+    public static ObjectMapper getSortedMapper() {
         if (sortedMapper == null) {
-            sortedMapper = new ObjectMapper().
-                    configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).
-                    configure(SerializationFeature.INDENT_OUTPUT, true).setDateFormat(outputDateTimeFormat());
+            sortedMapper = JsonMapper.builder()
+                    .nodeFactory(new SortingNodeFactory())
+                    .build().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).
+                    configure(SerializationFeature.INDENT_OUTPUT, true).setDateFormat(getJsonOutputDateTimeFormat());
         }
         return sortedMapper;
+    }
+
+    public static XmlMapper getSortedXmlMapper() {
+        if (xmlSortedMapper == null) {
+            xmlSortedMapper = (XmlMapper) XmlMapper.xmlBuilder().
+                    nodeFactory(new SortingNodeFactory()).
+                    build().
+                    configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).
+                    configure(SerializationFeature.INDENT_OUTPUT, true).setDateFormat(getJsonOutputDateTimeFormat());
+        }
+        return xmlSortedMapper;
+    }
+
+    public static JsonNode getSortedJsonNode(JsonNode node) {
+        try {
+            ObjectMapper sortedMapper = getSortedMapper();
+            return sortedMapper.treeToValue(node, JsonNode.class);
+        } catch (JsonProcessingException e) {
+            log.error("Can't resort node.", e);
+        }
+        return null;
     }
 
     public static byte[] getJsonNodeBytes(JsonNode node) {
         try {
             ObjectMapper sortedMapper = getSortedMapper();
-            final Object obj = sortedMapper.treeToValue(node, Object.class);
-            return sortedMapper.writeValueAsBytes(obj);
+            return sortedMapper.writeValueAsBytes(node);
         } catch (JsonProcessingException e) {
             log.error("Can't convert node to bytes.", e);
         }
@@ -433,8 +500,7 @@ public class Utils {
     public static String getSortedJsonNodeString(JsonNode node) {
         try {
             ObjectMapper sortedMapper = getSortedMapper();
-            final Object obj = sortedMapper.treeToValue(node, Object.class);
-            return sortedMapper.writeValueAsString(obj);
+            return sortedMapper.writeValueAsString(node);
         } catch (JsonProcessingException e) {
             log.error("Can't convert node to Sorted String.", e);
         }
@@ -444,19 +510,44 @@ public class Utils {
     public static byte[] complexDigest(JsonNode node) {
         if (node != null) {
             try {
-                MessageDigest md5 = MessageDigest.getInstance("MD5");
+                MessageDigest md = MessageDigest.getInstance("SHA3-384");
                 byte[] input = getJsonNodeBytes(node);
-                byte[] d1 = md5.digest(input);
-                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-                byte[] d2 = sha256.digest(input);
-                byte[] res = new byte[d1.length + d2.length];
-                System.arraycopy(d1, 0, res, 0, d1.length);
-                System.arraycopy(d2, 0, res, d1.length, d2.length);
-                return res;
+                return md.digest(input);
             } catch (Exception e) {
                 log.error("ComplexDigest error.", e);
             }
         }
         return new byte[0];
+    }
+
+    @SuppressWarnings("unused")
+    public static String messageFormat(String pattern, Object ... args) {
+        return MessageFormatter.arrayFormat(pattern, args).getMessage();
+    }
+
+    public static InputStream getSpecialInputStream(InputStream stream) {
+        if (stream instanceof SpecialInputStream || stream instanceof BOMInputStream) return stream;
+        return new BOMInputStream(stream,
+                ByteOrderMark.UTF_8,
+                ByteOrderMark.UTF_16BE,
+                ByteOrderMark.UTF_16LE,
+                ByteOrderMark.UTF_32BE,
+                ByteOrderMark.UTF_32LE);
+    }
+
+    public static Charset getInputStreamCharset(InputStream stream) {
+        if (stream instanceof SpecialInputStream) {
+            return ((SpecialInputStream)stream).getCharset();
+        } else if (stream instanceof BOMInputStream) {
+            BOMInputStream bomInputStream = (BOMInputStream) stream;
+            try {
+                if (bomInputStream.hasBOM()) {
+                    return Charset.forName(bomInputStream.getBOMCharsetName());
+                }
+            } catch (Exception e) {
+                // nothing
+            }
+        }
+        return null;
     }
 }

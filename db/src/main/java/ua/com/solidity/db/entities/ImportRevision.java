@@ -60,4 +60,11 @@ public class ImportRevision extends CustomEntity {
         }
         return null;
     }
+
+    public static void removeRevision(UUID revision) {
+        ImportRevisionRepository repository = lookupBean(ImportRevisionRepository.class);
+        if (repository != null) {
+            repository.removeImportRevision(revision);
+        }
+    }
 }

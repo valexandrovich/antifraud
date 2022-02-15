@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.common.OutputCache;
 import java.util.Map;
 
 @Slf4j
@@ -25,11 +24,15 @@ public class Config {
 
     @Value("${importer.importRestriction}")
     private String importRestrictionStr;
+
+    @Value("${importer.removeFiles}")
+    private boolean removeFiles;
     
     private String importerOutputFolder = null;
     private long importRestriction = -1;
     private boolean importRestrictionAssigned = false;
 
+    @SuppressWarnings("unused")
     public final long getInputRestriction() {
         if (!importRestrictionAssigned) {
             String importRestrictionValue = importRestrictionStr;
@@ -41,10 +44,5 @@ public class Config {
             importRestrictionAssigned = true;
         }
         return importRestriction;
-    }
-
-    public final boolean canInsertData(OutputCache cache) {
-        long restriction = getInputRestriction();
-        return restriction < 0 || cache.getGroup().getTotalRowCount() < restriction;
     }
 }

@@ -14,82 +14,60 @@ public class OutputStats {
     @Setter
     @NoArgsConstructor
     public static class Group {
+        private static final long DELTA = 1000000;
+        String fullName;
         String name;
         long totalRowCount = 0;
         long parseErrorCount = 0;
         long insertCount = 0;
-        long insertIgnoreCount = 0;
-        long insertErrorCount = 0;
-        long insertErrorInfoCount = 0;
-        long lastTotalRowCount = 0;
-        public Group(String name) {
+        DurationPrinter printer = new DurationPrinter();
+
+        public Group(String source, String name) {
             this.name = name;
+            this.fullName = source + "." + name;
         }
 
         public void clear() {
-            totalRowCount = parseErrorCount = insertCount = insertIgnoreCount = insertErrorCount = 0;
+            totalRowCount = parseErrorCount = insertCount = 0;
         }
 
-        public final void incTotalRowCount() {
-            ++totalRowCount;
-            if (totalRowCount >= lastTotalRowCount + 100000) {
-                lastTotalRowCount = (totalRowCount / 100000) * 100000;
-                log.info("...group {} rows handled: {}", name, lastTotalRowCount);
-            }
-        }
-
-        public final void incParseErrorCount(int count) {
+        public final void incParseErrorCount(long count) {
+            totalRowCount += count;
             parseErrorCount += count;
         }
 
-        public final void incInsertCount(int count) {
+        public final void incRowCount(long count) {
+            totalRowCount += count;
+        }
+
+        public final void incInsertCount(long count) {
             insertCount += count;
         }
 
-        public final void incInsertIgnoreCount(int count) {
-            insertIgnoreCount += count;
+        public final String getStatsMessage() {
+            return Utils.messageFormat("{}: [total: {}/errors: {}({}%)/inserted: {}({}%)] due {}",
+                    fullName, totalRowCount, parseErrorCount, getParseErrorPercent(), insertCount, getInsertedPercent(), printer.getDurationString());
         }
 
-        public final void incInsertErrorCount(int count) {
-            insertErrorCount += count;
-        }
-
-        public final void incInsertErrorInfoCount(int count) {
-            insertErrorInfoCount += count;
+        public final double getParseErrorPercent() {
+            return totalRowCount == 0 ? 0 : (double) parseErrorCount / totalRowCount * 100;
         }
 
         public final double getInsertedPercent() {
             return totalRowCount == 0 ? 0 : (double) insertCount / totalRowCount * 100;
         }
-
-        public final double getIgnoredPercent() {
-            return totalRowCount == 0 ? 0 : (double) insertIgnoreCount / totalRowCount * 100;
-        }
-
-        public final long getTotalErrorCount() {
-            return insertErrorCount + insertErrorInfoCount;
-        }
-
-        public final double getErrorHandledPercent() {
-            long totalErrorCount = getTotalErrorCount();
-            return parseErrorCount == 0 ? 100 : (double) totalErrorCount / parseErrorCount;
-        }
-
-        @SuppressWarnings("unused")
-        public final double getErrorNotHandledPercent() {
-            return 100 - getErrorHandledPercent();
-        }
-
-        public final double getHandledPercent() {
-            return totalRowCount == 0 ? 0 : (double) (insertCount + insertIgnoreCount) / totalRowCount * 100;
-        }
     }
 
     public final Map<String, Group> items = new HashMap<>();
+    public final String source;
 
-    public final Group getSource(String name) {
+    public OutputStats(String source) {
+        this.source = source;
+    }
+
+    public final Group getGroup(String name) {
         if (items.containsKey(name)) return items.get(name);
-        Group group = new Group(name);
+        Group group = new Group(source, name);
         items.put(name, group);
         return group;
     }

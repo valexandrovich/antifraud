@@ -3,6 +3,7 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import ua.com.solidity.common.SpecialBufferedInputStream;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
@@ -64,7 +65,7 @@ public class PPZipInflaterStream extends Prototype {
 
     private InputStream doCreateInputStream(Item item, ZipFile zipFile, ZipEntry entry, boolean extract) {
         try {
-            InputStream stream = new BufferedInputStream(zipFile.getInputStream(entry), 32768);
+            InputStream stream = new BufferedInputStream(Utils.getSpecialInputStream(zipFile.getInputStream(entry)), 32768);
             if (!extract) return stream;
 
             String outputFileName = UUID.randomUUID() + ".tmp";
@@ -74,7 +75,7 @@ public class PPZipInflaterStream extends Prototype {
 
                 if (doExtractFile(output, stream)) {
                     item.setLocalData(FILE, output);
-                    return new BufferedInputStream(new FileInputStream(output), 32768);
+                    return new SpecialBufferedInputStream(new FileInputStream(output), 32768);
                 }
             } else {
                 log.error("Internal error on extracting file. File already exists.");

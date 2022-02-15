@@ -3,10 +3,9 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import ua.com.solidity.common.ErrorReport;
 import ua.com.solidity.common.OutputCache;
 import ua.com.solidity.common.OutputStats;
-import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.data.DataBatch;
 import ua.com.solidity.pipeline.Input;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
@@ -14,62 +13,42 @@ import ua.com.solidity.pipeline.Prototype;
 @Slf4j
 public abstract class PPCustomDBWriter extends Prototype {
     public static final String OUTPUT_STATS = "outputStats";
+    public static final String SOURCE = "source";
     public static final String GROUP = "group";
     public static final String CACHE = "cache";
-    public static final String DEFAULT_NAME = "undefined";
+    public static final String DEFAULT_NAME = "(undefined)";
     public static final String INPUT = "input";
+
     @Override
     public Class<?> getOutputClass() {
         return null;
     }
 
+    public Class<?> getInputClass() {
+        return DataBatch.class;
+    }
+
+    private void initCache(OutputStats stats, Item item) {
+        String name = item.getLocalData(GROUP, String.class, DEFAULT_NAME);
+        OutputCache cache = new OutputCache(stats.getGroup(name));
+        item.setLocalData(CACHE, cache);
+    }
+
     @Override
     protected void initialize(Item item, JsonNode node) {
+        item.setLocalData(GROUP, node.hasNonNull(GROUP) && node.get(GROUP).isTextual() ? node.get(GROUP).asText() : DEFAULT_NAME);
+        item.mapInputs(INPUT, getInputClass());
+    }
+
+    @Override
+    protected void beforePipelineExecution(Item item) {
         OutputStats stats = item.getPipelineParam(OUTPUT_STATS, OutputStats.class);
         if (stats == null) {
-            stats = new OutputStats();
+            String source = item.getPipelineParam(SOURCE, String.class);
+            stats = new OutputStats(source == null ? DEFAULT_NAME : source);
             item.setPipelineParam(OUTPUT_STATS, stats);
         }
-        String name = DEFAULT_NAME;
-        if (node == null) {
-            log.error("Source name is not defined for prototype {}.", this.getClass().getName());
-            item.terminate();
-            return;
-        }
-        if (node.isObject() && node.hasNonNull(GROUP) && node.get(GROUP).isTextual()) {
-            name = node.get(GROUP).asText();
-        } else {
-            if (node.isTextual()) name = node.asText();
-        }
-        OutputCache cache = new OutputCache(stats.getSource(name), getObjectCacheSize(), getErrorCacheSize());
-        item.setLocalData(CACHE, cache);
-        item.mapInputs(INPUT, JsonNode.class);
-    }
-
-    private void internalFlushOutputObjects(Item item, OutputCache cache) {
-        int committed = flushObjects(item, cache);
-        int count = cache.getHandledObjectsCount();
-        if (count > 0) {
-            for (int i = 0; i < count; ++i) {
-                item.yieldResult(cache.getHandledObject(i), false);
-            }
-        }
-        cache.objectCacheHandled(committed);
-    }
-
-    private void internalFlushErrors(Item item, OutputCache cache) {
-        int count;
-        try {
-            count = flushErrors(item, cache);
-        } catch (Exception e) {
-            count = 0;
-        }
-        cache.errorCacheHandled(count);
-    }
-
-    @SuppressWarnings("unused")
-    protected Object getObjectInstance(Item item, JsonNode value) {
-        return null;
+        initCache(stats, item);
     }
 
     private void doExecuteOnBOF(Item item, OutputCache cache) {
@@ -83,23 +62,18 @@ public abstract class PPCustomDBWriter extends Prototype {
         }
     }
 
-    private void doExecuteOnNotEOF(Item item, Input input, OutputCache cache, JsonNode value) {
-        cache.getGroup().incTotalRowCount();
-        if (input.isError()) {
-            try {
-                ErrorReport report = Utils.jsonToValue(value, ErrorReport.class);
-                if (cache.putError(report)) {
-                      internalFlushErrors(item, cache);
-                }
-            } catch (Exception e) {
-                log.error("Error report not valid.", e);
-            }
-        } else {
-            Object instance = getObjectInstance(item, value);
-            if (instance != null && cache.putObject(instance)) {
-                internalFlushOutputObjects(item, cache);
-            }
+    private void doExecuteOnNotEOF(Item item, OutputCache cache, DataBatch batch) {
+        if (batch == null) return;
+        cache.put(batch);
+        int objectsCommitted = 0;
+        if (batch.getObjectCount() > 0) {
+            objectsCommitted = flushObjects(item, cache);
         }
+        if (batch.getErrorCount() > 0) {
+            flushErrors(item, cache);
+        }
+
+        cache.batchHandled(objectsCommitted);
     }
 
     private Object doExecute(Item item, Input input, OutputCache cache) {
@@ -108,11 +82,9 @@ public abstract class PPCustomDBWriter extends Prototype {
         }
         if (!item.terminated()) {
             if (input.hasData()) {
-                doExecuteOnNotEOF(item, input, cache, input.getValue(JsonNode.class));
+                doExecuteOnNotEOF(item,cache, input.getValue(DataBatch.class));
                 item.stayUncompleted();
             } else {
-                internalFlushOutputObjects(item, cache);
-                internalFlushErrors(item, cache);
                 try {
                     afterOutput(item, cache);
                 } catch (Exception e) {
@@ -136,9 +108,9 @@ public abstract class PPCustomDBWriter extends Prototype {
         return res;
     }
 
-    protected abstract int getObjectCacheSize();
-
-    protected abstract int getErrorCacheSize();
+    protected final OutputCache getOutputCache(@NonNull Item item) {
+        return item.getLocalData(CACHE, OutputCache.class);
+    }
 
     protected abstract void beforeOutput(Item item, OutputCache cache);
 

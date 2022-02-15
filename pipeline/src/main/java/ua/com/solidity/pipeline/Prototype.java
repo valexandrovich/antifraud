@@ -18,6 +18,10 @@ public abstract class Prototype {
 
     protected abstract void initialize(Item item, JsonNode node);
 
+    protected void beforePipelineExecution(Item item) {
+        // nothing
+    }
+
     protected abstract Object execute(@NonNull Item item);
 
     protected abstract void close(Item item);

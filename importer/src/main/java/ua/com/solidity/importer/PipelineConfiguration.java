@@ -3,7 +3,6 @@ package ua.com.solidity.importer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import ua.com.solidity.common.prototypes.*;
 import ua.com.solidity.importer.pipeline.ImportRevisionGroupRowImporter;
 import ua.com.solidity.pipeline.ContextPipelinePrototypeProvider;
@@ -55,7 +54,21 @@ public class PipelineConfiguration {
     }
 
     @Bean
-    public ImportRevisionGroupRowImporter ppRowImporter(JdbcTemplate template) {
-        return new ImportRevisionGroupRowImporter(template);
+    public ImportRevisionGroupRowImporter ppRowImporter() {
+        return new ImportRevisionGroupRowImporter();
+    }
+
+    @Bean
+    public PPRevisionExtension ppRevisionExtension() {
+        return new PPRevisionExtension();
+    }
+
+    @Bean
+    public PPArrayExtractor ppArrayExtractor() {
+        return new PPArrayExtractor();
+    }
+
+    @Bean PPDBTableWriter ppTableWriter() {
+        return new PPDBTableWriter();
     }
 }

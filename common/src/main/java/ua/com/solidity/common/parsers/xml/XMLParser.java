@@ -8,6 +8,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.FilteredTextInputStream;
+import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.data.DataObject;
+import ua.com.solidity.common.data.JsonDataObject;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -19,8 +22,8 @@ public class XMLParser extends CustomParser {
     private FilteredTextInputStream mainStream;
     private XMLStreamReader reader;
     private final XMLInputFactory factory = XMLInputFactory.newInstance();
-    private final XmlMapper mapper = new XmlMapper();
-    private JsonNode lastNode;
+    private final XmlMapper mapper = Utils.getSortedXmlMapper();
+    private JsonNode lastNode = null;
     private final XMLParams params;
 
     public XMLParser(XMLParams params) {
@@ -78,8 +81,8 @@ public class XMLParser extends CustomParser {
     }
 
     @Override
-    public JsonNode getNode() {
-        return lastNode;
+    public DataObject internalDataObject() {
+        return JsonDataObject.create(null, lastNode);
     }
 
     @Override

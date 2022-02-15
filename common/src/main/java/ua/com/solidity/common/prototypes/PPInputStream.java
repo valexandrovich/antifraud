@@ -3,9 +3,7 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import ua.com.solidity.common.ImporterMessageData;
-import ua.com.solidity.common.ResourceInfoData;
-import ua.com.solidity.common.ResourceInfoFileData;
+import ua.com.solidity.common.*;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
@@ -41,6 +39,8 @@ public class PPInputStream extends Prototype {
                 ResourceInfoFileData file = data.dictionaries.get(schema);
                 if (file != null) {
                     fileName = file.getFileName();
+                } else {
+                    log.error("InputStream 'schema' value not found in pipeline 'data'.");
                 }
             } else {
                 fileName = data.getMainFile().getFileName();
@@ -54,12 +54,13 @@ public class PPInputStream extends Prototype {
         InputStream stream;
         String fileName = getFileName(item);
         if (fileName == null) {
-            log.warn("Pipeline param not defined ('FileName')");
+            log.warn("Pipeline param not defined ('data').");
             item.terminate();
             return null;
         }
+
         try {
-            stream = new BufferedInputStream(new FileInputStream(fileName), 32768);
+            stream = new SpecialBufferedInputStream(Utils.getSpecialInputStream(new FileInputStream(fileName)), 32768);
             item.setLocalData(STREAM, stream);
             return stream;
         } catch (Exception e) {

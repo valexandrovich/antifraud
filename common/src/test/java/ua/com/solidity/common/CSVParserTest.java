@@ -2,6 +2,7 @@ package ua.com.solidity.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+import ua.com.solidity.common.data.DataObject;
 import ua.com.solidity.common.parsers.csv.CSVParams;
 import ua.com.solidity.common.parsers.csv.CSVParser;
 
@@ -26,10 +27,11 @@ class CSVParserTest {
         int i = 0;
 
         while (parser.hasData()) {
-            JsonNode first = parser.getNode();
+            DataObject obj = parser.dataObject();
+            JsonNode first = obj == null ? null : obj.getNode();
             if (i < firstTestResult.length) {
                 JsonNode second = Utils.getJsonNode(firstTestResult[i++]);
-                if (!first.equals(second)) return false;
+                if (first == null || !first.equals(second)) return false;
             } else return false;
             parser.next();
         }

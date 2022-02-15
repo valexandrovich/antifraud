@@ -1,6 +1,8 @@
 package ua.com.solidity.downloader;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,11 +42,20 @@ public class DownloaderTask extends RabbitMQTask {
     public void handleError() {
         isError = true;
         if (msgData.decrementAttemptsLeft()) {
-            Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(msgData));
+            if (msgData.getDelayMinutes() <= 0) {
+                Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(msgData));
+            } else {
+                ObjectNode node = Utils.getSortedMapper().createObjectNode();
+                node.set("action", JsonNodeFactory.instance.textNode("exec"));
+                node.set("exchange", JsonNodeFactory.instance.textNode(receiver.getConfig().getName()));
+                node.set("sleep_ms", JsonNodeFactory.instance.numberNode(msgData.getDelayMinutes() * 1000));
+                node.set("data", Utils.getJsonNode(msgData));
+                Utils.sendRabbitMQMessage(receiver.getConfig().getSchedulerTopicExchangeName(), Utils.objectToJsonString(node));
+            }
         } else {
             DownloaderErrorMessageData data = new DownloaderErrorMessageData(this.msgData.getIdent());
             RabbitMQLogMessage message = new RabbitMQLogMessage("downloader", "E001", data);
-            Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(message));
+            Utils.sendRabbitMQMessage(receiver.getConfig().getLogExchangeName(), Utils.objectToJsonString(message));
         }
     }
 
@@ -69,20 +80,14 @@ public class DownloaderTask extends RabbitMQTask {
         ImporterMessageData importerMessageData = receiver.getDownloader().download(data, this);
         urlElapsedTime.stop();
         if (importerMessageData != null) {
-            if (data.dictionaries.isEmpty()) {
-                log.info("Download completed.");
-            } else {
-                log.info("Download of {} files completed.", data.dictionaries.size() + 1);
-            }
-            log.info("elapsed time: {}", urlElapsedTime.getDurationString());
+
+            log.info("{} files found/ downloaded, message sent to Importer ({}).", data.dictionaries.size() + 1, urlElapsedTime.getDurationString());
             importerMessageData.setPipelineInfo(pipelineInfo);
             send(receiver.getConfig().getImporterTopicExchangeName(), Utils.objectToJsonString(importerMessageData));
-            log.info("Message sent to Importer.");
         } else {
-            log.info("Downloading cancelled. All files removed.");
+            log.error("Downloading cancelled. All downloaded files removed.");
             handleError();
         }
-        log.info("===============================");
     }
 
     private void doExecute(DownloaderTaskHandler handler) {

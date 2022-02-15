@@ -1,8 +1,5 @@
 package ua.com.solidity.common.parsers.xls;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -12,21 +9,53 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.ValueParser;
+import ua.com.solidity.common.data.DataHeader;
+import ua.com.solidity.common.data.DataObject;
 
 import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 @Slf4j
 public class XLSParser extends CustomParser {
+    public static final String PREFIX = "#";
+    public static final String DEFAULT_NAMES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
     XSSFWorkbook workbook;
     XSSFSheet sheet;
     int rowIndex = -1;
     int[] columns = null;
     String[] names = null;
-    JsonNode lastNode = null;
+    DataHeader header = null;
     private final XLSParams params;
 
     public XLSParser(XLSParams params) {
         this.params = params;
+    }
+
+    private int parseGeneratedName(String name) {
+        if (name == null) return -1;
+        name = name.trim().toUpperCase(Locale.ROOT);
+        if (name.startsWith(PREFIX)) name = name.substring(PREFIX.length());
+        int index = 0;
+        for (int i = 0; i < name.length(); ++i) {
+            index *= DEFAULT_NAMES.length();
+            int idx = DEFAULT_NAMES.indexOf(name.charAt(i));
+            if (idx < 0) return -1;
+            index += idx;
+        }
+        return index;
+    }
+
+    private String generateNameForCounter(int counter) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(PREFIX);
+        do {
+            builder.append(DEFAULT_NAMES.charAt(counter % DEFAULT_NAMES.length()));
+            counter /= DEFAULT_NAMES.length();
+        } while (counter != 0);
+        return builder.toString();
     }
 
     private int[] parseColumns() {
@@ -73,12 +102,17 @@ public class XLSParser extends CustomParser {
         } catch (Exception e) {
             log.error("Can't open workbook.", e);
         }
+
+        Map<String, Integer> cols = new HashMap<>();
+        for (int i = 0; i < names.length; ++i) {
+            cols.put(names[i], i);
+        }
+        header = new DataHeader(cols);
         return false;
     }
 
-    private JsonNode cellToNode(XSSFCell cell) {
+    private Object cellToObject(XSSFCell cell) {
         if (cell == null) return null;
-        JsonNodeFactory factory = JsonNodeFactory.instance;
         CellType type = cell.getCellType();
         if (type == CellType.FORMULA) {
             type = cell.getCachedFormulaResultType();
@@ -87,40 +121,37 @@ public class XLSParser extends CustomParser {
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
                     if (cell.getLocalDateTimeCellValue().toInstant(ZoneOffset.UTC).equals(cell.getDateCellValue().toInstant())) {
-                        return factory.textNode(ValueParser.formatInstant(cell.getDateCellValue().toInstant()));
+                        return ValueParser.formatInstant(cell.getDateCellValue().toInstant());
                     } else {
-                        return factory.textNode(ValueParser.formatLocalDateTime(cell.getLocalDateTimeCellValue(), ZoneOffset.UTC));
+                        return ValueParser.formatLocalDateTime(cell.getLocalDateTimeCellValue());
                     }
                 }
-                return factory.numberNode(cell.getNumericCellValue());
+                return cell.getNumericCellValue();
             case BLANK:
                 return null;
             case BOOLEAN:
-                return factory.booleanNode(cell.getBooleanCellValue());
+                return cell.getBooleanCellValue();
             default:
-                return factory.textNode(cell.getStringCellValue());
+                return cell.getStringCellValue();
         }
     }
 
     @Override
-    public JsonNode getNode() {
-        if (lastNode == null && hasData()) {
-            ObjectNode res = null;
-            if (rowIndex <= sheet.getLastRowNum()) {
-                res = JsonNodeFactory.instance.objectNode();
-                XSSFRow row = sheet.getRow(rowIndex);
-                for (int i = 0; i < columns.length; ++i) {
-                    res.set(names[i], cellToNode(row.getCell(columns[i])));
-                }
+    public DataObject internalDataObject() {
+        if (rowIndex <= sheet.getLastRowNum()) {
+            XSSFRow row = sheet.getRow(rowIndex);
+            int size = columns.length;
+            Object[] data = new Object[size];
+            for (int i = 0; i < size; ++i) {
+                data[i] = cellToObject(row.getCell(columns[i]));
             }
-            lastNode = res;
+            return XLSDataObject.create(header, data);
         }
-        return lastNode;
+        return null;
     }
 
     @Override
     protected boolean doNext() {
-        lastNode = null;
         return ++rowIndex <= sheet.getLastRowNum();
     }
 }

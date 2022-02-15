@@ -168,6 +168,11 @@ public class Pipeline {
         for (Item item : items) {
             item.completed = false;
             item.visited = false;
+            terminated = item.beforePipelineExecution();
+            if (terminated) {
+                log.warn("Pipeline post initialization item failed {}.", item);
+                return true;
+            }
         }
 
         doExecute(0);

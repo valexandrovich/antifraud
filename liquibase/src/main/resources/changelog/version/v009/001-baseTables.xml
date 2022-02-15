@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1644831565352-1" author="AIS">
+        <createTable tableName="base_creator">
+        <column name="id" type="UUID">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="base_creator_pkey"/>
+        </column>
+        <column name="revision" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        <column name="okpo" type="VARCHAR(20)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="inn" type="VARCHAR(20)">
+            <constraints nullable="false"/>
+        </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="1644831565352-2" author="AIS">
+        <createTable tableName="base_director">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="base_director_pkey"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="okpo" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="inn" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1644831565352-3" author="AIS">
+        <createTable tableName="base_drfo">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="base_drfo_pkey"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fio" type="VARCHAR(255)"/>
+            <column name="last_name" type="VARCHAR(128)"/>
+            <column name="first_name" type="VARCHAR(128)"/>
+            <column name="pat_name" type="VARCHAR(128)"/>
+            <column name="birthdate" type="date"/>
+            <column name="inn" type="VARCHAR(20)"/>
+            <column name="second_last_name" type="VARCHAR(128)"/>
+            <column name="residence_address" type="VARCHAR(1024)"/>
+            <column name="address" type="VARCHAR(1024)"/>
+            <column name="address2" type="VARCHAR(1024)"/>
+            <column name="all_addresses" type="VARCHAR(2048)"/>
+            <column name="car_number" type="VARCHAR(255)"/>
+            <column name="car_kind" type="VARCHAR(1024)"/>
+            <column name="cars_all" type="VARCHAR(2048)"/>
+            <column name="birthdate2" type="date"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1644831565352-4" author="AIS">
+        <createTable tableName="base_elections">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="base_elections_pkey"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="polling_station" type="VARCHAR(255)"/>
+            <column name="fio" type="VARCHAR(255)"/>
+            <column name="birthdate" type="date"/>
+            <column name="address" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1644831565352-5" author="AIS">
+        <createTable tableName="base_fodb">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="base_fodb_pkey"/>
+            </column>
+            <column name="revision" type="UUID"/>
+            <column name="inn" type="VARCHAR(20)"/>
+            <column name="last_name_ua" type="VARCHAR(128)"/>
+            <column name="last_name_ru" type="VARCHAR(128)"/>
+            <column name="first_name_ua" type="VARCHAR(128)"/>
+            <column name="first_name_ru" type="VARCHAR(128)"/>
+            <column name="middle_name_ua" type="VARCHAR(128)"/>
+            <column name="middle_name_ru" type="VARCHAR(128)"/>
+            <column name="sex" type="VARCHAR(20)"/>
+            <column name="date_inn_create" type="date"/>
+            <column name="birthdate" type="date"/>
+            <column name="birth_country" type="VARCHAR(128)"/>
+            <column name="birth_region" type="VARCHAR(128)"/>
+            <column name="birth_county" type="VARCHAR(128)"/>
+            <column name="birth_city_type" type="VARCHAR(16)"/>
+            <column name="birth_city_ua" type="VARCHAR(128)"/>
+            <column name="birth_city_foreign" type="VARCHAR(128)"/>
+            <column name="live_country" type="VARCHAR(128)"/>
+            <column name="live_region" type="VARCHAR(128)"/>
+            <column name="live_county" type="VARCHAR(128)"/>
+            <column name="live_city_type" type="VARCHAR(16)"/>
+            <column name="live_city_ua" type="VARCHAR(128)"/>
+            <column name="live_street_type" type="VARCHAR(16)"/>
+            <column name="live_street" type="VARCHAR(128)"/>
+            <column name="live_building_number" type="VARCHAR(20)"/>
+            <column name="live_building_letter" type="VARCHAR(20)"/>
+            <column name="live_building_part" type="VARCHAR(20)"/>
+            <column name="live_building_apartment" type="VARCHAR(20)"/>
+            <column name="live_city_foreign" type="VARCHAR(128)"/>
+            <column name="live_phone" type="VARCHAR(20)"/>
+            <column name="live_code_register_date" type="date"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1644831565352-6" author="AIS">
+        <createTable tableName="base_passports">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="base_passports_pkey"/>
+            </column>
+            <column name="revision" type="UUID"/>
+            <column name="serial" type="VARCHAR(10)"/>
+            <column name="pass_id" type="VARCHAR(20)"/>
+            <column name="last_name" type="VARCHAR(128)"/>
+            <column name="first_name" type="VARCHAR(128)"/>
+            <column name="middle_name" type="VARCHAR(128)"/>
+            <column name="birthdate" type="date"/>
+            <column name="inn" type="VARCHAR(20)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

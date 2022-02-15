@@ -2,11 +2,13 @@ package ua.com.solidity.common.parsers.json;
 
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.ConvertEncodingInputStream;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.FilteredTextInputStream;
+import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.data.DataObject;
+import ua.com.solidity.common.data.JsonDataObject;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -22,8 +24,7 @@ public class JSONParser extends CustomParser {
 
     private FilteredTextInputStream mainStream;
     private JsonParser parser;
-    private final ObjectMapper mapper = new ObjectMapper();
-    private JsonNode lastNode;
+    private JsonNode lastNode = null;
     private final JSONParams params;
     private final Deque<Integer> stack = new LinkedList<>();
 
@@ -49,7 +50,7 @@ public class JSONParser extends CustomParser {
         JsonLocation location = parser.getCurrentLocation();
         if (parser.hasCurrentToken() && parser.currentToken() != JsonToken.END_ARRAY) {
             try {
-                lastNode = mapper.readTree(parser);
+                lastNode = Utils.getSortedMapper().readTree(parser);
                 return true;
             } catch (JsonProcessingException e) {
                 location = e.getLocation();
@@ -124,8 +125,8 @@ public class JSONParser extends CustomParser {
     }
 
     @Override
-    public JsonNode getNode() {
-        return lastNode;
+    protected DataObject internalDataObject() {
+       return JsonDataObject.create(null, lastNode);
     }
 
     @Override

@@ -2,29 +2,32 @@ package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
+import ua.com.solidity.common.data.DataModifier;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
-/******************************************
-*
-* Extracts array of items from jsonNode
-*
-*******************************************/
-
-public class PPArrayItems extends Prototype {
+@SuppressWarnings("unused")
+public abstract class PPCustomModifier extends Prototype {
     @Override
     public Class<?> getOutputClass() {
-        return null;
+        return DataModifier.class;
     }
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        // nothing yet
+        // nothing
+    }
+
+    protected abstract DataModifier createModifier(Item item);
+
+    @Override
+    protected void beforePipelineExecution(Item item) {
+        item.setInternalData(createModifier(item));
     }
 
     @Override
     protected Object execute(@NonNull Item item) {
-        return null;
+        return item.getInternalData(DataModifier.class);
     }
 
     @Override

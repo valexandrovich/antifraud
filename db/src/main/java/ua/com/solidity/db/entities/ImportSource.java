@@ -42,11 +42,29 @@ public class ImportSource extends CustomEntity {
     @Column(name = "pipeline_info", nullable = false)
     private JsonNode pipelineInfo;
 
+    public static ImportSource findImportSourceById(long id) {
+        ImportSourceRepository repository = lookupBean(ImportSourceRepository.class);
+        if (repository != null) {
+            return repository.findImportSourceById(id);
+        }
+        return null;
+    }
+
     public static ImportSource findImportSourceByName(String name) {
         ImportSourceRepository repository = lookupBean(ImportSourceRepository.class);
         if (repository != null) {
             return repository.findImportSourceByName(name);
         }
         return null;
+    }
+
+    public static boolean sourceByNameLocker(String name, boolean lockState) {
+        ImportSourceRepository repository = lookupBean(ImportSourceRepository.class);
+        return repository != null && repository.lockerByName(name, lockState);
+    }
+
+    public static boolean sourceLocker(long id, boolean lockState) {
+        ImportSourceRepository repository = lookupBean(ImportSourceRepository.class);
+        return repository != null && repository.lockerById(id, lockState);
     }
 }

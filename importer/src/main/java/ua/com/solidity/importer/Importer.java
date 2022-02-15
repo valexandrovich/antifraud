@@ -7,16 +7,13 @@ import ua.com.solidity.common.DurationPrinter;
 import ua.com.solidity.common.ImporterMessageData;
 import ua.com.solidity.common.OutputStats;
 import ua.com.solidity.common.prototypes.PPCustomDBWriter;
+import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.pipeline.Pipeline;
 import ua.com.solidity.pipeline.PipelineFactory;
 
 @Slf4j
 @Component
 public class Importer {
-    private static final String LOG_DELIMITER = "-------------------------------------------------------";
-    private static final String LOG_INTERNAL_DELIMITER = "- - - - - - - - - - - - - - - - - -";
-    private static final String PERCENT_FIELD = "%.03f";
-
     private final PipelineFactory importerFactory;
     private final Config config;
 
@@ -26,6 +23,10 @@ public class Importer {
         this.config = config;
     }
 
+    public final Config getConfig() {
+        return this.config;
+    }
+
     public void doImport(ImporterMessageData data) {
         DurationPrinter elapsedTime = new DurationPrinter();
         Pipeline pipeline = importerFactory.createPipelineByNode(data.getPipelineInfo());
@@ -33,12 +34,12 @@ public class Importer {
             log.error("Pipeline is invalid.");
             return;
         }
+        ImportSource source = ImportSource.findImportSourceById(data.getImportSourceId());
+        pipeline.setParam("source", source != null ? source.getName() : "unknown");
         pipeline.setParam("data", data);
         pipeline.setParam("FileName", data.getData().getMainFile().getFileName());
         pipeline.setParam("OutputFolder", config.getImporterOutputFolder());
-        log.info(LOG_DELIMITER);
         log.info("Import started");
-        log.info(LOG_DELIMITER);
         try {
             boolean res = pipeline.execute();
             if (!res) {
@@ -46,7 +47,6 @@ public class Importer {
             } else {
                 log.info("Pipeline execution completed.");
             }
-            log.info(LOG_DELIMITER);
         } catch (Exception e) {
             log.error("Error due pipeline execution.", e);
         }
@@ -57,28 +57,11 @@ public class Importer {
 
         if (stats != null) {
             for (OutputStats.Group group : stats.items.values()) {
-                log.info("target group: {}", group.getName());
-                log.info(LOG_DELIMITER);
-                log.info("  Total rows: {}", group.getTotalRowCount());
-                log.info("  Parse errors: {}", group.getParseErrorCount());
-                log.info("  Rows inserted: {}", group.getInsertCount());
-                log.info("  Rows ignored: {}", group.getInsertIgnoreCount());
-                log.info(LOG_INTERNAL_DELIMITER);
-                log.info("  Insert errors: {}", group.getInsertErrorCount());
-                log.info("  Errors on error publication: {}", group.getInsertErrorInfoCount());
-                log.info(LOG_INTERNAL_DELIMITER);
-                log.info("Inserted: {} ({}%)", group.getInsertCount(), String.format(PERCENT_FIELD, group.getInsertedPercent()));
-                log.info("Ignored: {} ({}%)", group.getInsertIgnoreCount(), String.format(PERCENT_FIELD, group.getIgnoredPercent()));
-                log.info("Errors handled: {} ({}%)", group.getParseErrorCount(), String.format(PERCENT_FIELD, group.getErrorHandledPercent()));
-                log.info("Errors not handled: {} ({}%)", group.getInsertErrorInfoCount(), String.format(PERCENT_FIELD, group.getErrorNotHandledPercent()));
-                log.info(LOG_INTERNAL_DELIMITER);
-                log.info("Rows handled: {}/{} ({}%)", group.getInsertCount() + group.getInsertIgnoreCount(), group.getTotalRowCount(), String.format(PERCENT_FIELD, group.getHandledPercent()));
-                log.info(LOG_DELIMITER);
+                log.info("Group imported. " + group.getStatsMessage());
             }
+            log.info("Import completed. {} / {}", stats.source, elapsedTime.getDurationString());
+        } else {
+            log.info("Import completed. {}", elapsedTime.getDurationString());
         }
-
-        log.info("Elapsed time: {}", elapsedTime.getDurationString());
-        log.info("Import completed.");
-        log.info(LOG_DELIMITER);
     }
 }

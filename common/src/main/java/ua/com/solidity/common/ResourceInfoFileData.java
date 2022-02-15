@@ -27,12 +27,21 @@ public class ResourceInfoFileData {
     protected String url = null;
     protected String digest = null;
     protected long size = -1;
+    protected boolean downloaded = false;
 
     public void clear() {
         resourceId = format = mimeType = url = digest = null;
         revisionDateTime = null;
         zipped = false;
         size = -1;
+    }
+
+    public final boolean downloadingNeeded() {
+        return fileName == null && !downloaded;
+    }
+
+    public final boolean canRemoveFile() {
+        return fileName != null && downloaded;
     }
 
     public final void setFormat(String format) {
@@ -77,15 +86,27 @@ public class ResourceInfoFileData {
         String res = null;
         if (url != null) {
             res = Utils.getFileExtension(url);
-        } else if (format != null) {
+            if (res.isEmpty()) {
+                res = null;
+            }
+        }
+        if (res == null && format != null) {
             int idx = format.indexOf(" ");
             res = idx < 0 ? format : format.substring(0, idx);
+            idx = res.indexOf("/");
+            if (idx >= 0) {
+                res = res.substring(0, idx);
+            }
+            idx = res.indexOf("\\");
+            if (idx >= 0) {
+                res = res.substring(0, idx);
+            }
         }
         return res == null ? "" : res;
     }
 
     public void setRevision(String value) {
-        revisionDateTime = ValueParser.getDatetime(value);
+        revisionDateTime = ValueParser.getZonedDateTime(value);
     }
 
     @SuppressWarnings("unused")

@@ -31,6 +31,9 @@ public class Config {
     @Value("${downloader.rabbitmq.name}")
     private String name;
 
+    @Value("${scheduler.rabbitmq.name}")
+    private String schedulerTopicExchangeName;
+
     @Value("${log.rabbitmq.name}")
     private String logExchangeName;
 

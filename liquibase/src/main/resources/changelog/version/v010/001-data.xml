@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1644920843666-1" author="AIS">
+        <sql>
+            insert into import_source(id,name,pipeline_info,source_info) values
+                (2001,'govua1_t','{"pipeline": [{"name": "stream", "prototype": "InputStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "UTF-8", "delimiter": "\t", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "govua_1", "mapping": {"name": "firm_name", "edrpou": "firm_edrpou", "record_no": "number", "court_name": "court_name", "case_number": "case_number", "record_date": "date", "record_type": "type", "end_date_auc": "end_date_auc", "start_date_auc": "start_date_auc", "end_registration_date": "end_registration_date"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"apiKey": "vidomosti-pro-spravi-pro-bankrutstvo-1", "handler": "dataGovUa"}'),
+                (2006,'govua6_t','{"pipeline": [{"name": "zip", "prototype": "ZipFile"}, {"name": "stream", "inputs": {"zip": "zip"}, "prototype": "ZipInflaterStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": ",", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "govua_6", "mapping": {"org_name": "ORG_NAME", "vp_state": "VP_STATE", "debtor_code": "DEBTOR_CODE", "debtor_name": "DEBTOR_NAME", "vp_ordernum": "VP_ORDERNUM", "creditor_code": "CREDITOR_CODE", "creditor_name": "CREDITOR_NAME", "vp_begin_date": "VP_BEGINDATE"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"apiKey": "6c0eb6c0-d19a-4bb0-869b-3280df46800a", "handler": "dataGovUa"}'),
+                (2007,'govua7_t','{"pipeline": [{"name": "zip", "prototype": "ZipFile"}, {"name": "stream", "inputs": {"zip": "zip"}, "prototype": "ZipInflaterStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "windows-1251", "delimiter": ",;", "splitMode": false, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "govua_7", "mapping": {"emp_org": "EMP_ORG", "org_phone": "ORG_PHONE", "publisher": "PUBLISHER", "email_addr": "EMAIL_ADDR", "debtor_code": "DEBTOR_CODE", "debtor_name": "DEBTOR_NAME", "vp_ordernum": "VP_ORDERNUM", "emp_full_fio": "EMP_FULL_FIO"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"apiKey": "506734bf-2480-448c-a2b4-90b6d06df11e", "handler": "dataGovUa"}'),
+                (2018,'govua18_t','{"pipeline": [{"name": "zip", "prototype": "ZipFile"}, {"name": "stream", "inputs": {"zip": "zip"}, "prototype": "ZipInflaterStream"}, {"name": "revision", "prototype": "RevisionExtension"}, {"data": {"format": {"quote": "\"", "encoding": "UTF-8", "delimiter": ";", "splitMode": true, "parseFieldNames": true, "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "}}, "name": "parser", "inputs": {"ext": "revision", "stream": "stream"}, "prototype": "CSVParser"}, {"data": {"mode": "statement", "table": "govua_18", "mapping": {"kved": "kved", "name": "name", "kod_pdv": "kod_pdv", "d_pdv_sg": "d_pdv_sg", "dat_anul": "dat_anul", "d_anul_sg": "d_anul_sg", "name_anul": "name_anul", "name_oper": "name_oper", "dat_reestr": "dat_reestr", "d_reestr_sg": "d_reestr_sg"}}, "name": "writer", "inputs": {"input": "parser"}, "prototype": "TableWriter"}]}','{"apiKey": "46ec7001-f492-4af8-8cae-00ba5e5537ce", "handler": "dataGovUa"}');
+        </sql>
+        <rollback>
+            <sql>
+                delete from import_source where id in (2001, 2006, 2007, 2018);
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1644920843666-2" author="AIS">
+        <sql>
+            delete from scheduler where group_name = 'test';
+        </sql>
+        <sql>
+            insert into scheduler(group_name,name,exchange,data,schedule,force_disabled,enabled) values
+            ('test', '001.govua_1','otp-etl.downloader','{"ident": "govua1_t", "attemptsLeft": 3}','{"start": "2021-01-01T00:00", "minutes": {"type": "periodic", "value": 2}}',false,false),
+            ('test', '006.govua_6','otp-etl.downloader','{"ident": "govua6_t", "attemptsLeft": 3}','{"start": "2021-01-01T00:00", "minutes": {"type": "periodic", "value": 2}}',false,false),
+            ('test', '007.govua_7', 'otp-etl.downloader','{"ident": "govua7_t", "attemptsLeft": 3}','{"start": "2021-01-01T00:00", "minutes": {"type": "periodic", "value": 2}}',false,false),
+            ('test', '010.govua_10', 'otp-etl.downloader','{"ident": "govua10_t", "attemptsLeft": 3, "delayMinutes": 2}','{"start": "2021-01-01T00:00", "minutes": {"type": "periodic", "value": 2}}',false,false),
+            ('test', '018.govua_18', 'otp-etl.downloader','{"ident": "govua7_t", "attemptsLeft": 3}','{"start": "2021-01-01T00:00", "minutes": {"type": "periodic", "value": 2}}',false,false);
+        </sql>
+        <rollback>
+            <sql>
+                delete from scheduler where group_name = 'test';
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

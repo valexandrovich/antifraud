@@ -236,6 +236,7 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
             String dictName = getDictionaryItemName(name);
             boolean isMain = dictName == null && isMainResourceName(name);
 
+
             if (isMain && mainResource != null && !useLastResource) {
                 log.warn("Only one resource can be used as main (other ignored). Assign mask or schema fields.");
                 continue;

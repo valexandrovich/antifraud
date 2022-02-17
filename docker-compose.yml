@@ -19,7 +19,7 @@ services:
     networks:
       - otp-etl-network
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=web.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=web.otp-etl
       - OTP_TEMP=/tmp
 
   downloader:
@@ -32,7 +32,7 @@ services:
       args:
         - JAR_FILE=downloader/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=downloader.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=downloader.otp-etl
       - OTP_TEMP=/tmp
     image: otp-downloader:latest
     depends_on:
@@ -51,7 +51,7 @@ services:
       args:
         - JAR_FILE=importer/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=importer.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=importer.otp-etl
       - OTP_TEMP=/tmp
     image: otp-importer:latest
     depends_on:
@@ -68,7 +68,7 @@ services:
       args:
         - JAR_FILE=scheduler/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=scheduler.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=scheduler.otp-etl
     image: otp-scheduler:latest
     deploy:
       resources:
@@ -90,7 +90,7 @@ services:
       args:
         - JAR_FILE=scheduler_test/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=scheduler-test.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=scheduler-test.otp-etl
     image: otp-scheduler_test:latest
     depends_on:
       - migration-k8s
@@ -106,7 +106,7 @@ services:
       args:
         - JAR_FILE=notification/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=emailer.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=emailer.otp-etl
     image: otp-notification:latest
     depends_on:
       - mail
@@ -126,7 +126,7 @@ services:
       # Jaeger native OpenTelemetry collection
 #      - JAVA_OPTS=-Dotp.pgsql.datasource.url=jdbc:postgresql://db:5432/otp -Dotp.pgsql.datasource.username=otp -Dotp.pgsql.datasource.password=otp -Dotp.dwh.datasource.url=jdbc:oracle:thin:@//dwh-mock:1521/XE?useUnicode=yes&characterEncoding=Cp1251 -Dotp.dwh.datasource.username=otp -Dotp.dwh.datasource.password=otp -Doracle.jdbc.timezoneAsRegion=false -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=jaeger -Dotel.exporter.jaeger.endpoint=http://jaeger:14250 -Dotel.resource.attributes=service.name=dwh.otp-etl
       # Zipkin OpenTelemetry collection
-      - JAVA_OPTS=-Dotp.pgsql.datasource.url=jdbc:postgresql://db:5432/otp -Dotp.pgsql.datasource.username=otp -Dotp.pgsql.datasource.password=otp -Dotp.dwh.datasource.url=jdbc:oracle:thin:@//dwh-mock:1521/XE?useUnicode=yes&characterEncoding=Cp1251 -Dotp.dwh.datasource.username=otp -Dotp.dwh.datasource.password=otp -Doracle.jdbc.timezoneAsRegion=false -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.jaeger.endpoint=http://jaeger:9411 -Dotel.resource.attributes=service.name=dwh.otp-etl
+      - JAVA_OPTS=-Dotp.pgsql.datasource.url=jdbc:postgresql://db:5432/otp -Dotp.pgsql.datasource.username=otp -Dotp.pgsql.datasource.password=otp -Dotp.dwh.datasource.url=jdbc:oracle:thin:@//dwh-mock:1521/XE?useUnicode=yes&characterEncoding=Cp1251 -Dotp.dwh.datasource.username=otp -Dotp.dwh.datasource.password=otp -Doracle.jdbc.timezoneAsRegion=false -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=dwh.otp-etl
     image: otp-dwh:latest
     depends_on:
       - dwh-mock
@@ -368,6 +368,13 @@ services:
       - "16686:16686"
       - "14268:14268"
       - "14250:14250"
+      - "9411:9411"
+    networks:
+      - otp-etl-network
+
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
       - "9411:9411"
     networks:
       - otp-etl-network

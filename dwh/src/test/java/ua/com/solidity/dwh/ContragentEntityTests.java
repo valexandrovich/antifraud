@@ -1,3 +1,5 @@
+package ua.com.solidity.dwh;
+
 import org.junit.Test;
 import ua.com.solidity.dwh.entity.ContragentEntity;
 

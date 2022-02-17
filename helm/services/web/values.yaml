@@ -20,7 +20,7 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "d"
+  name: ""
 
 podAnnotations: 
   vault.hashicorp.com/agent-inject: "true"
@@ -68,10 +68,10 @@ ingress:
 resources:
   limits:
     cpu: 500m
-    memory: 1Gi
+    memory: 2Gi
   requests:
-    cpu: 100m
-    memory: 256Mi
+    cpu: 500m
+    memory: 2Gi
 
 autoscaling:
   enabled: false

@@ -19,6 +19,9 @@ public class Config {
     @Value("${reservecopy.rabbitmq.queue}")
     private String reserveCopyQueue;
 
+    @Value("${enricher.rabbitmq.name}")
+    private String enricherQueueName;
+
     @Value("${importer.environmentVariableForImportRestriction}")
     private String environmentVariableForImportRestriction;
 

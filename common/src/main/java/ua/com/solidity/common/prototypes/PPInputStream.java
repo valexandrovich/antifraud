@@ -3,6 +3,7 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.BOMInputStream;
 import ua.com.solidity.common.*;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
@@ -15,12 +16,18 @@ import java.io.InputStream;
 public class PPInputStream extends Prototype {
     private static final String STREAM = "stream";
     private static final String SCHEMA = "schema";
+    private static final String BOM = "bom";
     private static final String DATA = "data";
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        if (node != null && node.hasNonNull(SCHEMA)) {
-            item.setLocalData(SCHEMA, node.get(SCHEMA).asText(""));
+        if (node != null) {
+            if (node.hasNonNull(SCHEMA)) {
+                item.setLocalData(SCHEMA, node.get(SCHEMA).asText(""));
+            }
+            if (node.hasNonNull(BOM)) {
+                item.setLocalData(BOM, node.get(BOM).asBoolean(false));
+            }
         }
     }
 
@@ -60,7 +67,8 @@ public class PPInputStream extends Prototype {
         }
 
         try {
-            stream = new SpecialBufferedInputStream(Utils.getSpecialInputStream(new FileInputStream(fileName)), 32768);
+            stream = new BufferedInputStream(Boolean.TRUE.equals(item.getLocalData(BOM, Boolean.class)) ?
+                    new BOMInputStream(new FileInputStream(fileName)) : new FileInputStream(fileName),  32568);
             item.setLocalData(STREAM, stream);
             return stream;
         } catch (Exception e) {

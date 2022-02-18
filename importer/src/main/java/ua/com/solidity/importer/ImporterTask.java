@@ -24,6 +24,14 @@ public class ImporterTask extends RabbitMQTask {
 
     @Override
     protected void execute() {
+        ImportSource importSource = ImportSource.findImportSourceById(data.getImportSourceId());
+
+        if (importSource == null) {
+            log.error("Import source not found for id={}.", data.getImportSourceId());
+            acknowledge(true);
+            return;
+        }
+
         if (!ImportSource.sourceLocker(data.getImportSourceId(), true)) {
             log.info("Import source (id: {}) already locked in another session.", data.getImportSourceId());
             acknowledge(false);
@@ -41,10 +49,11 @@ public class ImporterTask extends RabbitMQTask {
                 data.getData().removeAllFiles();
                 log.info("--- all files removed ---");
             }
-
+            EnricherMessage enricherMessage = new EnricherMessage(importSource.getName(), data.getImportRevisionId());
+            Utils.sendRabbitMQMessage(importer.getConfig().getEnricherQueueName(), Utils.objectToJsonString(enricherMessage));
         } finally {
             ImportSource.sourceLocker(data.getImportSourceId(), false);
         }
-        log.info("== Import source (id: {}) unlocked === ", data.getImportSourceId());
+        log.info("=== Import source (id: {}, \"{}\") unlocked === ", data.getImportSourceId(), importSource.getName());
     }
 }

@@ -27,7 +27,7 @@ public class CSVParams {
     private String quote = DEFAULT_QUOTE;
     private String ignoreCharsNearDelimiter = DEFAULT_IGNORE_CHARS_NEAR_DELIMITER;
     private boolean escapeUsing;
-    private boolean autoTrim;
+    private boolean autoTrim = true;
 
     public CSVParams(String encoding, String delimiter, String quote, String ignoreCharsNearDelimiter, int flags) {
         this.splitMode = (flags & FLAG_SPLIT_MODE) != 0;

@@ -66,7 +66,7 @@ public class SQLField {
     @Setter(AccessLevel.NONE)
     private SQLType sqlType = null;
     private boolean nullable;
-    private long length;
+    private long length = 0;
     @JsonIgnore
     @Setter(AccessLevel.PACKAGE)
     private SQLFieldMapping mapping = null;
@@ -96,6 +96,18 @@ public class SQLField {
         return "?" + (sqlType != null ? sqlType.suffix() : "::" + type);
     }
 
+    public final String getFieldDescription() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(name).append(" ").append(type);
+        if (length > 0) {
+            builder.append("(").append(length).append(")");
+        }
+        if (nullable) {
+            builder.append(" nullable");
+        }
+        return builder.toString();
+    }
+
     public final String getArgString() {
         return getArgStringByType(sqlType, type);
     }
@@ -106,57 +118,76 @@ public class SQLField {
                 (mapping != null || !nullable);
     }
 
-    public final boolean putArgument(Object[] args, int position, DataObject object) {
+    public final SQLError putArgument(Object[] args, int position, DataObject object) {
         DataField field = object.getField(mapping.valuePath);
         if (sqlType == null) {
             String value = DataField.getString(field);
             if (value != null) {
-                args[position] = value;
-                return true;
-            }
-        } else {
-            return sqlType.getValue(mapping, field, nullable, args, position);
-        }
-        args[position] = null;
-        return nullable;
-    }
-
-    public final boolean putArgument(PreparedStatement ps, int paramIndex, DataObject object) {
-        DataField field = object.getField(mapping.valuePath);
-        if (sqlType == null) {
-            String value = DataField.getString(field);
-            if (value != null) {
-                try {
-                    ps.setObject(paramIndex, value);
-                    return true;
-                } catch (Exception e) {
-                    return false;
+                if (length <= 0 || value.length() <= length) {
+                    args[position] = value;
+                    return null;
+                } else {
+                    return SQLError.create(SQLAssignResult.LENGTH_ERROR, this, field, null);
                 }
             }
         } else {
-            return sqlType.putArgument(ps, paramIndex, mapping, field, nullable);
+            return sqlType.getValue(this, field, args, position);
+        }
+        args[position] = null;
+        return SQLError.create(nullable ? SQLAssignResult.NORMAL : SQLAssignResult.NULL_NOT_ALLOWED, this, field, null);
+    }
+
+    public final SQLError putArgument(PreparedStatement ps, int paramIndex, DataObject object) {
+        DataField field = object.getField(mapping.valuePath);
+        if (sqlType == null) {
+            String value = DataField.getString(field);
+            if (value != null) {
+                if (length <= 0 || value.length() <= length) {
+                    try {
+                        ps.setObject(paramIndex, value);
+                        return null;
+                    } catch (Exception e) {
+                        return SQLError.create(SQLAssignResult.EXCEPTION, this, field, e);
+                    }
+                } else {
+                    return SQLError.create(SQLAssignResult.LENGTH_ERROR, this, field, null);
+                }
+            }
+        } else {
+            return sqlType.putArgument(ps, paramIndex, this, field);
+        }
+
+        if (!nullable) {
+            return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, this, field, null);
         }
 
         try {
             ps.setNull(paramIndex, java.sql.Types.OTHER);
         } catch (Exception e) {
-            return false;
+            return SQLError.create(SQLAssignResult.EXCEPTION, this, field, e);
         }
-        return true;
+        return null;
     }
 
-    public final boolean putValue(InsertBatch batch, DataObject object) {
+    public final SQLError putArgument(InsertBatch batch, DataObject object) {
         DataField field = object.getField(mapping.valuePath);
+        SQLError err = null;
         if (sqlType != null) {
-            return sqlType.putValue(batch, mapping, field, nullable);
+            err = sqlType.putValue(batch, this, field);
         } else {
             String value = DataField.getString(field);
-            if (value == null && !nullable) {
-                return false;
+            if (value == null) {
+                if (!nullable) {
+                    err = SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, this, field, null);
+                }
             } else {
-                batch.putString(value, "");
+                if (length > 0 && value.length() > length) {
+                    err = SQLError.create(SQLAssignResult.LENGTH_ERROR, this, field, null);
+                } else {
+                    batch.putString(value, "");
+                }
             }
         }
-        return true;
+        return err;
     }
 }

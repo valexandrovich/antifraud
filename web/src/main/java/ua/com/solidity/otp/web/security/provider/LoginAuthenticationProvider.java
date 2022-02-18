@@ -45,6 +45,11 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
     private final RoleRepository roleRepository;
     private final AuthenticatedLdapEntryContextMapper<DirContextOperations> mapper;
 
+    @Value("${user.super.name}")
+    private String superName;
+    @Value("${user.super.password}")
+    private String superPassword;
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         log.debug("Attempting to verify user credentials");
@@ -56,21 +61,30 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
         String requestUserLogin = (String) authenticationToken.getPrincipal();
         String requestPassword = (String) authenticationToken.getCredentials();
 
-        Person person = personRepository.findByUsername(requestUserLogin)
-                .orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
-        List<String> personGroups = person.getMemberOf()
-                .stream()
-                .map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))
-                .collect(Collectors.toList());
-        List<RoleMap> roleMaps = roleMapRepository.findAllById(personGroups);
-        String role = null;
+        Person person;
+        String role;
+        LoginUserDetails userDetails;
+        if (superName.equals(requestUserLogin) && superPassword.equals(requestPassword)) {
+            person = new Person();
+            person.setDisplayname(superName);
+            role = roleRepository.findById(1).orElseThrow(NoSuchRoleException::new).getName();
+            userDetails = new LoginUserDetails(person, role);
+        } else {
+            person = personRepository.findByUsername(requestUserLogin)
+                    .orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
+            List<String> personGroups = person.getMemberOf()
+                    .stream()
+                    .map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))
+                    .collect(Collectors.toList());
+            List<RoleMap> roleMaps = roleMapRepository.findAllById(personGroups);
+            role = null;
 
-        if (!roleMaps.isEmpty()) {
-            roleMaps.sort(Comparator.comparingInt(i -> i.getRole().getId()));
-            role = roleMaps.get(0).getRole().getName();
-        }
+            if (!roleMaps.isEmpty()) {
+                roleMaps.sort(Comparator.comparingInt(i -> i.getRole().getId()));
+                role = roleMaps.get(0).getRole().getName();
+            }
 
-        boolean authenticated;
+            boolean authenticated;
 //                                ---FOR FURTHER USAGE---
 //            DirContextOperations dco = ldapTemplate.authenticate(
 //                    LdapQueryBuilder.query().where("sAMAccountName").is(requestUserLogin),
@@ -78,16 +92,18 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 //                    mapper);
 //            authenticated = ((dco!=null) && dco.getStringAttribute(requestUserLogin).equals(requestUserLogin));
 
-        authenticated = ldapTemplate
-                .authenticate(personBase,
-                        MessageFormat.format(ldapFilter, requestUserLogin),
-                        requestPassword);
+            authenticated = ldapTemplate
+                    .authenticate(personBase,
+                            MessageFormat.format(ldapFilter, requestUserLogin),
+                            requestPassword);
 
-        if (!authenticated) {
-            throw new AuthenticationServiceException("Невірний пароль.");
+            if (!authenticated) {
+                throw new AuthenticationServiceException("Невірний пароль.");
+            }
+            userDetails = new LoginUserDetails(person, role);
         }
 
-        LoginUserDetails userDetails = new LoginUserDetails(person, role);
+
 
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(person.getUsername(), null, null);

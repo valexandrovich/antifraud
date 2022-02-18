@@ -13,41 +13,43 @@ public class SQLBooleanType extends SQLType {
     }
 
     @Override
-    protected boolean getValue(SQLFieldMapping mapping, DataField field, boolean nullable, Object[] arguments, int position) {
-        Boolean value = getBooleanValue(mapping, field);
-        if (value == null && !nullable) {
-            return false;
+    protected SQLError getValue(SQLField sqlField, DataField field, Object[] arguments, int position) {
+        Boolean value = getBooleanValue(sqlField.getMapping(), field);
+        if (value == null && !sqlField.isNullable()) {
+            return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
         }
         arguments[position] = value;
-        return true;
+        return null;
     }
 
     @Override
-    protected boolean putArgument(PreparedStatement ps, int paramIndex, SQLFieldMapping mapping, DataField field, boolean nullable) {
-        Boolean value = getBooleanValue(mapping, field);
+    protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
+        Boolean value = getBooleanValue(sqlField.getMapping(), field);
         if (value == null) {
-            if (nullable) {
+            if (sqlField.isNullable()) {
                 try {
                     ps.setNull(paramIndex, java.sql.Types.BOOLEAN);
                 } catch (Exception e) {
-                    return false;
+                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
                 }
-            } else return false;
+            } else return null;
         } else {
             try {
                 ps.setBoolean(paramIndex, value);
             } catch (Exception e) {
-                return false;
+                return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
             }
         }
-        return true;
+        return null;
     }
 
     @Override
-    protected boolean putValue(InsertBatch batch, SQLFieldMapping mapping, DataField field, boolean nullable) {
-        Boolean value = getBooleanValue(mapping, field);
-        if (value == null && !nullable) return false;
+    protected SQLError putValue(InsertBatch batch, SQLField sqlField, DataField field) {
+        Boolean value = getBooleanValue(sqlField.getMapping(), field);
+        if (value == null && !sqlField.isNullable()) {
+            return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+        }
         batch.putBoolean(value);
-        return true;
+        return null;
     }
 }

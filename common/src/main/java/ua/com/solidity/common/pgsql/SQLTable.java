@@ -173,33 +173,44 @@ public class SQLTable {
 
     private boolean argumentsSetInBatchMode(DataObject obj, DataExtensionFactory factory) {
         if (factory != null && !factory.assignInsertBatch(obj, batch)) return false;
-        boolean errorsFound = false;
+        StringBuilder errorBuilder = new StringBuilder();
         for (SQLField field : mappedFields) {
-            if (!field.putValue(batch, obj)) {
-                errorsFound = true;
-                break;
+            SQLError error = field.putArgument(batch, obj);
+            if (error != null) {
+                if (errorBuilder.length() == 0) {
+                    errorBuilder.append(error.getMessage());
+                } else errorBuilder.append("; ").append(error.getMessage());
             }
         }
-        return !errorsFound;
+        if (errorBuilder.length() > 0) {
+            log.error("-Row content error: {}", errorBuilder);
+            errorBuilder.setLength(0);
+            return false;
+        }
+        return true;
     }
 
     private boolean argumentsSetInPreparedStatementMode(DataObject obj, DataExtensionFactory factory) {
+        StringBuilder errorBuilder = new StringBuilder();
         int paramIndex = 0;
         if (factory != null && (paramIndex = factory.assignStatementArgs(obj, statement)) < 0) return false;
         try {
-            boolean errorsFound = false;
             for (SQLField field : mappedFields) {
-                if (!field.putArgument(statement, ++paramIndex, obj)) {
-                    errorsFound = true;
-                    break;
+                SQLError error = field.putArgument(statement, ++paramIndex, obj);
+                if (error != null) {
+                    if (errorBuilder.length() == 0) {
+                        errorBuilder.append(error.getMessage());
+                    } else errorBuilder.append("; ").append(error.getMessage());
                 }
             }
-            if (errorsFound) {
-                log.warn("row has errors.");
+            if (errorBuilder.length() > 0) {
+                log.error("----Row content error. {}", errorBuilder);
+                errorBuilder.setLength(0);
+                return false;
             }
-            return !errorsFound;
+            return true;
         } catch (Exception e) {
-            log.error("Prepare statement error.", e);
+            log.error("--Prepare statement error. {}: {}.", e.getCause().getClass().getName(), e.getCause().getMessage());
             return false;
         }
     }

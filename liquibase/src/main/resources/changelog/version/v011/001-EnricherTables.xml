@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="v011-1" author="Dmitry Rumyantsev">
+        <createTable tableName="yperson">
+        <column name="id" type="UUID">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="yperson_pkey"/>
+        </column>
+        <column name="last_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="first_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="pat_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="birthdate" type="DATE">
+            <constraints nullable="false"/>
+        </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v011-2" author="Dmitry Rumyantsev">
+        <createTable tableName="yaddress">
+        <column name="id" type="BIGSERIAL">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="yaddress_pkey"/>
+        </column>
+        <column name="address" type="VARCHAR(2048)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="person_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v011-3" author="Dmitry Rumyantsev">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="yaddress"
+                                 constraintName="FK_YADDRESS_ON_YPERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+    <changeSet id="v011-4" author="Dmitry Rumyantsev">
+        <createTable tableName="yinn">
+        <column name="id" type="BIGSERIAL">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="yinn_pkey"/>
+        </column>
+        <column name="inn" type="DECIMAL(10)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="person_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v011-5" author="Dmitry Rumyantsev">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="yinn"
+                                 constraintName="FK_YINN_ON_YPERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+</databaseChangeLog>

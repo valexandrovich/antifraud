@@ -14,6 +14,8 @@ import ua.com.solidity.dwh.repository.ContragentRepository;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -37,6 +39,7 @@ public class DWHServiceImpl implements DWHService {
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
+            List<ContragentEntity> contragentEntityList = new ArrayList<>();
 
             onePage.forEach(r -> {
                 log.debug(r.toString());
@@ -106,10 +109,10 @@ public class DWHServiceImpl implements DWHService {
                 c.setFop(r.getFop());
                 c.setArcDate(r.getArcDate());
                 c.setUuid(UUID.randomUUID());
-                cr.save(c);
+                contragentEntityList.add(c);
                 counter[0]++;
             });
-
+            cr.saveAll(contragentEntityList);
             onePage = acr.findByArcDateAfter(date, pageRequest);
         }
 

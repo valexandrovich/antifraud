@@ -15,43 +15,45 @@ public class SQLDateTimeWithTimeZoneType extends SQLType {
     }
 
     @Override
-    protected boolean getValue(SQLFieldMapping mapping, DataField field, boolean nullable, Object[] arguments, int position) {
+    protected SQLError getValue(SQLField sqlField, DataField field, Object[] arguments, int position) {
         ZonedDateTime zonedDateTime = getZonedDateTime(field);
         String value = zonedDateTime == null ? null : Utils.zonedDateTimeToString(zonedDateTime);
-        if (value == null && !nullable) {
-            return false;
+        if (value == null && !sqlField.isNullable()) {
+            return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
         }
         arguments[position] = value;
-        return true;
+        return null;
     }
 
     @Override
-    protected boolean putArgument(PreparedStatement ps, int paramIndex, SQLFieldMapping mapping, DataField field, boolean nullable) {
+    protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
         ZonedDateTime value = getZonedDateTime(field);
         if (value == null) {
-            if (nullable) {
+            if (sqlField.isNullable()) {
                 try {
                     ps.setNull(paramIndex, Types.TIMESTAMP_WITH_TIMEZONE);
                 } catch (Exception e) {
-                    return false;
+                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
                 }
-            } else return false;
+            } else return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
         } else {
             try {
                 ps.setObject(paramIndex, Utils.zonedDateTimeToString(value));
             } catch (Exception e) {
-                return false;
+                return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
             }
         }
-        return true;
+        return null;
     }
 
     @Override
-    protected boolean putValue(InsertBatch batch, SQLFieldMapping mapping, DataField field, boolean nullable) {
+    protected SQLError putValue(InsertBatch batch, SQLField sqlField, DataField field) {
         ZonedDateTime value = getZonedDateTime(field);
-        if (value == null && !nullable) return false;
+        if (value == null && !sqlField.isNullable()) {
+            return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+        }
         batch.putZonedDateTime(value);
-        return true;
+        return null;
     }
 
     @Override

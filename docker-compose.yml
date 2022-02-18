@@ -14,6 +14,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
+#      - zipkin
     ports:
       - "8080:8080"
     networks:
@@ -38,6 +39,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
+#      - zipkin
     networks:
       - otp-etl-network
 
@@ -57,6 +59,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
+#      - zipkin
     networks:
       - otp-etl-network
 
@@ -79,6 +82,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
+#      - zipkin
     networks:
       - otp-etl-network
 
@@ -95,6 +99,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
+#      - zipkin
     networks:
       - otp-etl-network
 
@@ -112,6 +117,7 @@ services:
       - mail
       - migration-k8s
       - queue
+#      - zipkin
     networks:
       - otp-etl-network
 
@@ -131,6 +137,24 @@ services:
     depends_on:
       - dwh-mock
       - queue
+#      - zipkin
+    networks:
+      - otp-etl-network
+
+  enricher:
+    container_name: otp-enricher
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=enricher/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=enricher.otp-etl
+    image: otp-dwh:latest
+    depends_on:
+      - dwh-mock
+      - queue
+    #      - zipkin
     networks:
       - otp-etl-network
 

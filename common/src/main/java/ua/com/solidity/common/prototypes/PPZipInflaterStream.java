@@ -3,7 +3,7 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import ua.com.solidity.common.SpecialBufferedInputStream;
+import org.apache.commons.io.input.BOMInputStream;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
@@ -23,6 +23,7 @@ public class PPZipInflaterStream extends Prototype {
     private static final String STREAM = "stream";
     private static final String OUTPUT_FOLDER = "OutputFolder";
     private static final String EXTRACT = "extract";
+    private static final String BOM = "bom";
     private static final String FILE = "file";
 
     @Override
@@ -33,9 +34,12 @@ public class PPZipInflaterStream extends Prototype {
     @Override
     protected void initialize(Item item, JsonNode node) {
         boolean extract = false;
-        if (node != null && node.isObject() && node.hasNonNull(EXTRACT)) {
-            JsonNode extractNode = node.get(EXTRACT);
-            extract = extractNode.isBoolean() && extractNode.booleanValue();
+        if (node != null && node.isObject()) {
+            if (node.hasNonNull(EXTRACT)) {
+                JsonNode extractNode = node.get(EXTRACT);
+                extract = extractNode.isBoolean() && extractNode.booleanValue();
+            }
+            item.setLocalData(BOM, node.hasNonNull(BOM) && node.get(BOM).asBoolean(false));
         }
         item.mapInputs(ZIP, ZipFile.class);
         item.setLocalData(MATCH, node != null && node.isObject() && node.hasNonNull(MATCH) ? node.get(MATCH).asText() : "^.+$");
@@ -65,17 +69,17 @@ public class PPZipInflaterStream extends Prototype {
 
     private InputStream doCreateInputStream(Item item, ZipFile zipFile, ZipEntry entry, boolean extract) {
         try {
-            InputStream stream = new BufferedInputStream(Utils.getSpecialInputStream(zipFile.getInputStream(entry)), 32768);
+            InputStream stream = new BufferedInputStream(Boolean.TRUE.equals(item.getLocalData(BOM, Boolean.class)) ?
+                    new BOMInputStream(zipFile.getInputStream(entry)) : zipFile.getInputStream(entry), 32768);
             if (!extract) return stream;
 
             String outputFileName = UUID.randomUUID() + ".tmp";
             File output = new File(item.getPipelineParam(OUTPUT_FOLDER, String.class), outputFileName);
             if (output.createNewFile()) {
                 log.info("Start extracting file {} from {}", outputFileName, entry);
-
                 if (doExtractFile(output, stream)) {
                     item.setLocalData(FILE, output);
-                    return new SpecialBufferedInputStream(new FileInputStream(output), 32768);
+                    return new BufferedInputStream(new FileInputStream(output), 32768);
                 }
             } else {
                 log.error("Internal error on extracting file. File already exists.");

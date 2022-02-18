@@ -48,7 +48,7 @@ public class DownloaderTask extends RabbitMQTask {
                 ObjectNode node = Utils.getSortedMapper().createObjectNode();
                 node.set("action", JsonNodeFactory.instance.textNode("exec"));
                 node.set("exchange", JsonNodeFactory.instance.textNode(receiver.getConfig().getName()));
-                node.set("sleep_ms", JsonNodeFactory.instance.numberNode(msgData.getDelayMinutes() * 1000));
+                node.set("sleep_ms", JsonNodeFactory.instance.numberNode(msgData.getDelayMinutes() * 60000));
                 node.set("data", Utils.getJsonNode(msgData));
                 Utils.sendRabbitMQMessage(receiver.getConfig().getSchedulerTopicExchangeName(), Utils.objectToJsonString(node));
             }

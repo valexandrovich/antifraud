@@ -17,7 +17,7 @@ import java.text.MessageFormat;
 import java.util.Scanner;
 
 @Slf4j
-public class FilteredTextInputStream extends InputStream implements SpecialInputStream {
+public class FilteredTextInputStream extends InputStream {
     private static final byte BYTE_LINE_FEED = 10;
     private static final byte BYTE_CARRIAGE_RETURN = 13;
     private static final int ERROR_MARKER_SHIFT = 1;
@@ -202,17 +202,11 @@ public class FilteredTextInputStream extends InputStream implements SpecialInput
     private int currentBufferPosition = 0;
 
     public FilteredTextInputStream(InputStream stream, int bufferSize) {
-        this.stream = Utils.getSpecialInputStream(stream);
+        this.stream = stream;
         buffers = new Buffer[2];
         buffers[0] = new Buffer(bufferSize);
         buffers[1] = new Buffer(bufferSize);
         if (stream != null) buffers[1].loadBuffer(stream);
-    }
-
-
-    @Override
-    public Charset getCharset() {
-        return Utils.getInputStreamCharset(this.stream);
     }
 
     private boolean swapBuffers() {

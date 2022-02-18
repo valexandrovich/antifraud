@@ -41,14 +41,24 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
             for (int i = 0; i < batchSize; ++i) {
                 DataObject obj = batch.get(i);
                 if (obj != null) {
+                    boolean added = true;
                     try {
                         statement.setObject(1, UUID.randomUUID());
                         statement.setObject(2, group.getId());
                         statement.setLong(3, group.getSourceGroup());
-                        statement.setObject(4, obj.getNode());
+                        statement.setObject(4, obj.getNode().toString());
                         statement.addBatch();
                     } catch (Exception e) {
-                        //
+                        log.error("Can't add batch", e);
+                        added = false;
+                    }
+
+                    if (!added) {
+                        try {
+                            statement.clearParameters();
+                        } catch (Exception e) {
+                            // nothing
+                        }
                     }
                 }
             }

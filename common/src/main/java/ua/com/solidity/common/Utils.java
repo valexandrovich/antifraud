@@ -13,15 +13,15 @@ import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.ByteOrderMark;
-import org.apache.commons.io.input.BOMInputStream;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.lang.NonNull;
 
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -71,6 +71,84 @@ public class Utils {
         @Override
         public void run() {
             proc.execute();
+        }
+    }
+
+    private static class LimitedInputStream extends InputStream {
+        private static final String ERR_MSG = "Unexpected end of stream.";
+        private long size;
+        private long pos = 0;
+        private InputStream stream;
+        private LimitedInputStream(InputStream stream, long size) {
+            this.size = size;
+            this.stream = stream;
+        }
+
+        public static InputStream createFromFile(File file) {
+            if (file == null) return null;
+            try(InputStream res = new FileInputStream(file)) {
+                return new LimitedInputStream(res, file.length());
+            } catch(Exception e) {
+                // nothing
+            }
+            return null;
+        }
+
+        public static InputStream createFromUrl(String url) {
+            URL u;
+            try {
+                u = new URL(url);
+                return createFromUrl(u);
+            } catch (Exception e) {
+                // nothing
+            }
+            return null;
+        }
+
+        public static InputStream createFromUrl(URL url) {
+            long size = -1;
+            InputStream stream = null;
+            try {
+                URLConnection conn = url.openConnection();
+                size = conn.getContentLengthLong();
+                stream = conn.getInputStream();
+            } catch (Exception e) {
+                // nothing
+            }
+            return stream != null && size >= 0 ? new LimitedInputStream(stream, size) : null;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = stream.read();
+            if (value < 0 && pos != size) {
+                throw new IOException(ERR_MSG);
+            }
+            ++pos;
+            return value;
+        }
+
+        @Override
+        public int read(@NonNull byte[] b, int off, int len) throws IOException {
+            int count = stream.read(b, off, len);
+            if (len > 0 && count == 0 && pos != size) {
+                throw new IOException(ERR_MSG);
+            }
+            pos += count;
+            return count;
+        }
+
+        @Override
+        public void close() {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    // nothing
+                }
+                stream = null;
+            }
+            size = pos = -1;
         }
     }
 
@@ -178,14 +256,11 @@ public class Utils {
     }
 
     public static InputStream getStreamFromUrl(String url) {
-        URL u;
-        try {
-            u = new URL(url);
-            return u.openStream();
-        } catch (Exception e) {
-            log.error("Can't read url {}", url, e);
+        InputStream stream = LimitedInputStream.createFromUrl(url);
+        if (stream == null) {
+            log.error("Can't read url {}", url);
         }
-        return null;
+        return stream;
     }
 
     public static JsonNode getJsonNode(Object value) {
@@ -328,7 +403,7 @@ public class Utils {
                 target.write(buf, 0, length);
             }
         } catch (Exception e) {
-            log.warn("Can't save file to disk.", e);
+            log.error("Exception - {} : {}", e.getCause().getClass().getName(), e.getCause().getMessage());
             return false;
         }
         return true;
@@ -523,31 +598,5 @@ public class Utils {
     @SuppressWarnings("unused")
     public static String messageFormat(String pattern, Object ... args) {
         return MessageFormatter.arrayFormat(pattern, args).getMessage();
-    }
-
-    public static InputStream getSpecialInputStream(InputStream stream) {
-        if (stream instanceof SpecialInputStream || stream instanceof BOMInputStream) return stream;
-        return new BOMInputStream(stream,
-                ByteOrderMark.UTF_8,
-                ByteOrderMark.UTF_16BE,
-                ByteOrderMark.UTF_16LE,
-                ByteOrderMark.UTF_32BE,
-                ByteOrderMark.UTF_32LE);
-    }
-
-    public static Charset getInputStreamCharset(InputStream stream) {
-        if (stream instanceof SpecialInputStream) {
-            return ((SpecialInputStream)stream).getCharset();
-        } else if (stream instanceof BOMInputStream) {
-            BOMInputStream bomInputStream = (BOMInputStream) stream;
-            try {
-                if (bomInputStream.hasBOM()) {
-                    return Charset.forName(bomInputStream.getBOMCharsetName());
-                }
-            } catch (Exception e) {
-                // nothing
-            }
-        }
-        return null;
     }
 }

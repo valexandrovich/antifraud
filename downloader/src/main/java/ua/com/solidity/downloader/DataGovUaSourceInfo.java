@@ -126,7 +126,6 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     public DataGovUaSourceInfo(Config config) {
         super();
         this.config = config;
-        log.info("DataGovUaSourceInfo created.");
     }
 
     @Override
@@ -150,7 +149,7 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         if (sourceInfo.hasNonNull(API_KEY)) {
             this.apiKey = sourceInfo.get(API_KEY).asText();
             this.fileMask = sourceInfo.hasNonNull(FILE_MASK) ? sourceInfo.get(FILE_MASK).asText() : null;
-            this.useLastResource = sourceInfo.hasNonNull(LAST) && sourceInfo.get(LAST).asBoolean();
+            this.useLastResource = sourceInfo.hasNonNull(LAST) && sourceInfo.get(LAST).asBoolean(false);
             JsonNode schema = sourceInfo.hasNonNull(SCHEMA) ? sourceInfo.get(SCHEMA) : null;
             if (schema != null && !schema.isObject()) {
                 schema = null;
@@ -212,20 +211,29 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         return null;
     }
 
+    private void doPushMainResource(ResourceInfo resourceInfo) {
+        if (mainResource != null) {
+            int compareRes = resourceInfo.data.getRevisionDateTime().compareTo(mainResource.data.getRevisionDateTime());
+            if (compareRes == 0) {
+                log.warn("Found more then one resources with same last date. Only one can be handled.");
+            } else {
+                if (compareRes < 0) {
+                    return;
+                }
+            }
+        }
+        mainResource = resourceInfo;
+    }
+
     private void doPushResource(JsonNode info, boolean isMain, String name) {
         ResourceInfo resourceInfo = new ResourceInfo(info, isMain, name);
         handleResource(resourceInfo);
         if (resourceInfo.data.isValid()) {
             if (isMain) {
-                if (mainResource != null) {
-                    int compareRes =resourceInfo.data.getRevisionDateTime().compareTo(mainResource.data.getRevisionDateTime());
-                    if (compareRes == 0) {
-                        log.warn("Found more then one resources with same last date. Only one can be handled.");
-                    }
-                }
-                mainResource = resourceInfo;
+                doPushMainResource(resourceInfo);
+            } else {
+                resources.add(resourceInfo);
             }
-            resources.add(resourceInfo);
         }
     }
 
@@ -235,7 +243,6 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
             String name = info.hasNonNull(NAME) ? StringEscapeUtils.unescapeJava(info.get(NAME).asText("")) : "";
             String dictName = getDictionaryItemName(name);
             boolean isMain = dictName == null && isMainResourceName(name);
-
 
             if (isMain && mainResource != null && !useLastResource) {
                 log.warn("Only one resource can be used as main (other ignored). Assign mask or schema fields.");

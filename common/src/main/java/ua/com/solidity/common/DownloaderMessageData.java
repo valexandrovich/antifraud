@@ -11,6 +11,7 @@ import lombok.*;
 public class DownloaderMessageData {
     private String ident;
     private String localPath;
+    private boolean reload = false;
     private int attemptsLeft;
     private int delayMinutes = 0;
 

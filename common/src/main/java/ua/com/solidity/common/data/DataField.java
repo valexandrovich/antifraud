@@ -204,4 +204,26 @@ public class DataField {
                 return JsonNodeFactory.instance.nullNode();
         }
     }
+
+    public static String valueString(DataField field) {
+        if (field == null) return "null";
+        switch (field.internalGetType()) {
+            case STRING: {
+                String value = field.internalGetString();
+                return "STRING(" + value.length() + ")/" + value;
+            }
+            case BOOLEAN:
+                return "BOOLEAN/" + field.internalGetBoolean();
+            case NUMBER:
+                return "NUMBER/" + field.internalGetBoolean();
+            case OBJECT:
+                return "<OBJECT>";
+            case ARRAY:
+                return "<ARRAY>";
+            case NULL:
+                return "<NULL>";
+            default:
+                return "<UNDEFINED>";
+        }
+    }
 }

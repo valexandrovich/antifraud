@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>2.4.103-SNAPSHOT</version>
+        <version>2.4.108-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>2.4.91-SNAPSHOT</version>
+    <version>2.4.108-SNAPSHOT</version>
 
     <artifactId>web</artifactId>
 
@@ -21,7 +21,6 @@
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
-        <sonar.language>java</sonar.language>
         <!-- JS Properties -->
         <frontend-src-dir>${project.basedir}</frontend-src-dir>
         <node.version>v14.15.2</node.version>
@@ -32,6 +31,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-ldap</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -131,7 +138,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>2.4.91-SNAPSHOT</version>
+            <version>2.4.108-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -162,11 +169,6 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-ldap</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ua.com.solidity.ad</groupId>
-            <artifactId>ad</artifactId>
-            <version>2.4.85-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

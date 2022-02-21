@@ -1,7 +1,7 @@
 package ua.com.solidity.dwh;
 
 import org.junit.Test;
-import ua.com.solidity.dwh.entity.ContragentEntity;
+import ua.com.solidity.dwh.entities.Contragent;
 
 import java.time.LocalDate;
 
@@ -11,7 +11,7 @@ import static org.junit.Assert.assertNotEquals;
 public class ContragentEntityTests {
     @Test
     public void contragentEntityCouldBeConstructedTest() {
-        ContragentEntity ce = new ContragentEntity();
+        Contragent ce = new Contragent();
         ce.setId(984270L);
         ce.setName("БЄЛОЄНКО ВАЛЕРІЙ ОЛЕКСАНДРОВИЧ");
         ce.setClientName("ВАЛЕРІЙ");
@@ -66,8 +66,8 @@ public class ContragentEntityTests {
 
     @Test
     public void emptyContragentEntitiesAreNotEqualTest() {
-        ContragentEntity contragentEntity1 = new ContragentEntity();
-        ContragentEntity contragentEntity2 = new ContragentEntity();
+        Contragent contragentEntity1 = new Contragent();
+        Contragent contragentEntity2 = new Contragent();
         assertNotEquals(contragentEntity1, contragentEntity2);
     }
 }

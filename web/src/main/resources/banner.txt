@@ -12,7 +12,7 @@
   ;   :    /      ;   |.'   :   : :            |   |    \    ;   |.'   |   ,/
    \   \ .'       '---'     |   | :            |   :   .'    '---'     '---'
     `---`                   `---'.|            |   | ,'
-                              `---`            `----'   (c) 2021 solidity.com.ua
+                              `---`            `----' (c) 2021, 2022 solidity.com.ua
 
 
 ${AnsiColor.BRIGHT_BLUE}:: otp-etl :: Running Spring Boot ${spring-boot.version} :: Port #${server.port} :: ${AnsiColor.DEFAULT}

@@ -39,7 +39,7 @@ public class PGSQLConfiguration {
     public LocalContainerEntityManagerFactoryBean pgsqlEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("pgsqlDataSource") DataSource dataSource) {
         return builder
                 .dataSource(dataSource)
-                .packages("ua.com.solidity.dwh.entity")
+                .packages("ua.com.solidity.dwh.entities")
                 .build();
     }
 

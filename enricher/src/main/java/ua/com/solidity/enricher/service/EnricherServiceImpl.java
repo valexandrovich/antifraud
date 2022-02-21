@@ -3,23 +3,27 @@ package ua.com.solidity.enricher.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Service;
-import ua.com.solidity.enricher.entity.BaseDrfo;
-import ua.com.solidity.enricher.entity.YAddress;
-import ua.com.solidity.enricher.entity.YINN;
-import ua.com.solidity.enricher.entity.YPerson;
-import ua.com.solidity.enricher.model.EnricherRequest;
+import ua.com.solidity.db.entities.BaseDrfo;
+import ua.com.solidity.db.entities.YAddress;
+import ua.com.solidity.db.entities.YINN;
+import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.enricher.repository.BaseDrfoRepository;
-import ua.com.solidity.enricher.repository.YPersonRepository;
+import ua.com.solidity.db.repositories.YPersonRepository;
+import ua.com.solidity.enricher.model.EnricherRequest;
 
 import java.util.*;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@EntityScan("ua.com.solidity.db.entities")
+@EnableJpaRepositories(basePackages = {"ua.com.solidity.db.repositories", "ua.com.solidity.enricher.repository"})
 public class EnricherServiceImpl implements EnricherService {
     private final BaseDrfoRepository bdr;
     private final YPersonRepository ypr;

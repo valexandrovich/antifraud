@@ -25,13 +25,13 @@ const registerMask = [
 const fizSchema = Yup.object().shape({
   name: Yup.string().max(64, "Занадто довге"),
   surname: Yup.string().max(64, "Занадто довге"),
-  patranomic: Yup.string().max(64, "Занадто довге"),
+  patronymic: Yup.string().max(64, "Занадто довге"),
   day: Yup.string().matches("^([1-9]|[1-2][0-9]|[3][0-1])$", "1-31"),
   month: Yup.string().matches("^(1[0-2]|[1-9])$", "1-12"),
   year: Yup.string().matches("^(([1][9]|[2][0])\\d{2,2})|2100$", "1900-2100 "),
   age: Yup.string().matches("^([1-9]|[1-9][0-9]|1[01][0-9]|120)$", "1-120"),
   phone: Yup.string().matches("^(?:\\+38)?(\\d{10})$", "Не вірний формат"),
-  adress: Yup.string().max(255, "Занадто довге"),
+  address: Yup.string().max(255, "Занадто довге"),
   inn: Yup.string()
     .matches("^[0-9]{7,12}$", "7-12")
     .min(7, " Мін 7 Символів")
@@ -62,13 +62,13 @@ const FizFormSearch = () => {
   const [searchFormFiz, setSearchFormFiz] = useState({
     name: "",
     surname: "",
-    patranomic: "",
+    patronymic: "",
     day: "",
     month: "",
     year: "",
     age: "",
     phone: "",
-    adress: "",
+    address: "",
     passportNumber: "",
     passportSeria: "",
     id_documentNumber: "",
@@ -104,13 +104,13 @@ const FizFormSearch = () => {
         initialValues={{
           name: "",
           surname: "",
-          patranomic: "",
+          patronymic: "",
           day: "",
           month: "",
           year: "",
           age: "",
           phone: "",
-          adress: "",
+          address: "",
           passportNumber: "",
           passportSeria: "",
           id_documentNumber: "",
@@ -195,27 +195,27 @@ const FizFormSearch = () => {
               <div className="form-group col-md-3">
                 <span className="has-float-label">
                   <input
-                    name="patranomic"
+                    name="patronymic"
                     onChange={(e) => {
                       handleChange(e);
                       handleInputChange(e);
                     }}
                     onBlur={handleBlur}
-                    value={values.patranomic}
+                    value={values.patronymic}
                     className={`form-control ${
-                      touched.patranomic && errors.patranomic
+                      touched.patronymic && errors.patronymic
                         ? "is-invalid"
                         : ""
                     }`}
                     maxLength={64}
-                    id="patranomic"
+                    id="patronymic"
                     type="text"
                     placeholder="По-батькові"
                   />
                   {errors.surname ? (
-                    <span className="text-danger">{errors.patranomic}</span>
+                    <span className="text-danger">{errors.patronymic}</span>
                   ) : (
-                    <label htmlFor="patranomic">По-батькові</label>
+                    <label htmlFor="patronymic">По-батькові</label>
                   )}
                 </span>
               </div>
@@ -352,25 +352,25 @@ const FizFormSearch = () => {
               <div className="form-group col-md-5">
                 <span className="has-float-label">
                   <input
-                    name="adress"
+                    name="address"
                     onChange={(e) => {
                       handleChange(e);
                       handleInputChange(e);
                     }}
                     onBlur={handleBlur}
-                    value={values.adress}
+                    value={values.address}
                     className={`form-control ${
-                      touched.adress && errors.adress ? "is-invalid" : ""
+                      touched.address && errors.address ? "is-invalid" : ""
                     }`}
                     maxLength={255}
-                    id="adress"
+                    id="address"
                     type="text"
                     placeholder="Адреса"
                   />
-                  {errors.adress ? (
-                    <span className="text-danger">{errors.adress}</span>
+                  {errors.address ? (
+                    <span className="text-danger">{errors.address}</span>
                   ) : (
-                    <label htmlFor="adress">Адреса</label>
+                    <label htmlFor="address">Адреса</label>
                   )}
                 </span>
               </div>

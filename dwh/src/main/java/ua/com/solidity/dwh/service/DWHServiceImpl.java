@@ -7,9 +7,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ua.com.solidity.dwh.dwhentity.ArContragent;
-import ua.com.solidity.dwh.dwhrepository.ArContragentRepository;
-import ua.com.solidity.dwh.entity.ContragentEntity;
+import ua.com.solidity.dwh.entities.ArContragent;
+import ua.com.solidity.dwh.repositorydwh.ArContragentRepository;
+import ua.com.solidity.dwh.entities.Contragent;
 import ua.com.solidity.dwh.repository.ContragentRepository;
 
 import java.sql.Timestamp;
@@ -39,12 +39,12 @@ public class DWHServiceImpl implements DWHService {
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            List<ContragentEntity> contragentEntityList = new ArrayList<>();
+            List<Contragent> contragentEntityList = new ArrayList<>();
 
             onePage.forEach(r -> {
                 log.debug(r.toString());
 
-                ContragentEntity c = new ContragentEntity();
+                Contragent c = new Contragent();
 
                 c.setId(r.getId());
                 c.setName(r.getName());

@@ -18,7 +18,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableJpaRepositories(
-        basePackages = "ua.com.solidity.dwh.dwhrepository",
+        basePackages = "ua.com.solidity.dwh.repositorydwh",
         entityManagerFactoryRef = "dwhEntityManagerFactory",
         transactionManagerRef = "dwhTransactionManager"
 )
@@ -43,7 +43,7 @@ public class DWHConfiguration {
     public LocalContainerEntityManagerFactoryBean dwhEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("dwhDataSource") DataSource dataSource) {
         return builder
                 .dataSource(dataSource)
-                .packages("ua.com.solidity.dwh.dwhentity")
+                .packages("ua.com.solidity.dwh.entities")
                 .build();
     }
 

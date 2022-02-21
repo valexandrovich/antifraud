@@ -1,16 +1,23 @@
 import React from "react";
 
 const Card = ({ data }) => {
+  const { id, lastName, firstName, patName, inns, birthdate } = data;
   return (
     <>
       <div className="card m-3">
-        <div className="card-header">{data.uuid.uuid}</div>
+        <div className="card-header">{id}</div>
         <div className="card-body">
-          <h5 className="card-title">{data.nameUk}</h5>
-          <h5 className="card-title">{data.surnameRu}</h5>
-          <p className="card-text">{data.inn}</p>
+          <p>
+            <b>
+              {lastName} {""}
+              {firstName} {""}
+              {patName}
+            </b>
+          </p>
+          <p>
+            Д.Н.:{birthdate}; ІПН: {inns[0]?.inn}
+          </p>
         </div>
-        {/* <button className="btn btn-success mb-3">Деталі</button> */}
       </div>
     </>
   );

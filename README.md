@@ -26,11 +26,13 @@ cd ..
 
 ### Run services (separate TTYs required)
 ```
-java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar downloader/target/downloader-0.0.1-SNAPSHOT.jar
-java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar importer/target/import-0.0.1-SNAPSHOT.jar
-java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar scheduler/target/scheduler-0.0.1-SNAPSHOT.jar
-java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar scheduler_test/target/scheduler_test-0.0.1-SNAPSHOT.jar
-java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar web/target/web-0.0.1-SNAPSHOT.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar downloader/target/downloader*.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar importer/target/import*.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar scheduler/target/scheduler*.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar dwh/target/dwh*.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar web/target/web*.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar enricher/target/enricher*.jar
+java -Dspring.datasource.url=jdbc:postgresql://10.0.1.14:5432/otp -Dspring.rabbitmq.host=63.34.168.20 -Dspring.rabbitmq.username=dr -Dspring.rabbitmq.password=dr -jar notification/target/notification*.jar
 ```
 ---
 

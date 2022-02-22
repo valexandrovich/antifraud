@@ -1,6 +1,6 @@
 vault: 
-  vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/import/" }}{{ .Data.data.properties }}{{ end }}'
-  vaultRole: "antifraud-import"
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/importer/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-importer"
   vaultAddress: "https://vaulttest.otpbank.com.ua:443"
   vaultMountPath: "auth/test-cluster/"
   appPropertiesPath: "/vault/secrets/application.properties"

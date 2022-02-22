@@ -10,8 +10,8 @@ project: antifraud
 imagePullSecrets: 
   - name: "antifraud-secret"
 
-nameOverride: "import"
-fullnameOverride: "import"
+nameOverride: "importer"
+fullnameOverride: "importer"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -24,7 +24,7 @@ serviceAccount:
 
 podAnnotations: 
   vault.hashicorp.com/agent-inject: "true"
-  vault.hashicorp.com/agent-configmap: "import"
+  vault.hashicorp.com/agent-configmap: "importer"
   vault.hashicorp.com/agent-pre-populate-only: "true"
   vault.hashicorp.com/tls-skip-verify: "true"
   vault.hashicorp.com/agent-init-first: "true"

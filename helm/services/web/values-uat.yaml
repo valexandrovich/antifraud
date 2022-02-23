@@ -2,7 +2,7 @@
     vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/web/" }}{{ .Data.data.properties }}{{ end }}'
     vaultRole: "antifraud-web"
     vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/test-cluster/"
+    vaultMountPath: "auth/uat-cluster/"
     appPropertiesPath: "/vault/secrets/application.properties"
   
   ingress:

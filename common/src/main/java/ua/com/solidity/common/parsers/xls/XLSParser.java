@@ -25,37 +25,34 @@ public class XLSParser extends CustomParser {
     XSSFWorkbook workbook;
     XSSFSheet sheet;
     int rowIndex = -1;
+    int lastRowNum = -1;
     int[] columns = null;
     String[] names = null;
     DataHeader header = null;
+    Object[] data = null;
+    XLSDataObject rowObject = null;
     private final XLSParams params;
 
     public XLSParser(XLSParams params) {
         this.params = params;
     }
 
-    private int parseGeneratedName(String name) {
+    private int parseColumnName(String name) {
         if (name == null) return -1;
         name = name.trim().toUpperCase(Locale.ROOT);
-        if (name.startsWith(PREFIX)) name = name.substring(PREFIX.length());
         int index = 0;
-        for (int i = 0; i < name.length(); ++i) {
-            index *= DEFAULT_NAMES.length();
-            int idx = DEFAULT_NAMES.indexOf(name.charAt(i));
-            if (idx < 0) return -1;
-            index += idx;
+        if (name.startsWith(PREFIX)) {
+            name = name.substring(PREFIX.length());
+            index = Integer.parseInt(name);
+        } else {
+            for (int i = 0; i < name.length(); ++i) {
+                index *= DEFAULT_NAMES.length();
+                int idx = DEFAULT_NAMES.indexOf(name.charAt(i));
+                if (idx < 0) return -1;
+                index += idx;
+            }
         }
         return index;
-    }
-
-    private String generateNameForCounter(int counter) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(PREFIX);
-        do {
-            builder.append(DEFAULT_NAMES.charAt(counter % DEFAULT_NAMES.length()));
-            counter /= DEFAULT_NAMES.length();
-        } while (counter != 0);
-        return builder.toString();
     }
 
     private int[] parseColumns() {
@@ -63,7 +60,7 @@ public class XLSParser extends CustomParser {
         int[] res = new int[columnNames == null || columnNames.length == 0 ? 0 : columnNames.length];
         if (columnNames != null) {
             for (int i = 0; i < res.length; ++i) {
-                res[i] = parseGeneratedName(columnNames[i]);
+                res[i] = parseColumnName(columnNames[i]);
             }
         }
         return res;
@@ -73,7 +70,19 @@ public class XLSParser extends CustomParser {
         if (originalNames != null && index < originalNames.length && originalNames[index] != null && originalNames[index].length() > 0) {
             names[index] = originalNames[index];
         } else {
-            names[index] = name != null && name.length() > 0 ? name : generateNameForCounter(index);
+            names[index] = name != null && name.length() > 0 ? name : PREFIX + index;
+        }
+    }
+
+    private void locateToNonEmptyRow() {
+        boolean exists = false;
+        while (rowIndex <= lastRowNum) {
+            XSSFRow row = sheet.getRow(rowIndex);
+            for (int i = 0; i < columns.length; ++i) {
+                exists |= (data[i] = cellToObject(row.getCell(columns[i]))) != null;
+            }
+            if (exists) break;
+            ++rowIndex;
         }
     }
 
@@ -84,6 +93,7 @@ public class XLSParser extends CustomParser {
             if (columns.length == 0) return false;
             workbook = new XSSFWorkbook(stream);
             sheet = workbook.getSheetAt(params.getSheet());
+            lastRowNum = sheet.getLastRowNum();
             rowIndex = params.getFirstRow() - 1;
             String[] originalNames = params.getNames();
             names = new String[columns.length];
@@ -98,17 +108,18 @@ public class XLSParser extends CustomParser {
                     setColumnName(i, null, originalNames);
                 }
             }
+            Map<String, Integer> cols = new HashMap<>();
+            for (int i = 0; i < names.length; ++i) {
+                cols.put(names[i], i);
+            }
+            header = new DataHeader(cols);
+            data = new Object[columns.length];
+            locateToNonEmptyRow();
             return true;
         } catch (Exception e) {
             log.error("Can't open workbook.", e);
+            return false;
         }
-
-        Map<String, Integer> cols = new HashMap<>();
-        for (int i = 0; i < names.length; ++i) {
-            cols.put(names[i], i);
-        }
-        header = new DataHeader(cols);
-        return false;
     }
 
     private Object cellToObject(XSSFCell cell) {
@@ -138,20 +149,23 @@ public class XLSParser extends CustomParser {
 
     @Override
     public DataObject internalDataObject() {
-        if (rowIndex <= sheet.getLastRowNum()) {
+        if (rowObject == null && rowIndex <= lastRowNum) {
             XSSFRow row = sheet.getRow(rowIndex);
-            int size = columns.length;
-            Object[] data = new Object[size];
-            for (int i = 0; i < size; ++i) {
+            for (int i = 0; i < columns.length; ++i) {
                 data[i] = cellToObject(row.getCell(columns[i]));
             }
-            return XLSDataObject.create(header, data);
+            rowObject = XLSDataObject.create(header, data);
         }
-        return null;
+        return rowObject;
     }
 
     @Override
     protected boolean doNext() {
-        return ++rowIndex <= sheet.getLastRowNum();
+        if (rowIndex < lastRowNum) {
+            rowObject = null;
+            ++rowIndex;
+            locateToNonEmptyRow();
+        }
+        return rowIndex <= lastRowNum;
     }
 }

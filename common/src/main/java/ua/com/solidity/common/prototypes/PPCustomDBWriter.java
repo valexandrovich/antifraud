@@ -82,7 +82,7 @@ public abstract class PPCustomDBWriter extends Prototype {
         }
         if (!item.terminated()) {
             if (input.hasData()) {
-                doExecuteOnNotEOF(item,cache, input.getValue(DataBatch.class));
+                doExecuteOnNotEOF(item, cache, input.getValue(DataBatch.class));
                 item.stayUncompleted();
             } else {
                 try {

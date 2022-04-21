@@ -28,19 +28,20 @@ public class LoginAndJwtAuthenticationFailureHandler implements AuthenticationFa
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException e) throws IOException {
 
-        log.debug("Failed to authenticate: " + e.getMessage(), e);
+        log.debug("Failed to authenticate: {}", e.getMessage());
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
 
         if (e instanceof JwtTokenExpiredException) {
-            mapper.writeValue(response.getWriter(), new ErrorResponse("Token has expired", HttpStatus.UNAUTHORIZED));
+            mapper.writeValue(response.getWriter(), ErrorResponse.of("Token has expired", HttpStatus.UNAUTHORIZED));
         } else if (e instanceof CRUDMethodNotSupportedException) {
-            mapper.writeValue(response.getWriter(), new ErrorResponse(e.getMessage(), HttpStatus.UNAUTHORIZED));
+            mapper.writeValue(response.getWriter(), ErrorResponse.of(e.getMessage(), HttpStatus.UNAUTHORIZED));
         } else if (e instanceof UsernameNotFoundException) {
-            mapper.writeValue(response.getWriter(), new ErrorResponse(e.getMessage(), HttpStatus.UNAUTHORIZED));
+            mapper.writeValue(response.getWriter(), ErrorResponse.of(e.getMessage(), HttpStatus.UNAUTHORIZED));
         }
 
-        mapper.writeValue(response.getWriter(), new ErrorResponse(e.getMessage(), HttpStatus.UNAUTHORIZED));
+        mapper.writeValue(response.getWriter(), ErrorResponse.of(e.getMessage(), HttpStatus.UNAUTHORIZED));
     }
 
 }

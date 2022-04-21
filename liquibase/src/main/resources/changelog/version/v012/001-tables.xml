@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1645676605550-1" author="AIS">
+        <createTable tableName="govua_5">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua5_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="edrpou" type="VARCHAR(20)"/>
+            <column name="fio" type="VARCHAR(255)"/>
+            <column name="dpi" type="VARCHAR(255)"/>
+            <column name="dpi_boss" type="VARCHAR(255)"/>
+            <column name="debt" type="FLOAT8"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-2" author="AIS">
+        <createTable tableName="govua_11">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_11_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="series" type="VARCHAR(16)"/>
+            <column name="pass_id" type="VARCHAR(32)"/>
+            <column name="modified" type="TIMESTAMP WITHOUT TIME ZONE"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-3" author="AIS">
+        <createTable tableName="govua_14">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_14_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_id" type="BIGINT"/>
+            <column name="punishment_code" type="INTEGER"/>
+            <column name="punishment_name" type="VARCHAR(255)"/>
+            <column name="entity_type_code" type="INTEGER"/>
+            <column name="entity_type_name" type="VARCHAR(128)"/>
+            <column name="last_name" type="VARCHAR(128)"/>
+            <column name="first_name" type="VARCHAR(128)"/>
+            <column name="pat_name" type="VARCHAR(128)"/>
+            <column name="job" type="VARCHAR(255)"/>
+            <column name="job_position" type="VARCHAR(255)"/>
+            <column name="offence_name" type="VARCHAR(255)"/>
+            <column name="court_case_number" type="VARCHAR(32)"/>
+            <column name="sentence_date" type="date"/>
+            <column name="punishment_start_date" type="date"/>
+            <column name="court_id" type="BIGINT"/>
+            <column name="court_name" type="VARCHAR(255)"/>
+            <column name="activity_sphere_code" type="INTEGER"/>
+            <column name="activity_sphere_name" type="VARCHAR(255)"/>
+            <column name="sentence_number" type="VARCHAR(32)"/>
+            <column name="codex_article_id" type="INTEGER"/>
+            <column name="codex_article_name" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-4" author="AIS">
+        <createTable tableName="govua_19">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_19_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="pdv_code" type="VARCHAR(20)"/>
+            <column name="reg_date" type="date"/>
+            <column name="reg_sg" type="VARCHAR(255)"/>
+            <column name="anul_date" type="date"/>
+            <column name="anul_name" type="VARCHAR(255)"/>
+            <column name="operation_name" type="VARCHAR(255)"/>
+            <column name="kved" type="VARCHAR(255)"/>
+            <column name="anul_sg" type="VARCHAR(255)"/>
+            <column name="pdv_sg" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-5" author="AIS">
+        <createTable tableName="govua_20">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_20_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="pdv_code" type="VARCHAR(20)"/>
+            <column name="reg_date" type="date"/>
+            <column name="term_date" type="date"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-6" author="AIS">
+        <createTable tableName="govua_2">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_2_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="VARCHAR(128)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="edrpou" type="VARCHAR(20)"/>
+            <column name="subordination" type="VARCHAR(255)"/>
+            <column name="debt" type="FLOAT8"/>
+            <column name="chief_fio" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-7" author="AIS">
+        <createTable tableName="govua_4">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_4_pk"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="on_date" type="date"/>
+            <column name="edrpou" type="VARCHAR(20)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="sub_edrpou" type="VARCHAR(20)"/>
+            <column name="sub_name" type="VARCHAR(255)"/>
+            <column name="chief_fio" type="VARCHAR(255)"/>
+            <column name="code_sti" type="VARCHAR(20)"/>
+            <column name="sti_name" type="VARCHAR(255)"/>
+            <column name="sti_chief_fio" type="VARCHAR(255)"/>
+            <column name="payment_code" type="VARCHAR(32)"/>
+            <column name="payment_name" type="VARCHAR(255)"/>
+            <column name="debt_all" type="FLOAT8"/>
+            <column name="debt_state" type="FLOAT8"/>
+            <column name="debt_local" type="FLOAT8"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1645676605550-8" author="AIS">
+        <sql>
+            DROP TABLE IF EXISTS govua_6;
+        </sql>
+        <createTable tableName="govua_6">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_6_pkey"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="debtor_name" type="VARCHAR(2048)"/>
+            <column name="debtor_code" type="VARCHAR(64)"/>
+            <column name="creditor_name" type="VARCHAR(1024)"/>
+            <column name="creditor_code" type="VARCHAR(64)"/>
+            <column name="vp_ordernum" type="VARCHAR(128)"/>
+            <column name="vp_begin_date" type="date"/>
+            <column name="vp_state" type="VARCHAR(128)"/>
+            <column name="org_name" type="VARCHAR(1024)"/>
+        </createTable>
+        <rollback/>
+    </changeSet>
+    <changeSet id="1645676605550-9" author="AIS">
+        <sql>
+            DROP TABLE IF EXISTS govua_7;
+        </sql>
+        <createTable tableName="govua_7">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="govua_7_pkey"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="debtor_name" type="VARCHAR(512)"/>
+            <column name="debtor_code" type="VARCHAR(64)"/>
+            <column name="publisher" type="VARCHAR(512)"/>
+            <column name="emp_full_fio" type="VARCHAR(255)"/>
+            <column name="emp_org" type="VARCHAR(1024)"/>
+            <column name="org_phone" type="VARCHAR(255)"/>
+            <column name="email_addr" type="VARCHAR(255)"/>
+            <column name="vp_ordernum" type="VARCHAR(128)"/>
+        </createTable>
+        <rollback/>
+    </changeSet>
+</databaseChangeLog>

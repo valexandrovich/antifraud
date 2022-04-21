@@ -10,6 +10,6 @@ import java.util.Optional;
 @Repository
 public interface PersonRepository extends LdapRepository<Person> {
 
-    Optional<Person> findByUsername(String username);
-    List<Person> findByUsernameLikeIgnoreCase(String username);
+    Optional<Person> findByUsername(String userName);
+    List<Person> findByUsernameLikeIgnoreCase(String userName);
 }

@@ -8,17 +8,18 @@ import java.util.List;
 public class SQLFieldMapping {
     public static final String PATH = "path";
     public static final String ARGS = "args";
+    public static final String BLANK_NAME = ".";
     public final String valuePath;
     public final List<String> mappingArgs = new ArrayList<>();
 
     SQLFieldMapping(String fieldName, JsonNode node) {
-        if (node != null) {
+        if (node != null && !node.isNull()) {
             if (node.isTextual()) {
-                valuePath = node.asText();
+                valuePath = internalGetValuePath(node.asText(fieldName), fieldName);
                 return;
             } else if (node.isObject()) {
                 if (node.hasNonNull(PATH)) {
-                    valuePath = node.get(PATH).asText(fieldName);
+                    valuePath = internalGetValuePath(node.get(PATH).asText(fieldName), fieldName);
                 } else {
                     valuePath = fieldName;
                 }
@@ -27,6 +28,10 @@ public class SQLFieldMapping {
             }
         }
         valuePath = fieldName;
+    }
+
+    private String internalGetValuePath(String value, String fieldName) {
+        return value == null || value.isBlank() || value.equals(BLANK_NAME) ? fieldName : value;
     }
 
     private void lookupArgs(JsonNode node) {

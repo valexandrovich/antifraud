@@ -5,6 +5,7 @@ import lombok.NonNull;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
+@SuppressWarnings("unused")
 public class MappingModifierCollectorPrototype extends Prototype {
     @Override
     public Class<?> getOutputClass() {
@@ -13,7 +14,7 @@ public class MappingModifierCollectorPrototype extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-
+        // nothing yet
     }
 
     @Override
@@ -23,6 +24,6 @@ public class MappingModifierCollectorPrototype extends Prototype {
 
     @Override
     protected void close(Item item) {
-
+        // nothing yet
     }
 }

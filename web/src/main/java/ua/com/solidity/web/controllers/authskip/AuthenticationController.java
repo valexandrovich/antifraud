@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.web.request.AuthenticationRequest;
-import ua.com.solidity.web.response.ResponseBody;
-import ua.com.solidity.web.security.token.JwtToken;
+import ua.com.solidity.web.security.response.JwtResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,7 +21,7 @@ public class AuthenticationController {
             notes = "Provide login and password for authentication.",
             response = ResponseEntity.class
     )
-    public ResponseEntity<ResponseBody<JwtToken>> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) {
+    public ResponseEntity<JwtResponse> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) {
         return null;
     }
 }

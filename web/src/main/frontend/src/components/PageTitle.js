@@ -20,6 +20,10 @@ const PageTitle = (props) => {
         name: "Файлы",
         link: "/uploaded_files",
       },
+      progress: {
+        name: "Прогрес завантаження",
+        link: "/progress",
+      },
     };
 
     if (isTitle) {

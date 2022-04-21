@@ -19,6 +19,9 @@ public class ImporterMessageData {
     private UUID importRevisionId;
     private ResourceInfoData data;
     private JsonNode pipelineInfo;
+    private String logFile;
+    private String sendLogTo;
+    private long logLimit = -1;
 
     @JsonIgnore
     public final JsonNode getExtraData(String name) {
@@ -29,5 +32,9 @@ public class ImporterMessageData {
             }
         }
         return JsonNodeFactory.instance.nullNode();
+    }
+
+    public final ErrorReportLogger createLogger() {
+        return logFile == null || logFile.isBlank() ? null : new DefaultErrorLogger(logFile, sendLogTo, logLimit);
     }
 }

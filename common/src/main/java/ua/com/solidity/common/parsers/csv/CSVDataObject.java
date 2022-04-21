@@ -3,6 +3,7 @@ package ua.com.solidity.common.parsers.csv;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataFieldType;
 import ua.com.solidity.common.data.DataHeader;
@@ -57,7 +58,7 @@ public class CSVDataObject extends DataObject {
     @Override
     public JsonNode getNode() {
         if (node != null) return node;
-        ObjectNode obj = JsonNodeFactory.instance.objectNode();
+        ObjectNode obj = Utils.getSortedMapper().createObjectNode();
         for (var entry: header.getFieldIndexes()) {
             CSVField field = data[entry.getValue()];
             obj.set(entry.getKey(), field == null ? null : JsonNodeFactory.instance.textNode(DataField.getString(field)));

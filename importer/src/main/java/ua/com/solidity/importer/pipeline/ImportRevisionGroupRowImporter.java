@@ -26,11 +26,13 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
         public Data(ImportRevisionGroup group) {
             this.group = group;
             this.connection = SQLTable.connectionNeeded();
-            try {
-                statement = connection.prepareStatement(
-                        "insert into import_revision_group_rows_cache(id, revision_group, source_group, data) values (?, ?, ?, ?::jsonb)");
-            } catch (Exception e) {
-                log.error("Can't create statement.", e);
+            if (this.connection != null) {
+                try {
+                    statement = connection.prepareStatement(
+                            "insert into import_revision_group_rows_cache(id, revision_group, source_group, data) values (?, ?, ?, ?::jsonb)");
+                } catch (Exception e) {
+                    log.error("Can't create statement.", e);
+                }
             }
         }
 
@@ -64,6 +66,28 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
             }
             return SQLTable.executeStatement(statement);
         }
+
+        public final boolean isValid() {
+            return connection != null && statement != null;
+        }
+
+        public final void close() {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (Exception e) {
+                    statement = null;
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (Exception e) {
+                    connection = null;
+                }
+            }
+        }
     }
 
     @Autowired
@@ -80,12 +104,24 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
         UUID revision = data.getImportRevisionId();
         Long source = data.getImportSourceId();
         Data internalData = new Data(ImportRevisionGroup.create(source, cache.getGroup().getName(), revision));
-        item.setInternalData(internalData);
+        if (!internalData.isValid()) {
+            item.terminate();
+        } else {
+            item.setInternalData(internalData);
+        }
+    }
+
+    private void doClose(Item item) {
+        Data data = item.getInternalData(Data.class);
+        if (data != null) {
+            data.close();
+            item.setInternalData(null);
+        }
     }
 
     @Override
     protected void afterOutput(Item item, OutputCache cache) {
-        // nothing
+        doClose(item);
     }
 
     @Override
@@ -97,5 +133,10 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     @Override
     protected int flushErrors(Item item, OutputCache cache) {
         return 0;
+    }
+
+    @Override
+    protected void close(Item item) {
+        doClose(item);
     }
 }

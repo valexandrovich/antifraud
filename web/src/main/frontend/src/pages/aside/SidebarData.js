@@ -30,12 +30,19 @@ const DB = {
   icon: <IoIcons.IoIosPaper />,
   cName: "nav-text",
 };
+const Progress = {
+  title: "Прогрес",
+  path: "/progress",
+  icon: <IoIcons.IoIosPulse />,
+  cName: "nav-text",
+};
 
 const SidebarData = {
   Search,
   Files,
   AddFile,
   DB,
+  Progress,
 };
 
 export default SidebarData;

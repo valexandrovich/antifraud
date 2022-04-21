@@ -69,7 +69,24 @@ public class DataField {
     }
 
     public static String getString(DataField field) {
-        return field == null ? null : field.internalGetString();
+        if (field == null) return null;
+        switch (getFieldType(field)) {
+            case STRING:
+                return field.internalGetString();
+            case NUMBER:
+                Number v = field.internalGetNumber();
+                if (v != null) {
+                    long l = v.longValue();
+                    double d = v.doubleValue();
+                    return Math.floor(d) == d ? String.valueOf(l) : String.valueOf(d);
+                } else {
+                    return null;
+                }
+            case BOOLEAN:
+                return "" + field.internalGetBoolean();
+            default:
+                return null;
+        }
     }
 
     public static String getString(DataField field, String def) {
@@ -84,7 +101,7 @@ public class DataField {
     public static Double getDouble(DataField field) {
         if (getFieldType(field) == DataFieldType.STRING) {
             try {
-                return Double.parseDouble(field.internalGetString());
+                return (Double) ValueParser.getFloat(field.internalGetString());
             } catch (Exception e) {
                 return null;
             }

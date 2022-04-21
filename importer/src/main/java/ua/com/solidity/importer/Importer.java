@@ -39,6 +39,7 @@ public class Importer {
         pipeline.setParam("data", data);
         pipeline.setParam("FileName", data.getData().getMainFile().getFileName());
         pipeline.setParam("OutputFolder", config.getImporterOutputFolder());
+        pipeline.setParam("logger", data.createLogger());
         log.info("Import started");
         try {
             boolean res = pipeline.execute();

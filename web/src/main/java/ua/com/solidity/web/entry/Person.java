@@ -27,9 +27,9 @@ public final class Person {
     @Attribute(name = "sn")
     private String surname;
     @Attribute(name = "cn")
-    private String fullname;
+    private String fullName;
     @Attribute(name = "displayName")
-    private String displayname;
+    private String displayName;
     @Attribute(name = "sAMAccountName")
     private String username;
 

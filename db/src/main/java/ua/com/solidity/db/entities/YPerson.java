@@ -25,4 +25,13 @@ public class YPerson {
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YAddress> addresses;
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @JsonManagedReference
+    private Set<YAltPerson> altPeople;
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @JsonManagedReference
+    private Set<YPassport> passports;
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @JsonManagedReference
+    private Set<YTag> tags;
 }

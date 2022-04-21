@@ -8,9 +8,14 @@ public class FieldDescription {
     public final SQLType sqlType;
     public final String type;
 
-    public FieldDescription(String name, String type) {
+    private FieldDescription(String name, String type) {
         this.name = name;
         this.type = type;
         sqlType = SQLField.getTypeByName(type);
+    }
+
+    public static FieldDescription create(String name, String type) {
+        if (name == null || name.isBlank() || type == null || type.isBlank()) return null;
+        return new FieldDescription(name.trim(), type.trim());
     }
 }

@@ -6,6 +6,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.Utils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Component
@@ -39,10 +43,39 @@ public class Config {
 
     private String downloaderOutputFolder = null;
 
+    @Value("${downloader.defaultMailTo}")
+    private String defaultMailTo;
+
+    @Value("${downloader.defaultLogLimit}")
+    private long defaultLogLimit = 0;
+
     public final String getDownloaderOutputFolder() {
         if (downloaderOutputFolder == null) {
             downloaderOutputFolder = Utils.getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder);
         }
         return downloaderOutputFolder;
+    }
+
+    public final String getLogFileName(String fileName) {
+        String folder = getDownloaderOutputFolder() + "/logs";
+        Path path = Path.of(folder);
+        try {
+            Files.createDirectories(path);
+        } catch (Exception e) {
+            return null;
+        }
+
+        String ext = Utils.getFileExtension(fileName);
+        if (ext.length() > 0) {
+            fileName = fileName.substring(1, fileName.length() - ext.length() - 1);
+        }
+
+        Path file = Path.of(fileName);
+        file = file.getFileName();
+
+        LocalDateTime dateTime = LocalDateTime.now();
+        fileName = String.format("%s-%04d%02d%02d-%02d%02d%02d.log", file.getFileName(),
+                dateTime.getYear(), dateTime.getMonthValue(), dateTime.getDayOfMonth(), dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond());
+        return (folder + "/" + fileName).replace('\\', '/');
     }
 }

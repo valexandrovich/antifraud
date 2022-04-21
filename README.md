@@ -19,7 +19,7 @@ Create user and database named `otp` with password `otp`
 ### Create database
 
 ```
-cd db
+cd liquibase
 mvn liquibase:update
 cd ..
 ```

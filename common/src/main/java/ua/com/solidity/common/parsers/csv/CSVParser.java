@@ -92,6 +92,14 @@ public class CSVParser extends CustomParser {
             return params.getQuoteChar() == ch;
         }
 
+        final boolean isEscape() {
+            return isEscape(getChar());
+        }
+
+        final boolean isEscape(char ch) {
+            return params.getEscapeChar() == ch;
+        }
+
         boolean isNotDelimiter() {
             return isNotDelimiter(getChar());
         }
@@ -164,7 +172,7 @@ public class CSVParser extends CustomParser {
         try {
             while (fieldEnd > fieldStart && data.params.isIgnoredChar(row.charAt(fieldEnd - 1))) --fieldEnd;
             if (data.isQuote(row.charAt(fieldStart)) && fieldEnd > fieldStart && data.isQuote(row.charAt(fieldEnd - 1))) { // fieldEnd-1 changed to fieldEnd
-                String content = row.substring(fieldStart + 1, fieldEnd - 1).replace(String.valueOf(data.params.getQuoteChar() + data.params.getQuoteChar()), String.valueOf(data.params.getQuoteChar()));
+                String content = data.params.recoverValue(row.substring(fieldStart + 1, fieldEnd - 1));
                 if (content.length() != builder.length()) {
                     builder.setLength(0);
                     builder.append(content);
@@ -208,12 +216,12 @@ public class CSVParser extends CustomParser {
         }
     }
 
-    private boolean doHandleQuotedValueChar(ParseRowData data) {
+    private boolean doHandleEscapeCharInQuotedMode(ParseRowData data) {
         boolean res = true;
-        if (data.notEOL()) { // quote already found in caller
+        if (data.notEOL()) { // EOL or escape char found
             data.next();
-            if (data.notEOL() && data.isQuote()) { // another quote found
-                mBuilder.append(data.params.getQuoteChar());
+            if (data.notEOL() && data.isQuote()) {
+                mBuilder.append(data.getChar());
                 data.next();
                 data.align();
             } else {
@@ -231,12 +239,46 @@ public class CSVParser extends CustomParser {
         return res;
     }
 
+    private boolean doHandleEscapeCharInEscapeMode(ParseRowData data) {
+        boolean res = true;
+        if (data.notEOL()) { // EOL or escape char found
+            data.next();
+            if (data.notEOL()) {
+                if (data.params.isEscapeCharNeeded()) {
+                    mBuilder.append(data.params.getEscapeChar());
+                }
+                mBuilder.append(data.getChar());
+                data.next();
+                data.align();
+            } else {
+                if (scanner.hasNextLine()) {
+                    data.addRow(scanner.nextLine());
+                    mBuilder.append(data.params.lineSeparator);
+                } else {
+                    res = false; // erroneous break
+                }
+            }
+        } else {
+            if (scanner.hasNextLine()) {
+                data.addRow(scanner.nextLine());
+                mBuilder.append(data.params.lineSeparator);
+            } else {
+                res = false; // erroneous break
+            }
+        }
+        return res;
+    }
+
+    private boolean doHandleEscapeValueChar(ParseRowData data) {
+        return data.params.doubleQuoteMode() ? doHandleEscapeCharInQuotedMode(data) : doHandleEscapeCharInEscapeMode(data);
+    }
+
     private void doParseQuotedValue(ParseRowData data) {
         boolean tryToContinue = true;
         while (tryToContinue) {
-            while (data.notEOL() && !data.isQuote()) data.next();
+            while (data.notEOL() && !data.isEscape() && !data.isQuote()) data.next();
             mBuilder.append(data.delta());
-            tryToContinue = doHandleQuotedValueChar(data);
+            tryToContinue = (!data.notEOL() || data.isEscape()) && doHandleEscapeValueChar(data);
         }
         data.ignore(); // ignore all characters, but delimiter
     }

@@ -1,29 +1,43 @@
 package ua.com.solidity.web.security.model;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import ua.com.solidity.web.entry.Person;
 
-import java.util.ArrayList;
+import javax.naming.Name;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class LoginUserDetails implements UserDetails {
+public class UserDetailsImpl implements UserDetails {
 
+    private final String dn;
+    private final String displayName;
     private final String username;
     private final boolean active;
     private final List<GrantedAuthority> authorities;
 
-    public LoginUserDetails(Person person, String role) {
-        this.username = person.getDisplayname();
+    public UserDetailsImpl(Person person, String role) {
+        Name name = person.getId();
+        this.dn = name != null ? name.toString() : null;
+        this.displayName = person.getDisplayName();
+        this.username = person.getUsername();
         this.active = true;
-        if (role == null) { authorities = new ArrayList<>();
+        if (role == null) { authorities = AuthorityUtils.NO_AUTHORITIES;
         } else authorities = Stream.of(role)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
+    }
+
+    public String getDn() {
+        return dn;
+    }
+
+    public String getDisplayName() {
+        return displayName;
     }
 
     public String getSimpleRole() {

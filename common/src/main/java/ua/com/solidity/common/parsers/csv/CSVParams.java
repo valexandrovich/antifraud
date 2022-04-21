@@ -17,7 +17,7 @@ public class CSVParams {
 
     public static final int FLAG_SPLIT_MODE = 1;
     public static final int FLAG_PARSE_FIELD_NAMES = 2;
-    public static final int FLAG_ESCAPE_USING = 4;
+    public static final int FLAG_UNESCAPE_VALUES = 4;
     public static final int FLAG_AUTO_TRIM = 8;
 
     private boolean splitMode;
@@ -25,26 +25,27 @@ public class CSVParams {
     private boolean parseFieldNames;
     private String delimiter = DEFAULT_DELIMITER;
     private String quote = DEFAULT_QUOTE;
+    private String escape = null;
     private String ignoreCharsNearDelimiter = DEFAULT_IGNORE_CHARS_NEAR_DELIMITER;
-    private boolean escapeUsing;
+    private boolean unescapeValues = false;
     private boolean autoTrim = true;
 
-    public CSVParams(String encoding, String delimiter, String quote, String ignoreCharsNearDelimiter, int flags) {
+    public CSVParams(String encoding, String delimiter, String quote, String escape, String ignoreCharsNearDelimiter, int flags) {
         this.splitMode = (flags & FLAG_SPLIT_MODE) != 0;
         setEncoding(encoding);
         this.parseFieldNames = (flags & FLAG_PARSE_FIELD_NAMES) != 0;
         setDelimiter(delimiter);
-        setQuoteString(quote);
+        setQuoteValues(quote, escape);
         setIgnoreCharsNearDelimiter(ignoreCharsNearDelimiter);
-        this.escapeUsing = (flags & FLAG_ESCAPE_USING) != 0;
+        this.unescapeValues = (flags & FLAG_UNESCAPE_VALUES) != 0;
         this.autoTrim = (flags & FLAG_AUTO_TRIM) != 0;
     }
 
-    public static int flags(boolean splitMode, boolean parseFieldNames, boolean escapeUsing, boolean autoTrim) {
+    public static int flags(boolean splitMode, boolean parseFieldNames, boolean unescapeValues, boolean autoTrim) {
         int res = 0;
         if (splitMode) res |= FLAG_SPLIT_MODE;
         if (parseFieldNames) res |= FLAG_PARSE_FIELD_NAMES;
-        if (escapeUsing) res |= FLAG_ESCAPE_USING;
+        if (unescapeValues) res |= FLAG_UNESCAPE_VALUES;
         if (autoTrim) res |= FLAG_AUTO_TRIM;
         return res;
     }
@@ -66,13 +67,61 @@ public class CSVParams {
         this.delimiter = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_DELIMITER);
     }
 
-    @SuppressWarnings("unused")
-    public final void setQuoteString(String value) {
-        this.quote = nullOrEmpty(StringEscapeUtils.unescapeJava(value), DEFAULT_QUOTE);
+    @JsonIgnore
+    public final char getEscapeChar() {
+        return escape == null ? quote.charAt(0) : escape.charAt(0);
     }
 
+    @JsonIgnore
+    public final boolean isEscapeCharNeeded() {
+        return unescapeValues && getEscapeChar() == '\\';
+    }
+
+    public final void setQuote(String value) {
+        setQuoteValues(value, escape);
+    }
+
+    public final void setEscape(String value) {
+        setQuoteValues(quote, value);
+    }
+
+    public final void setQuoteValues(String quote, String escape) {
+        this.quote = nullOrEmpty(StringEscapeUtils.unescapeJava(quote), DEFAULT_QUOTE).substring(0, 1);
+        this.escape = escape == null || escape.isBlank() ? this.quote :
+                nullOrEmpty(StringEscapeUtils.unescapeJava(escape), this.quote).substring(0, 1);
+    }
+
+    @JsonIgnore
     public final char getQuoteChar() {
         return quote.charAt(0);
+    }
+
+    @JsonIgnore
+    public final boolean doubleQuoteMode() {
+        return quote.equals(escape);
+    }
+
+    public final String recoverValue(String value) {
+        if (!isEscapeCharNeeded()) {
+            int searchStart = 0;
+            int copyStart = 0;
+            int pos;
+            StringBuilder builder = new StringBuilder();
+            while ((pos = value.indexOf(getEscapeChar(), searchStart)) >= 0) {
+                if (pos > copyStart) {
+                    builder.append(value, copyStart, pos);
+                }
+                copyStart = pos + 1;
+                searchStart = copyStart + 1;
+            }
+
+            if (copyStart < value.length()) {
+                builder.append(value, copyStart, value.length());
+            }
+
+            value = builder.toString();
+        }
+        return unescapeValues ? StringEscapeUtils.unescapeJava(value) : value;
     }
 
     @SuppressWarnings("unused")

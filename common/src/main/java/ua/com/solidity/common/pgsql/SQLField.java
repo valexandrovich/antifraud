@@ -5,7 +5,6 @@ import com.google.inject.internal.util.ImmutableMap;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.ArrayUtils;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataObject;
 
@@ -71,6 +70,17 @@ public class SQLField {
     @Setter(AccessLevel.PACKAGE)
     private SQLFieldMapping mapping = null;
 
+    @JsonIgnore
+    private long nullErrorsFound = 0;
+    @JsonIgnore
+    private long lengthErrorsFound = 0;
+    @JsonIgnore
+    private int maxLengthReached = 0;
+    @JsonIgnore
+    private String maxLengthStr = null;
+    @JsonIgnore
+    private long exceptionsFound = 0;
+
     private void typeChanged() {
         sqlType = type != null ? typeMapping.getOrDefault(type, null) : null;
         if (sqlType == null) {
@@ -114,8 +124,33 @@ public class SQLField {
 
     @JsonIgnore
     public final boolean isValid() {
-        return (ArrayUtils.contains(SQLTable.specialFields, name) && mapping == null) ||
-                (mapping != null || !nullable);
+        return true; // no checks yet
+    }
+
+    private void registerMaxLengthError(String value) {
+        if (value.length() > maxLengthReached) {
+            maxLengthReached = value.length();
+            maxLengthStr = value;
+        }
+        ++lengthErrorsFound;
+    }
+
+    private SQLError handleSQLError(SQLError error) {
+        if (error == null) return null;
+        switch (error.result) {
+            case NULL_NOT_ALLOWED:
+                ++nullErrorsFound;
+                break;
+            case LENGTH_ERROR:
+                registerMaxLengthError(DataField.getString(error.getDataField()));
+                break;
+            case EXCEPTION:
+                ++exceptionsFound;
+                break;
+            default:
+                break;
+        }
+        return error;
     }
 
     public final SQLError putArgument(Object[] args, int position, DataObject object) {
@@ -127,14 +162,15 @@ public class SQLField {
                     args[position] = value;
                     return null;
                 } else {
+                    registerMaxLengthError(value);
                     return SQLError.create(SQLAssignResult.LENGTH_ERROR, this, field, null);
                 }
             }
         } else {
-            return sqlType.getValue(this, field, args, position);
+            return handleSQLError(sqlType.getValue(this, field, args, position));
         }
         args[position] = null;
-        return SQLError.create(nullable ? SQLAssignResult.NORMAL : SQLAssignResult.NULL_NOT_ALLOWED, this, field, null);
+        return handleSQLError(SQLError.create(nullable ? SQLAssignResult.NORMAL : SQLAssignResult.NULL_NOT_ALLOWED, this, field, null));
     }
 
     public final SQLError putArgument(PreparedStatement ps, int paramIndex, DataObject object) {
@@ -173,16 +209,16 @@ public class SQLField {
         DataField field = object.getField(mapping.valuePath);
         SQLError err = null;
         if (sqlType != null) {
-            err = sqlType.putValue(batch, this, field);
+            err = handleSQLError(sqlType.putValue(batch, this, field));
         } else {
             String value = DataField.getString(field);
             if (value == null) {
                 if (!nullable) {
-                    err = SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, this, field, null);
+                    err = handleSQLError(SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, this, field, null));
                 }
             } else {
                 if (length > 0 && value.length() > length) {
-                    err = SQLError.create(SQLAssignResult.LENGTH_ERROR, this, field, null);
+                    err = handleSQLError(SQLError.create(SQLAssignResult.LENGTH_ERROR, this, field, null));
                 } else {
                     batch.putString(value, "");
                 }

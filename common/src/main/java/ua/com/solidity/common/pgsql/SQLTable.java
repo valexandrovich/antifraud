@@ -21,20 +21,6 @@ import java.util.*;
 
 @Slf4j
 public class SQLTable {
-    public static final String FIELD_ID = "id";
-    public static final String FIELD_REVISION = "revision";
-    public static final String FIELD_PARENT = "parent";
-    public static final String FIELD_EXTRA_ID = "extra_id";
-
-    static final String[] specialFields = new String[]{
-            SQLTable.FIELD_ID,
-            SQLTable.FIELD_REVISION,
-            SQLTable.FIELD_PARENT,
-            SQLTable.FIELD_EXTRA_ID
-    };
-
-    private static Connection connection = null;
-
     public final String tableName;
     public final JdbcTemplate template;
     private final Map<String, SQLField> fields;
@@ -48,9 +34,14 @@ public class SQLTable {
     private String statementStr;
     private String copyHeader;
     private DataExtensionFactory extensionFactory = null;
+    private Connection connection = null;
+    private boolean singleTransaction = false;
     CopyManager copyManager = null;
     PreparedStatement statement = null;
     private final CacheSize size;
+    private boolean prepared = false;
+
+    private int insertErrorCount = 0;
 
     private interface ArgumentSetter {
         boolean setArguments(DataObject obj, DataExtensionFactory factory);
@@ -81,14 +72,14 @@ public class SQLTable {
     }
 
     public static Connection connectionNeeded() {
-        if (connection != null) return connection;
+        Connection connection;
         try {
             connection = DBUtils.createConnection("spring.datasource", "reWriteBatchedInserts=true");
-            assert connection != null;
+            return connection;
         } catch (Exception e) {
             log.error("DBConnection not established.");
         }
-        return connection;
+        return null;
     }
 
     protected final DataExtensionFactory getExtensionFactory(DataBatch batch) {
@@ -100,27 +91,36 @@ public class SQLTable {
         return extensionFactory;
     }
 
+    private void prepareConnection() {
+        if (singleTransaction) {
+            try {
+                connection.setAutoCommit(false);
+            } catch (Exception e) {
+                singleTransaction = false;
+            }
+        }
+    }
+
     private void initObjects(CacheSize size) {
         if (mode == SQLFlushMode.INSERT_BATCH_BUFFER || mode == SQLFlushMode.COPY_BUFFER) {
             batch = InsertBatch.allocate(size.size, size.rowCacheSize, queryHeaderStr, this::handleInsertBatch);
         }
 
-        Connection conn = null;
-
         if (mode == SQLFlushMode.COPY_BUFFER || mode == SQLFlushMode.PREPARED_STATEMENT_BATCH) {
-            conn = connectionNeeded();
+            connection = connectionNeeded();
         }
 
-        if (conn != null) {
+        if (connection != null) {
+            prepareConnection();
             if (mode == SQLFlushMode.PREPARED_STATEMENT_BATCH) {
                 try {
-                    statement = conn.prepareStatement(statementStr);
+                    statement = connection.prepareStatement(statementStr);
                 } catch (Exception e) {
                     log.error("PreparedStatement not created.", e);
                 }
             } else {
                 try {
-                    copyManager = new CopyManager((BaseConnection) conn);
+                    copyManager = new CopyManager((BaseConnection) connection);
                 } catch (Exception e) {
                     log.error("CopyManager not created.", e);
                 }
@@ -142,11 +142,11 @@ public class SQLTable {
             count = rowCount;
         }
         printer.stop();
-        log.info("Query execution time for {} rows: {}", rowCount, printer.getDurationString());
+        log.debug("Query execution time for {} rows: {}", rowCount, printer.getDurationString());
         return (int) count;
     }
 
-    public static SQLTable create(String tableName, SQLFlushMode mode, JsonNode mapping, int cacheSize, int rowCacheSize) {
+    public static SQLTable create(String tableName, SQLFlushMode mode, JsonNode mapping, boolean singleTransaction, int cacheSize, int rowCacheSize) {
         if (Utils.checkApplicationContext()) {
             JdbcTemplate template = Utils.getApplicationContext().getBean(JdbcTemplate.class);
 
@@ -162,10 +162,13 @@ public class SQLTable {
                     }
                 }
                 SQLTable table = new SQLTable(tableName, mode, mapping, template, fields, new CacheSize(cacheSize, rowCacheSize));
+                table.singleTransaction = singleTransaction;
                 if (table.isValidTargetTable()) {
                     return table;
                 }
                 table.close();
+            } else {
+                log.error("Table \"{}\" not found.", tableName);
             }
         }
         return null;
@@ -176,10 +179,14 @@ public class SQLTable {
         StringBuilder errorBuilder = new StringBuilder();
         for (SQLField field : mappedFields) {
             SQLError error = field.putArgument(batch, obj);
+
             if (error != null) {
-                if (errorBuilder.length() == 0) {
-                    errorBuilder.append(error.getMessage());
-                } else errorBuilder.append("; ").append(error.getMessage());
+                ++insertErrorCount;
+                if (log.isDebugEnabled()) {
+                    if (errorBuilder.length() == 0) {
+                        errorBuilder.append(error.getMessage());
+                    } else errorBuilder.append("; ").append(error.getMessage());
+                }
             }
         }
         if (errorBuilder.length() > 0) {
@@ -263,7 +270,11 @@ public class SQLTable {
 
     private int assign(DataBatch batch) {
         if (batch.getExtensionFactory() != extensionFactory) {
-            log.error("SQLTable extensionFactory differs from assigned in dataBatch.");
+            if (extensionFactory == null) {
+                log.error("SQLTable extensionFactory not initialized.");
+            } else {
+                log.error("SQLTable extensionFactory differs from assigned in dataBatch.");
+            }
             return 0;
         }
         int count = 0;
@@ -292,18 +303,34 @@ public class SQLTable {
         return true;
     }
 
-    private boolean checkField(String name, Class<?> type) {
-        SQLField field = fields.getOrDefault(name, null);
-        return !(field == null || field.getSqlType() == null || field.getSqlType().getClass() != type ||
-                field.getMapping() != null);
+    private boolean checkField(FieldDescription desc) {
+        SQLField field = fields.getOrDefault(desc.name, null);
+        if (field == null) {
+            log.error("Extension field not found \"{}\" in table.", desc.name);
+            return false;
+        }
+
+        if (field.getMapping() != null) {
+            log.error("Extension field \"{}\" already mapped.", desc.name);
+            return false;
+        }
+
+        if (!(field.getType().equals(desc.type) || field.getType2().equals(desc.type) || (field.getSqlType() == desc.sqlType && desc.sqlType != null))) {
+            log.error("Extension field \"{}\" type ({}) is incompatible with table field type ({}).", desc.name, desc.type, field.getFieldDescription());
+            return false;
+        }
+
+        return true;
     }
 
-    private boolean checkExtensionFactory() {
+    private boolean extensionFactoryIsInvalid() {
         List<FieldDescription> extensionFactoryFields = extensionFactory.getFields();
         for (FieldDescription desc : extensionFactoryFields) {
-            if (!checkField(desc.name, desc.sqlType.getClass())) return false;
+            if (!checkField(desc)) {
+                return true;
+            }
         }
-        return true;
+        return false;
     }
 
     public final boolean isValidTargetTable() {
@@ -399,19 +426,97 @@ public class SQLTable {
         }
     }
 
-    public final int doOutput(OutputCache cache) {
-        if (extensionFactory == null) {
-            getExtensionFactory(cache.getBatch());
-            if (!checkExtensionFactory()) {
-                log.error("Extension Factory is incompatible with table {}.", tableName);
+    private void secondaryInitMapping() {
+        if (mappedFields.isEmpty()) {
+            for (var entry: fields.entrySet()) {
+                SQLField field = entry.getValue();
+                if (field.getMapping() == null && !extensionFactory.fieldExists(field.getName())) {
+                    field.setMapping(new SQLFieldMapping(field.getName(), null));
+                    mappedFields.add(field);
+                }
             }
-            initQuery();
-            initObjects(size);
+        }
+    }
+
+    public final boolean prepareTable(DataExtensionFactory factory) {
+        if (prepared || extensionFactory != null || factory == null) return false;
+        extensionFactory = factory;
+        if (extensionFactoryIsInvalid()) {
+            extensionFactory = null;
+            return false;
+        }
+        secondaryInitMapping();
+        initQuery();
+        initObjects(size);
+        prepared = true;
+        insertErrorCount = 0;
+        return true;
+    }
+
+    public final int doOutput(OutputCache cache) {
+        if (!prepared) {
+            log.error("Table not prepared with extension factory.");
+            return 0;
         }
         return assign(cache.getBatch());
     }
 
+    @SuppressWarnings("unused")
+    public final int getInsertErrorCount() {
+        return insertErrorCount;
+    }
+
+    private void addFieldToErrorBuilder(StringBuilder builder, String fieldName, long count) {
+        if (builder.length() > 0) {
+            builder.append("; ");
+        }
+        builder.append(fieldName).append("(").append(count).append(")");
+    }
+
+    private void logErrors(StringBuilder builder, SQLAssignResult res) {
+        if (builder.length() == 0) return;
+        log.debug("Errors with message \"{}\" found for fields: {}", res.getMessage(), builder);
+    }
+
+    public final void logInsertErrors() {
+        if (insertErrorCount == 0) {
+            log.debug("Insert errors not found, OK.");
+            return;
+        }
+        StringBuilder nullBuilder = new StringBuilder();
+        StringBuilder exceptionBuilder = new StringBuilder();
+        List<String> lengthErrors = new ArrayList<>();
+
+        for (SQLField field: mappedFields) {
+            if (field.getNullErrorsFound() > 0) {
+                addFieldToErrorBuilder(nullBuilder, field.getName(), field.getNullErrorsFound());
+            }
+
+            if (field.getExceptionsFound() > 0) {
+                addFieldToErrorBuilder(exceptionBuilder, field.getName(), field.getExceptionsFound());
+            }
+
+            if (field.getLengthErrorsFound() > 0) {
+                lengthErrors.add(Utils.messageFormat("  {}, error row count: {}, Max size detected {}, at value \"{}\"",
+                        field.getFieldDescription(), field.getLengthErrorsFound(), field.getMaxLengthReached(), field.getMaxLengthStr()));
+            }
+        }
+
+        if (log.isDebugEnabled()) {
+            logErrors(nullBuilder, SQLAssignResult.NULL_NOT_ALLOWED);
+            logErrors(exceptionBuilder, SQLAssignResult.EXCEPTION);
+        }
+
+        if (!lengthErrors.isEmpty()) {
+            log.error("\"{}\" found for fields:", SQLAssignResult.LENGTH_ERROR.getMessage());
+            for (String error : lengthErrors) {
+                log.error(error);
+            }
+        }
+    }
+
     public void close() {
+        if (batch == null && statement == null && connection == null) return; // not prepared guarantee
         if (batch != null) {
             batch.flush();
             batch = null;
@@ -419,10 +524,23 @@ public class SQLTable {
         if (statement != null) {
             try {
                 statement.close();
+                if (singleTransaction) {
+                    connection.commit();
+                }
             } catch (Exception e) {
                 // nothing
             }
             statement = null;
         }
+
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (Exception e) {
+                connection = null;
+            }
+        }
+        prepared = false;
+        logInsertErrors();
     }
 }

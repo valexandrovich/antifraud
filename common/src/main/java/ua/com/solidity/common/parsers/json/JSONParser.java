@@ -54,13 +54,14 @@ public class JSONParser extends CustomParser {
                 return true;
             } catch (JsonProcessingException e) {
                 location = e.getLocation();
-                log.error("\nposition: (row: {}, col: {}, charOffset: {}, byteOffset: {})\n{}",
+                log.debug("Parsing error: position: (row: {}, col: {}, charOffset: {}, byteOffset: {})\n{}",
                         location.getLineNr(), location.getColumnNr(), location.getCharOffset(), location.getByteOffset(),
                         mainStream.getInfoNearLocation((long) location.getLineNr() - 1,(long) location.getColumnNr() - 1,
                                 0, BASE_ENCODING), e);
                 errorReporting(mainStream.getErrorReport(location, BASE_ENCODING));
             } catch (Exception e) {
-                log.error("JSONParser lookup value error.", e);
+                log.error("JSONParser lookup value error. {}:{}", e.getClass().getName(), e.getMessage());
+                log.debug("Exception:", e);
                 errorReporting(mainStream.getErrorReport(location, BASE_ENCODING));
             }
         }

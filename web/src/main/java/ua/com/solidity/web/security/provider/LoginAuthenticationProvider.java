@@ -13,19 +13,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import ua.com.solidity.db.entities.RoleMap;
 import ua.com.solidity.db.repositories.RoleMapRepository;
 import ua.com.solidity.db.repositories.RoleRepository;
 import ua.com.solidity.web.entry.Person;
 import ua.com.solidity.web.repository.PersonRepository;
 import ua.com.solidity.web.security.exception.ExtensionBadCredentialsException;
 import ua.com.solidity.web.security.exception.NoSuchRoleException;
-import ua.com.solidity.web.security.model.LoginUserDetails;
+import ua.com.solidity.web.security.model.UserDetailsImpl;
+import ua.com.solidity.web.service.RoleService;
 
 import java.text.MessageFormat;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -33,7 +30,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LoginAuthenticationProvider implements AuthenticationProvider {
 
-    @Value("role.basic")
+    @Value("${role.basic}")
     private String roleBasic;
     @Value("${person.base}")
     private String personBase;
@@ -44,11 +41,18 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
     private final RoleMapRepository roleMapRepository;
     private final RoleRepository roleRepository;
     private final AuthenticatedLdapEntryContextMapper<DirContextOperations> mapper;
+	private final RoleService roleService;
 
     @Value("${user.super.name}")
     private String superName;
     @Value("${user.super.password}")
     private String superPassword;
+    @Value("${user.basic.name}")
+    private String basicName;
+    @Value("${user.basic.password}")
+    private String basicPassword;
+
+    private final static String PASSWORD_INCORRECT_MESSAGE = "Невірний пароль.";
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -63,34 +67,33 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 
         Person person;
         String role;
-        LoginUserDetails userDetails;
-        if (superName.equals(requestUserLogin) && superPassword.equals(requestPassword)) {
+        UserDetailsImpl userDetails;
+        if (superName.equals(requestUserLogin)) {
+            if (!superPassword.equals(requestPassword)) throw new AuthenticationServiceException(PASSWORD_INCORRECT_MESSAGE);
             person = new Person();
-            person.setDisplayname(superName);
+            person.setDisplayName(superName);
+            person.setUsername(superName);
             role = roleRepository.findById(1).orElseThrow(NoSuchRoleException::new).getName();
-            userDetails = new LoginUserDetails(person, role);
+        } else if(basicName.equals(requestUserLogin)) {
+            if (!basicPassword.equals(requestPassword)) throw new AuthenticationServiceException(PASSWORD_INCORRECT_MESSAGE);
+            person = new Person();
+            person.setDisplayName(basicName);
+            person.setUsername(basicName);
+            role = roleRepository.findById(2).orElseThrow(NoSuchRoleException::new).getName();
         } else {
             person = personRepository.findByUsername(requestUserLogin)
-                    .orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
-            List<String> personGroups = person.getMemberOf()
-                    .stream()
-                    .map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))
-                    .collect(Collectors.toList());
-            List<RoleMap> roleMaps = roleMapRepository.findAllById(personGroups);
-            role = null;
-
-            if (!roleMaps.isEmpty()) {
-                roleMaps.sort(Comparator.comparingInt(i -> i.getRole().getId()));
-                role = roleMaps.get(0).getRole().getName();
-            }
+					.orElseThrow(() -> new ExtensionBadCredentialsException(requestUserLogin));
+			role = roleService.getRoleFromMemberOf(person.getMemberOf());
 
             boolean authenticated;
-//                                ---FOR FURTHER USAGE---
-//            DirContextOperations dco = ldapTemplate.authenticate(
-//                    LdapQueryBuilder.query().where("sAMAccountName").is(requestUserLogin),
-//                    requestPassword,
-//                    mapper);
-//            authenticated = ((dco!=null) && dco.getStringAttribute(requestUserLogin).equals(requestUserLogin));
+/*
+                                ---FOR FURTHER USAGE---
+            DirContextOperations dco = ldapTemplate.authenticate(
+                    LdapQueryBuilder.query().where("sAMAccountName").is(requestUserLogin),
+                    requestPassword,
+                    mapper);
+            authenticated = ((dco!=null) && dco.getStringAttribute(requestUserLogin).equals(requestUserLogin));
+*/
 
             authenticated = ldapTemplate
                     .authenticate(personBase,
@@ -98,11 +101,10 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
                             requestPassword);
 
             if (!authenticated) {
-                throw new AuthenticationServiceException("Невірний пароль.");
+                throw new AuthenticationServiceException(PASSWORD_INCORRECT_MESSAGE);
             }
-            userDetails = new LoginUserDetails(person, role);
         }
-
+        userDetails = new UserDetailsImpl(person, role);
 
 
         UsernamePasswordAuthenticationToken token =

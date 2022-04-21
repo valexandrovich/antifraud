@@ -27,49 +27,68 @@ public class EmailServiceImpl implements EmailService {
 
     private final SimpleMailMessage template;
 
-    public void sendSimpleMessage(String to, String subject, String text) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(NOREPLY_ADDRESS);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
+    @Override
+    public void sendSimpleMessage(String to, String subject, String text, int retries) {
+        int retriesCount = 0;
+        do {
+            retriesCount++;
+            try {
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setFrom(NOREPLY_ADDRESS);
+                message.setTo(to);
+                message.setSubject(subject);
+                message.setText(text);
 
-            emailSender.send(message);
-        } catch (MailException exception) {
-            log.error("An exception occurred in message sending for inform!", exception);
-        }
+                emailSender.send(message);
+                retries = 0;
+            } catch (MailException exception) {
+                retries--;
+                if (retries == 0) {
+                    log.error("Failed to send notification message after " + retriesCount + " attempts: {}", exception.getMessage());
+                }
+            }
+        } while (retries > 0);
     }
 
     @Override
     public void sendSimpleMessageUsingTemplate(String to,
                                                String subject,
-                                               String ...templateModel) {
+                                               String[] templateModel,
+                                               int retries) {
         String text = String.format(Objects.requireNonNull(template.getText()), (Object) templateModel);
-        sendSimpleMessage(to, subject, text);
+        sendSimpleMessage(to, subject, text, retries);
     }
 
     @Override
     public void sendMessageWithAttachment(String to,
                                           String subject,
                                           String text,
-                                          String pathToAttachment) {
-        try {
-            MimeMessage message = emailSender.createMimeMessage();
-            // pass 'true' to the constructor to create a multipart message
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+                                          String pathToAttachment,
+                                          int retries) {
+        int retriesCount = 0;
+        do {
+            retriesCount++;
+            try {
+                MimeMessage message = emailSender.createMimeMessage();
+                // pass 'true' to the constructor to create a multipart message
+                MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-            helper.setFrom(NOREPLY_ADDRESS);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(text);
+                helper.setFrom(NOREPLY_ADDRESS);
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(text);
 
-            FileSystemResource file = new FileSystemResource(new File(pathToAttachment));
-            helper.addAttachment("Invoice", file);
+                FileSystemResource file = new FileSystemResource(new File(pathToAttachment));
+                helper.addAttachment("Attachment", file);
 
-            emailSender.send(message);
-        } catch (MessagingException e) {
-            log.error("An exception occurred in message sending for inform!", e);
-        }
+                emailSender.send(message);
+                retries = 0;
+            } catch (MessagingException exception) {
+                retries--;
+                if (retries == 0) {
+                    log.error("Failed to send notification message after " + retriesCount + " attempts: {}", exception.getMessage());
+                }
+            }
+        } while (retries > 0);
     }
 }

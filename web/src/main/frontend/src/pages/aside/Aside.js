@@ -14,7 +14,7 @@ const Aside = () => {
     <>
       <IconContext.Provider value={{ color: "#fff" }}>
         <div className="navbar">
-          <div className="d-flex col-md-12 justify-content-end align-items-center">
+          <div className="d-flex col-sm-12 justify-content-end align-items-center">
             <h3 className="nav-title">Антифрод</h3>
             <span className="text-white p-2">
               {userName?.replace(/"/g, "")}
@@ -46,6 +46,12 @@ const Aside = () => {
                   <Link to={SidebarData.Files.path}>
                     {SidebarData.Files.icon}
                     <span className="icons">{SidebarData.Files.title}</span>
+                  </Link>
+                </li>
+                <li className={SidebarData.Progress.cName}>
+                  <Link to={SidebarData.Progress.path}>
+                    {SidebarData.Progress.icon}
+                    <span className="icons">{SidebarData.Progress.title}</span>
                   </Link>
                 </li>
               </>

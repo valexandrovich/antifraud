@@ -29,5 +29,9 @@ public class OutputCache {
 
     public final void batchHandled(int committed) {
         group.incInsertCount(committed);
+        long insertErrorCount = (long) (batch.getObjectCount()) - (long) (committed);
+        if (insertErrorCount > 0) {
+            group.incInsertErrorCount(insertErrorCount);
+        }
     }
 }

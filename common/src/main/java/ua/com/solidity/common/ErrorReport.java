@@ -20,7 +20,33 @@ public class ErrorReport {
         private long byteOffset;
         private long charOffset;
         private long infoOffset;
+
+        public static Location copy(Location location) {
+            return location == null ? null : new Location(location.row, location.col, location.byteOffset, location.charOffset, location.infoOffset);
+        }
+
+        public static Location row(Location location) {
+            return location == null ? null : new Location(location.row, location.col, location.byteOffset, location.charOffset, 0);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("[");
+            if (byteOffset >= 0) {
+                builder.append("position:").append(byteOffset).append(", ");
+            }
+
+            if (charOffset >= 0) {
+                builder.append("char position:").append(charOffset).append(", ");
+            }
+
+            builder.append("row:").append(row).append(", ");
+            builder.append("col:").append(col).append("]");
+            return builder.toString();
+        }
     }
+
     private Location location;
     private String info;
     private String clarification;

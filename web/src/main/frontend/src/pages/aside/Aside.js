@@ -7,7 +7,7 @@ import { IconContext } from "react-icons";
 import * as IoIcons from "react-icons/io";
 import { logoutUserThunk } from "../../store/reducers/AuthReducer";
 const Aside = () => {
-  const userName = localStorage.getItem("userName") || "test";
+  const userName = localStorage.getItem("userName");
   const role = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
   return (
@@ -54,17 +54,16 @@ const Aside = () => {
                     <span className="icons">{SidebarData.Progress.title}</span>
                   </Link>
                 </li>
+                <li className={SidebarData.Sheduler.cName}>
+                  <Link to={SidebarData.Sheduler.path}>
+                    {SidebarData.Sheduler.icon}
+                    <span className="icons">{SidebarData.Sheduler.title}</span>
+                  </Link>
+                </li>
               </>
             ) : (
               ""
             )}
-
-            <li className={SidebarData.DB.cName}>
-              <Link to={SidebarData.DB.path}>
-                {SidebarData.DB.icon}
-                <span className="icons">{SidebarData.DB.title}</span>
-              </Link>
-            </li>
           </ul>
         </nav>
       </IconContext.Provider>

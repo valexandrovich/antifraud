@@ -24,16 +24,16 @@ const Files = {
   cName: "nav-text",
 };
 
-const DB = {
-  title: "Перевірка БД",
-  path: "/db_check",
-  icon: <IoIcons.IoIosPaper />,
-  cName: "nav-text",
-};
 const Progress = {
   title: "Прогрес",
   path: "/progress",
   icon: <IoIcons.IoIosPulse />,
+  cName: "nav-text",
+};
+const Sheduler = {
+  title: "Розклад",
+  path: "/sheduler",
+  icon: <IoIcons.IoIosAlarm />,
   cName: "nav-text",
 };
 
@@ -41,8 +41,8 @@ const SidebarData = {
   Search,
   Files,
   AddFile,
-  DB,
   Progress,
+  Sheduler,
 };
 
 export default SidebarData;

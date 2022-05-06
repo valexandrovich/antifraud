@@ -13,9 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ua.com.solidity.db.entities.FileDescription;
 import ua.com.solidity.db.entities.PhysicalPerson;
+import ua.com.solidity.db.entities.YINN;
+import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.FileDescriptionRepository;
 import ua.com.solidity.db.repositories.PhysicalPersonRepository;
+import ua.com.solidity.db.repositories.YINNRepository;
+import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
 import ua.com.solidity.web.dto.PhysicalPersonDto;
 import ua.com.solidity.web.exception.EntityNotFoundException;
@@ -55,6 +59,8 @@ public class XslxService {
 	private final PhysicalPersonRepository personRepository;
 	private final FileDescriptionRepository fileDescriptionRepository;
 	private final YPersonRepository ypr;
+	private final YINNRepository yinnRepository;
+	private final YPassportRepository yPassportRepository;
 
 	public UUID upload(MultipartFile multipartFile, HttpServletRequest request) {
 		log.debug("Attempting to parse file in XlsxService for uploading into DB.");
@@ -193,6 +199,40 @@ public class XslxService {
 					SearchOperation.EQUALS));
 		}
 
+		String inn = Objects.toString(searchRequest.getInn(), "");
+		if (!inn.equals("")) {
+			criteriaFound = true;
+			List<YINN> yinns = yinnRepository.findByInn(Long.parseLong(inn));
+			for (YINN yinn: yinns) {
+				gs.add(new SearchCriteria("id", yinn.getPerson().getId(),
+						SearchOperation.EQUALS));
+			}
+		}
+
+		String passportNumber = Objects.toString(searchRequest.getPassportNumber(), "");
+		String passportSeries = Objects.toString(searchRequest.getPassportSeria(), "");
+		if (!passportNumber.equals("") && !passportSeries.equals("")) {
+			criteriaFound = true;
+			List<YPassport> passports = yPassportRepository.findByNumberAndSeries(Integer.parseInt(passportNumber),
+					passportSeries);
+			for (YPassport passport: passports) {
+				gs.add(new SearchCriteria("id", passport.getPerson().getId(),
+						SearchOperation.EQUALS));
+			}
+		}
+
+		String idpassportNumber = Objects.toString(searchRequest.getId_documentNumber(), "");
+		String idpassportRecord = Objects.toString(searchRequest.getId_registryNumber(), "");
+		if (!idpassportNumber.equals("") && !idpassportRecord.equals("")) {
+			criteriaFound = true;
+			List<YPassport> passports = yPassportRepository.findByNumberAndRecordNumber(Integer.parseInt(idpassportNumber),
+					idpassportRecord);
+			for (YPassport passport: passports) {
+				gs.add(new SearchCriteria("id", passport.getPerson().getId(),
+						SearchOperation.EQUALS));
+			}
+		}
+
 		if (criteriaFound) {
 			return ypr.findAll(gs);
 		} else {
@@ -249,5 +289,10 @@ public class XslxService {
 		person.setBankProducts(toUpperCase(values.get(41)));
 
 		personRepository.save(person);
+	}
+
+	public YPerson findById(UUID id) {
+		return ypr.findById(id)
+				.orElseThrow(() -> new EntityNotFoundException(YPerson.class, id));
 	}
 }

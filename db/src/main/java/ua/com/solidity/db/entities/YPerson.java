@@ -25,7 +25,7 @@ public class YPerson {
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YAddress> addresses;
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
     @JsonManagedReference
     private Set<YAltPerson> altPeople;
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
@@ -34,4 +34,10 @@ public class YPerson {
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YTag> tags;
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @JsonManagedReference
+    private Set<YEmail> emails;
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @JsonManagedReference
+    private Set<YPhone> phones;
 }

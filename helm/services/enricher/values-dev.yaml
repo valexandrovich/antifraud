@@ -1,6 +1,0 @@
-  vault: 
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/enricher/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-enricher"
-    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/test-cluster/"
-    appPropertiesPath: "/vault/secrets/application.properties"

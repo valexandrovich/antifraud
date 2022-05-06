@@ -1,6 +1,0 @@
-  vault:
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/dwh/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-dwh"
-    vaultAddress: "https://vault.otpbank.com.ua:443"
-    vaultMountPath: "auth/kubernetes/"
-    appPropertiesPath: "/vault/secrets/application.properties"

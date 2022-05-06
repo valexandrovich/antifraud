@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v015-3" author="Dmitry Rumyantsev">
+        <modifyDataType tableName="status_logger" columnName="started" newDataType="TIMESTAMP"/>
+        <rollback>
+            <modifyDataType tableName="status_logger" columnName="started" newDataType="DATE"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v015-4" author="Dmitry Rumyantsev">
+        <modifyDataType tableName="status_logger" columnName="finished" newDataType="TIMESTAMP"/>
+        <rollback>
+            <modifyDataType tableName="status_logger" columnName="finished" newDataType="DATE"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,29 @@
+.modal-bg {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-wrapper {
+  background-color: #fff;
+  color: black;
+  position: relative;
+  z-index: 51;
+  height: 80vh;
+  min-width: 80vw;
+  overflow-y: scroll;
+}
+
+.close-modal {
+  cursor: pointer;
+
+  padding-top: 10px;
+}

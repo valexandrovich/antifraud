@@ -12,8 +12,8 @@ import ua.com.solidity.web.configuration.SwaggerConfiguration;
 
 
 @EnableSwagger2
-@EnableJpaRepositories(basePackages = {"ua.com.solidity.db.repositories"})
-@EntityScan(basePackages = {"ua.com.solidity.db.entities"})
+@EnableJpaRepositories(basePackages = {"ua.com.solidity.db.repositories", "ua.com.solidity.web.repositories"})
+@EntityScan(basePackages = {"ua.com.solidity.db.entities", "ua.com.solidity.web.entities"})
 @SpringBootApplication
 @Import({SwaggerConfiguration.class})
 public class OTPApplication {

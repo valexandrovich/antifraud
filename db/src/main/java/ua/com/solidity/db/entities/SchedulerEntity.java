@@ -38,11 +38,14 @@ public class SchedulerEntity extends CustomEntity {
     private JsonNode data;
 
     @Type(type = "jsonb-node")
-    @Column(name = "schedule", nullable = false)
+    @Column(name = "schedule")
     private JsonNode schedule;
 
     @Column(name = "enabled", nullable = false)
     private Boolean enabled = false;
+
+    @Column(name = "force_disabled", nullable = false)
+    private Boolean forceDisabled = false;
 
     public static List<SchedulerEntity> getAll() {
         SchedulerEntityRepository repository = lookupBean(SchedulerEntityRepository.class);

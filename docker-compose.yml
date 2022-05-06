@@ -86,22 +86,23 @@ services:
     networks:
       - otp-etl-network
 
-  scheduler_test:
-    container_name: otp-scheduler_test
-    build:
-      dockerfile: Dockerfile
-      context: .
-      args:
-        - JAR_FILE=scheduler_test/target/*.jar
-    environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=scheduler-test.otp-etl
-    image: otp-scheduler_test:latest
-    depends_on:
-      - migration-k8s
-      - queue
-#      - zipkin
-    networks:
-      - otp-etl-network
+# Scheduler Test is no longer required
+#  scheduler_test:
+#    container_name: otp-scheduler_test
+#    build:
+#      dockerfile: Dockerfile
+#      context: .
+#      args:
+#        - JAR_FILE=scheduler_test/target/*.jar
+#    environment:
+#      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=scheduler-test.otp-etl
+#    image: otp-scheduler_test:latest
+#    depends_on:
+#      - migration-k8s
+#      - queue
+##      - zipkin
+#    networks:
+#      - otp-etl-network
 
   emailer:
     container_name: otp-notification
@@ -135,6 +136,7 @@ services:
       - JAVA_OPTS=-Dotp.pgsql.datasource.url=jdbc:postgresql://db:5432/otp -Dotp.pgsql.datasource.username=otp -Dotp.pgsql.datasource.password=otp -Dotp.dwh.datasource.url=jdbc:oracle:thin:@//dwh-mock:1521/XE?useUnicode=yes&characterEncoding=Cp1251 -Dotp.dwh.datasource.username=otp -Dotp.dwh.datasource.password=otp -Doracle.jdbc.timezoneAsRegion=false -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=dwh.otp-etl
     image: otp-dwh:latest
     depends_on:
+      - migration-k8s
       - dwh-mock
       - queue
 #      - zipkin
@@ -150,9 +152,26 @@ services:
         - JAR_FILE=enricher/target/*.jar
     environment:
       - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=enricher.otp-etl
-    image: otp-dwh:latest
+    image: otp-enricher:latest
     depends_on:
-      - dwh-mock
+      - migration-k8s
+      - queue
+    #      - zipkin
+    networks:
+      - otp-etl-network
+
+  statuslogger:
+    container_name: otp-statuslogger
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=statuslogger/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=statuslogger.otp-etl
+    image: otp-statuslogger:latest
+    depends_on:
+      - migration-k8s
       - queue
     #      - zipkin
     networks:
@@ -396,12 +415,12 @@ services:
     networks:
       - otp-etl-network
 
-  zipkin:
-    image: openzipkin/zipkin
-    ports:
-      - "9411:9411"
-    networks:
-      - otp-etl-network
+#  zipkin:
+#    image: openzipkin/zipkin
+#    ports:
+#      - "9411:9411"
+#    networks:
+#      - otp-etl-network
 
 networks:
   otp-etl-network:
@@ -413,9 +432,9 @@ volumes:
   psql-storage:
   tmp-storage:
   elastic-data:
-  elastic-data01:
-    driver: local
-  elastic-data02:
-    driver: local
-  elastic-data03:
-    driver: local
+#  elastic-data01:
+#    driver: local
+#  elastic-data02:
+#    driver: local
+#  elastic-data03:
+#    driver: local

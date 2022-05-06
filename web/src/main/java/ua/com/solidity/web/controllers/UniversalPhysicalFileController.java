@@ -109,4 +109,17 @@ public class UniversalPhysicalFileController {
 		return ResponseEntity.ok(personList);
 	}
 
+	@PostMapping(path = "/find/{id}")
+	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@ApiOperation(value = "Finds person by specified id",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<YPerson> findById(
+			@ApiParam(value = "YPerson id you need to retrieve",
+					required = true)
+			@PathVariable UUID id
+	) {
+		YPerson person = xslxService.findById(id);
+		return ResponseEntity.ok(person);
+	}
 }

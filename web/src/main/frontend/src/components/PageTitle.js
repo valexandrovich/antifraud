@@ -24,6 +24,10 @@ const PageTitle = (props) => {
         name: "Прогрес завантаження",
         link: "/progress",
       },
+      sheduler: {
+        name: "Розклад",
+        link: "/sheduler",
+      },
     };
 
     if (isTitle) {

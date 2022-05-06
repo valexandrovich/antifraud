@@ -46,13 +46,16 @@ function Dropzone() {
       )
       .then(history.push("/uploaded_files"));
   };
-  const onDrop = useCallback((acceptedFiles, err) => {
-    if (!err[0]?.errors) {
-      setFiletoUpload(acceptedFiles);
-    } else {
-      dispatch(setAlertMessageThunk("Невірний тип файлу", "danger"));
-    }
-  }, []);
+  const onDrop = useCallback(
+    (acceptedFiles, err) => {
+      if (!err[0]?.errors) {
+        setFiletoUpload(acceptedFiles);
+      } else {
+        dispatch(setAlertMessageThunk("Невірний тип файлу", "danger"));
+      }
+    },
+    [dispatch]
+  );
 
   const { getRootProps, getInputProps, isDragActive, isDragAccept } =
     useDropzone({

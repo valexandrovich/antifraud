@@ -1,47 +1,28 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PageTitle from "../../components/PageTitle";
-import ProgressBar from "./ProgresBar";
-import TableItem from "./TableItem";
-const mockData = [
-  {
-    progress: 1,
-    unit: "percents",
-    name: "Manual import from test.xlsx",
-    user: "V.A.Bieloienko",
-    started: "14.04.2022 23:14:00",
-    finished: "14.04.2022 23:14:17",
-    status: "Imported: 1234, Failed: 5",
-  },
-  {
-    progress: 69,
-    unit: "percents",
-    name: "Manual import from test.xlsx",
-    user: "V.A.Bieloienko",
-    started: "14.04.2022 23:14:00",
-    finished: "14.04.2022 23:14:17",
-    status: "Imported: 1234, Failed: 5",
-  },
-  {
-    progress: 152,
-    unit: "percents",
-    name: "Manual import from test.xlsx",
-    user: "V.A.Bieloienko",
-    started: "14.04.2022 23:14:00",
-    finished: "14.04.2022 23:14:17",
-    status: "Imported: 1234, Failed: 5",
-  },
-  {
-    progress: 523322,
-    unit: "rows",
-    name: "Manual import from test.xlsx",
-    user: "V.A.Bieloienko",
-    started: "14.04.2022 23:14:00",
-    finished: "14.04.2022 23:14:17",
-    status: "Imported: 1234, Failed: 5",
-  },
-];
+import TableItem from "../../components/ProgressBar/TableItem";
+import ProgressBar from "../../components/ProgressBar/ProgresBar";
+import authHeader from "../../api/AuthHeader";
 
 const Progress = () => {
+  const [progress, setProgress] = useState([]);
+
+  const setCheck = async () => {
+    try {
+      const response = await fetch("/api/statuslogger/find", {
+        headers: authHeader(),
+      });
+      const res = await response.json();
+      setProgress(res);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(setCheck, 5000);
+    return () => clearInterval(interval);
+  }, []);
   return (
     <div className="wrapped">
       <PageTitle title={"progress"} />
@@ -49,6 +30,7 @@ const Progress = () => {
         <table className="table table-bordered">
           <thead>
             <tr>
+              <td>ID</td>
               <td>Progress</td>
               <td>Unit</td>
               <td>Name</td>
@@ -59,15 +41,12 @@ const Progress = () => {
             </tr>
           </thead>
           <tbody>
-            {mockData.map((data, index) => {
+            {progress.map((data, index) => {
               return (
-                <tr>
-                  {data.unit === "percents" ? (
-                    <ProgressBar
-                      key={index}
-                      bgcolor={"green"}
-                      completed={data.progress}
-                    />
+                <tr key={index}>
+                  <TableItem item={data.id} />
+                  {data.unit === "%" ? (
+                    <ProgressBar bgcolor={"green"} completed={data.progress} />
                   ) : (
                     <TableItem item={data.progress} />
                   )}

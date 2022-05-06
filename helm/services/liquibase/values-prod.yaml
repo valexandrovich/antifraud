@@ -1,6 +1,0 @@
-vault: 
-  vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/liquibase/" }}{{ .Data.data.properties }}{{ end }}'
-  vaultRole: "antifraud-liquibase"
-  vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-  vaultMountPath: "auth/kubernetes/"
-  appPropertiesPath: "/vault/secrets/liquibase.properties"

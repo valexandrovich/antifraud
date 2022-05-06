@@ -4,6 +4,8 @@ import MaskedInput from "react-text-mask";
 import * as Yup from "yup";
 
 import Card from "./Card";
+import { setAlertMessageThunk } from "../store/reducers/AuthReducer";
+import { useDispatch } from "react-redux";
 
 const registerMask = [
   /\d/,
@@ -58,7 +60,7 @@ const fizSchema = Yup.object().shape({
 const FizFormSearch = () => {
   const [documentType, setDocumentType] = useState("passport");
   const [searchResults, setSearchResults] = useState([]);
-
+  const dispatch = useDispatch();
   const [searchFormFiz, setSearchFormFiz] = useState({
     name: "",
     surname: "",
@@ -93,7 +95,18 @@ const FizFormSearch = () => {
       body: JSON.stringify(values),
     })
       .then((res) => res.json())
-      .then((file) => setSearchResults(file))
+      .then((file) => {
+        if (file.length > 0) {
+          setSearchResults(file);
+        } else {
+          dispatch(
+            setAlertMessageThunk(
+              "За данними пошуку збігів не знайдено",
+              "danger"
+            )
+          );
+        }
+      })
 
       .catch(function (res) {
         console.log(res);
@@ -457,7 +470,7 @@ const FizFormSearch = () => {
               )}
               {documentType === "id_card" && (
                 <>
-                  <div className="form-group col-md-3">
+                  <div className="form-group col-md-2">
                     <span className="has-float-label">
                       <input
                         name="id_documentNumber"
@@ -526,7 +539,7 @@ const FizFormSearch = () => {
               )}
               {documentType === "foreign_passport" && (
                 <>
-                  <div className="form-group col-md-3">
+                  <div className="form-group col-md-2">
                     <span className="has-float-label">
                       <input
                         name="foreignP_documentNumber"
@@ -647,8 +660,8 @@ const FizFormSearch = () => {
           </Form>
         )}
       </Formik>
-      <div className="d-flex flex-wrap">
-        {searchResults.map((el) => {
+      <div className="d-flex flex-wrap justify-content-center">
+        {searchResults?.map((el) => {
           return <Card data={el} />;
         })}
       </div>

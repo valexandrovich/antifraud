@@ -57,6 +57,7 @@ public class Config {
     }
 
     public final String getLogFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) return null;
         String folder = getDownloaderOutputFolder() + "/logs";
         Path path = Path.of(folder);
         try {

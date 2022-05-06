@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v0014-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v0014-0"/>
+    </changeSet>
+
+    <changeSet id="v0014-1" author="Kyrylo Chornobryvets">
+        <addColumn tableName="contragent">
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v0014-2" author="Kyrylo Chornobryvets">
+        <createTable tableName="yemail">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yemail"/>
+            </column>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="person_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="v0014-3" author="Kyrylo Chornobryvets">
+        <createTable tableName="yphone">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yphone"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)"/>
+            <column name="person_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="v0014-4" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="yemail"
+                                 constraintName="FK_YEMAIL_ON_PERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+
+    <changeSet id="v0014-5" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="yphone"
+                                 constraintName="FK_YPHONE_ON_PERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+    <changeSet  id="v0014-6" author="Kyrylo Chornobryvets">
+        <addColumn tableName="ypassport">
+            <column name="end_date" type="DATE"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v0014-7" author="Kyrylo Chornobryvets">
+        <dropNotNullConstraint tableName="yaltperson" columnName="first_name"/>
+    </changeSet>
+
+    <changeSet id="v0014-8" author="Kyrylo Chornobryvets">
+        <dropNotNullConstraint tableName="yaltperson" columnName="pat_name"/>
+    </changeSet>
+
+</databaseChangeLog>

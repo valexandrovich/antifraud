@@ -408,3 +408,12 @@ a {
   color: #04cba0;
 }
 /*404*/
+
+.big-checkbox {
+  width: 24px;
+  height: 24px;
+}
+
+.days .rmdp-header {
+  display: none;
+}

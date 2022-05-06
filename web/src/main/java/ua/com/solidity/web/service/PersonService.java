@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import ua.com.solidity.web.dto.PersonDto;
 import ua.com.solidity.web.entry.Person;
 import ua.com.solidity.web.exception.PersonNotFoundException;
-import ua.com.solidity.web.repository.PersonRepository;
+import ua.com.solidity.web.repositories.PersonRepository;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

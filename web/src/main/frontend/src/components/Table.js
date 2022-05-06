@@ -78,7 +78,6 @@ const ErrCell = (props) => {
             <label className="text-danger" htmlFor="errorCell">
               {props.mis.message}
             </label>
-
             <input
               name="errorCell"
               type="text"

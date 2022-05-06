@@ -7,7 +7,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.stereotype.Service;
 import ua.com.solidity.web.entry.Person;
 import ua.com.solidity.web.exception.PersonNotFoundException;
-import ua.com.solidity.web.repository.PersonRepository;
+import ua.com.solidity.web.repositories.PersonRepository;
 import ua.com.solidity.web.security.RequestHeaders;
 import ua.com.solidity.web.security.token.JwtToken;
 

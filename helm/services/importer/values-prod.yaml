@@ -1,0 +1,15 @@
+vault: 
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/importer/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-importer"
+  vaultAddress: "https://vault.otpbank.com.ua:443"
+  vaultMountPath: "auth/kubernetes/"
+  appPropertiesPath: "/vault/secrets/application.properties"
+
+volumes:
+- name: antifraud
+  nfs:
+    path: /zpool8t/antifraud/prod
+    server: 10.244.14.30
+volumeMounts:
+- name: antifraud
+  mountPath: /tmp

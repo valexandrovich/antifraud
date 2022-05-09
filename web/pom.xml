@@ -24,7 +24,7 @@
         <!-- JS Properties -->
         <frontend-src-dir>${project.basedir}</frontend-src-dir>
         <node.version>v14.15.2</node.version>
-        <yarn.version>v1.22.5</yarn.version>
+        <yarn.version>v1.22.18</yarn.version>
     </properties>
 
     <dependencies>

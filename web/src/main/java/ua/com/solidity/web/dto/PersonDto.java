@@ -15,8 +15,8 @@ public class PersonDto {
         this.username = person.getUsername();
         this.givenName = person.getGivenName();
         this.surname = person.getSurname();
-        this.fullname = person.getFullname();
-        this.displayname = person.getDisplayname();
+        this.fullname = person.getFullName();
+        this.displayname = person.getDisplayName();
     }
 
     private String id;

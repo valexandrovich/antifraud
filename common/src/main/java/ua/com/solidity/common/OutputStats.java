@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,11 +16,13 @@ public class OutputStats {
     @NoArgsConstructor
     public static class Group {
         private static final long DELTA = 1000000;
+        private static final DecimalFormat percentFormat = new DecimalFormat("0.000");
         String fullName;
         String name;
         long totalRowCount = 0;
         long parseErrorCount = 0;
         long insertCount = 0;
+        long insertErrorCount = 0;
         DurationPrinter printer = new DurationPrinter();
 
         public Group(String source, String name) {
@@ -44,13 +47,19 @@ public class OutputStats {
             insertCount += count;
         }
 
+        public final void incInsertErrorCount(long count) { insertErrorCount += count; }
+
         public final String getStatsMessage() {
-            return Utils.messageFormat("{}: [total: {}/errors: {}({}%)/inserted: {}({}%)] due {}",
-                    fullName, totalRowCount, parseErrorCount, getParseErrorPercent(), insertCount, getInsertedPercent(), printer.getDurationString());
+            return Utils.messageFormat("{}: [total: {}/parse errors: {}({}%)/insert errors: {}({}%)/inserted: {}({}%)] due {}",
+                    fullName, totalRowCount, parseErrorCount, getParseErrorPercent(), insertErrorCount, getInsertErrorPercent(), insertCount, getInsertedPercent(), printer.getDurationString());
         }
 
         public final double getParseErrorPercent() {
             return totalRowCount == 0 ? 0 : (double) parseErrorCount / totalRowCount * 100;
+        }
+
+        public final double getInsertErrorPercent() {
+            return totalRowCount == 0 ? 0 : (double) insertErrorCount / totalRowCount * 100;
         }
 
         public final double getInsertedPercent() {

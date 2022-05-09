@@ -28,6 +28,7 @@ public class DataBatch {
     private int count;
     private int objectCount;
     private int errorCount;
+    private int insertErrorCount;
     private final DataObject[] objects;
     private final ErrorReport[] errors;
     private final FlushHandler handler;
@@ -46,7 +47,7 @@ public class DataBatch {
         objects = new DataObject[objectCapacity < 1 ? capacity : objectCapacity];
         errors = new ErrorReport[errorCapacity < 1 ? capacity : errorCapacity];
         this.handler = handler;
-        objectCount = errorCount = 0;
+        objectCount = errorCount = insertErrorCount = 0;
         this.capacity = capacity <= 0 ? Math.max(objectCapacity, errorCapacity) : capacity;
         this.item = item;
     }
@@ -92,6 +93,14 @@ public class DataBatch {
         if (errorCount == errors.length || count == capacity) {
             doFlush();
         }
+    }
+
+    public final int getInsertErrorCount() {
+        return insertErrorCount;
+    }
+
+    public final void addInsertErrorCount(int count) {
+        insertErrorCount += count;
     }
 
     public final int getObjectCount() {

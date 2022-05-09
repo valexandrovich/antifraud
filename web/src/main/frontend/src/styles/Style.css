@@ -2,9 +2,7 @@
   padding: 0;
   margin: 0;
 }
-#root {
-  width: 99%;
-}
+
 body {
   color: #999;
   background: #f5f5f5;
@@ -20,6 +18,7 @@ body {
 }
 
 /* button */
+
 .btn_modal {
   background: transparent !important;
   border: transparent !important;
@@ -139,6 +138,7 @@ body {
 }
 .wrapped {
   margin-left: 300px;
+  margin-right: 50px;
 }
 
 .sroll-x {
@@ -151,6 +151,7 @@ body {
   background-color: #085235;
   display: flex;
   align-items: center;
+  z-index: 1;
 }
 .nav-title {
   margin: 0 auto;
@@ -159,6 +160,7 @@ body {
 .logout-btn {
   font-size: 26px;
   cursor: pointer;
+  margin-right: 50px;
 }
 
 .nav-menu {
@@ -169,11 +171,10 @@ body {
   justify-content: center;
   position: fixed;
   top: 0;
-  left: -100%;
 }
 
 .nav-menu.active {
-  padding-top: 40px;
+  padding-top: 55px;
   left: 0;
 }
 
@@ -407,3 +408,12 @@ a {
   color: #04cba0;
 }
 /*404*/
+
+.big-checkbox {
+  width: 24px;
+  height: 24px;
+}
+
+.days .rmdp-header {
+  display: none;
+}

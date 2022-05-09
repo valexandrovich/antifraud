@@ -6,10 +6,12 @@ import org.hibernate.Hibernate;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
+@Table(name = "contragent")
 @Entity
 @Getter
 @Setter
@@ -19,6 +21,8 @@ import java.util.UUID;
 public class Contragent {
     @Id
     private UUID uuid;
+    @Column(name = "revision", nullable = false)
+    private UUID revision;
     @Column(nullable = false)
     private Long id; // Код контрагента
     @Column(length = 254, nullable = false)

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import PageTitle from "../../components/PageTitle";
 import Table from "../../components/Table";
 import Pagination from "../../components/Pagination";
+import authHeader from "../../api/AuthHeader";
 
 const UploadedFiles = () => {
   const [resp, setResp] = useState([]);
@@ -13,22 +14,23 @@ const UploadedFiles = () => {
   const indexOfFirstFile = indexOfLastFile - filesPerPage;
   const currentFile = resp.slice(indexOfFirstFile, indexOfLastFile);
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-  console.log(singleFile);
+
   useEffect(() => {
-    fetch("/getUploaded")
+    fetch("/api/uniPF/getUploaded", { headers: authHeader() })
       .then((response) => response.json())
-      .then((data) => setResp(data.principal));
+      .then((data) => setResp(data));
   }, []);
   const getInfo = (target) => {
-    fetch(`/getUploaded/${target}`)
+    fetch(`/api/uniPF/getUploaded/${target}`, { headers: authHeader() })
       .then((response) => response.json())
-      .then((data) => setSingleFile(data.principal));
+      .then((data) => setSingleFile(data));
   };
   return (
     <div className="wrapped">
       <PageTitle title={"uploaded_files"} />
-      <div className="card">
-        <table className="table-bordered table-sm">
+
+      <div className="sroll-x">
+        <table className="table-bordered table w-90">
           <thead>
             <tr>
               <th>UUID</th>
@@ -51,7 +53,7 @@ const UploadedFiles = () => {
                     {el.uuid}
                   </td>
 
-                  <td>{el.userName=== "Incognito" ? "test" : el.userName}</td>
+                  <td>{el.userName === "Incognito" ? "test" : el.userName}</td>
                   <td>{el.created}</td>
                   <td>{el.rowCount || "не вказано"}</td>
                   <td>{el.description}</td>
@@ -66,7 +68,9 @@ const UploadedFiles = () => {
         totalFiles={resp.length}
         paginate={paginate}
       />
-      {singleFile && singleFile.length > 0 && <Table data={singleFile} />}
+      {singleFile.persons && singleFile.persons.length > 0 && (
+        <Table data={singleFile.persons} err={singleFile.cellStatuses} />
+      )}
     </div>
   );
 };

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="v013-1" author="Dmitry Rumyantsev">
+        <createTable tableName="yaltperson">
+        <column name="id" type="BIGSERIAL">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="yaltperson_pkey"/>
+        </column>
+        <column name="last_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="first_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="pat_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="language" type="CHAR(2)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="person_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v013-2" author="Dmitry Rumyantsev">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="yaltperson"
+                                 constraintName="FK_YALTPERSON_ON_YPERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+
+    <changeSet id="v013-3" author="Dmitry Rumyantsev">
+        <createTable tableName="ypassport">
+            <column name="id" type="BIGSERIAL">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="ypassport_pkey"/>
+            </column>
+            <column name="series" type="CHAR(2)">
+            </column>
+            <column name="number" type="DECIMAL(6)">
+            </column>
+            <column name="authority" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issued" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="record_number" type="VARCHAR(255)">
+            </column>
+            <column name="type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="validity" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="person_id" type="UUID">
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v013-4" author="Dmitry Rumyantsev">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="ypassport"
+                                 constraintName="FK_YPASSPORT_ON_YPERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+
+    <changeSet id="v013-5" author="Dmitry Rumyantsev">
+        <createTable tableName="ytag">
+            <column name="id" type="BIGSERIAL">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="ytag_pkey"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="as_of" type="DATE">
+            </column>
+            <column name="until" type="DATE">
+            </column>
+            <column name="source" type="VARCHAR(255)">
+            </column>
+            <column name="person_id" type="UUID">
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v013-6" author="Dmitry Rumyantsev">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="ytag"
+                                 constraintName="FK_YTAG_ON_YPERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+
+    <changeSet id="v013-7" author="Dmitry Rumyantsev">
+        <dropNotNullConstraint tableName="yperson" columnName="birthdate"/>
+    </changeSet>
+
+    <changeSet id="v013-8" author="Dmitry Rumyantsev">
+        <dropNotNullConstraint tableName="ypassport" columnName="authority"/>
+    </changeSet>
+
+    <changeSet id="v013-9" author="Dmitry Rumyantsev">
+        <dropNotNullConstraint tableName="ypassport" columnName="issued"/>
+    </changeSet>
+
+    <changeSet id="v013-10" author="Dmitry Rumyantsev">
+        <dropNotNullConstraint tableName="yperson" columnName="pat_name"/>
+    </changeSet>
+
+    <changeSet id="v013-11" author="Dmitry Rumyantsev">
+        <dropNotNullConstraint tableName="yperson" columnName="first_name"/>
+    </changeSet>
+
+    <changeSet id="v013-12" author="Dmitry Rumyantsev">
+        <modifyDataType tableName="yinn" columnName="inn" newDataType="DECIMAL(12)"/>
+        <rollback>
+            <modifyDataType tableName="yinn" columnName="inn" newDataType="DECIMAL(10)"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

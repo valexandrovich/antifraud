@@ -2,15 +2,18 @@ package ua.com.solidity.dwh.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.model.EnricherMessage;
 import ua.com.solidity.dwh.entities.ArContragent;
-import ua.com.solidity.dwh.repositorydwh.ArContragentRepository;
 import ua.com.solidity.dwh.entities.Contragent;
 import ua.com.solidity.dwh.repository.ContragentRepository;
+import ua.com.solidity.dwh.repositorydwh.ArContragentRepository;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -22,9 +25,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Service
 public class DWHServiceImpl implements DWHService {
+    private static final String CONTRAGENT = "contragent";
     private final ArContragentRepository acr;
     private final ContragentRepository cr;
 
+    @Value("${enricher.rabbitmq.name}")
+    private String queueName;
     @Value("${otp.dwh.page-size}")
     private Integer pageSize;
 
@@ -36,6 +42,8 @@ public class DWHServiceImpl implements DWHService {
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
         Page<ArContragent> onePage = acr.findByArcDateAfter(date, pageRequest);
+
+        UUID revision = UUID.randomUUID();
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
@@ -109,6 +117,7 @@ public class DWHServiceImpl implements DWHService {
                 c.setFop(r.getFop());
                 c.setArcDate(r.getArcDate());
                 c.setUuid(UUID.randomUUID());
+                c.setRevision(revision);
                 contragentEntityList.add(c);
                 counter[0]++;
             });
@@ -117,5 +126,9 @@ public class DWHServiceImpl implements DWHService {
         }
 
         log.info("Imported {} records from DWH", counter[0]);
+        log.info("Sending task to otp-etl.enricher");
+
+        EnricherMessage enricherMessage = new EnricherMessage(CONTRAGENT, revision);
+        Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(enricherMessage));
     }
 }

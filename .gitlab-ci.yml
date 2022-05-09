@@ -48,10 +48,10 @@ maven-package:
       - importer/target/*.jar
       - notification/target/*.jar
       - scheduler/target/*.jar
-      - scheduler_test/target/*.jar
       - web/target/*.jar
       - dwh/target/*.jar
       - enricher/target/*.jar
+      - statuslogger/target/*.jar
 
 
 # liquibase-update:

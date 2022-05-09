@@ -214,10 +214,7 @@ public class ValueParser {
     public static Object getFloat(String value) {
         String v = value;
         double res;
-        boolean hasDot = v.indexOf('.') >= 0;
-
-        if (!hasDot) v = v.replace(',', '.');
-
+        v = v.replace(',', '.');
         v = v.replaceAll(PATTERN_DOUBLE_INVALIDS, "");
 
         try {

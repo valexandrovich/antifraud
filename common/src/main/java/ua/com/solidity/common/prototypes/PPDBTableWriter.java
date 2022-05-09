@@ -6,9 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ua.com.solidity.common.OutputCache;
-import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.*;
 import ua.com.solidity.common.data.DataBatch;
+import ua.com.solidity.common.data.DataExtensionFactory;
 import ua.com.solidity.common.pgsql.SQLFlushMode;
 import ua.com.solidity.common.pgsql.SQLTable;
 import ua.com.solidity.pipeline.Input;
@@ -18,14 +18,23 @@ public class PPDBTableWriter extends PPCustomDBWriter {
     private static final int DEFAULT_CACHE_SIZE = 67108864;
     private static final int DEFAULT_ROW_CACHE_SIZE = 1048576;
     private static final String NODE = "node";
+    private static final String EXTENSION = "ext";
 
     @AllArgsConstructor
     private static class Data {
         Input input;
+        Input extension;
         SQLTable table;
+        ErrorReportLogger errorLogger;
 
         final boolean isValid() {
             return input != null && table != null;
+        }
+        public final boolean handleError(ErrorReport report) {
+            if (errorLogger != null) {
+                errorLogger.logError(report);
+            }
+            return true;
         }
     }
 
@@ -36,6 +45,7 @@ public class PPDBTableWriter extends PPCustomDBWriter {
     private static class InternalParams {
         private String table = null;
         private ObjectNode mapping = null;
+        private boolean singleTran = false;
         private int cacheSize = DEFAULT_CACHE_SIZE;
         private int rowCacheSize = DEFAULT_ROW_CACHE_SIZE;
         private String mode = "statement";
@@ -51,14 +61,14 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         return DataBatch.class;
     }
 
-    private SQLTable initSQLTable(Item item, String tableName, JsonNode mapping, SQLFlushMode mode,
+    private SQLTable initSQLTable(Item item, String tableName, JsonNode mapping, boolean singleTransaction, SQLFlushMode mode,
                                   int cacheSize, int rowCacheSize) {
-        if (tableName != null && mapping != null) {
+        if (tableName != null) {
             OutputCache cache = getOutputCache(item);
             if (cache == null) {
                 item.terminate();
             } else {
-                return SQLTable.create(tableName, mode, mapping, cacheSize, rowCacheSize);
+                return SQLTable.create(tableName, mode, mapping, singleTransaction, cacheSize, rowCacheSize);
             }
         }
         return null;
@@ -69,6 +79,7 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         JsonNode mapping = null;
         int cacheSize = DEFAULT_CACHE_SIZE;
         int rowCacheSize = DEFAULT_ROW_CACHE_SIZE;
+        boolean singleTran = false;
         SQLFlushMode mode = SQLFlushMode.PREPARED_STATEMENT_BATCH;
 
         if (node != null) {
@@ -77,24 +88,27 @@ public class PPDBTableWriter extends PPCustomDBWriter {
             mapping = params.mapping;
             cacheSize = params.cacheSize;
             rowCacheSize = params.rowCacheSize;
+            singleTran = params.isSingleTran();
             mode = SQLFlushMode.parse(params.mode);
         }
 
-        return initSQLTable(item, tableName, mapping,  mode, cacheSize, rowCacheSize);
+        return initSQLTable(item, tableName, mapping, singleTran, mode, cacheSize, rowCacheSize);
     }
 
     @Override
     protected void initialize(Item item, JsonNode node) {
         super.initialize(item, node);
         item.setLocalData(NODE, node);
+        item.mapInputs(EXTENSION, DataExtensionFactory.class);
     }
 
     @Override
     protected void beforePipelineExecution(Item item) {
         super.beforePipelineExecution(item);
+        if (item.terminated()) return;
         SQLTable table = initializeTable(item, item.getLocalData(NODE, JsonNode.class));
         if (table != null) {
-            Data data = new Data(item.getInput(INPUT, 0), table);
+            Data data = new Data(item.getInput(INPUT, 0), item.getInput(EXTENSION, 0), table, item.getPipelineParam("logger", ErrorReportLogger.class));
             item.setInternalData(data);
             if (!data.isValid()) {
                 item.terminate();
@@ -104,13 +118,20 @@ public class PPDBTableWriter extends PPCustomDBWriter {
 
     @Override
     protected void beforeOutput(Item item, OutputCache cache) {
-        // nothing
+        Data data = item.getInternalData(Data.class);
+        DataExtensionFactory factory = data.extension.getValue(DataExtensionFactory.class);
+        if (!data.table.prepareTable(factory)) {
+            item.terminate();
+        }
     }
 
     @Override
     protected void afterOutput(Item item, OutputCache cache) {
         Data data = item.getInternalData(Data.class);
         data.table.close();
+        if (data.errorLogger != null) {
+            data.errorLogger.finish();
+        }
     }
 
     @Override
@@ -120,7 +141,6 @@ public class PPDBTableWriter extends PPCustomDBWriter {
 
     @Override
     protected int flushErrors(Item item, OutputCache cache) {
-        // nothing yet
-        return 0;
+        return cache.getBatch().handleErrors(item.getInternalData(Data.class)::handleError);
     }
 }

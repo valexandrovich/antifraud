@@ -19,6 +19,10 @@ public class DataExtensionFactory {
         return internalFields;
     }
 
+    public final boolean fieldExists(String name) {
+        return exists(getFields(), name);
+    }
+
     protected final List<FieldDescription> getFieldDescriptions(List<String> descriptions) {
         List<FieldDescription> res = new ArrayList<>();
         for (String value : descriptions) {
@@ -32,7 +36,10 @@ public class DataExtensionFactory {
                 name = value.substring(0, pos);
                 type = value.substring(pos + 1);
             }
-            res.add(new FieldDescription(name, type == null ? "" : type));
+            FieldDescription desc = FieldDescription.create(name, type);
+            if (desc != null) {
+                res.add(desc);
+            }
         }
         return res;
     }

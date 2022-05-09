@@ -20,6 +20,14 @@ const PageTitle = (props) => {
         name: "Файлы",
         link: "/uploaded_files",
       },
+      progress: {
+        name: "Прогрес завантаження",
+        link: "/progress",
+      },
+      sheduler: {
+        name: "Розклад",
+        link: "/sheduler",
+      },
     };
 
     if (isTitle) {

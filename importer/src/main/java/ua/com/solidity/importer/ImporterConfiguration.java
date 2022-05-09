@@ -12,6 +12,6 @@ public class ImporterConfiguration {
     }
     @Bean
     CSVParams defaultParams() {
-        return new CSVParams("UTF-8", ";", "\"", "\b\r\f\t ",CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM);
+        return new CSVParams("UTF-8", ";", "\"", null, "\b\r\f\t ",CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM);
     }
 }

@@ -2,6 +2,7 @@ package ua.com.solidity.notification.model;
 
 import lombok.Data;
 
+
 @Data
 public class SendEmailRequest {
 
@@ -12,4 +13,6 @@ public class SendEmailRequest {
     private String body;
 
     private int retries;
+
+    private String filePath;
 }

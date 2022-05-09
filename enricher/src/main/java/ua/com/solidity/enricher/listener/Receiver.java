@@ -23,11 +23,12 @@ public class Receiver extends RabbitMQReceiver {
         try {
             enricherRequest = objectMapper.readValue(message, EnricherRequest.class);
         } catch (JsonProcessingException e) {
-            log.error("Couldn't read object from queue!", e);
-            return false;
+            log.error("Can't understand object from queue!", e);
+            log.debug("The message was: {}", message);
+            return true;
         }
 
-        log.info("Received from {}: {}", queue, message);
+        log.debug("Received message from {}: {}", queue, message);
         enricherService.enrich(enricherRequest);
 
         return true;

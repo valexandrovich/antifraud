@@ -3,6 +3,7 @@ package ua.com.solidity.common.parsers.xls;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataFieldType;
 import ua.com.solidity.common.data.DataHeader;
@@ -76,7 +77,7 @@ public class XLSDataObject extends DataObject {
     @Override
     public JsonNode getNode() {
         if (node != null) return node;
-        ObjectNode obj = JsonNodeFactory.instance.objectNode();
+        ObjectNode obj = Utils.getSortedMapper().createObjectNode();
         for (var entry: header.getFieldIndexes()) {
             XLSField field = data[entry.getValue()];
             obj.set(entry.getKey(), field == null ? null : JsonNodeFactory.instance.textNode(DataField.getString(field)));

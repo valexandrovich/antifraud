@@ -64,7 +64,16 @@ public class DownloaderTask extends RabbitMQTask {
                 pipelineInfo, data.getMainFile().getUrl(), data.getMainFile().getFileName());
         res = res.save();
         if (res != null) {
-            return new ImporterMessageData(source.getId(), res.getId(), data, pipelineInfo);
+            String mailTo = msgData.getLogMailTo();
+            if (mailTo == null || mailTo.isBlank()) {
+                mailTo = receiver.getConfig().getDefaultMailTo();
+            }
+            long limit = msgData.getLogLimit();
+            if (limit < 0) {
+                limit = receiver.getConfig().getDefaultLogLimit();
+            }
+            String logFileName = receiver.getConfig().getLogFileName(msgData.getLogFile());
+            return new ImporterMessageData(source.getId(), res.getId(), data, pipelineInfo, logFileName, mailTo, limit);
         }
         return null;
     }
@@ -80,13 +89,12 @@ public class DownloaderTask extends RabbitMQTask {
         ImporterMessageData importerMessageData = receiver.getDownloader().download(data, this);
         urlElapsedTime.stop();
         if (importerMessageData != null) {
-
-            log.info("{} files found/ downloaded, message sent to Importer ({}).", data.dictionaries.size() + 1, urlElapsedTime.getDurationString());
             importerMessageData.setPipelineInfo(pipelineInfo);
             send(receiver.getConfig().getImporterTopicExchangeName(), Utils.objectToJsonString(importerMessageData));
+            log.info("{} files found/ downloaded, message sent to Importer ({}).", data.dictionaries.size() + 1, urlElapsedTime.getDurationString());
         } else {
-            log.error("Downloading cancelled. All downloaded files removed.");
             handleError();
+            log.error("Downloading cancelled. All downloaded files removed.");
         }
     }
 

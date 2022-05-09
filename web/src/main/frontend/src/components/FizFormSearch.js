@@ -4,6 +4,8 @@ import MaskedInput from "react-text-mask";
 import * as Yup from "yup";
 
 import Card from "./Card";
+import { setAlertMessageThunk } from "../store/reducers/AuthReducer";
+import { useDispatch } from "react-redux";
 
 const registerMask = [
   /\d/,
@@ -58,7 +60,7 @@ const fizSchema = Yup.object().shape({
 const FizFormSearch = () => {
   const [documentType, setDocumentType] = useState("passport");
   const [searchResults, setSearchResults] = useState([]);
-
+  const dispatch = useDispatch();
   const [searchFormFiz, setSearchFormFiz] = useState({
     name: "",
     surname: "",
@@ -82,16 +84,29 @@ const FizFormSearch = () => {
     setSearchFormFiz({ ...searchFormFiz, [e.target.name]: e.target.value });
   };
   const handleSubmitFizForm = (values) => {
-    fetch("/search", {
+    fetch("/api/uniPF/search", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        Authorization:
+          "Bearer " + localStorage.getItem("user").replace(/"/g, ""),
       },
       method: "POST",
       body: JSON.stringify(values),
     })
       .then((res) => res.json())
-      .then((file) => setSearchResults(file.principal))
+      .then((file) => {
+        if (file.length > 0) {
+          setSearchResults(file);
+        } else {
+          dispatch(
+            setAlertMessageThunk(
+              "За данними пошуку збігів не знайдено",
+              "danger"
+            )
+          );
+        }
+      })
 
       .catch(function (res) {
         console.log(res);
@@ -136,12 +151,9 @@ const FizFormSearch = () => {
           values,
           isValid,
         }) => (
-          <Form
-            onSubmit={handleSubmit}
-            className="card card-block bg-faded mt-4 mb-3"
-          >
+          <Form onSubmit={handleSubmit}>
             <div className="row mt-3">
-              <div className="form-group col-md-3">
+              <div className="form-group col-md-4">
                 <span className="has-float-label">
                   <input
                     name="surname"
@@ -166,8 +178,8 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-              <div className="form-group col-md-3">
-                <span className="has-float-label mb-3">
+              <div className="form-group col-md-4">
+                <span className="has-float-label">
                   <input
                     name="name"
                     onChange={(e) => {
@@ -191,8 +203,7 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-
-              <div className="form-group col-md-3">
+              <div className="form-group col-md-4">
                 <span className="has-float-label">
                   <input
                     name="patronymic"
@@ -220,9 +231,9 @@ const FizFormSearch = () => {
                 </span>
               </div>
             </div>
-            <div className="row">
-              <div className="form-group col-md-1">
-                <span className="has-float-label mb-3">
+            <div className="row mt-3">
+              <div className="form-group col-md-3">
+                <span className="has-float-label">
                   <input
                     name="day"
                     onChange={(e) => {
@@ -249,7 +260,7 @@ const FizFormSearch = () => {
                 </span>
               </div>
 
-              <div className="form-group col-md-1">
+              <div className="form-group col-md-3">
                 <span className="has-float-label">
                   <input
                     name="month"
@@ -274,7 +285,7 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-              <div className="form-group col-md-2">
+              <div className="form-group col-md-3">
                 <span className="has-float-label">
                   <input
                     name="year"
@@ -299,7 +310,7 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-              <div className="form-group col-md-1">
+              <div className="form-group col-md-3">
                 <span className="has-float-label">
                   <input
                     name="age"
@@ -324,7 +335,9 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-              <div className="form-group col-md-2">
+            </div>
+            <div className="row mt-3">
+              <div className="form-group col-md-5">
                 <span className="has-float-label">
                   <input
                     name="phone"
@@ -349,7 +362,7 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-              <div className="form-group col-md-5">
+              <div className="form-group col-md-7">
                 <span className="has-float-label">
                   <input
                     name="address"
@@ -375,8 +388,8 @@ const FizFormSearch = () => {
                 </span>
               </div>
             </div>
-            <div className="row">
-              <div className="form-group col-md-2 ">
+            <div className="row mt-3">
+              <div className="form-group col-md-3">
                 <span className="has-float-label">
                   <select
                     name="documentType"
@@ -395,7 +408,7 @@ const FizFormSearch = () => {
 
               {documentType === "passport" && (
                 <>
-                  <div className="form-group col-md-1">
+                  <div className="form-group col-md-2">
                     <span className="has-float-label">
                       <input
                         name="passportSeria"
@@ -424,7 +437,7 @@ const FizFormSearch = () => {
                       )}
                     </span>
                   </div>
-                  <div className="form-group col-md-2">
+                  <div className="form-group col-md-3">
                     <span className="has-float-label">
                       <input
                         name="passportNumber"
@@ -486,7 +499,7 @@ const FizFormSearch = () => {
                       )}
                     </span>
                   </div>
-                  <div className="form-group col-md-2">
+                  <div className="form-group col-md-3">
                     <span className="has-float-label">
                       <Field>
                         {({ field }) => (
@@ -558,7 +571,7 @@ const FizFormSearch = () => {
                       )}
                     </span>
                   </div>
-                  <div className="form-group col-md-2">
+                  <div className="form-group col-md-3">
                     <span className="has-float-label">
                       <Field>
                         {({ field }) => (
@@ -598,7 +611,7 @@ const FizFormSearch = () => {
                 </>
               )}
 
-              <div className="form-group col-md-3">
+              <div className="form-group col-md-4">
                 <span className="has-float-label mb-3">
                   <input
                     name="inn"
@@ -623,38 +636,33 @@ const FizFormSearch = () => {
                   )}
                 </span>
               </div>
-              <div className="form-group col-md-1">
-                <button
-                  disabled={!isValid}
-                  type="submitt"
-                  className="btn btn-success"
-                >
-                  Пошук
-                </button>
-              </div>
-              <div className="form-group col-md-1">
-                <button
-                  onClick={() => resetForm()}
-                  type="button"
-                  className="btn btn-primary "
-                >
-                  Очистити
-                </button>
+              <div className="row mt-3">
+                <div className="form-group col-md-3 mb-3">
+                  <button
+                    disabled={!isValid}
+                    type="submitt"
+                    className="btn btn-success w-100"
+                  >
+                    Пошук
+                  </button>
+                </div>
+                <div className="form-group col-md-3">
+                  <button
+                    onClick={() => resetForm()}
+                    type="button"
+                    className="btn btn-primary w-100"
+                  >
+                    Очистити
+                  </button>
+                </div>
               </div>
             </div>
           </Form>
         )}
       </Formik>
-      <div className="d-flex flex-wrap">
-        {searchResults.map((el) => {
-          return (
-            <>
-              {/* <Link key={el.uuid.uuid} to={`/card/${el.uuid.uuid}`}>
-              {el.uuid.uuid}
-            </Link> */}
-              <Card data={el} />
-            </>
-          );
+      <div className="d-flex flex-wrap justify-content-center">
+        {searchResults?.map((el) => {
+          return <Card data={el} />;
         })}
       </div>
     </>

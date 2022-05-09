@@ -21,6 +21,7 @@ spec:
       dwh: version
       liquibase: version
       enricher: version
+      statuslogger: version
     name:
       downloader: downloader
       importer: importer
@@ -31,3 +32,4 @@ spec:
       dwh: dwh
       liquibase: liquibase
       enricher: enricher
+      statuslogger: statuslogger

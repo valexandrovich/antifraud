@@ -81,11 +81,10 @@ public class FilteredTextInputStream extends InputStream {
         }
 
         public final void align() {
-            while (col > 0 && bufferPos > 0) {
-                --bufferPos;
-                --position;
-                --col;
-            }
+            long delta = Math.min(col, bufferPos);
+            bufferPos -= delta;
+            position -= delta;
+            col -= delta;
         }
     }
 
@@ -228,13 +227,13 @@ public class FilteredTextInputStream extends InputStream {
     private Location[] getLineLocations(long line) {
         Location[] locations = {null, null};
         int locationIndex = 0;
-        Location location;
         if (hasPriorBuffer) {
-            location = buffers[0].searchLine(line);
-            if (location != null) locations[locationIndex++] = location;
+            Location location = buffers[0].searchLine(line);
+            if (location != null) {
+                locations[locationIndex++] = location;
+            }
         }
-        location = buffers[1].searchLine(line);
-        if (location != null) locations[locationIndex] = location;
+        locations[locationIndex] = buffers[1].searchLine(line);
         return locations;
     }
 

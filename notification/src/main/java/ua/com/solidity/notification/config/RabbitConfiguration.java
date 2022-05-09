@@ -23,10 +23,17 @@ public class RabbitConfiguration {
     private String queueName;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
+    @Value("${spring.rabbitmq.username}")
+    private String username;
+    @Value("${spring.rabbitmq.password}")
+    private String password;
 
     @Bean
     public ConnectionFactory connectionFactory() {
-        return new CachingConnectionFactory(queueHost);
+        CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(queueHost);
+        cachingConnectionFactory.setUsername(username);
+        cachingConnectionFactory.setPassword(password);
+        return cachingConnectionFactory;
     }
 
     @Bean

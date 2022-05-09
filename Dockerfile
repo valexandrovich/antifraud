@@ -1,10 +1,9 @@
-FROM nexus.otpbank.com.ua:19443/repository/openjdk:11-jre
+FROM openjdk:11-jre
 
-ENV JAVA_OPTS="-Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttps.proxySet=true -Dhttps.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttps.proxyPort=8080 -Dhttp.proxySet=true -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
+ENV JAVA_OPTS="-Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
 ENV OTP_TEMP=/tmp
 ENV TZ=Europe/Kiev
-ENV HTTP_PROXY="chckproxy.raiffeisenbank.com.ua:8080"
-ENV HTTPS_PROXY="chckproxy.raiffeisenbank.com.ua:8080"
+
 VOLUME /tmp
 
 COPY cert.crt cert.crt

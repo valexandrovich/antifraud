@@ -116,6 +116,6 @@ public class ResourceInfoFileData {
 
     @JsonIgnore
     public ImporterMessageData getImporterMessageData(Long importSourceId, UUID importRevisionId, ResourceInfoData data, JsonNode pipelineInfo) {
-        return new ImporterMessageData(importSourceId, importRevisionId, data, pipelineInfo);
+        return new ImporterMessageData(importSourceId, importRevisionId, data, pipelineInfo, null, null, -1);
     }
 }

@@ -23,11 +23,11 @@ public class Receiver extends RabbitMQReceiver {
         try {
             updateDWHRequest = objectMapper.readValue(message, UpdateDWHRequest.class);
         } catch (JsonProcessingException e) {
-            log.error("Couldn't read object from queue!", e);
-            return false;
+            log.error("Couldn't read object from queue: {}", e.getMessage());
+            return true;
         }
 
-        log.info("Received from {}: {}", queue, message);
+        log.debug("Received from {}: {}", queue, message);
         dwhService.update(updateDWHRequest.getLastModified());
 
         return true;

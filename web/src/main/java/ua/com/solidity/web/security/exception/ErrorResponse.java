@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Date;
 
-public class ErrorResponse<T> {
+public class ErrorResponse {
 
     private final HttpStatus status;
 
@@ -18,7 +18,7 @@ public class ErrorResponse<T> {
         this.timestamp = new Date();
     }
 
-    public static ErrorResponse of (final String message, HttpStatus status) {
+    public static ErrorResponse of(final String message, HttpStatus status) {
         return new ErrorResponse(message, status);
     }
 

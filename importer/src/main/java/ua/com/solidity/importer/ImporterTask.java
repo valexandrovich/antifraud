@@ -2,6 +2,7 @@ package ua.com.solidity.importer;
 
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.*;
+import ua.com.solidity.common.model.EnricherMessage;
 import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.ImportSource;
 

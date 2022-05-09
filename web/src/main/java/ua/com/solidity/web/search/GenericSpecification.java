@@ -56,7 +56,7 @@ public class GenericSpecification<T> implements Specification<T> {
                             builder.lower(root.get(criteria.getKey())),
                             "%" + criteria.getValue().toString().toLowerCase() + "%"));
                     break;
-                case MATCH_END:
+                case LIKE:
                     predicates.add(builder.like(
                             builder.lower(root.get(criteria.getKey())),
                             criteria.getValue().toString().toLowerCase() + "%"));

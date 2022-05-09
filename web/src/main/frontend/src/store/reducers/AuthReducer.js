@@ -33,7 +33,6 @@ const AuthReducer = (state = initialState, action = {}) => {
         ...state,
         authForm: initialState.authForm,
         isAuth: true,
-        // role: null,
         role: action.role,
         userName: action.userName,
       };
@@ -81,19 +80,15 @@ export const logoutUser = () => {
 };
 
 export const submitUserAuthThunk = (authForm) => (dispatch) => {
-  if (authForm.login === "test" && authForm.password === "test") {
-    dispatch(submitUserAuth());
-  } else {
-    authService
-        .auth(authForm)
-        .then((res) => {
-          dispatch(submitUserAuth(res.data.role, res.data.userName));
-        })
+  authService
+    .auth(authForm)
+    .then((res) => {
+      dispatch(submitUserAuth(res.data.role, res.data.userName));
+    })
 
-        .catch((err) => {
-          dispatch(setAlertMessageThunk(err.response.data.message, "danger"));
-        });
-  }
+    .catch((err) => {
+      dispatch(setAlertMessageThunk(err.response.data.message, "danger"));
+    });
 };
 
 export const logoutUserThunk = () => (dispatch) => {

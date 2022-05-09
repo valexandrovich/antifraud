@@ -35,9 +35,11 @@ public class CustomEntity {
             try {
                 return repository.save(entity);
             } catch (Exception e) {
-                log.error("Error on save data.", e);
+                log.error("Error on save data. {}:{}", e.getClass().getName(), e.getMessage());
+                log.debug("Exception:", e);
             }
         }
         return null;
+
     }
 }

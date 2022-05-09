@@ -23,7 +23,7 @@
         <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
         <!-- JS Properties -->
         <frontend-src-dir>${project.basedir}</frontend-src-dir>
-        <node.version>v14.15.2</node.version>
+        <node.version>v16.15.0</node.version>
         <yarn.version>v1.22.18</yarn.version>
     </properties>
 

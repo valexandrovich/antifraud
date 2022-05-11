@@ -30,7 +30,7 @@ public class RabbitMQListener {
 
     @RabbitListener(queues = "${statuslogger.rabbitmq.name}")
     public void processMyQueue(String request) {
-        log.debug("Receive from " + queueName + ":\n{}", request);
+        log.info("Receive from " + queueName + ":\n{}", request);
 
         ObjectMapper objectMapper = new ObjectMapper();
 

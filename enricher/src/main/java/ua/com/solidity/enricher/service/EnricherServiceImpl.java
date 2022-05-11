@@ -78,17 +78,8 @@ public class EnricherServiceImpl implements EnricherService {
         return String.format("Imported %d records", num);
     }
 
-    private void logStart(String table) {
-        log.info("Data from {} are being transferred to OLAP zone", table);
-    }
-
-    private void logFinish(String table, Long rows) {
-        log.info("Imported {} records from {}", rows, table);
-    }
-
     @Override
     public void enrich(EnricherRequest er) {
-        log.info("Received request to enrich {} revision {}", er.getTable(), er.getRevision());
         switch (er.getTable()) {
             case BASE_DRFO:
                 baseDrfoEnrich(er.getRevision());
@@ -114,7 +105,7 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     public void baseDrfoEnrich(UUID revision) {
-        logStart(BASE_DRFO);
+        log.info("Data from base_drfo are being transferred to OLAP zone");
 
         LocalDateTime startTime = LocalDateTime.now();
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
@@ -201,7 +192,7 @@ public class EnricherServiceImpl implements EnricherService {
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
 
-        logFinish(BASE_DRFO, counter[0]);
+        log.info("Imported {} records from base_drfo", counter[0]);
 
         statusLogger = new StatusLogger(revision, 100L, "%",
                 BASE_DRFO, ENRICHER, startTime,
@@ -211,7 +202,7 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     public void baseElectionsEnrich(UUID revision) {
-        logStart(BASE_ELECTIONS);
+        log.info("Data from base_elections are being transferred to OLAP zone");
 
         LocalDateTime startTime = LocalDateTime.now();
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
@@ -257,7 +248,7 @@ public class EnricherServiceImpl implements EnricherService {
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
 
-        logFinish(BASE_ELECTIONS, counter[0]);
+        log.info("Imported {} records from base_elections", counter[0]);
 
         statusLogger = new StatusLogger(revision, 100L, "%",
                 BASE_ELECTIONS, ENRICHER, startTime,
@@ -267,7 +258,7 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     public void baseFodbEnrich(UUID revision) {
-        logStart(BASE_FODB);
+        log.info("Data from base_fodb are being transferred to OLAP zone");
 
         LocalDateTime startTime = LocalDateTime.now();
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
@@ -351,7 +342,7 @@ public class EnricherServiceImpl implements EnricherService {
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
 
-        logFinish(BASE_FODB, counter[0]);
+        log.info("Imported {} records from base_fodb", counter[0]);
 
         statusLogger = new StatusLogger(revision, 100L, "%",
                 BASE_FODB, ENRICHER, startTime, LocalDateTime.now(),
@@ -360,7 +351,7 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     public void basePassportsEnrich(UUID revision) {
-        logStart(BASE_PASSPORTS);
+        log.info("Data from base_passports are being transferred to OLAP zone");
 
         LocalDateTime startTime = LocalDateTime.now();
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
@@ -421,7 +412,7 @@ public class EnricherServiceImpl implements EnricherService {
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
 
-        logFinish(BASE_PASSPORTS, counter[0]);
+        log.info("Imported {} records from base_passports", counter[0]);
 
         statusLogger = new StatusLogger(revision, 100L, "%",
                 BASE_PASSPORTS, ENRICHER, startTime, LocalDateTime.now(),
@@ -430,7 +421,7 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     public void contragentEnrich(UUID revision) {
-        logStart(CONTRAGENT);
+        log.info("Data from contragent are being transferred to OLAP zone");
 
         LocalDateTime startTime = LocalDateTime.now();
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
@@ -587,8 +578,7 @@ public class EnricherServiceImpl implements EnricherService {
                     CONTRAGENT, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
-
-        logFinish(CONTRAGENT, counter[0]);
+        log.info("Imported {} records from contragent", counter[0]);
 
         statusLogger = new StatusLogger(revision, 100L, "%",
                 CONTRAGENT, ENRICHER, startTime, LocalDateTime.now(),

@@ -11,6 +11,7 @@ import javax.persistence.ManyToOne;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 
 @Entity
 @Getter
@@ -28,13 +29,13 @@ public class YAddress {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
         YAddress yAddress = (YAddress) o;
-        return Objects.equals(address, yAddress.address) && Objects.equals(person, yAddress.person);
+        return id != null && Objects.equals(id, yAddress.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(address, person);
+        return getClass().hashCode();
     }
 }

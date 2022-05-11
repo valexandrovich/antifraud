@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.web.dto.TableCheck;
-import ua.com.solidity.web.repositories.DBCheckRepository;
+import ua.com.solidity.web.repository.DBCheckRepository;
 
 import java.util.List;
 

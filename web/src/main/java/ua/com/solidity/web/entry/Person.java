@@ -32,11 +32,8 @@ public final class Person {
     private String displayName;
     @Attribute(name = "sAMAccountName")
     private String username;
-    @Attribute(name = "userPrincipalName")
-    private String email;
-    @Attribute(name = "telephoneNumber")
-    private String phoneNumber;
 
     @Attribute(name = "memberOf")
     private ArrayList<String> memberOf;
+
 }

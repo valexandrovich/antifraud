@@ -25,6 +25,9 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         Input input;
         Input extension;
         SQLTable table;
+        long objectCount;
+        long errorCount;
+        StatusChanger changer;
         ErrorReportLogger errorLogger;
 
         final boolean isValid() {
@@ -34,6 +37,7 @@ public class PPDBTableWriter extends PPCustomDBWriter {
             if (errorLogger != null) {
                 errorLogger.logError(report);
             }
+            ++errorCount;
             return true;
         }
     }
@@ -108,7 +112,9 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         if (item.terminated()) return;
         SQLTable table = initializeTable(item, item.getLocalData(NODE, JsonNode.class));
         if (table != null) {
-            Data data = new Data(item.getInput(INPUT, 0), item.getInput(EXTENSION, 0), table, item.getPipelineParam("logger", ErrorReportLogger.class));
+            Data data = new Data(item.getInput(INPUT, 0), item.getInput(EXTENSION, 0), table, 0, 0,
+                    new StatusChanger(table.tableName, "IMPORTER"),
+                    item.getPipelineParam("logger", ErrorReportLogger.class));
             item.setInternalData(data);
             if (!data.isValid()) {
                 item.terminate();
@@ -123,6 +129,7 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         if (!data.table.prepareTable(factory)) {
             item.terminate();
         }
+        data.changer.newStage("importing", "", 0);
     }
 
     @Override
@@ -132,15 +139,22 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         if (data.errorLogger != null) {
             data.errorLogger.finish();
         }
+        data.changer.complete(String.format("Completed (%d total rows, %d parse errors, %d insert errors)",
+                cache.getGroup().getTotalRowCount(), cache.getGroup().getParseErrorCount(),
+                cache.getGroup().getInsertErrorCount()));
     }
 
     @Override
     protected int flushObjects(Item item, OutputCache cache) {
-        return item.getInternalData(Data.class).table.doOutput(cache);
-    }
-
-    @Override
-    protected int flushErrors(Item item, OutputCache cache) {
-        return cache.getBatch().handleErrors(item.getInternalData(Data.class)::handleError);
+        Data data = item.getInternalData(Data.class);
+        data.objectCount += cache.getBatch().getObjectCount();
+        data.errorCount += cache.getBatch().getErrorCount();
+        int count = item.getInternalData(Data.class).table.doOutput(cache, item.getInternalData(Data.class)::handleError);
+        OutputStats.Group group = cache.getGroup();
+        data.changer.setProcessedVolume(group.getTotalRowCount());
+        data.changer.setStatus(String.format("import (%d total rows, %d parse errors, %d insert rows).",
+                data.changer.getProcessedVolume(), group.getParseErrorCount(),
+                group.getInsertErrorCount()));
+        return count;
     }
 }

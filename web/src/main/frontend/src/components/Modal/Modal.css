@@ -17,8 +17,8 @@
   color: black;
   position: relative;
   z-index: 51;
-  height: 80vh;
-  min-width: 80vw;
+  max-height: calc(100vh - 150px);
+  min-width: 60vw;
   overflow-y: scroll;
 }
 

@@ -20,7 +20,7 @@ import ua.com.solidity.dwh.listener.Receiver;
 public class RabbitConfiguration {
 
     @Value("${dwh.rabbitmq.name}")
-    private String queueName;
+    private String dwhQueue;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
     @Value("${spring.rabbitmq.username}")
@@ -46,13 +46,13 @@ public class RabbitConfiguration {
         return new RabbitTemplate(connectionFactory());
     }
 
-    @Bean
-    public Queue myQueue() {
-        return new Queue(queueName);
+    @Bean(name = "dwhQueue")
+    public Queue dwhQueue() {
+        return new Queue(dwhQueue);
     }
 
     @Bean
     RabbitMQListener listener(Receiver receiver) {
-        return new RabbitMQListener(receiver, queueName);
+        return new RabbitMQListener(receiver, dwhQueue);
     }
 }

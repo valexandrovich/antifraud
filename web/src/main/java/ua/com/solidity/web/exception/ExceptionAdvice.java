@@ -13,6 +13,17 @@ import ua.com.solidity.web.security.exception.NoSuchRoleException;
 public class ExceptionAdvice {
 
     @ResponseBody
+    @ExceptionHandler(IllegalApiArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ExceptionResponse illegalApiArgumentHandler(IllegalApiArgumentException ex) {
+        return ExceptionResponse.builder()
+                .message(ex.getMessage())
+                .status(HttpStatus.BAD_REQUEST)
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .build();
+    }
+
+    @ResponseBody
     @ExceptionHandler(AuthenticationServiceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ExceptionResponse authenticationServiceHandler(AuthenticationServiceException ex) {

@@ -3,20 +3,25 @@ package ua.com.solidity.common.data;
 import ua.com.solidity.common.ErrorReport;
 import ua.com.solidity.pipeline.Item;
 
-import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("unused")
 public class DataBatch {
     public static final int DEFAULT_OBJECT_COUNT = 16384;
     public static final int DEFAULT_ERROR_COUNT = 1024;
+    public static final int DEFAULT_CAPACITY = 16394;
 
     public interface FlushHandler {
         void flush(DataBatch obj);
     }
 
     public interface ObjectHandler {
-        boolean handle(DataObject value);
+        ErrorResult handle(DataObject value);
+    }
+
+    public interface ModifyHandler {
+        DataObject modify(DataObject value);
     }
 
     public interface ErrorHandler {
@@ -25,30 +30,27 @@ public class DataBatch {
 
     private final Item item;
     private final int capacity;
-    private int count;
-    private int objectCount;
-    private int errorCount;
+    private int count = 0;
+    private int objectCount = 0;
+    private int errorCount = 0;
+    private final int objectCapacity;
+    private final int errorCapacity;
     private int insertErrorCount;
-    private final DataObject[] objects;
-    private final ErrorReport[] errors;
+    private int badObjectCount = 0;
+    private final List<Object> instances = new ArrayList<>();
     private final FlushHandler handler;
     private DataExtensionFactory extensionFactory = null;
 
     public DataBatch(int capacity, int objectCapacity, int errorCapacity, Item item, FlushHandler handler) {
-        if (capacity < 1) {
-            if (objectCapacity < 1) {
-                objectCapacity = DEFAULT_OBJECT_COUNT;
-            }
-            if (errorCapacity < 1) {
-                errorCapacity = DEFAULT_ERROR_COUNT;
-            }
+        if (capacity < 1 && objectCapacity < 1 && errorCapacity < 1) {
+            capacity = DEFAULT_CAPACITY;
         }
 
-        objects = new DataObject[objectCapacity < 1 ? capacity : objectCapacity];
-        errors = new ErrorReport[errorCapacity < 1 ? capacity : errorCapacity];
+        this.objectCapacity = objectCapacity < 1 ? DEFAULT_OBJECT_COUNT : objectCapacity;
+        this.errorCapacity = errorCapacity < 1 ? DEFAULT_ERROR_COUNT : errorCapacity;
+        this.capacity = capacity < 1 ? this.objectCapacity + this.errorCapacity : capacity;
         this.handler = handler;
-        objectCount = errorCount = insertErrorCount = 0;
-        this.capacity = capacity <= 0 ? Math.max(objectCapacity, errorCapacity) : capacity;
+        this.insertErrorCount = 0;
         this.item = item;
     }
 
@@ -71,7 +73,7 @@ public class DataBatch {
                 handler.flush(this);
             }
         } finally {
-            count = objectCount = errorCount = 0;
+            count = 0;
         }
     }
 
@@ -80,19 +82,24 @@ public class DataBatch {
         if (extensionFactory != null) {
             extensionFactory.handle(object);
         }
-        objects[objectCount++] = object;
-        ++count;
-        if (objectCount == objects.length || count == capacity) {
+        instances.add(object);
+        ++objectCount;
+        if (objectCount == objectCapacity || instances.size() == capacity) {
             doFlush();
         }
     }
 
     public void put(ErrorReport report) {
-        errors[errorCount++] = report;
-        ++count;
-        if (errorCount == errors.length || count == capacity) {
+        if (report == null) return;
+        instances.add(report);
+        ++errorCount;
+        if (errorCount == errorCapacity || instances.size() == capacity) {
             doFlush();
         }
+    }
+
+    public final int getBadObjectCount() {
+        return badObjectCount;
     }
 
     public final int getInsertErrorCount() {
@@ -107,6 +114,10 @@ public class DataBatch {
         return objectCount;
     }
 
+    public final int getCommittedCount() {
+        return objectCount - badObjectCount;
+    }
+
     public final int getErrorCount() {
         return errorCount;
     }
@@ -114,26 +125,14 @@ public class DataBatch {
     public void clear() {
         objectCount = 0;
         errorCount = 0;
-    }
-
-    public final DataObject get(int index) {
-        return index >= 0 && index < objectCount ? objects[index] : null;
-    }
-
-    public final boolean replace(int index, DataObject newObject) {
-        if (index >= 0 && index < objectCount) {
-            objects[index] = newObject;
-            return true;
-        }
-        return false;
-    }
-
-    public final ErrorReport getError(int index) {
-        return index >= 0 && index < errorCount ? errors[index] : null;
+        count = 0;
+        badObjectCount = 0;
+        insertErrorCount = 0;
+        instances.clear();
     }
 
     public final boolean isEmpty() {
-        return objectCount == 0 && errorCount == 0;
+        return instances.isEmpty();
     }
 
     public final void flush() {
@@ -142,35 +141,34 @@ public class DataBatch {
         }
     }
 
-    public final int handleObjects(ObjectHandler handler) {
-        int handled = 0;
-        if (handler != null) {
-            for (int i = 0; i < objectCount; ++i) {
-                if (handler.handle(objects[i])) {
-                    ++handled;
+    private void handleDataObject(ObjectHandler objectHandler, ErrorHandler errorHandler, DataObject obj) {
+        ErrorResult res = objectHandler.handle(obj);
+        if (res.isErrorState()) {
+            ++badObjectCount;
+            if (errorHandler != null) {
+                for (var report : res.getReport()) {
+                    errorHandler.handle(report);
                 }
             }
+            errorCount += res.getReport().size();
+            insertErrorCount += res.getReport().size();
         }
-        return handled;
     }
 
-    public final int handleErrors(ErrorHandler handler) {
-        int handled = 0;
-        if (handler != null) {
-            for (int i = 0; i < errorCount; ++i) {
-                if (handler.handle(errors[i])) {
-                    ++handled;
-                }
+    public final void handle(ObjectHandler objectHandler, ErrorHandler errorHandler) {
+        for (Object obj : instances) {
+            List<ErrorReport> reports;
+            if (obj instanceof DataObject) {
+                handleDataObject(objectHandler, errorHandler, (DataObject) obj);
+            } else if (obj instanceof ErrorReport && errorHandler != null) {
+                errorHandler.handle((ErrorReport) obj);
             }
         }
-        return handled;
     }
 
-    public final Stream<DataObject> objectStream() {
-        return Arrays.stream(objects, 0, objectCount);
-    }
-
-    public final Stream<ErrorReport> errorStream() {
-        return Arrays.stream(errors, 0, errorCount);
+    public final void modify(ModifyHandler modifyHandler) {
+        if (modifyHandler != null) {
+            instances.replaceAll(obj->obj instanceof DataObject ? modifyHandler.modify((DataObject) obj) : obj);
+        }
     }
 }

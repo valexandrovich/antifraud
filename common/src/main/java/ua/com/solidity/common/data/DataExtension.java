@@ -21,7 +21,7 @@ public class DataExtension {
     public static UUID getParentID(DataObject obj) {
         DataObject parent = obj.getParent();
         DataExtension parentExtension;
-        if (parent == null || (parentExtension = obj.getExtension()) == null) return null;
+        if (parent == null || (parentExtension = parent.getExtension()) == null) return null;
         return parentExtension.id;
     }
 }

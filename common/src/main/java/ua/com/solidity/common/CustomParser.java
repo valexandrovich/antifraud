@@ -28,7 +28,10 @@ public abstract class CustomParser implements Closeable {
     protected abstract boolean doNext();
 
     public void close() {
+        errorReport = null;
         opened = false;
+        cachedDataObject = null;
+        eof = true;
         stream = null;
     }
 
@@ -59,7 +62,7 @@ public abstract class CustomParser implements Closeable {
     }
 
     public final void errorReporting(long row, long col, long byteOffset, long charOffset, long infoOffset, String info) {
-        errorReport = new ErrorReport(row, col, byteOffset, charOffset, infoOffset, info, null);
+        errorReport = new ErrorReport(row, col, byteOffset, charOffset, infoOffset, info, "Parse error");
     }
 
     public final void errorReporting(ErrorReport report) {

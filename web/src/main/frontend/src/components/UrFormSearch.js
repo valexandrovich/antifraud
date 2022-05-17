@@ -20,7 +20,6 @@ const UrFormSearch = () => {
   const handleInputChange = (e) => {
     setSearchFormUr({ ...searchFormUr, [e.target.name]: e.target.value });
   };
-
   return (
     <Formik
       initialValues={{
@@ -45,7 +44,7 @@ const UrFormSearch = () => {
         values,
         isValid,
       }) => (
-        <Form className="card card-block bg-faded mt-4">
+        <Form>
           <div className="row">
             <div className="form-group col-md-3 mt-3">
               <span className="has-float-label mb-3">
@@ -151,27 +150,27 @@ const UrFormSearch = () => {
               </span>
             </div>
           </div>
+
           <div className="row mt-3">
-            <div className="form-group col-md-2">
+            <div className="form-group col-md-3 mb-3">
               <button
                 disabled={!isValid}
-                type="button"
-                className="btn btn-success mb-3"
+                type="submit"
+                className="btn custom-btn w-100"
               >
                 Пошук
               </button>
             </div>
-            <div className="form-group col-md-2">
+            <div className="form-group col-md-3">
               <button
                 onClick={() => resetForm()}
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-danger w-100"
               >
                 Очистити
               </button>
             </div>
           </div>
-
         </Form>
       )}
     </Formik>

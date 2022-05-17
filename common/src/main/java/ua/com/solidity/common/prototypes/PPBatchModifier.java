@@ -37,20 +37,18 @@ public class PPBatchModifier extends Prototype {
             return batchInput != null;
         }
 
+        private DataObject doModify(DataObject obj) {
+            JsonNode node = obj.getNode();
+            for (DataModifier modifier : modifiers) {
+                modifier.handle(node);
+            }
+            return obj instanceof JsonDataObject ? obj : JsonDataObject.create(obj.getParent(), node, obj.getLocation());
+        }
+
         public final DataBatch modify() {
             DataBatch batch = batchInput.getValue(DataBatch.class);
             if (batch != null) {
-                int batchSize = batch.getObjectCount();
-                for (int i = 0; i < batchSize; ++i) {
-                    DataObject obj = batch.get(i);
-                    if (obj != null) {
-                        JsonNode node = obj.getNode();
-                        for (DataModifier modifier : modifiers) {
-                            modifier.handle(node);
-                        }
-                        batch.replace(i, JsonDataObject.create(obj.getParent(), node));
-                    }
-                }
+                batch.modify(this::doModify);
             }
             return batch;
         }

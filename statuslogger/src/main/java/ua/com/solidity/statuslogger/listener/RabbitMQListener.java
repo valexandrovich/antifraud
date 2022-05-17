@@ -30,7 +30,7 @@ public class RabbitMQListener {
 
     @RabbitListener(queues = "${statuslogger.rabbitmq.name}")
     public void processMyQueue(String request) {
-        log.info("Receive from " + queueName + ":\n{}", request);
+        log.debug("Receive from " + queueName + ":\n{}", request);
 
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -40,14 +40,15 @@ public class RabbitMQListener {
             Optional<StatusLogger> statusLoggerRecord = repository.findById(statusLogger.getId());
             if (statusLoggerRecord.isPresent()) {
                 log.debug("StatusLogger with revision {} already exist", statusLogger.getId());
-                StatusLogger statusLogger1 = statusLoggerRecord.get();
-                statusLogger1.setProgress(statusLogger.getProgress());
-                statusLogger1.setUnit(statusLogger.getUnit());
-                statusLogger1.setName(statusLogger.getName());
-                statusLogger1.setUserName(statusLogger.getUserName());
-                statusLogger1.setFinished(statusLogger.getFinished());
-                statusLogger1.setStatus(statusLogger.getStatus());
-                repository.save(statusLogger1);
+                StatusLogger newStatusLogger = statusLoggerRecord.get();
+                newStatusLogger.setStarted(statusLogger.getStarted());
+                newStatusLogger.setProgress(statusLogger.getProgress());
+                newStatusLogger.setUnit(statusLogger.getUnit());
+                newStatusLogger.setName(statusLogger.getName());
+                newStatusLogger.setUserName(statusLogger.getUserName());
+                newStatusLogger.setFinished(statusLogger.getFinished());
+                newStatusLogger.setStatus(statusLogger.getStatus());
+                repository.save(newStatusLogger);
                 return;
             }
 

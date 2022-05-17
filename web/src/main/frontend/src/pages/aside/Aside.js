@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import SidebarData from "./SidebarData";
 import { useDispatch, useSelector } from "react-redux";
 import { IconContext } from "react-icons";
@@ -10,55 +10,56 @@ const Aside = () => {
   const userName = localStorage.getItem("userName");
   const role = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
+
   return (
     <>
-      <IconContext.Provider value={{ color: "#fff" }}>
+      <IconContext.Provider value={{ color: "#60aa18" }}>
         <div className="navbar">
-          <div className="d-flex col-sm-12 justify-content-end align-items-center">
+          <div className="d-flex col-sm-12 justify-content-between align-items-center">
             <h3 className="nav-title">Антифрод</h3>
-            <span className="text-white p-2">
+            <span className="text-white p-2 user">
               {userName?.replace(/"/g, "")}
+              <IoIcons.IoMdExit
+                style={{ color: "white" }}
+                onClick={() => dispatch(logoutUserThunk())}
+                className="logout-btn ml-10"
+              />
             </span>
-
-            <IoIcons.IoMdExit
-              onClick={() => dispatch(logoutUserThunk())}
-              className="logout-btn"
-            />
           </div>
         </div>
-        <nav className="nav-menu active">
+        <nav className="nav-menu top">
           <ul className="nav-menu-items">
             <li className={SidebarData.Search.cName}>
-              <Link to={SidebarData.Search.path}>
+              <NavLink to={SidebarData.Search.path}>
                 {SidebarData.Search.icon}
                 <span className="icons">{SidebarData.Search.title}</span>
-              </Link>
+              </NavLink>
             </li>
             {role === "ADVANCED" ? (
               <>
                 <li className={SidebarData.AddFile.cName}>
-                  <Link to={SidebarData.AddFile.path}>
+                  <NavLink to={SidebarData.AddFile.path}>
                     {SidebarData.AddFile.icon}
                     <span className="icons">{SidebarData.AddFile.title}</span>
-                  </Link>
+                  </NavLink>
                 </li>
                 <li className={SidebarData.Files.cName}>
-                  <Link to={SidebarData.Files.path}>
+                  <NavLink to={SidebarData.Files.path}>
                     {SidebarData.Files.icon}
                     <span className="icons">{SidebarData.Files.title}</span>
-                  </Link>
+                  </NavLink>
                 </li>
                 <li className={SidebarData.Progress.cName}>
-                  <Link to={SidebarData.Progress.path}>
+                  <NavLink to={SidebarData.Progress.path}>
                     {SidebarData.Progress.icon}
                     <span className="icons">{SidebarData.Progress.title}</span>
-                  </Link>
+                  </NavLink>
                 </li>
                 <li className={SidebarData.Sheduler.cName}>
-                  <Link to={SidebarData.Sheduler.path}>
+                  <NavLink to={SidebarData.Sheduler.path}>
                     {SidebarData.Sheduler.icon}
                     <span className="icons">{SidebarData.Sheduler.title}</span>
-                  </Link>
+                  </NavLink>
                 </li>
               </>
             ) : (

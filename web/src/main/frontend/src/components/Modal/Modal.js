@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useRef } from "react";
 import "./Modal.css";
 
-const Modal = ({ open, onClose, children }) => {
+const Modal = ({ open, onClose, title, children }) => {
   const modalRef = useRef();
 
   const closeModal = (e) => {
@@ -32,6 +32,7 @@ const Modal = ({ open, onClose, children }) => {
     <div className="modal-bg" onClick={closeModal}>
       <div className="modal-wrapper">
         <div className="modal-header">
+          <h4>{title}</h4>
           <button
             onClick={onClose}
             type="button"

@@ -33,11 +33,11 @@ const UploadedFiles = () => {
         <table className="table-bordered table w-90">
           <thead>
             <tr>
-              <th>UUID</th>
-              <th>ІМ'Я</th>
-              <th>ЧАС</th>
-              <th>КІЛЬКІСТЬ РЯДКІВ</th>
-              <th>КОРОТКИЙ ОПИС</th>
+              <th className="table-header">UUID</th>
+              <th className="table-header">ІМ'Я</th>
+              <th className="table-header">ЧАС</th>
+              <th className="table-header">КІЛЬКІСТЬ РЯДКІВ</th>
+              <th className="table-header">КОРОТКИЙ ОПИС</th>
             </tr>
           </thead>
           <tbody>

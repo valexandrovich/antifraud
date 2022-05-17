@@ -5,7 +5,7 @@ import * as FaIcons from "react-icons/fa";
 import * as IoIcons from "react-icons/io";
 const Search = {
   title: "Пошук",
-  path: "/",
+  path: "/search",
   icon: <IoIcons.IoIosSearch />,
   cName: "nav-text",
 };

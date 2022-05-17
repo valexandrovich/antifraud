@@ -39,14 +39,14 @@ public class CSVDataObject extends DataObject {
         return new CSVField(this, data);
     }
 
-    private CSVDataObject(DataHeader header, List<String> data) {
-        super(null);
+    private CSVDataObject(DataHeader header, List<String> data, long row, long col) {
+        super(null, row, col, -1, -1);
         this.header = header;
         this.data = data.stream().map(this::createField).toArray(CSVField[]::new);
     }
 
-    public static CSVDataObject create(DataHeader header, List<String> data) {
-        return header == null || data == null ? null : new CSVDataObject(header, data);
+    public static CSVDataObject create(DataHeader header, List<String> data, long row, long col) {
+        return header == null || data == null ? null : new CSVDataObject(header, data, row, col);
     }
 
     @Override

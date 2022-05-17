@@ -12,6 +12,7 @@ import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.data.DataObject;
 import ua.com.solidity.common.data.JsonDataObject;
 
+import javax.xml.stream.Location;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
@@ -24,6 +25,7 @@ public class XMLParser extends CustomParser {
     private final XMLInputFactory factory = XMLInputFactory.newInstance();
     private final XmlMapper mapper = Utils.getSortedXmlMapper();
     private JsonNode lastNode = null;
+    private Location lastLocation = null;
     private final XMLParams params;
 
     public XMLParser(XMLParams params) {
@@ -65,6 +67,7 @@ public class XMLParser extends CustomParser {
                             return true;
                         } else {
                             params.push(reader.getName().toString());
+                            lastLocation = reader.getLocation();
                         }
                         break;
                     case XMLStreamConstants.END_ELEMENT:
@@ -82,7 +85,8 @@ public class XMLParser extends CustomParser {
 
     @Override
     public DataObject internalDataObject() {
-        return JsonDataObject.create(null, lastNode);
+        return JsonDataObject.create(null, lastNode,
+                lastLocation.getLineNumber(), lastLocation.getColumnNumber(), -1, lastLocation.getCharacterOffset());
     }
 
     @Override

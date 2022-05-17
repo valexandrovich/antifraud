@@ -28,7 +28,7 @@ public class Receiver extends RabbitMQReceiver {
             return true;
         }
 
-        log.info("Received from {}: {}", queue, message);
+        log.debug("Received message from {}: {}", queue, message);
         enricherService.enrich(enricherRequest);
 
         return true;

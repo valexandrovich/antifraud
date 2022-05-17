@@ -2,7 +2,6 @@ package ua.com.solidity.dwh.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.model.EnricherMessage;
+import ua.com.solidity.db.entities.StatusLogger;
 import ua.com.solidity.dwh.entities.ArContragent;
 import ua.com.solidity.dwh.entities.Contragent;
 import ua.com.solidity.dwh.repository.ContragentRepository;
@@ -17,6 +17,7 @@ import ua.com.solidity.dwh.repositorydwh.ArContragentRepository;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,16 +30,32 @@ public class DWHServiceImpl implements DWHService {
     private final ArContragentRepository acr;
     private final ContragentRepository cr;
 
+    private static final String DWH = "DWH";
+    private static final String AR_CONTRAGENT = "AR_CONTRAGENT";
+    private static final String RECORDS = "records";
+
     @Value("${enricher.rabbitmq.name}")
-    private String queueName;
+    private String enricherQueue;
+    @Value("${statuslogger.rabbitmq.name}")
+    private String loggerQueue;
     @Value("${otp.dwh.page-size}")
     private Integer pageSize;
 
+    private String importedRecords(long num, Timestamp timestamp) {
+        return String.format("Imported %d records archived after %s", num, timestamp.toString());
+    }
+
     @Override
     public void update(Timestamp timestamp) { // Find records updated as of specified arcdate and import them from DWH
-        int[] counter = new int[1];
+        long[] counter = new long[1];
         LocalDate date = timestamp.toLocalDateTime().toLocalDate();
         log.info("Importing from DWH records archived after: {}", timestamp);
+
+        LocalDateTime startTime = LocalDateTime.now();
+        UUID uuid = UUID.randomUUID();
+        StatusLogger statusLogger = new StatusLogger(uuid, 0L, "%",
+                                                     AR_CONTRAGENT, DWH, startTime, null, null);
+        Utils.sendRabbitMQMessage(loggerQueue, Utils.objectToJsonString(statusLogger));
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
         Page<ArContragent> onePage = acr.findByArcDateAfter(date, pageRequest);
@@ -123,12 +140,21 @@ public class DWHServiceImpl implements DWHService {
             });
             cr.saveAll(contragentEntityList);
             onePage = acr.findByArcDateAfter(date, pageRequest);
+
+            statusLogger = new StatusLogger(uuid, counter[0], RECORDS,
+                                            AR_CONTRAGENT, DWH, startTime, null, null);
+            Utils.sendRabbitMQMessage(loggerQueue, Utils.objectToJsonString(statusLogger));
         }
 
         log.info("Imported {} records from DWH", counter[0]);
         log.info("Sending task to otp-etl.enricher");
 
+        statusLogger = new StatusLogger(uuid, 100L, "%",
+                                        AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
+                                        importedRecords(counter[0], timestamp));
+        Utils.sendRabbitMQMessage(loggerQueue, Utils.objectToJsonString(statusLogger));
+
         EnricherMessage enricherMessage = new EnricherMessage(CONTRAGENT, revision);
-        Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(enricherMessage));
+        Utils.sendRabbitMQMessage(enricherQueue, Utils.objectToJsonString(enricherMessage));
     }
 }

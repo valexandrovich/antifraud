@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import ua.com.solidity.db.entities.FileDescription;
 import ua.com.solidity.db.entities.YPerson;
+import ua.com.solidity.web.dto.YPersonDto;
 import ua.com.solidity.web.request.SearchRequest;
 import ua.com.solidity.web.response.ValidatedPhysicalPersonResponse;
 import ua.com.solidity.web.service.XslxService;
@@ -100,13 +101,58 @@ public class UniversalPhysicalFileController {
 	@ApiOperation(value = "search",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
-	public ResponseEntity<List<YPerson>> search(
+	public ResponseEntity<List<YPersonDto>> search(
 			@ApiParam(value = "searchRequest",
 					required = true)
-			@RequestBody SearchRequest searchRequest
+			@RequestBody SearchRequest searchRequest,
+			HttpServletRequest httpServletRequest
 	) {
-		List<YPerson> personList = xslxService.search(searchRequest);
+		List<YPersonDto> personList = xslxService.search(searchRequest, httpServletRequest);
 		return ResponseEntity.ok(personList);
 	}
 
+	@PostMapping(path = "/find/{id}")
+	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@ApiOperation(value = "Finds person by specified id",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<YPersonDto> findById(
+			@ApiParam(value = "YPerson id you need to retrieve",
+					required = true)
+			@PathVariable UUID id,
+			HttpServletRequest request
+	) {
+		YPersonDto dto = xslxService.findById(id, request);
+		return ResponseEntity.ok(dto);
+	}
+
+	@PutMapping(path = "/subscribe/{id}")
+	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@ApiOperation(value = "Subscribes the user to yperson by specified id",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<YPerson> subscribe(
+			@ApiParam(value = "YPerson id you need to subscribe for",
+					required = true)
+			@PathVariable UUID id,
+			HttpServletRequest request
+	) {
+		xslxService.subscribe(id, request);
+		return ResponseEntity.ok().build();
+	}
+
+	@PutMapping(path = "/unsubscribe/{id}")
+	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@ApiOperation(value = "Unsubscribes the user from yperson by specified id",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<YPerson> unsubscribe(
+			@ApiParam(value = "YPerson id you need to unsubscribe from",
+					required = true)
+			@PathVariable UUID id,
+			HttpServletRequest request
+	) {
+		xslxService.unSubscribe(id, request);
+		return ResponseEntity.ok().build();
+	}
 }

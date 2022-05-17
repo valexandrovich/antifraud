@@ -100,7 +100,7 @@ const Login = () => {
                           disabled={!isValid}
                           onClick={handleSubmit}
                           type="submit"
-                          className="btn btn-success p-2"
+                          className="btn custom-btn  p-2"
                         >
                           Вхід
                         </button>

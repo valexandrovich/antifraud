@@ -1,6 +1,10 @@
 package ua.com.solidity.db.entities;
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -8,15 +12,12 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.Hibernate;
+import java.util.Objects;
 
 @Entity
 @Getter
 @Setter
-public class YAddress {
+public class YAddress implements Identifiable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,13 +30,18 @@ public class YAddress {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         YAddress yAddress = (YAddress) o;
-        return id != null && Objects.equals(id, yAddress.id);
+        return Objects.equals(address, yAddress.address) && Objects.equals(person, yAddress.person);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(address, person);
+    }
+
+    @Override
+    public Long getIdentifier() {
+        return id;
     }
 }

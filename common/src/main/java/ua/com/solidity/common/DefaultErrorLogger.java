@@ -4,8 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import ua.com.solidity.common.data.DataLocation;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
@@ -13,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 public class DefaultErrorLogger extends ErrorReportLogger {
     private final String fileName;
     private final String mailto;
-    private FileOutputStream stream = null;
+    private OutputStream stream = null;
     private OutputStreamWriter writer = null;
     private final long maxRowCount;
     private long rowCount = 0;
@@ -39,7 +43,11 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     private boolean streamNeeded() {
         if (writer != null || error) return false;
         try {
-            stream = new FileOutputStream(fileName);
+            if (fileName == null || fileName.isBlank() || StringUtils.equals(fileName, "?")) {
+                stream = new ByteArrayOutputStream();
+            } else {
+                stream = new FileOutputStream(fileName);
+            }
             writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8);
         } catch (Exception e) {
             log.error("Can't create file {}. {}: {}", fileName, e.getClass().getName(), e.getMessage());
@@ -60,7 +68,7 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     }
 
     @Override
-    protected void handleNewLine(ErrorReport.Location location, String info) {
+    protected void handleNewLine(DataLocation location, String info) {
         if (rowCount >= maxRowCount && maxRowCount > 0) {
             if (rowCount == maxRowCount) {
                 doWrite("\n\n<too many rows>\n");
@@ -73,7 +81,7 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     }
 
     @Override
-    protected void handleLineReport(ErrorReport.Location location, String clarification) {
+    protected void handleLineReport(DataLocation location, String clarification) {
         doWrite("\t at:" + location.toString() + ", " + clarification);
     }
 
@@ -87,7 +95,13 @@ public class DefaultErrorLogger extends ErrorReportLogger {
                 // nothing
             }
             if (mailto != null) {
-                NotificationMessage msg = new NotificationMessage(mailto, "Importer error report", "", 3, fileName);
+                NotificationMessage msg;
+                if (stream instanceof ByteArrayOutputStream) {
+                    msg = new NotificationMessage(mailto, "Importer error report",
+                            ((ByteArrayOutputStream) stream).toString(StandardCharsets.UTF_8), 3, null);
+                } else {
+                    msg = new NotificationMessage(mailto, "Importer error report", "", 3, fileName);
+                }
                 Utils.sendRabbitMQMessage("otp-etl.notification", Utils.objectToJsonString(msg));
             }
         }

@@ -10,5 +10,6 @@ import lombok.Setter;
 public class SearchCriteria {
     private String key;
     private Object value;
+    private String joinedTable;
     private SearchOperation operation;
 }

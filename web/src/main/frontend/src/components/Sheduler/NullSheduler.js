@@ -2,86 +2,64 @@ import React, { useEffect, useState } from "react";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import TimePicker from "react-multi-date-picker/plugins/time_picker";
 import Multiselect from "multiselect-react-dropdown";
-
-const options = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-];
-const datOptions = [
-  { name: "перший", value: "1" },
-  { name: "другий", value: "2" },
-  { name: "третій", value: "3" },
-  { name: "четвертий", value: "4" },
-  { name: "останній", value: "-1" },
-  { name: "передостанній", value: "-2" },
-  { name: "всі", value: "all" },
-];
-const days = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "25",
-  "26",
-  "27",
-  "28",
-  "-1",
-  "-2",
-  "-3",
-];
+import scheduleSettings from "./Settings";
+import "react-multi-date-picker/styles/colors/green.css";
+import MultiselectDay from "./MultiselectDay";
 
 const NullSheduler = ({
   rowDate,
   setRowDate,
-  weeksPeriod,
-  setWeeksPeriod,
   period,
   setPeriod,
-  setDaysOfWeek,
-  daysOfWeek,
+  setFinishTime,
+  finishTime,
+  formErrors,
+  setMinPeriod,
+  minPeriod,
+  setWeekDays,
+  weekDays,
+  setmonthPeriod,
+  monthPeriod,
+  time,
+  setTime,
 }) => {
-  const [min, setMin] = useState("");
-  const [hour, setHour] = useState("");
-  const weeks = ["", "", "", "", "", "", ""];
-  const handleDaysWeek = (e) => {
-    const { name, value } = e.target;
-    setRowDate((prevState) => ({
-      ...prevState,
-      schedule: {
-        ...prevState.schedule,
-        days_of_week: {
-          ...prevState.schedule.days_of_week,
-          [name]: value,
-        },
-      },
-    }));
+  const [min, setMin] = useState(0);
+  const [hour, setHour] = useState(0);
+  const [dates, setDates] = useState(
+    new DateObject({
+      year: 2020,
+      month: 9,
+      day: rowDate.schedule?.days?.value,
+    })
+  );
+  const getMonth = (v) => {
+    if (v && v.type === "set") {
+      return v.value;
+    }
+    if (v && v.type === "once") {
+      return new Array(1).fill(v.value);
+    }
   };
+  const getDayMonth = (d) => {
+    if (d && d.type === "set") {
+      return d.value;
+    }
+    if (d && d.type === "once") {
+      return new Array(1).fill(d.value);
+    }
+  };
+
+  const [monthDaysVal, setMonthDaysVal] = useState(
+    rowDate.schedule?.days_of_month
+      ? getDayMonth(rowDate.schedule?.days_of_month)
+      : []
+  );
+
+  const monthVal = rowDate.schedule?.month
+    ? getMonth(rowDate.schedule.month)
+    : [];
+
+  const weeks = ["", "", "", "", "", "", ""];
 
   const formatTime = (time) => {
     if (typeof time === "string") {
@@ -91,40 +69,43 @@ const NullSheduler = ({
         let hours = parseInt(time.substring(0, withHours));
         setHour(hours);
         setMin(time.substring(withHours + 1));
+        time = time.substring(withHours + 1);
       }
       if (time.endsWith("m")) {
-        setMin(time.substring(2, time.length - 1));
+        setMin(time.substring(0, time.length - 1));
+        time = time.substr(0, time.length - 1);
       }
     }
     if (Number.isInteger(time)) {
-      if (time > 60) {
-        setHour((time / 60) ^ 0);
-        setMin(time % 60);
-      } else {
-        setMin(time);
-      }
+      setMin(time);
     }
   };
 
   useEffect(() => {
-    formatTime(rowDate.schedule.minutes.value);
-  }, [rowDate.schedule.minutes]);
+    formatTime(time.periodic.value);
+  }, [time.periodic.value]);
+
+  const select = (name) => {
+    return weekDays.month && weekDays.month[name] === "all"
+      ? scheduleSettings.datOptions
+      : "";
+  };
 
   return (
     <>
       <div className="row">
         <div className="form-group col-md-4">
-          <label htmlFor="startTime">Початок</label>
+          <span className="mr-10">Початок</span>
           <DatePicker
+            locale={scheduleSettings.ua}
+            className="green"
             editable={false}
             style={{ height: "50px" }}
             format="YYYY-MM-DDTHH:mm"
             value={
               rowDate.schedule?.start
-                ? new DateObject({
-                    date: rowDate.schedule.start,
-                  })
-                : ""
+                ? new DateObject(rowDate.schedule.start)
+                : new DateObject()
             }
             name="start"
             onChange={(ref) => {
@@ -139,520 +120,563 @@ const NullSheduler = ({
             plugins={[<TimePicker position="bottom" hideSeconds />]}
           />
         </div>
-        <div className="form-group col-md-4 d-flex align-items-center">
-          <label htmlFor="finishTime">Кінець</label>
-          <DatePicker
-            editable={false}
-            style={{ height: "50px" }}
-            format="YYYY-MM-DDTHH:mm"
-            value={
-              rowDate.schedule?.finish
-                ? new DateObject({
-                    date: rowDate.schedule.finish,
-                  })
-                : ""
-            }
-            name="finish"
-            onChange={(ref) => {
-              setRowDate((prevState) => ({
-                ...prevState,
-                schedule: {
-                  ...prevState.schedule,
-                  finish: ref,
-                },
-              }));
-            }}
-            plugins={[<TimePicker position="bottom" hideSeconds />]}
-          />
-        </div>
-      </div>
-      {/* Повторювати по днях */}
-      <div>
-        <div>
-          <label className="miro-radiobutton d-flex align-items-center">
+        <div className="form-group col-md-4 d-flex align-items-center justify-content-between">
+          <label className="d-flex align-items-center" htmlFor="weeks">
             <input
-              className="big-checkbox mr-3"
-              type="radio"
-              value="0"
-              name="period"
-              onChange={(e) => setPeriod(e.target.value)}
-              checked={period === "0"}
+              title="days_of_weeks"
+              name="days_of_weeks"
+              className="big-checkbox"
+              type="checkbox"
+              checked={finishTime}
+              onChange={() => setFinishTime(!finishTime)}
             />
-            <span>Повторювати кожен/кожні</span>
-          </label>
-          {period === "0" && (
+            <span className="mr-10">Кінець</span>
             <DatePicker
-              className="days"
+              disabled={!finishTime}
+              locale={scheduleSettings.ua}
+              className="green"
               editable={false}
-              hideMonth={true}
-              hideYear={true}
-              weekDays={weeks}
+              style={{ height: "50px" }}
+              format="YYYY-MM-DDTHH:mm"
               value={
-                rowDate.schedule?.days
-                  ? new DateObject({
-                      date: rowDate.schedule.days.value,
-                    })
+                rowDate.schedule?.finish
+                  ? new DateObject(rowDate.schedule.finish)
                   : ""
               }
-              format="DD"
-              style={{ height: "50px" }}
-              name="days"
+              name="finish"
               onChange={(ref) => {
                 setRowDate((prevState) => ({
                   ...prevState,
                   schedule: {
                     ...prevState.schedule,
-                    days: { type: "periodic", value: ref },
+                    finish: ref,
                   },
                 }));
               }}
+              plugins={[<TimePicker position="bottom" hideSeconds />]}
             />
-          )}
-          день/днів
-        </div>
-        {/* ПО ТИЖНЯХ */}
-        <div>
-          <label className="miro-radiobutton d-flex align-items-center">
-            <input
-              className="big-checkbox mr-3"
-              type="radio"
-              value="1"
-              name="period"
-              onChange={(e) => {
-                setPeriod(e.target.value);
-                setRowDate((prevState) => ({
-                  ...prevState,
-                  schedule: {
-                    ...prevState.schedule,
-                    weeks: {
-                      type: "periodic",
-                      value: rowDate.schedule?.weeks?.value
-                        ? rowDate.schedule.weeks.value
-                        : "1",
-                    },
-                  },
-                }));
-              }}
-              checked={period === "1"}
-            />
-
-            <span>Повторювати кожен тиждень/тижнів</span>
           </label>
-          {period === "1" && (
-            <>
-              <div className="form-group col-md-4 d-flex align-items-center">
+        </div>
+      </div>
+      {/* Повторювати по днях */}
+
+      <div>
+        <div className="card mt-3 mb-3">
+          <div className="card-body">
+            <label className="miro-radiobutton d-flex align-items-center">
+              <input
+                className="big-checkbox"
+                type="radio"
+                value="days"
+                name="period"
+                onChange={(e) => setPeriod(e.target.value)}
+                checked={period === "days"}
+              />
+              <span className="mr-10">
+                <b>Повторювати кожен/кожні</b>
+              </span>
+
+              <DatePicker
+                disabled={period !== "days"}
+                className="days green"
+                editable={false}
+                hideMonth={true}
+                hideYear={true}
+                weekDays={weeks}
+                format="DD"
+                value={dates}
+                multiple={false}
+                style={{ height: "50px" }}
+                name="days"
+                onChange={(ref) => {
+                  setDates(ref);
+                  setRowDate((prevState) => ({
+                    ...prevState,
+                    schedule: {
+                      ...prevState.schedule,
+                      days: { type: "periodic", value: ref },
+                    },
+                  }));
+                }}
+              />
+              <span className="ml-10">
+                <b>день/днів</b>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* ПО ТИЖНЯХ */}
+
+        <div className="card mt-3 mb-3">
+          <div className="card-body">
+            <div className="row">
+              <div className="miro-radiobutton d-flex align-items-center">
+                <input
+                  className="big-checkbox mr-3"
+                  type="radio"
+                  value="weeks"
+                  name="period"
+                  onChange={(e) => {
+                    setPeriod(e.target.value);
+                    setRowDate((prevState) => ({
+                      ...prevState,
+                      schedule: {
+                        ...prevState.schedule,
+                        weeks: {
+                          type: "periodic",
+                          value: rowDate.schedule?.weeks?.value
+                            ? rowDate.schedule.weeks.value
+                            : 1,
+                        },
+                      },
+                    }));
+                  }}
+                  checked={period === "weeks"}
+                />
+                <span className="mr-10">
+                  <b>Повторювати кожен/кожні</b>
+                </span>
+
                 <label
                   className="d-flex align-items-center"
                   htmlFor="weeks-set"
                 >
                   <select
-                    value={rowDate.schedule.weeks?.value}
+                    disabled={period !== "weeks"}
+                    value={rowDate.schedule?.weeks?.value}
                     onChange={(e) => {
                       const { value } = e.target;
                       setRowDate((prevState) => ({
                         ...prevState,
                         schedule: {
                           ...prevState.schedule,
-                          weeks: { type: "periodic", value: value },
+                          weeks: { type: "periodic", value: Number(value) },
                         },
                       }));
                     }}
                     className="form-select"
                   >
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
                   </select>
-                  Тиждень
                 </label>
+                <span className="ml-10">
+                  <b>тиждень/тижнів</b>
+                </span>
               </div>
-              <div>
-                <label className="d-flex align-items-center" htmlFor="weeks">
-                  <input
-                    title="days_of_weeks"
-                    name="days_of_weeks"
-                    className="big-checkbox"
-                    type="checkbox"
-                    checked={!weeksPeriod}
-                    onChange={() => setWeeksPeriod(!weeksPeriod)}
-                  />
-                  {!weeksPeriod
-                    ? `Повторювати періодично ${rowDate.schedule.weeks?.value} раз/разів в тиждень `
-                    : "Повторювати кожен день тижня/кожні дні тижня"}
-                </label>
-                {weeksPeriod && (
+              {period === "weeks" && (
+                <div>
                   <label
-                    className="d-flex align-items-center"
+                    className="d-flex align-items-center mt-3"
                     htmlFor="weeks-periodic"
                   >
-                    Дні тижня
+                    <span className="mr-10">Дні тижня</span>
+
                     <Multiselect
+                      className="green"
                       isObject={false}
-                      options={options}
+                      options={scheduleSettings.options}
                       selectedValues={
-                        rowDate.schedule.days_of_week
-                          ? Object.keys(rowDate.schedule.days_of_week)
-                          : ""
+                        weekDays.weeks && Object.keys(weekDays.weeks)
                       }
                       placeholder="Оберіть дні тижня"
                       hidePlaceholder={true}
                       emptyRecordMsg="Не знайдeно збігів"
                       onSelect={(day) => {
-                        const days_of_week = day.reduce((acc, item) => {
+                        const weeks = day.reduce((acc, item) => {
                           acc[item] = "all";
                           return acc;
                         }, {});
-                        setRowDate((prevState) => ({
+                        setWeekDays((prevState) => ({
                           ...prevState,
-                          schedule: {
-                            ...prevState.schedule,
-                            days_of_week,
-                          },
+                          weeks,
                         }));
                       }}
                       onRemove={(day) => {
-                        const days_of_week = day.reduce((acc, item) => {
-                          acc[item] = item;
+                        const weeks = day.reduce((acc, item) => {
+                          acc[item] = "all";
                           return acc;
                         }, {});
-                        setRowDate((prevState) => ({
+                        setWeekDays((prevState) => ({
                           ...prevState,
-                          schedule: {
-                            ...prevState.schedule,
-                            days_of_week,
-                          },
+                          weeks,
                         }));
                       }}
                     />
                   </label>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-        {/* ПО МІСЯЦЯХ */}
-        <>
-          <label className="miro-radiobutton d-flex align-items-center">
-            <input
-              className="big-checkbox mr-3"
-              type="radio"
-              value="2"
-              name="period"
-              onChange={(e) => setPeriod(e.target.value)}
-              checked={period === "2"}
-            />
-            <span>По місяцях</span>
-          </label>
-          {period === "2" && (
-            <>
-              <div className="form-group col-md-4 d-flex flex-column">
-                <div className="d-flex">
-                  <label
-                    className="d-flex align-items-center"
-                    htmlFor="daysWeek"
-                  >
-                    <input
-                      name="daysWeek"
-                      className="big-checkbox"
-                      type="checkbox"
-                      checked={daysOfWeek}
-                      onChange={() => setDaysOfWeek(!daysOfWeek)}
-                    />
-                    {!daysOfWeek ? "Дні тижнів місяця" : "Дні місяця"}
-                  </label>
-                </div>
-                {!daysOfWeek && (
-                  <label
-                    className="d-flex align-items-center"
-                    htmlFor="weeks-set"
-                  >
-                    По місяцях
-                    <Multiselect
-                      isObject={false}
-                      options={days}
-                      selectedValues={
-                        rowDate.schedule?.days_of_month
-                          ? rowDate.schedule.days_of_month?.set ||
-                            rowDate.schedule.days_of_month?.once
-                          : ""
-                      }
-                      placeholder="Оберіть дні місяця"
-                      hidePlaceholder={true}
-                      emptyRecordMsg="Не знайдeно збігів"
-                      onSelect={(month) => {
-                        if (month.length > 1) {
-                          setRowDate((prevState) => ({
-                            ...prevState,
-                            schedule: {
-                              ...prevState.schedule,
-                              days_of_month: {
-                                set: month,
-                              },
-                            },
-                          }));
-                        } else if (month.length === 1) {
-                          setRowDate((prevState) => ({
-                            ...prevState,
-                            schedule: {
-                              ...prevState.schedule,
-                              days_of_month: {
-                                once: month[0],
-                              },
-                            },
-                          }));
-                        }
-                      }}
-                      onRemove={(month) => {
-                        if (month.length > 1) {
-                          setRowDate((prevState) => ({
-                            ...prevState,
-                            schedule: {
-                              ...prevState.schedule,
-                              days_of_month: {
-                                set: month,
-                              },
-                            },
-                          }));
-                        } else if (month.length === 1) {
-                          setRowDate((prevState) => ({
-                            ...prevState,
-                            schedule: {
-                              ...prevState.schedule,
-                              days_of_month: {
-                                once: month[0],
-                              },
-                            },
-                          }));
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-              {daysOfWeek && (
-                <div className="col-md-4 d-flex align-items-center flex-column">
-                  <div className="form-group  col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="monday"
-                    >
-                      Понеділок
-                      <select
-                        value={rowDate.schedule?.days_of_week?.monday}
-                        onChange={handleDaysWeek}
-                        name="monday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
-                  <div className="form-group col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="tuesday"
-                    >
-                      Вівторок
-                      <select
-                        value={rowDate.schedule?.days_of_week?.tuesday}
-                        onChange={handleDaysWeek}
-                        name="tuesday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
-                  <div className="form-group col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="wednesday"
-                    >
-                      Середа
-                      <select
-                        value={rowDate.schedule?.days_of_week?.wednesday}
-                        onChange={handleDaysWeek}
-                        name="wednesday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
-                  <div className="form-group col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="thursday"
-                    >
-                      Четверг
-                      <select
-                        value={rowDate.schedule?.days_of_week?.thursday}
-                        onChange={handleDaysWeek}
-                        name="thursday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
-                  <div className="form-group col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="friday"
-                    >
-                      П'ятниця
-                      <select
-                        value={rowDate.schedule?.days_of_week?.friday}
-                        onChange={handleDaysWeek}
-                        name="friday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
-                  <div className="form-group col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="saturday"
-                    >
-                      Субота
-                      <select
-                        value={rowDate.schedule?.days_of_week?.saturday}
-                        onChange={handleDaysWeek}
-                        name="saturday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
-                  <div className="form-group col-md-3 w-100">
-                    <label
-                      className="d-flex align-items-center"
-                      htmlFor="sunday"
-                    >
-                      Неділя
-                      <select
-                        value={rowDate.schedule?.days_of_week?.sunday}
-                        onChange={handleDaysWeek}
-                        name="sunday"
-                        className="form-select"
-                      >
-                        {datOptions.map((el) => {
-                          return (
-                            <option key={el.value} value={el.value}>
-                              {el.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      тиждень
-                    </label>
-                  </div>
                 </div>
               )}
-            </>
+            </div>
+          </div>
+        </div>
+        {/* ПО МІСЯЦЯХ */}
+        <div className="card mt-3 mb-3">
+          <div className="card-body">
+            <label className="miro-radiobutton d-flex align-items-center mb-3">
+              <input
+                className="big-checkbox mr-3"
+                type="radio"
+                value="month"
+                name="period"
+                onChange={(e) => setPeriod(e.target.value)}
+                checked={period === "month"}
+              />
+              <span className="mr-10">
+                <b>По місяцях</b>
+              </span>
+              {/* MONTH value */}
+
+              <label className="d-flex align-items-center" htmlFor="montch-set">
+                <Multiselect
+                  disable={period !== "month"}
+                  className="green"
+                  displayValue="name"
+                  options={scheduleSettings.month}
+                  selectedValues={
+                    monthVal &&
+                    scheduleSettings.month?.filter((el) =>
+                      monthVal.includes(Number(el.id))
+                    )
+                  }
+                  hidePlaceholder={true}
+                  emptyRecordMsg="Не знайдeно збігів"
+                  onSelect={(m) => {
+                    const data = m.map((acc, item) => {
+                      acc[item] = item;
+                      return acc;
+                    }, {});
+                    const val = data.map(({ id }) => id);
+                    setRowDate((prevState) => ({
+                      ...prevState,
+                      schedule: {
+                        ...prevState.schedule,
+                        month: {
+                          type: val.length > 1 ? "set" : "once",
+                          value: val.length > 1 ? val : val[0],
+                        },
+                      },
+                    }));
+                  }}
+                  onRemove={(m) => {
+                    const data = m.map((acc, item) => {
+                      acc[item] = item;
+                      return acc;
+                    }, {});
+                    const val = data.map(({ id }) => id);
+                    setRowDate((prevState) => ({
+                      ...prevState,
+                      schedule: {
+                        ...prevState.schedule,
+                        month: {
+                          type: val.length > 1 ? "set" : "once",
+                          value: val.length > 1 ? val : val[0],
+                        },
+                      },
+                    }));
+                  }}
+                />
+              </label>
+              {/* MONTH value */}
+            </label>
+
+            {period === "month" && (
+              <>
+                <div
+                  style={{ marginLeft: 50 }}
+                  className="d-flex align-items-center mb-3"
+                >
+                  <label className="miro-radiobutton d-flex align-items-center">
+                    <input
+                      className="big-checkbox mr-3"
+                      type="radio"
+                      value="daymonth"
+                      name="month"
+                      onChange={(e) => setmonthPeriod(e.target.value)}
+                      checked={monthPeriod === "daymonth"}
+                    />
+                    <span className="mr-14">Дні місяця</span>
+                  </label>
+                  <Multiselect
+                    disable={monthPeriod !== "daymonth"}
+                    className="green "
+                    isObject={false}
+                    options={scheduleSettings.days}
+                    selectedValues={monthDaysVal}
+                    placeholder="Оберіть дні тижня"
+                    hidePlaceholder={true}
+                    emptyRecordMsg="Не знайдeно збігів"
+                    onSelect={(day) => {
+                      setMonthDaysVal(day);
+                      setRowDate((prevState) => ({
+                        ...prevState,
+                        schedule: {
+                          ...prevState.schedule,
+                          days_of_month: {
+                            ...prevState.schedule.days_of_month,
+                            type: day.length > 1 ? "set" : "once",
+                            value: day.length > 1 ? day : day[0],
+                          },
+                        },
+                      }));
+                    }}
+                    onRemove={(day) => {
+                      setMonthDaysVal(day);
+                      setRowDate((prevState) => ({
+                        ...prevState,
+                        schedule: {
+                          ...prevState.schedule,
+                          days_of_month: {
+                            ...prevState.schedule.days_of_month,
+                            type: day.length > 1 ? "set" : "once",
+                            value: day.length > 1 ? day : day[0],
+                          },
+                        },
+                      }));
+                    }}
+                  />
+                </div>
+                <div style={{ marginLeft: 50 }}>
+                  <label className="miro-radiobutton d-flex align-items-center">
+                    <input
+                      className="big-checkbox mr-3 ml-3"
+                      type="radio"
+                      value="dayweek"
+                      name="month"
+                      onChange={(e) => setmonthPeriod(e.target.value)}
+                      checked={monthPeriod === "dayweek"}
+                    />
+                    <span className="mr-10">Дні тижнів місяця</span>
+                  </label>
+
+                  {monthPeriod === "dayweek" && (
+                    <div className="d-flex flex-column mt-3">
+                      <MultiselectDay
+                        name="monday"
+                        period={period}
+                        rowDate={weekDays.month}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month && weekDays.month["monday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["monday"]?.includes(el.value)
+                              )
+                            : select("monday")
+                        }
+                      />
+                      <MultiselectDay
+                        name="tuesday"
+                        period={period}
+                        rowDate={weekDays.month}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month && weekDays.month["tuesday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["tuesday"]?.includes(el.value)
+                              )
+                            : select("tuesday")
+                        }
+                      />
+                      <MultiselectDay
+                        name="wednesday"
+                        period={period}
+                        rowDate={weekDays.month}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month &&
+                          weekDays.month["wednesday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["wednesday"]?.includes(el.value)
+                              )
+                            : select("wednesday")
+                        }
+                      />
+                      <MultiselectDay
+                        name="thursday"
+                        rowDate={weekDays.month}
+                        period={period}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month && weekDays.month["thursday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["thursday"]?.includes(el.value)
+                              )
+                            : select("thursday")
+                        }
+                      />
+                      <MultiselectDay
+                        name="friday"
+                        rowDate={weekDays.month}
+                        period={period}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month && weekDays.month["friday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["friday"]?.includes(el.value)
+                              )
+                            : select("friday")
+                        }
+                      />
+                      <MultiselectDay
+                        name="saturday"
+                        period={period}
+                        rowDate={weekDays.month}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month && weekDays.month["saturday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["saturday"]?.includes(el.value)
+                              )
+                            : select("saturday")
+                        }
+                      />
+                      <MultiselectDay
+                        name="sunday"
+                        period={period}
+                        rowDate={weekDays.month}
+                        setWeekDays={setWeekDays}
+                        options={scheduleSettings.datOptions}
+                        selectedValues={
+                          weekDays.month && weekDays.month["sunday"] !== "all"
+                            ? scheduleSettings.datOptions.filter((el) =>
+                                weekDays.month["sunday"]?.includes(el.value)
+                              )
+                            : select("sunday")
+                        }
+                      />
+                      {formErrors.days_of_week && (
+                        <p className="text-danger">{formErrors.days_of_week}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <p>Час виконання:</p>
+      <div className="card">
+        <div className="card-body">
+          <div className="mb-3 mt-3">
+            <label className="miro-radiobutton d-flex align-items-center">
+              <input
+                className="big-checkbox"
+                type="radio"
+                value="periodic"
+                name="minperiod"
+                onChange={(e) => setMinPeriod(e.target.value)}
+                checked={minPeriod === "periodic"}
+              />
+              <span className="mr-10">За періодом</span>
+              <label className="d-flex align-items-center" htmlFor="hours">
+                <input
+                  disabled={minPeriod !== "periodic"}
+                  value={hour}
+                  className="form-control mr-10"
+                  name="hours"
+                  type="number"
+                  max={12}
+                  min={0}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    setTime((prevState) => ({
+                      ...prevState,
+                      periodic: {
+                        type: "periodic",
+                        value:
+                          value <= 11 ? `${value}h${min}m` : `${11}h${min}m`,
+                      },
+                    }));
+                  }}
+                />
+              </label>
+              <span className="mr-10">Годин</span>
+              <label className="d-flex align-items-center" htmlFor="min">
+                <input
+                  value={min}
+                  disabled={minPeriod !== "periodic"}
+                  className="form-control mr-10"
+                  name="min"
+                  type="number"
+                  max={59}
+                  min={0}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    setTime((prevState) => ({
+                      ...prevState,
+                      periodic: {
+                        type: "periodic",
+                        value:
+                          value <= 60 ? `${hour}h${value}m` : `${hour}h${59}m`,
+                      },
+                    }));
+                  }}
+                />
+              </label>
+              <span>Хвилин</span>
+            </label>
+          </div>
+          <label className="miro-radiobutton d-flex align-items-center">
+            <input
+              className="big-checkbox"
+              type="radio"
+              value="once"
+              name="minperiod"
+              onChange={(e) => setMinPeriod(e.target.value)}
+              checked={minPeriod === "once"}
+            />
+            <span className="mr-10">В заданний час (через ",")</span>
+            <label className="d-flex align-items-center" htmlFor="minOnce">
+              <input
+                disabled={minPeriod !== "once"}
+                value={time.once.value}
+                className={`form-control ${
+                  formErrors.minutes_once || formErrors.minutes_set
+                    ? "is-invalid"
+                    : ""
+                }`}
+                name="minOnce"
+                type="text"
+                onChange={(e) => {
+                  const { value } = e.target;
+                  if (value.length <= 5) {
+                    setTime((prevState) => ({
+                      ...prevState,
+                      once: {
+                        type: "once",
+                        value: value,
+                      },
+                    }));
+                  } else {
+                    const arr = value.split(",");
+                    setTime((prevState) => ({
+                      ...prevState,
+                      once: {
+                        type: "set",
+                        value: arr,
+                      },
+                    }));
+                  }
+                }}
+              />
+            </label>
+          </label>
+          {formErrors.minutes_once && (
+            <p className="text-danger">{formErrors.minutes_once}</p>
           )}
-        </>
-      </div>
-      <div>
-        <label className="miro-radiobutton d-flex align-items-center">
-          <span>За періодом</span>
-          <div className="form-group col-md-1">
-            <label className="d-flex align-items-center" htmlFor="hours">
-              <input
-                value={hour}
-                className="form-control"
-                name="hours"
-                type="number"
-                max={12}
-                min={0}
-                onChange={(e) => {
-                  setHour(e.target.value);
-                }}
-              />
-              Годин
-            </label>
-          </div>
-          <div className="form-group col-md-2">
-            <label className="d-flex align-items-center" htmlFor="min">
-              <input
-                value={min}
-                className="form-control"
-                name="min"
-                type="number"
-                max={60}
-                min={0}
-                onChange={(e) => {
-                  setMin(e.target.value);
-                }}
-              />
-              Хвилин
-            </label>
-          </div>
-        </label>
-      </div>
-      <div className="row">
-        <button
-          onClick={() => {
-            setRowDate((prevState) => ({
-              ...prevState,
-              schedule: {
-                ...prevState.schedule,
-                minutes: {
-                  type: "periodic",
-                  value: `${hour}h${min}m`,
-                },
-              },
-            }));
-          }}
-        >
-          Збегірти
-        </button>
+          {formErrors.minutes_set && (
+            <p className="text-danger">{formErrors.minutes_set}</p>
+          )}
+        </div>
       </div>
     </>
   );

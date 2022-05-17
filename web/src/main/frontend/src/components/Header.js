@@ -7,13 +7,13 @@ class Header extends Component {
       <>
         <nav className="navbar navbar-static-top white-bg" role="navigation">
           <div className="navbar-header">
-            <button className="navbar-minimalize minimalize-styl-2 btn btn-succcess btn-sm">
+            <button className="navbar-minimalize minimalize-styl-2 btn custom-btn  btn-sm">
               <i className="fa fa-bars"></i>{" "}
             </button>
           </div>
           <ul className="nav navbar-top-links navbar-right">
             <li>
-              <a href="/">
+              <a href="/search">
                 <i className="fa fa-sign-out"></i> Вихід
               </a>
             </li>

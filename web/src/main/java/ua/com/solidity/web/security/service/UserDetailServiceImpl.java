@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.db.repositories.RoleRepository;
 import ua.com.solidity.web.entry.Person;
-import ua.com.solidity.web.repository.PersonRepository;
+import ua.com.solidity.web.repositories.PersonRepository;
 import ua.com.solidity.web.security.exception.ExtensionBadCredentialsException;
 import ua.com.solidity.web.security.exception.NoSuchRoleException;
 import ua.com.solidity.web.security.model.UserDetailsImpl;
@@ -45,7 +45,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
 		} else {
 			person = personRepository.findByUsername(name)
 					.orElseThrow(() -> new ExtensionBadCredentialsException(name));
-			role = roleService.getRoleFromMemberOf(person.getMemberOf());
+			role = roleService.getRoleFromMemberOf(person.getMemberOf()).getName();
 		}
 		userDetails = new UserDetailsImpl(person, role);
 		return userDetails;

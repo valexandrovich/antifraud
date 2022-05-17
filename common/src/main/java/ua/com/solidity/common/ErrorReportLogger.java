@@ -1,12 +1,14 @@
 package ua.com.solidity.common;
 
+import ua.com.solidity.common.data.DataLocation;
+
 public abstract class ErrorReportLogger {
-    protected ErrorReport.Location location;
+    protected DataLocation location;
     protected String info;
     private long errorCount = 0;
 
-    protected abstract void handleNewLine(ErrorReport.Location location, String info);
-    protected abstract void handleLineReport(ErrorReport.Location location, String clarification);
+    protected abstract void handleNewLine(DataLocation location, String info);
+    protected abstract void handleLineReport(DataLocation location, String clarification);
     protected abstract void doFinish(long errorCount);
 
     public final void logError(ErrorReport report) {

@@ -8,5 +8,6 @@ public enum SearchOperation {
     NOT_EQUAL,
     EQUALS,
     MATCH,
-    LIKE
+    LIKE,
+    BETWEEN
 }

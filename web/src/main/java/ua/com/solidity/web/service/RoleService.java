@@ -2,6 +2,7 @@ package ua.com.solidity.web.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ua.com.solidity.db.entities.Role;
 import ua.com.solidity.db.entities.RoleMap;
 import ua.com.solidity.db.repositories.RoleMapRepository;
 
@@ -16,17 +17,17 @@ public class RoleService {
 
 	private final RoleMapRepository roleMapRepository;
 
-	public String getRoleFromMemberOf(ArrayList<String> memberOf) {
+	public Role getRoleFromMemberOf(ArrayList<String> memberOf) {
 		List<String> personGroups = memberOf
 				.stream()
 				.map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))
 				.collect(Collectors.toList());
 		List<RoleMap> roleMaps = roleMapRepository.findAllById(personGroups);
-		String role = null;
+		Role role = null;
 
 		if (!roleMaps.isEmpty()) {
 			roleMaps.sort(Comparator.comparingInt(i -> i.getRole().getId()));
-			role = roleMaps.get(0).getRole().getName();
+			role = roleMaps.get(0).getRole();
 		}
 		return role;
 	}

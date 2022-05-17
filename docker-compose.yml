@@ -324,7 +324,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - elastic-data01:/usr/share/elasticsearch/data
+      - elastic-data:/usr/share/elasticsearch/data
     networks:
       - otp-etl-network
 

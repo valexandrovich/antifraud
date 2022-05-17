@@ -11,12 +11,12 @@ const Search = () => {
           <div className="row form_bg">
             <div className="col-lg-12 mt-2">
               <ul className="nav nav-tabs">
-                <li className="nav-item color-success col-sm-6">
+                <li className="nav-item col-sm-6">
                   <button
                     onClick={() => setActiveTab("fiz")}
                     className={
                       activeTab === "fiz"
-                        ? "nav-link active bg-success fullWidth text-white"
+                        ? "btn active custom-btn fullWidth text-white"
                         : "nav-link fullWidth .bg-light.bg-gradient bg-opacity-30 p-2 text-success"
                     }
                   >
@@ -28,7 +28,7 @@ const Search = () => {
                     onClick={() => setActiveTab("ur")}
                     className={
                       activeTab === "ur"
-                        ? "nav-link active bg-success  fullWidth text-white"
+                        ? "btn active custom-btn  fullWidth text-white"
                         : "nav-link fullWidth .bg-light.bg-gradient text-success"
                     }
                   >

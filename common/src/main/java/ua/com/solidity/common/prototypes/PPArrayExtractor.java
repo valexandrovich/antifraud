@@ -104,20 +104,19 @@ public class PPArrayExtractor extends Prototype {
         }
     }
 
-    private boolean doHandleObject(Data data, DataObject obj) {
+    private DataObject doHandleObject(Data data, DataObject obj) {
         if (obj != null) {
             DataArray dataArray = DataField.getArray(obj.getField(data.path));
             if (dataArray != null) {
                 dataArray.enumerate((a, i, f) -> doHandleArrayItem(data, f));
-                return true;
             }
         }
-        return false;
+        return obj;
     }
 
     private void handleBatch(Data data) {
         if (data.inputBatch != null) {
-            data.inputBatch.handleObjects(obj->doHandleObject(data, obj));
+            data.inputBatch.modify(obj->doHandleObject(data, obj));
         }
     }
 

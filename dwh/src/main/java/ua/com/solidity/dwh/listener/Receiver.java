@@ -27,7 +27,7 @@ public class Receiver extends RabbitMQReceiver {
             return true;
         }
 
-        log.info("Received from {}: {}", queue, message);
+        log.debug("Received from {}: {}", queue, message);
         dwhService.update(updateDWHRequest.getLastModified());
 
         return true;

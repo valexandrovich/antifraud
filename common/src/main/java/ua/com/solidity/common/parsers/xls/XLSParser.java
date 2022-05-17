@@ -154,7 +154,7 @@ public class XLSParser extends CustomParser {
             for (int i = 0; i < columns.length; ++i) {
                 data[i] = cellToObject(row.getCell(columns[i]));
             }
-            rowObject = XLSDataObject.create(header, data);
+            rowObject = XLSDataObject.create(header, data, rowIndex);
         }
         return rowObject;
     }

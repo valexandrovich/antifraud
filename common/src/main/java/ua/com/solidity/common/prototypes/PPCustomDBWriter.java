@@ -65,15 +65,7 @@ public abstract class PPCustomDBWriter extends Prototype {
     private void doExecuteOnNotEOF(Item item, OutputCache cache, DataBatch batch) {
         if (batch == null) return;
         cache.put(batch);
-        int objectsCommitted = 0;
-        if (batch.getObjectCount() > 0) {
-            objectsCommitted = flushObjects(item, cache);
-        }
-        if (batch.getErrorCount() > 0) {
-            flushErrors(item, cache);
-        }
-
-        cache.batchHandled(objectsCommitted);
+        cache.batchHandled(flushObjects(item, cache));
     }
 
     private Object doExecute(Item item, Input input, OutputCache cache) {
@@ -117,8 +109,6 @@ public abstract class PPCustomDBWriter extends Prototype {
     protected abstract void afterOutput(Item item, OutputCache cache);
 
     protected abstract int flushObjects(Item item, OutputCache cache);
-
-    protected abstract int flushErrors(Item item, OutputCache cache);
 
     @Override
     protected void close(Item item) {

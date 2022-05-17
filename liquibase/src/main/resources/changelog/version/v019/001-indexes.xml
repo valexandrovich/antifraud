@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v0019-0" author="Olha Tankevych">
+        <tagDatabase tag="v0019-0"/>
+    </changeSet>
+
+    <changeSet id="v0019-1" author="Olha Tankevych">
+        <createIndex tableName="yaddress" indexName="address_owner">
+            <column name="person_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v0019-2" author="Olha Tankevych">
+        <createIndex tableName="yperson" indexName="person">
+            <column name="last_name"/>
+            <column name="first_name"/>
+            <column name="pat_name"/>
+            <column name="birthdate"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v0019-3" author="Olha Tankevych">
+        <createIndex tableName="ypassport" indexName="passport">
+            <column name="number"/>
+            <column name="series"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v0019-4" author="Olha Tankevych">
+        <createIndex tableName="ypassport" indexName="passport_owner">
+            <column name="person_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v0019-5" author="Olha Tankevych">
+        <createIndex tableName="yaltperson" indexName="yaltperson_owner">
+            <column name="person_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v0019-6" author="Olha Tankevych">
+        <createIndex tableName="yinn" indexName="inn">
+            <column name="inn"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v0019-7" author="Olha Tankevych">
+        <createIndex tableName="yinn" indexName="inn_owner">
+            <column name="person_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

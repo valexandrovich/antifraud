@@ -61,6 +61,7 @@ public abstract class PPCustomParser extends Prototype {
 
     private void batchFlush(DataBatch batch) {
         batch.getItem().yieldResult(batch, batch.getErrorCount() > 0); // or false
+        batch.clear();
     }
 
     @Override

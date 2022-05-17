@@ -90,7 +90,7 @@ function Dropzone() {
           onClick={() =>
             downloadwithDescription(prevFile.persons[0].uuid, description)
           }
-          className="btn btn-primary ml-3"
+          className="btn ml-3 custom-btn"
         >
           Завантажити
         </button>

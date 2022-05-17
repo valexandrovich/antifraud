@@ -117,7 +117,7 @@ public class InsertBatch {
     }
 
     private static InsertBatch doAllocate(int cacheSize, int rowCacheSize, String header, Handler handler, boolean insertMode) {
-        if (cacheSize <= 0 || rowCacheSize <= 0 || handler == null || header == null || header.isBlank()) return null;
+        if (cacheSize < 1 || rowCacheSize < 1 || handler == null || header.isBlank()) return null;
         if (cacheSize < rowCacheSize + header.length()) {
             cacheSize = Math.max(rowCacheSize + header.length(), rowCacheSize * 2);
         }
@@ -158,6 +158,7 @@ public class InsertBatch {
         return reader;
     }
 
+    @SuppressWarnings("unused")
     public final int bufferSize() {
         return buffer.limit();
     }

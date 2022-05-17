@@ -360,7 +360,7 @@ public class CSVParser extends CustomParser {
     @Override
     protected DataObject internalDataObject() {
         headerNeeded();
-        return CSVDataObject.create(header, dataFields);
+        return CSVDataObject.create(header, dataFields, data.lineNumber, data.offset);
     }
 
     protected boolean doNext() {

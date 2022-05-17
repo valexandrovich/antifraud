@@ -1,11 +1,19 @@
+:root {
+  --green: #60aa18;
+  --light-green: #d5e8d4;
+  --text: #505050;
+  --card: #fff2cd;
+  --white: #f5f5f5;
+  --main: #008800;
+}
 * {
   padding: 0;
   margin: 0;
 }
 
 body {
-  color: #999;
-  background: #f5f5f5;
+  color: var(--text);
+  background: var(--white);
   font-family: "Varela Round", sans-serif;
 }
 .form-control {
@@ -48,7 +56,7 @@ body {
   content: " ";
   display: block;
   position: absolute;
-  background: white;
+  background: var(--white);
   height: 2px;
   top: 50%;
   left: -0.2em;
@@ -139,6 +147,7 @@ body {
 .wrapped {
   margin-left: 300px;
   margin-right: 50px;
+  margin-top: 60px;
 }
 
 .sroll-x {
@@ -148,23 +157,31 @@ body {
 
 /* ASIDE */
 .navbar {
-  background-color: #085235;
+  background-color: var(--green);
   display: flex;
   align-items: center;
-  z-index: 1;
+  z-index: 4;
+  position: fixed;
+  top: 0;
+  width: 100vw;
 }
 .nav-title {
-  margin: 0 auto;
-  color: #fff;
+  font-weight: bold;
+  color: var(--white);
+  margin-left: 70px;
+}
+.user {
+  font-weight: bold;
 }
 .logout-btn {
   font-size: 26px;
   cursor: pointer;
   margin-right: 50px;
+  color: var(--white);
 }
 
 .nav-menu {
-  background-color: #085235;
+  background-color: var(--light-green);
   width: 250px;
   height: 100vh;
   display: flex;
@@ -173,9 +190,16 @@ body {
   top: 0;
 }
 
-.nav-menu.active {
+.nav-menu.top {
   padding-top: 55px;
   left: 0;
+}
+
+.nav-text a.active .icons {
+  background-color: var(--main);
+  padding: 5px;
+  border-radius: 4px;
+  color: var(--white);
 }
 
 .nav-text {
@@ -189,7 +213,7 @@ body {
 
 .nav-text a {
   text-decoration: none;
-  color: #f5f5f5;
+  color: var(--white);
   font-size: 18px;
   width: 95%;
   height: 100%;
@@ -197,10 +221,6 @@ body {
   align-items: center;
   padding: 0 16px;
   border-radius: 4px;
-}
-
-.nav-text a:hover {
-  background-color: #4edd8f;
 }
 
 .nav-menu-items {
@@ -218,6 +238,8 @@ body {
 
 .icons {
   margin-left: 16px;
+  font-weight: 700;
+  color: var(--green);
 }
 
 /* ASIDE */
@@ -393,7 +415,7 @@ a {
   background-color: #04cba0;
 }
 .button :hover {
-  background-color: #01ac88;
+  background-color: var(--light-green);
 }
 
 .by {
@@ -405,15 +427,78 @@ a {
 }
 
 .byLink {
-  color: #04cba0;
+  color: var(--white);
 }
 /*404*/
 
 .big-checkbox {
   width: 24px;
   height: 24px;
+  cursor: pointer;
+  accent-color: #3fa079;
+  margin-right: 10px;
 }
 
 .days .rmdp-header {
   display: none;
+}
+
+.form-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.form-row > label {
+  padding: 0.5em 1em 0.5em 0;
+  flex: 1;
+}
+.form-row > .select {
+  display: flex;
+  align-items: center;
+  flex: 80%;
+}
+.chip {
+  background-color: #3fa079 !important;
+}
+.option {
+  background-color: #e0e7e4 !important;
+}
+
+.option::marker {
+  color: black;
+}
+.highlightOption {
+  color: #3fa079;
+}
+datalist {
+  background-color: #3fa079;
+}
+.table-header {
+  font-weight: bold;
+}
+.mr-10 {
+  margin-right: 10px;
+}
+.mr-14 {
+  margin-right: 14px;
+}
+.ml-10 {
+  margin-left: 10px;
+}
+.custom-btn {
+  color: var(--white);
+  background-color: var(--main);
+}
+.breadcrumb-item > a {
+  color: var(--green);
+}
+.page-link {
+  color: var(--green);
+}
+.search {
+  background-color: var(--card);
+  width: 25rem;
+}
+.pointer {
+  cursor: pointer;
 }

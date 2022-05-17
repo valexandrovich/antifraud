@@ -2,10 +2,12 @@ package ua.com.solidity.importer.pipeline;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import ua.com.solidity.common.ErrorReport;
 import ua.com.solidity.common.ImporterMessageData;
 import ua.com.solidity.common.OutputCache;
 import ua.com.solidity.common.data.DataBatch;
 import ua.com.solidity.common.data.DataObject;
+import ua.com.solidity.common.data.ErrorResult;
 import ua.com.solidity.common.pgsql.SQLTable;
 import ua.com.solidity.common.prototypes.PPCustomDBWriter;
 import ua.com.solidity.db.entities.ImportRevisionGroup;
@@ -36,34 +38,37 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
             }
         }
 
+        private ErrorResult doFlush(DataObject obj) {
+            ErrorResult res = new ErrorResult();
+            try {
+                statement.setObject(1, UUID.randomUUID());
+                statement.setObject(2, group.getId());
+                statement.setLong(3, group.getSourceGroup());
+                statement.setObject(4, obj.getNode().toString());
+                statement.addBatch();
+            } catch (Exception e) {
+                log.error("Can't add batch", e);
+                res.error();
+            }
+
+            if (res.isErrorState()) {
+                try {
+                    statement.clearParameters();
+                } catch (Exception e) {
+                    // nothing
+                }
+            }
+            return res;
+        }
+
+        private boolean doError(ErrorReport report) {
+            return true;
+        }
+
         public int flush(OutputCache cache) {
             if (statement == null) return 0;
             DataBatch batch = cache.getBatch();
-            int batchSize = batch.getObjectCount();
-            for (int i = 0; i < batchSize; ++i) {
-                DataObject obj = batch.get(i);
-                if (obj != null) {
-                    boolean added = true;
-                    try {
-                        statement.setObject(1, UUID.randomUUID());
-                        statement.setObject(2, group.getId());
-                        statement.setLong(3, group.getSourceGroup());
-                        statement.setObject(4, obj.getNode().toString());
-                        statement.addBatch();
-                    } catch (Exception e) {
-                        log.error("Can't add batch", e);
-                        added = false;
-                    }
-
-                    if (!added) {
-                        try {
-                            statement.clearParameters();
-                        } catch (Exception e) {
-                            // nothing
-                        }
-                    }
-                }
-            }
+            batch.handle(this::doFlush, this::doError);
             return SQLTable.executeStatement(statement);
         }
 
@@ -128,11 +133,6 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     protected int flushObjects(Item item, OutputCache cache) {
         Data data = item.getInternalData(Data.class);
         return data.flush(cache);
-    }
-
-    @Override
-    protected int flushErrors(Item item, OutputCache cache) {
-        return 0;
     }
 
     @Override

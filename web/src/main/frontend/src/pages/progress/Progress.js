@@ -20,9 +20,11 @@ const Progress = () => {
   };
 
   useEffect(() => {
+    setCheck();
     const interval = setInterval(setCheck, 5000);
     return () => clearInterval(interval);
   }, []);
+
   return (
     <div className="wrapped">
       <PageTitle title={"progress"} />
@@ -30,36 +32,49 @@ const Progress = () => {
         <table className="table table-bordered">
           <thead>
             <tr>
-              <td>ID</td>
-              <td>Progress</td>
-              <td>Unit</td>
-              <td>Name</td>
-              <td>User</td>
-              <td>Started</td>
-              <td>Finished</td>
-              <td>Status</td>
+              <td className="table-header">ID</td>
+              <td className="table-header">Progress</td>
+              <td className="table-header">Unit</td>
+              <td className="table-header">Name</td>
+              <td className="table-header">User</td>
+              <td className="table-header">Started</td>
+              <td className="table-header">Finished</td>
+              <td className="table-header">Status</td>
             </tr>
           </thead>
           <tbody>
-            {progress.map((data, index) => {
-              return (
-                <tr key={index}>
-                  <TableItem item={data.id} />
-                  {data.unit === "%" ? (
-                    <ProgressBar bgcolor={"green"} completed={data.progress} />
-                  ) : (
-                    <TableItem item={data.progress} />
-                  )}
+            {[...progress]
+              .sort((a, b) => {
+                if (a.finished === null) {
+                  return -1;
+                }
+                if (b.finished === null) {
+                  return 1;
+                }
+                return a.started > b.started ? -1 : 1;
+              })
+              .map((data, index) => {
+                return (
+                  <tr key={index}>
+                    <TableItem item={data.id} />
+                    {data.unit === "%" ? (
+                      <ProgressBar
+                        bgcolor={"#60aa18"}
+                        completed={data.progress}
+                      />
+                    ) : (
+                      <TableItem item={data.progress} />
+                    )}
 
-                  <TableItem item={data.unit} />
-                  <TableItem item={data.name} />
-                  <TableItem item={data.user} />
-                  <TableItem item={data.started} />
-                  <TableItem item={data.finished} />
-                  <TableItem item={data.status} />
-                </tr>
-              );
-            })}
+                    <TableItem item={data.unit} />
+                    <TableItem item={data.name} />
+                    <TableItem item={data.user} />
+                    <TableItem item={data.started} />
+                    <TableItem item={data.finished} />
+                    <TableItem item={data.status} />
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>

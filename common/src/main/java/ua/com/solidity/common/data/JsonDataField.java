@@ -67,7 +67,7 @@ public class JsonDataField extends DataField {
     @Override
     protected DataObject internalGetDataObject() {
         if (obj == null && internalGetType() == DataFieldType.OBJECT) {
-            obj = JsonDataObject.create(parent, node);
+            obj = JsonDataObject.create(parent, node, parent.getLocation());
         }
         return obj;
     }

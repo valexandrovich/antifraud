@@ -12,6 +12,8 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ShutdownSignalException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +73,25 @@ public class Utils {
         @Override
         public void run() {
             proc.execute();
+        }
+    }
+
+    public interface PeriodicTask {
+        void execute(TimerTask task);
+    }
+
+    @Getter
+    private static class PeriodicExecutionTask extends TimerTask {
+        private final PeriodicTask task;
+        private final long taskPeriod;
+
+        public PeriodicExecutionTask(PeriodicTask task, long taskPeriod) {
+            this.task = task;
+            this.taskPeriod = taskPeriod;
+        }
+        @Override
+        public void run() {
+            task.execute(this);
         }
     }
 
@@ -396,17 +417,28 @@ public class Utils {
     }
 
     public static boolean streamCopy(InputStream source, OutputStream target) {
+        return streamCopy(source, target, null);
+    }
+
+    public static boolean streamCopy(InputStream source, OutputStream target, StatusChanger status) {
         byte[] buf = new byte[8192];
         int length;
         try {
             while ((length = source.read(buf)) > 0) {
                 target.write(buf, 0, length);
+                if (status != null) {
+                    status.addProcessedVolume(length);
+                }
             }
         } catch (Exception e) {
             log.error("Exception - {} : {}", e.getCause().getClass().getName(), e.getCause().getMessage());
             return false;
         }
         return true;
+    }
+
+    public static synchronized String getContextProperty(String name, String defaultValue) {
+        return checkApplicationContext() ? context.getEnvironment().getProperty(name, defaultValue) : defaultValue;
     }
 
     static synchronized void getRabbitMQConnectionFactory() {
@@ -419,11 +451,19 @@ public class Utils {
         }
     }
 
+    private static void connectionShutdownListener(ShutdownSignalException e) {
+        if (e != null) {
+            log.debug("(Utils) RabbitMQ connection error.", e);
+        }
+        connection = null;
+    }
+
     static synchronized void getRabbitMQConnection() {
         getRabbitMQConnectionFactory();
-        if (connection == null && factory != null) {
+        if ((connection == null || !connection.isOpen()) && factory != null) {
             try {
                 connection = factory.newConnection();
+                connection.addShutdownListener(Utils::connectionShutdownListener);
             } catch (Exception e) {
                 log.error("RabbitMQ Connection creation error.", e);
             }
@@ -436,6 +476,7 @@ public class Utils {
         if (connection != null) {
             try {
                 channel = connection.createChannel();
+                channel.addShutdownListener(Utils::channelShutdownListener);
             } catch (Exception e) {
                 log.error("RabbitMQ Channel creation error.", e);
             }
@@ -443,8 +484,15 @@ public class Utils {
         return channel;
     }
 
+     private static void channelShutdownListener(ShutdownSignalException e) {
+        if (e != null) {
+            log.debug("(Utils) RabbitMQ channel error.", e);
+        }
+        channel = null;
+    }
+
     private static synchronized boolean channelNeeded() {
-        if (channel == null) channel = createRabbitMQChannel();
+        if (channel == null || ! channel.isOpen()) channel = createRabbitMQChannel();
         return channel != null;
     }
 
@@ -465,8 +513,8 @@ public class Utils {
     }
 
     static synchronized boolean prepareRabbitMQQueue(String queue) {
-        if (topics.contains(queue)) return true;
         if (channelNeeded()) {
+            if (topics.contains(queue)) return true;
             try {
                 channel.exchangeDeclare(queue, BuiltinExchangeType.TOPIC, true);
                 channel.queueDeclare(queue, true, false, false, null);
@@ -482,9 +530,11 @@ public class Utils {
     }
 
     public static synchronized void sendRabbitMQMessage(String queue, String message) {
+        if (queue == null || queue.isBlank() || message == null) return;
         if (prepareRabbitMQQueue(queue)) {
             try {
                 channel.basicPublish(queue, queue, null, message.getBytes(StandardCharsets.UTF_8));
+
             } catch (Exception e) {
                 rabbitMQLogError("Can't send a message", queue, queue, message, e);
             }
@@ -496,6 +546,19 @@ public class Utils {
 
     public static synchronized void deferredExecute(long milliseconds, DeferredProcedure proc) {
         timer.schedule(new DeferredExecutionTimerTask(proc), milliseconds);
+    }
+
+    public static synchronized TimerTask periodicExecute(long milliseconds, PeriodicTask task) {
+        TimerTask res = new PeriodicExecutionTask(task, milliseconds);
+        timer.schedule(res, 0, milliseconds);
+        return res;
+    }
+
+    public static synchronized long getPeriodicExecutionTaskPeriod(TimerTask task) {
+        if (task instanceof PeriodicExecutionTask) {
+            return ((PeriodicExecutionTask) task).taskPeriod;
+        }
+        return 0;
     }
 
     public static String getOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder) {

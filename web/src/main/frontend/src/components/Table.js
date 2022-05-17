@@ -1,17 +1,6 @@
 import React, { useRef } from "react";
 
 const Table = (props) => {
-  const onWheel = (e) => {
-    e.preventDefault();
-    const container = scrollRef.current;
-    const containerScrollPosition = scrollRef.current.scrollLeft;
-
-    container.scrollTo({
-      top: containerScrollPosition,
-      left: containerScrollPosition + e.deltaY,
-    });
-  };
-
   const scrollRef = useRef(null);
 
   const getKeys = () => {
@@ -37,7 +26,7 @@ const Table = (props) => {
     });
   };
   return (
-    <div ref={scrollRef} onWheel={onWheel} className="sroll-x">
+    <div ref={scrollRef} className="sroll-x">
       <table className="table table-striped table-bordered table-sm">
         <thead>
           <tr>{getHeader()}</tr>
@@ -64,9 +53,7 @@ const RenderRow = (props) => {
 const ErrCell = (props) => {
   const [edit, setEdit] = React.useState(false);
   const [errValue, setErrValue] = React.useState(props.data);
-  const toggleEdit = () => {
-    setEdit(!edit);
-  };
+
   return (
     <>
       {edit ? (
@@ -86,21 +73,15 @@ const ErrCell = (props) => {
               onChange={(e) => setErrValue(e.target.value)}
             />
           </div>
-          <button type="button" className="btn-success btn-default me-3">
+          <button type="button" className="btn custom-btn  btn-default me-3">
             Змінити
           </button>
-          <button
-            onClick={toggleEdit}
-            type="button"
-            className="btn-danger btn-default"
-          >
+          <button type="button" className="btn-danger btn-default">
             Закрити
           </button>
         </td>
       ) : (
-        <td className="text-danger" onDoubleClick={toggleEdit}>
-          {props.data}
-        </td>
+        <td className="text-danger">{props.data}</td>
       )}
     </>
   );

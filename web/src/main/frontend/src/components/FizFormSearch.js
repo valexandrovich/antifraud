@@ -60,6 +60,7 @@ const fizSchema = Yup.object().shape({
 const FizFormSearch = () => {
   const [documentType, setDocumentType] = useState("passport");
   const [searchResults, setSearchResults] = useState([]);
+
   const dispatch = useDispatch();
   const [searchFormFiz, setSearchFormFiz] = useState({
     name: "",
@@ -99,6 +100,7 @@ const FizFormSearch = () => {
         if (file.length > 0) {
           setSearchResults(file);
         } else {
+          setSearchResults([]);
           dispatch(
             setAlertMessageThunk(
               "За данними пошуку збігів не знайдено",
@@ -107,7 +109,6 @@ const FizFormSearch = () => {
           );
         }
       })
-
       .catch(function (res) {
         console.log(res);
       });
@@ -143,7 +144,6 @@ const FizFormSearch = () => {
         {({
           touched,
           errors,
-
           handleBlur,
           handleChange,
           resetForm,
@@ -641,16 +641,19 @@ const FizFormSearch = () => {
                   <button
                     disabled={!isValid}
                     type="submitt"
-                    className="btn btn-success w-100"
+                    className="btn custom-btn w-100"
                   >
                     Пошук
                   </button>
                 </div>
                 <div className="form-group col-md-3">
                   <button
-                    onClick={() => resetForm()}
+                    onClick={() => {
+                      resetForm();
+                      setSearchResults([]);
+                    }}
                     type="button"
-                    className="btn btn-primary w-100"
+                    className="btn btn-danger w-100"
                   >
                     Очистити
                   </button>
@@ -660,9 +663,9 @@ const FizFormSearch = () => {
           </Form>
         )}
       </Formik>
-      <div className="d-flex flex-wrap justify-content-center">
+      <div className="d-flex flex-wrap justify-content-between">
         {searchResults?.map((el) => {
-          return <Card data={el} />;
+          return <Card key={el.id} data={el} />;
         })}
       </div>
     </>

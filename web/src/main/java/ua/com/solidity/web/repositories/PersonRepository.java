@@ -1,4 +1,4 @@
-package ua.com.solidity.web.repository;
+package ua.com.solidity.web.repositories;
 
 import org.springframework.data.ldap.repository.LdapRepository;
 import org.springframework.stereotype.Repository;

@@ -1,12 +1,11 @@
 package ua.com.solidity.dwh;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import org.junit.Test;
 import ua.com.solidity.dwh.entities.Contragent;
 
 import java.time.LocalDate;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class ContragentEntityTests {
     @Test

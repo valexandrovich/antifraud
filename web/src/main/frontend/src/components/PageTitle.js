@@ -5,17 +5,14 @@ const PageTitle = (props) => {
   const getTree = (page, isTitle = false) => {
     const tree = {
       main: {
-        name: "Головна",
-        link: "/",
+        name: "Пошук",
+        link: "/search",
       },
       upload: {
         name: "Завантажити",
         link: "/upload",
       },
-      db_check: {
-        name: "Перевірка БД",
-        link: "/db_check",
-      },
+
       uploaded_files: {
         name: "Файлы",
         link: "/uploaded_files",
@@ -27,6 +24,10 @@ const PageTitle = (props) => {
       sheduler: {
         name: "Розклад",
         link: "/sheduler",
+      },
+      details: {
+        name: "Детальна інформація",
+        link: "/details",
       },
     };
 
@@ -60,7 +61,7 @@ const PageTitle = (props) => {
           <div className="col-sm-6">
             <ol className="breadcrumb float-sm-right">
               <li className="breadcrumb-item">
-                <Link to={"/"}>Пошук</Link>
+                <Link to={"/search"}>Пошук</Link>
               </li>
               {getTree(props.title)}
             </ol>

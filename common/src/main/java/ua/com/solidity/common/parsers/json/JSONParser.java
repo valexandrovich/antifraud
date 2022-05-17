@@ -25,6 +25,7 @@ public class JSONParser extends CustomParser {
     private FilteredTextInputStream mainStream;
     private JsonParser parser;
     private JsonNode lastNode = null;
+    private JsonLocation lastLocation = null;
     private final JSONParams params;
     private final Deque<Integer> stack = new LinkedList<>();
 
@@ -51,6 +52,7 @@ public class JSONParser extends CustomParser {
         if (parser.hasCurrentToken() && parser.currentToken() != JsonToken.END_ARRAY) {
             try {
                 lastNode = Utils.getSortedMapper().readTree(parser);
+                lastLocation = location;
                 return true;
             } catch (JsonProcessingException e) {
                 location = e.getLocation();
@@ -127,7 +129,7 @@ public class JSONParser extends CustomParser {
 
     @Override
     protected DataObject internalDataObject() {
-       return JsonDataObject.create(null, lastNode);
+       return JsonDataObject.create(null, lastNode, lastLocation.getLineNr(), lastLocation.getColumnNr(), lastLocation.getByteOffset(), lastLocation.getCharOffset());
     }
 
     @Override

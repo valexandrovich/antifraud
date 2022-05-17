@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Service;
+import ua.com.solidity.db.entities.User;
 import ua.com.solidity.web.entry.Person;
 import ua.com.solidity.web.exception.PersonNotFoundException;
-import ua.com.solidity.web.repository.PersonRepository;
+import ua.com.solidity.web.repositories.PersonRepository;
+import ua.com.solidity.db.repositories.UserRepository;
 import ua.com.solidity.web.security.RequestHeaders;
 import ua.com.solidity.web.security.token.JwtToken;
 
@@ -19,6 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class Extractor {
 
+	private final UserRepository userRepository;
 	private final PersonRepository personRepository;
 	private final JwtUtilService jwtUtilService;
 
@@ -52,6 +55,12 @@ public class Extractor {
 		String jwt = extractJwt(authorizationHeader);
 
 		return jwtUtilService.extractUserLogin(new JwtToken(jwt));
+	}
+
+	public User extractUser(HttpServletRequest request) {
+		String userLogin = extractLogin(request);
+		return userRepository.findByUsername(userLogin)
+				.orElseThrow(() -> new PersonNotFoundException(userLogin));
 	}
 
 }

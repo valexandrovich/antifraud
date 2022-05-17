@@ -58,14 +58,14 @@ public class XLSDataObject extends DataObject {
         return new XLSField(this, data);
     }
 
-    private XLSDataObject(DataHeader header, Object[] data) {
-        super(null);
+    private XLSDataObject(DataHeader header, Object[] data, long row) {
+        super(null, row, -1, -1, -1);
         this.header = header;
         this.data = Stream.of(data).map(this::createField).toArray(XLSField[]::new);
     }
 
-    public static XLSDataObject create(DataHeader header, Object[] data) {
-        return header == null || data == null ? null : new XLSDataObject(header, data);
+    public static XLSDataObject create(DataHeader header, Object[] data, long row) {
+        return header == null || data == null ? null : new XLSDataObject(header, data, row);
     }
 
     @Override

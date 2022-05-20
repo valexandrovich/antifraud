@@ -14,7 +14,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
-#      - zipkin
+      - zipkin
     ports:
       - "8080:8080"
     networks:
@@ -39,7 +39,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
-#      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -59,7 +59,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
-#      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -82,7 +82,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
-#      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -118,7 +118,7 @@ services:
       - mail
       - migration-k8s
       - queue
-#      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -139,7 +139,7 @@ services:
       - migration-k8s
       - dwh-mock
       - queue
-#      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -156,7 +156,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
-    #      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -173,7 +173,7 @@ services:
     depends_on:
       - migration-k8s
       - queue
-    #      - zipkin
+      - zipkin
     networks:
       - otp-etl-network
 
@@ -241,44 +241,48 @@ services:
     networks:
       - otp-etl-network
 
-  loki:
-    image: grafana/loki:2.4.0
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - otp-etl-network
+# Uncomment to add Loki service
+#  loki:
+#    image: grafana/loki:2.4.0
+#    ports:
+#      - "3100:3100"
+#    command: -config.file=/etc/loki/local-config.yaml
+#    networks:
+#      - otp-etl-network
 
-  promtail:
-    image: grafana/promtail:2.4.0
-    volumes:
-      - /var/log:/var/log
-      - ./docker/promtail/promtail-config.yaml:/etc/promtail/config.yaml
-    command: -config.file=/etc/promtail/config.yaml
-    depends_on:
-      - loki
-    networks:
-      - otp-etl-network
+# Uncomment to add Promtail (to stream logs into Loki service)
+#  promtail:
+#    image: grafana/promtail:2.4.0
+#    volumes:
+#      - /var/log:/var/log
+#      - ./docker/promtail/promtail-config.yaml:/etc/promtail/config.yaml
+#    command: -config.file=/etc/promtail/config.yaml
+#    depends_on:
+#      - loki
+#    networks:
+#      - otp-etl-network
 
-  prometheus:
-    image: prom/prometheus:v2.30.3
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./docker/prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
-    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
-    networks:
-      - otp-etl-network
+# Uncomment to add Prometheus service
+#  prometheus:
+#    image: prom/prometheus:v2.30.3
+#    ports:
+#      - "9090:9090"
+#    volumes:
+#      - ./docker/prometheus:/etc/prometheus
+#      - prometheus-data:/prometheus
+#    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+#    networks:
+#      - otp-etl-network
 
-  grafana:
-    image: grafana/grafana:latest
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    ports:
-      - "3000:3000"
-    networks:
-      - otp-etl-network
+# Uncomment to add Grafana service
+#  grafana:
+#    image: grafana/grafana:latest
+#    volumes:
+#      - grafana-storage:/var/lib/grafana
+#    ports:
+#      - "3000:3000"
+#    networks:
+#      - otp-etl-network
 
   mail:
     image: eeacms/postfix
@@ -293,40 +297,42 @@ services:
     networks:
       - otp-etl-network
 
-  directory:
-    image: osixia/openldap
-    ports:
-      - "389:389"
-      - "636:636"
-    environment:
-      - LDAP_ORGANISATION="OTP"
-      - LDAP_DOMAIN="otp.com.ua"
-      - LDAP_ADMIN_PASSWORD="otp"
-    networks:
-      - otp-etl-network
+# OpenLDAP in now obsolete - the Web application expects AD for authentication
+#  directory:
+#    image: osixia/openldap
+#    ports:
+#      - "389:389"
+#      - "636:636"
+#    environment:
+#      - LDAP_ORGANISATION="OTP"
+#      - LDAP_DOMAIN="otp.com.ua"
+#      - LDAP_ADMIN_PASSWORD="otp"
+#    networks:
+#      - otp-etl-network
 
-  elastic:
-    image: elasticsearch:7.16.2
-    container_name: elastic01
-    # Ports should not be exposed on Prod environment
-    ports:
-      - "9200:9200"
-    #      - "9300:9300"
-    environment:
-      - node.name=elastic01
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=elastic02,elastic03
-      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - elastic-data:/usr/share/elasticsearch/data
-    networks:
-      - otp-etl-network
+# Commented out single node ES as currently not used for fuzzy search
+#  elastic:
+#    image: elasticsearch:7.16.2
+#    container_name: elastic01
+#    # Ports should not be exposed on Prod environment
+#    ports:
+#      - "9200:9200"
+#    #      - "9300:9300"
+#    environment:
+#      - node.name=elastic01
+#      - cluster.name=es-docker-cluster
+#      - discovery.seed_hosts=elastic02,elastic03
+#      - cluster.initial_master_nodes=elastic01,elastic02,elastic03
+#      - bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    volumes:
+#      - elastic-data:/usr/share/elasticsearch/data
+#    networks:
+#      - otp-etl-network
 
 # Comment out single node ES above to run 3-node cluster below
 #  elastic01:
@@ -390,6 +396,7 @@ services:
 #    networks:
 #      - otp-etl-network
 
+# DWH Oracle prototype
   dwh-mock:
     container_name: otp-dwh-mock
     build:
@@ -401,37 +408,38 @@ services:
     networks:
       - otp-etl-network
 
-  jaeger:
-    image: jaegertracing/all-in-one
-    ports:
-      - "5775:5775/udp"
-      - "6831:6831/udp"
-      - "6832:6832/udp"
-      - "5778:5778"
-      - "16686:16686"
-      - "14268:14268"
-      - "14250:14250"
-      - "9411:9411"
-    networks:
-      - otp-etl-network
-
-#  zipkin:
-#    image: openzipkin/zipkin
+# Commented out Jaeger as Zipkin named as preferred service
+#  jaeger:
+#    image: jaegertracing/all-in-one
 #    ports:
+#      - "5775:5775/udp"
+#      - "6831:6831/udp"
+#      - "6832:6832/udp"
+#      - "5778:5778"
+#      - "16686:16686"
+#      - "14268:14268"
+#      - "14250:14250"
 #      - "9411:9411"
 #    networks:
 #      - otp-etl-network
+
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - otp-etl-network
 
 networks:
   otp-etl-network:
     driver: bridge
 
 volumes:
-  prometheus-data:
-  grafana-storage:
+#  prometheus-data:
+#  grafana-storage:
   psql-storage:
   tmp-storage:
-  elastic-data:
+#  elastic-data:
 #  elastic-data01:
 #    driver: local
 #  elastic-data02:

@@ -2,12 +2,11 @@ package ua.com.solidity.common;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Delivery;
-import lombok.extern.slf4j.Slf4j;
-
-import java.nio.charset.StandardCharsets;
+import lombok.CustomLog;
 import java.util.*;
 
-@Slf4j
+
+@CustomLog
 public class RabbitMQListener {
     private static class RabbitMQListenerThread extends Thread {
         final RabbitMQListener listener;
@@ -22,6 +21,7 @@ public class RabbitMQListener {
         }
 
         public synchronized void setWaiting(boolean value) {
+            if (waiting == value) return;
             waiting = value;
             if (value) {
                 listener.restoreChannel();
@@ -31,22 +31,19 @@ public class RabbitMQListener {
         }
 
         private DeferredTask getTask() {
-            synchronized(listener) {
-                if (listener.taskQueue.isEmpty()) {
-                    return null;
-                } else {
-                    return listener.taskQueue.remove();
-                }
+            if (listener.taskQueue.isEmpty()) {
+                return null;
+            } else {
+                return listener.taskQueue.remove();
             }
         }
 
         @Override
         public void run() {
-            DeferredTask task;
-            while (!isInterrupted()) {
-                task = getTask();
-                if (task == null) {
-                    synchronized(listener) {
+            synchronized(listener) {
+                while (!isInterrupted()) {
+                    DeferredTask task = getTask();
+                    if (task == null) {
                         setWaiting(true);
                         try {
                             try {
@@ -57,9 +54,9 @@ public class RabbitMQListener {
                         } finally {
                             setWaiting(false);
                         }
+                    } else {
+                        task.run();
                     }
-                } else {
-                    task.run();
                 }
             }
         }
@@ -109,7 +106,7 @@ public class RabbitMQListener {
 
         @Override
         protected void executeTask(DeferredTask task) {
-            listener.appendTask(task);
+            listener.queueTask(task);
         }
     }
 
@@ -135,7 +132,7 @@ public class RabbitMQListener {
         this(receiver, 0, queues);
     }
 
-    final synchronized void appendTask(DeferredTask task) {
+    final synchronized void queueTask(DeferredTask task) {
         taskQueue.add(task);
         notifyAll();
     }
@@ -257,22 +254,30 @@ public class RabbitMQListener {
         }
     }
 
-    final synchronized void handleReceiverMessage(long deliveryTag, String queue, String message) {
-        Object res = receiver.handleMessage(queue, message);
+    private void doReceiverAcknowledgeIfNotSent(long deliveryTag, boolean ack) {
+        if (!receiver.acknowledgeSent) {
+            doAcknowledge(deliveryTag, ack);
+        }
+    }
+
+    final synchronized void handleReceiverMessage(Delivery message) {
+        long deliveryTag = message.getEnvelope().getDeliveryTag();
+        Object res = receiver.doHandleMessage(this, message);
         if (res instanceof DeferredTask) {
             DeferredTask task = (DeferredTask) res;
             if (task instanceof RabbitMQTask) {
-                ((RabbitMQTask) task).setContext(this, deliveryTag);
+                RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
+                rabbitMQTask.setContext(this, message, receiver.acknowledgeSent);
             } else {
-                doAcknowledge(deliveryTag, true);
+                doReceiverAcknowledgeIfNotSent(deliveryTag, true);
             }
-            if (tasks != null && tasks.collectionMode()) {
+            if (tasks != null) {
                 tasks.append(task);
             } else {
-                appendTask(task);
+                queueTask(task);
             }
         } else {
-            doAcknowledge(deliveryTag, res == null || !res.equals(false));
+            doReceiverAcknowledgeIfNotSent(deliveryTag, res == null || !res.equals(false));
         }
     }
 
@@ -281,13 +286,14 @@ public class RabbitMQListener {
     }
 
     private synchronized void doHandleDeliverCallback(String consumerTag, Delivery message) {
-        if (thread == null) return;
-        long deliveryTag = message.getEnvelope().getDeliveryTag();
+        if (thread == null) {
+            log.warn("RabbitMQ consumer thread is null");
+            return;
+        }
         if (thread.isBusy()) {
-            doAcknowledge(deliveryTag, false); // protection
+            doAcknowledge(message.getEnvelope().getDeliveryTag(), false); // protection
         } else {
-            handleReceiverMessage(deliveryTag,
-                    message.getEnvelope().getRoutingKey(), new String(message.getBody(), StandardCharsets.UTF_8));
+            handleReceiverMessage(message);
         }
     }
 }

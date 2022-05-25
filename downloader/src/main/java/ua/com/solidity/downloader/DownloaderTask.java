@@ -3,9 +3,9 @@ package ua.com.solidity.downloader;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.*;
 import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.ImportSource;
@@ -13,9 +13,10 @@ import ua.com.solidity.db.repositories.ImportRevisionRepository;
 
 import java.util.UUID;
 
+
 @Getter
 @Setter
-@Slf4j
+@CustomLog
 public class DownloaderTask extends RabbitMQTask {
     private static final String DOWNLOADER_LOG_DELIMITER = "- - - - - - - - - - - - -";
     private static final String HANDLER = "handler";
@@ -42,7 +43,7 @@ public class DownloaderTask extends RabbitMQTask {
     public void handleError() {
         isError = true;
         if (msgData.decrementAttemptsLeft()) {
-            if (msgData.getDelayMinutes() <= 0) {
+            if (msgData.getDelayMinutes() < 0) {
                 Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(msgData));
             } else {
                 ObjectNode node = Utils.getSortedMapper().createObjectNode();
@@ -53,9 +54,17 @@ public class DownloaderTask extends RabbitMQTask {
                 Utils.sendRabbitMQMessage(receiver.getConfig().getSchedulerTopicExchangeName(), Utils.objectToJsonString(node));
             }
         } else {
-            DownloaderErrorMessageData data = new DownloaderErrorMessageData(this.msgData.getIdent());
-            RabbitMQLogMessage message = new RabbitMQLogMessage("downloader", "E001", data);
-            Utils.sendRabbitMQMessage(receiver.getConfig().getLogExchangeName(), Utils.objectToJsonString(message));
+            String notificationExchangeName = receiver.getConfig().getNotificationExchangeName();
+            String mailTo = receiver.getConfig().getDefaultMailTo();
+            if (notificationExchangeName != null && !notificationExchangeName.isBlank() &&
+                    mailTo != null && !mailTo.isBlank()) {
+                Utils.sendRabbitMQMessage(notificationExchangeName,
+                        Utils.objectToJsonString(
+                                new NotificationMessage(receiver.getConfig().getDefaultMailTo(),
+                                    Utils.messageFormat("Downloader error: Can't handle source {}",
+                                        msgData.getIdent()),
+                                "", 3,null)));
+            }
         }
     }
 

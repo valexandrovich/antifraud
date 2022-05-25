@@ -2,12 +2,14 @@ package ua.com.solidity.web.controllers;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.Authorization;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -72,23 +74,41 @@ public class SchedulerController {
 		return ResponseEntity.ok().build();
 	}
 
-	@PostMapping(path = "/exchangeSwitch")
+	@PostMapping(path = "/exchangeSwitch/{group}")
 	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
-	@ApiOperation(value = "Send message to queue.",
+	@ApiOperation(value = "Switch specified group.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
-	public ResponseEntity<Void> exchangeSwitch() {
-		schedulerService.exchangeSwitch();
+	public ResponseEntity<Void> exchangeSwitch(
+			@ApiParam(value = "Group you need to switch for",
+					required = true)
+			@PathVariable(name = "group") String group
+	) {
+		schedulerService.exchangeSwitch(group);
 		return ResponseEntity.ok().build();
 	}
 
 	@PostMapping(path = "/exchangeRefresh")
 	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
-	@ApiOperation(value = "Send message to queue.",
+	@ApiOperation(value = "Refresh.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
 	public ResponseEntity<Void> exchangeRefresh() {
 		schedulerService.exchangeRefresh();
+		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping(path = "/exchangeActivate/{group}")
+	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@ApiOperation(value = "Activate schedule.",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<Void> exchangeActivate(
+			@ApiParam(value = "Schedule group you need to activate",
+					required = true)
+			@PathVariable(name = "group") String group
+	) {
+		schedulerService.activateGroup(group);
 		return ResponseEntity.ok().build();
 	}
 }

@@ -1,6 +1,6 @@
 package ua.com.solidity.common.parsers.csv;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.data.DataHeader;
 import ua.com.solidity.common.data.DataObject;
@@ -10,7 +10,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-@Slf4j
+
+@CustomLog
 public class CSVParser extends CustomParser {
     private Scanner scanner;
     private DataHeader header;

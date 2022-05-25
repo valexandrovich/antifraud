@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
 import java.time.DayOfWeek;
 import java.util.Iterator;
 
-@Slf4j
+
+@CustomLog
 public class DaysOfWeek implements CustomParam {
 
     public static final String VALUE_NONE = "NONE";
@@ -115,7 +116,7 @@ public class DaysOfWeek implements CustomParam {
         try {
             index = DayOfWeek.valueOf(name.toUpperCase()).getValue() - 1;
         } catch (Exception e) {
-            log.warn("Days of week parse error. Undefined day : {}", name);
+            log.warn("Days of week parse error. Undefined day : {}", name, e);
             throw e;
         }
         if (index >= 0 && index < 7) {
@@ -135,7 +136,7 @@ public class DaysOfWeek implements CustomParam {
                 }
             }
         } catch (Exception e) {
-            log.warn("JSON Node parse error.");
+            log.warn("JSON Node parse error.", e);
             throw e;
         }
     }

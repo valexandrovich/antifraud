@@ -29,6 +29,10 @@ const PageTitle = (props) => {
         name: "Детальна інформація",
         link: "/details",
       },
+      monitoring: {
+        name: "Моніторинг",
+        link: "/subscription",
+      },
     };
 
     if (isTitle) {

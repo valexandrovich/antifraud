@@ -5,7 +5,7 @@ const Inn = ({ data }) => {
   return (
     <div className="card mb-3">
       <p>
-        <b className="mr-10">ИПН:</b> {inn}
+        <b className="mr-10">ІПН:</b> {inn}
       </p>
     </div>
   );

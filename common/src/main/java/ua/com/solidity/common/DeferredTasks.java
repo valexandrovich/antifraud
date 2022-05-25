@@ -1,16 +1,18 @@
 package ua.com.solidity.common;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
+
+@CustomLog
 public class DeferredTasks {
     protected final List<DeferredTask> tasks = new ArrayList<>();
     private final long milliSeconds;
     private long waitingFor;
+    private final boolean firstLoopCollectionOnly;
     private boolean firstLoopExecuted = false;
     private WaitingThread thread = null;
 
@@ -74,6 +76,13 @@ public class DeferredTasks {
     }
 
     public DeferredTasks(long milliSeconds) {
+        this.firstLoopCollectionOnly = false;
+        this.milliSeconds = milliSeconds;
+    }
+
+    @SuppressWarnings("unused")
+    public DeferredTasks(long milliSeconds, boolean firstLoopCollectionOnly) {
+        this.firstLoopCollectionOnly = firstLoopCollectionOnly;
         this.milliSeconds = milliSeconds;
     }
 
@@ -107,7 +116,7 @@ public class DeferredTasks {
     }
 
     public synchronized boolean collectionMode() {
-        return !firstLoopExecuted;
+        return !(firstLoopExecuted && firstLoopCollectionOnly);
     }
 
     protected synchronized void beforeExecutionLoop(boolean terminated) {
@@ -133,7 +142,7 @@ public class DeferredTasks {
     }
 
     public final synchronized void append(DeferredTask task) {
-        if (firstLoopExecuted) {
+        if (!collectionMode()) {
             doExecuteTask(task);
             return;
         }

@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>3.3.132-SNAPSHOT</version>
+        <version>3.4.155-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>3.3.132-SNAPSHOT</version>
+    <version>3.4.155-SNAPSHOT</version>
 
     <artifactId>web</artifactId>
 
@@ -25,6 +25,8 @@
         <frontend-src-dir>${project.basedir}</frontend-src-dir>
         <node.version>v14.15.2</node.version>
         <yarn.version>v1.22.5</yarn.version>
+        <!-- Sonar helper -->
+        <sonar.includes>src/main/frontend/**</sonar.includes>
     </properties>
 
     <dependencies>
@@ -98,19 +100,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-52</artifactId>
-            <version>2.12.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
         </dependency>
@@ -135,7 +124,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>3.3.132-SNAPSHOT</version>
+            <version>3.4.155-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -171,6 +160,16 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
             <version>0.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>6.0.16.Final</version>
         </dependency>
     </dependencies>
 

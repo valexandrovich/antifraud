@@ -36,13 +36,19 @@ const Sheduler = {
   icon: <IoIcons.IoIosAlarm />,
   cName: "nav-text",
 };
-
+const Monitoring = {
+  title: "Моніторинг",
+  path: "/subscription",
+  icon: <IoIcons.IoMdStar />,
+  cName: "nav-text",
+};
 const SidebarData = {
   Search,
   Files,
   AddFile,
   Progress,
   Sheduler,
+  Monitoring,
 };
 
 export default SidebarData;

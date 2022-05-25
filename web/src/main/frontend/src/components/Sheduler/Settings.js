@@ -7,7 +7,7 @@ const options = [
   "saturday",
   "sunday",
 ];
-
+const daysPeriodic = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const month = [
   { name: "Січень", id: 1 },
   { name: "Лютий", id: 2 },
@@ -36,6 +36,7 @@ const days = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
   23, 24, 25, 25, 26, 27, 28, -1, -2, -3,
 ];
+
 const ua = {
   name: "ua",
   months: [
@@ -76,6 +77,7 @@ const validate = (values, weekDays, time, period) => {
   if (!values.name) {
     errors.name = "Шифр завдання обов'язковe для заповнення";
   }
+
   if (values.exchange.length === 0) {
     errors.exchange = "Назва черги сповіщень обов'язковe для заповнення";
   }
@@ -87,13 +89,6 @@ const validate = (values, weekDays, time, period) => {
       Object.keys(weekDays.month).length < 1
     ) {
       errors.days_of_week = "Потрібно обрати хоча-б один день тижня";
-    }
-    if (
-      values.schedule.days_of_month &&
-      Object.values(values.schedule.days_of_month.value).length === 0
-    ) {
-      console.log(Object.values(values.schedule.days_of_month.value), "V");
-      errors.days_of_month = "Потрібно обрати хоча-б один день місяця";
     }
   }
 
@@ -125,6 +120,7 @@ const scheduleSettings = {
   datOptions,
   validate,
   ua,
+  daysPeriodic,
 };
 
 export default scheduleSettings;

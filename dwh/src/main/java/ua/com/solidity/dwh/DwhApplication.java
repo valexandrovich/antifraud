@@ -6,12 +6,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
 import ua.com.solidity.common.RabbitMQListener;
 import ua.com.solidity.common.Utils;
 
 @Slf4j
 @SpringBootApplication
+@EntityScan(basePackages = {"ua.com.solidity.db.entities", "ua.com.solidity.dwh.entities"})
 public class DwhApplication {
     private final RabbitMQListener listener;
 

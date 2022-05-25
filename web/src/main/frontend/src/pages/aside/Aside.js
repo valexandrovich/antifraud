@@ -61,6 +61,14 @@ const Aside = () => {
                     <span className="icons">{SidebarData.Sheduler.title}</span>
                   </NavLink>
                 </li>
+                <li className={SidebarData.Monitoring.cName}>
+                  <NavLink to={SidebarData.Monitoring.path}>
+                    {SidebarData.Monitoring.icon}
+                    <span className="icons">
+                      {SidebarData.Monitoring.title}
+                    </span>
+                  </NavLink>
+                </li>
               </>
             ) : (
               ""

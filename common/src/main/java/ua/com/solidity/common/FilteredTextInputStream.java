@@ -1,11 +1,7 @@
 package ua.com.solidity.common;
 
 import com.fasterxml.jackson.core.JsonLocation;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,7 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Scanner;
 
-@Slf4j
+
+@CustomLog
 public class FilteredTextInputStream extends InputStream {
     private static final byte BYTE_LINE_FEED = 10;
     private static final byte BYTE_CARRIAGE_RETURN = 13;

@@ -1,8 +1,9 @@
 package ua.com.solidity.downloader;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.ResourceInfoData;
 
-@Slf4j
+
+@CustomLog
 public class DownloaderTaskGovUaHandler implements DownloaderTaskHandler {
     private final DataGovUaSourceInfo dataGovUaSourceInfo;
 

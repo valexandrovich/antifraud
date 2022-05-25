@@ -447,10 +447,13 @@ a {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
 }
+
 .form-row > label {
   padding: 0.5em 1em 0.5em 0;
-  flex: 1;
+  flex: 1 1;
 }
 .form-row > .select {
   display: flex;
@@ -459,6 +462,7 @@ a {
 }
 .chip {
   background-color: #3fa079 !important;
+  font-size: 10px;
 }
 .option {
   background-color: #e0e7e4 !important;
@@ -475,6 +479,10 @@ datalist {
 }
 .table-header {
   font-weight: bold;
+}
+
+.opasity-30 {
+  opacity: 0.3;
 }
 .mr-10 {
   margin-right: 10px;

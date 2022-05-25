@@ -1,6 +1,6 @@
 package ua.com.solidity.importer;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.DurationPrinter;
@@ -11,7 +11,8 @@ import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.pipeline.Pipeline;
 import ua.com.solidity.pipeline.PipelineFactory;
 
-@Slf4j
+
+@CustomLog
 @Component
 public class Importer {
     private final PipelineFactory importerFactory;

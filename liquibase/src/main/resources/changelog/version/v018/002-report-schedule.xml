@@ -16,9 +16,13 @@
                     '{"start": "2021-01-01T00:00", "minutes": {"type": "once", "value": "10:00"}}', false, false);
         </sql>
         <rollback>
-            <sql>
-                delete from scheduler where group_name = 'active' and name = 'reporting';
-            </sql>
+                <delete tableName="scheduler">
+                    <where>:name=:value and :name=:value</where>
+                    <whereParams>
+                        <param name="group_name" value="active"/>
+                        <param name="name" value="reporting"/>
+                    </whereParams>
+                </delete>
         </rollback>
     </changeSet>
 </databaseChangeLog>

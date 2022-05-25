@@ -35,4 +35,6 @@ public class FileDescription {
     @Column(name = "created")
     private Date created = new Date(System.currentTimeMillis());
 
+    @Column(name = "wrong_column", length = 1500)
+    private String wrongColumn;
 }

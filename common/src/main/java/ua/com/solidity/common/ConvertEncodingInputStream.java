@@ -1,7 +1,7 @@
 package ua.com.solidity.common;
 
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +11,8 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
-@Slf4j
+
+@CustomLog
 public class ConvertEncodingInputStream extends InputStream {
     private static final int BYTE_BUF_SIZE = 8192;
     private static final int CHAR_BUF_SIZE = 4096;

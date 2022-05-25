@@ -16,6 +16,7 @@ import ua.com.solidity.db.entities.BaseDrfo;
 import ua.com.solidity.db.entities.BaseElections;
 import ua.com.solidity.db.entities.BaseFodb;
 import ua.com.solidity.db.entities.BasePassports;
+import ua.com.solidity.db.entities.Contragent;
 import ua.com.solidity.db.entities.StatusLogger;
 import ua.com.solidity.db.entities.YAddress;
 import ua.com.solidity.db.entities.YAltPerson;
@@ -25,16 +26,15 @@ import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.entities.YPhone;
 import ua.com.solidity.db.entities.YTag;
+import ua.com.solidity.db.repositories.ContragentRepository;
 import ua.com.solidity.db.repositories.YINNRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.entities.Contragent;
 import ua.com.solidity.enricher.model.EnricherRequest;
 import ua.com.solidity.enricher.repository.BaseDrfoRepository;
 import ua.com.solidity.enricher.repository.BaseElectionsRepository;
 import ua.com.solidity.enricher.repository.BaseFodbRepository;
 import ua.com.solidity.enricher.repository.BasePassportsRepository;
-import ua.com.solidity.enricher.repository.ContragentRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-@EntityScan(basePackages = {"ua.com.solidity.db.entities", "ua.com.solidity.enricher.entities"})
+@EntityScan(basePackages = {"ua.com.solidity.db.entities"})
 @EnableJpaRepositories(basePackages = {"ua.com.solidity.db.repositories", "ua.com.solidity.enricher.repository"})
 public class EnricherServiceImpl implements EnricherService {
 	private final BaseDrfoRepository bdr;
@@ -561,7 +561,7 @@ public class EnricherServiceImpl implements EnricherService {
 					Stream.of(r.getAddress(), r.getBirthplace()).forEach(c -> {
 						if (!StringUtils.isBlank(c) && !addresses.contains(c)) {
 							YAddress address = new YAddress();
-							address.setAddress(c);
+							address.setAddress(c.toUpperCase());
 
 							address.setPerson(finalPerson1);
 							finalPerson1.getAddresses().add(address);

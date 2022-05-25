@@ -25,13 +25,25 @@ const NullSheduler = ({
 }) => {
   const [min, setMin] = useState(0);
   const [hour, setHour] = useState(0);
-  const [dates, setDates] = useState(
-    new DateObject({
-      year: 2020,
-      month: 9,
-      day: rowDate.schedule?.days?.value,
-    })
-  );
+  const selectAll = (name) => {
+    setWeekDays((prevState) => ({
+      ...prevState,
+      month: {
+        ...prevState.month,
+        [name]: "all",
+      },
+    }));
+  };
+  const removeAll = (name) => {
+    setWeekDays((prevState) => ({
+      ...prevState,
+      month: {
+        ...prevState.month,
+        [name]: [],
+      },
+    }));
+  };
+
   const getMonth = (v) => {
     if (v && v.type === "set") {
       return v.value;
@@ -59,38 +71,34 @@ const NullSheduler = ({
     ? getMonth(rowDate.schedule.month)
     : [];
 
-  const weeks = ["", "", "", "", "", "", ""];
-
-  const formatTime = (time) => {
-    if (typeof time === "string") {
-      time.toLowerCase();
-      let withHours = time.indexOf("h");
+  const formatTime = (times) => {
+    if (typeof times === "string") {
+      times.toLowerCase();
+      let withHours = times.indexOf("h");
       if (withHours >= 0) {
-        let hours = parseInt(time.substring(0, withHours));
+        let hours = parseInt(times.substring(0, withHours));
         setHour(hours);
-        setMin(time.substring(withHours + 1));
-        time = time.substring(withHours + 1);
+        setMin(times.substring(withHours + 1));
+        times = times.substring(withHours + 1);
       }
-      if (time.endsWith("m")) {
-        setMin(time.substring(0, time.length - 1));
-        time = time.substr(0, time.length - 1);
+      if (times.endsWith("m")) {
+        setMin(times.substring(0, times.length - 1));
+        time = times.substr(0, times.length - 1);
       }
     }
-    if (Number.isInteger(time)) {
-      setMin(time);
+    if (Number.isInteger(times)) {
+      setMin(times);
     }
   };
 
   useEffect(() => {
     formatTime(time.periodic.value);
   }, [time.periodic.value]);
-
   const select = (name) => {
     return weekDays.month && weekDays.month[name] === "all"
       ? scheduleSettings.datOptions
       : "";
   };
-
   return (
     <>
       <div className="row">
@@ -175,30 +183,39 @@ const NullSheduler = ({
               <span className="mr-10">
                 <b>Повторювати кожен/кожні</b>
               </span>
+              <label className="d-flex align-items-center" htmlFor="weeks-set">
+                <select
+                  value={
+                    rowDate.schedule?.days
+                      ? rowDate.schedule?.days.value
+                      : Number(1)
+                  }
+                  onChange={(e) => {
+                    const { value } = e.target;
 
-              <DatePicker
-                disabled={period !== "days"}
-                className="days green"
-                editable={false}
-                hideMonth={true}
-                hideYear={true}
-                weekDays={weeks}
-                format="DD"
-                value={dates}
-                multiple={false}
-                style={{ height: "50px" }}
-                name="days"
-                onChange={(ref) => {
-                  setDates(ref);
-                  setRowDate((prevState) => ({
-                    ...prevState,
-                    schedule: {
-                      ...prevState.schedule,
-                      days: { type: "periodic", value: ref },
-                    },
-                  }));
-                }}
-              />
+                    setRowDate((prevState) => ({
+                      ...prevState,
+                      schedule: {
+                        ...prevState.schedule,
+                        days: {
+                          type: "periodic",
+                          value: Number(value),
+                        },
+                      },
+                    }));
+                  }}
+                  disabled={period !== "days"}
+                  className="form-select"
+                >
+                  {scheduleSettings.daysPeriodic.map((day) => {
+                    return (
+                      <option value={day} key={day}>
+                        {day}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
               <span className="ml-10">
                 <b>день/днів</b>
               </span>
@@ -225,9 +242,7 @@ const NullSheduler = ({
                         ...prevState.schedule,
                         weeks: {
                           type: "periodic",
-                          value: rowDate.schedule?.weeks?.value
-                            ? rowDate.schedule.weeks.value
-                            : 1,
+                          value: 1,
                         },
                       },
                     }));
@@ -327,7 +342,6 @@ const NullSheduler = ({
               <span className="mr-10">
                 <b>По місяцях</b>
               </span>
-              {/* MONTH value */}
 
               <label className="d-flex align-items-center" htmlFor="montch-set">
                 <Multiselect
@@ -341,7 +355,13 @@ const NullSheduler = ({
                       monthVal.includes(Number(el.id))
                     )
                   }
-                  hidePlaceholder={true}
+                  hidePlaceholder={
+                    monthVal &&
+                    scheduleSettings.month?.filter((el) =>
+                      monthVal.includes(Number(el.id))
+                    )
+                  }
+                  placeholder="Всі місяці"
                   emptyRecordMsg="Не знайдeно збігів"
                   onSelect={(m) => {
                     const data = m.map((acc, item) => {
@@ -379,7 +399,6 @@ const NullSheduler = ({
                   }}
                 />
               </label>
-              {/* MONTH value */}
             </label>
 
             {period === "month" && (
@@ -399,14 +418,15 @@ const NullSheduler = ({
                     />
                     <span className="mr-14">Дні місяця</span>
                   </label>
+
                   <Multiselect
                     disable={monthPeriod !== "daymonth"}
                     className="green "
                     isObject={false}
                     options={scheduleSettings.days}
                     selectedValues={monthDaysVal}
-                    placeholder="Оберіть дні тижня"
-                    hidePlaceholder={true}
+                    hidePlaceholder={monthDaysVal.length > 0}
+                    placeholder="Вcі дні місяця"
                     emptyRecordMsg="Не знайдeно збігів"
                     onSelect={(day) => {
                       setMonthDaysVal(day);
@@ -453,105 +473,26 @@ const NullSheduler = ({
 
                   {monthPeriod === "dayweek" && (
                     <div className="d-flex flex-column mt-3">
-                      <MultiselectDay
-                        name="monday"
-                        period={period}
-                        rowDate={weekDays.month}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month && weekDays.month["monday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["monday"]?.includes(el.value)
-                              )
-                            : select("monday")
-                        }
-                      />
-                      <MultiselectDay
-                        name="tuesday"
-                        period={period}
-                        rowDate={weekDays.month}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month && weekDays.month["tuesday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["tuesday"]?.includes(el.value)
-                              )
-                            : select("tuesday")
-                        }
-                      />
-                      <MultiselectDay
-                        name="wednesday"
-                        period={period}
-                        rowDate={weekDays.month}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month &&
-                          weekDays.month["wednesday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["wednesday"]?.includes(el.value)
-                              )
-                            : select("wednesday")
-                        }
-                      />
-                      <MultiselectDay
-                        name="thursday"
-                        rowDate={weekDays.month}
-                        period={period}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month && weekDays.month["thursday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["thursday"]?.includes(el.value)
-                              )
-                            : select("thursday")
-                        }
-                      />
-                      <MultiselectDay
-                        name="friday"
-                        rowDate={weekDays.month}
-                        period={period}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month && weekDays.month["friday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["friday"]?.includes(el.value)
-                              )
-                            : select("friday")
-                        }
-                      />
-                      <MultiselectDay
-                        name="saturday"
-                        period={period}
-                        rowDate={weekDays.month}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month && weekDays.month["saturday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["saturday"]?.includes(el.value)
-                              )
-                            : select("saturday")
-                        }
-                      />
-                      <MultiselectDay
-                        name="sunday"
-                        period={period}
-                        rowDate={weekDays.month}
-                        setWeekDays={setWeekDays}
-                        options={scheduleSettings.datOptions}
-                        selectedValues={
-                          weekDays.month && weekDays.month["sunday"] !== "all"
-                            ? scheduleSettings.datOptions.filter((el) =>
-                                weekDays.month["sunday"]?.includes(el.value)
-                              )
-                            : select("sunday")
-                        }
-                      />
+                      {scheduleSettings.options.map((day) => {
+                        return (
+                          <MultiselectDay
+                            name={day}
+                            selectAll={() => selectAll(day)}
+                            removeAll={() => removeAll(day)}
+                            period={period}
+                            rowDate={weekDays.month}
+                            setWeekDays={setWeekDays}
+                            options={scheduleSettings.datOptions}
+                            selectedValues={
+                              weekDays.month && weekDays.month[day] !== "all"
+                                ? scheduleSettings.datOptions.filter((el) =>
+                                    weekDays.month[day]?.includes(el.value)
+                                  )
+                                : select(day)
+                            }
+                          />
+                        );
+                      })}
                       {formErrors.days_of_week && (
                         <p className="text-danger">{formErrors.days_of_week}</p>
                       )}
@@ -593,7 +534,7 @@ const NullSheduler = ({
                       periodic: {
                         type: "periodic",
                         value:
-                          value <= 11 ? `${value}h${min}m` : `${11}h${min}m`,
+                          value <= 23 ? `${value}h${min}m` : `${23}h${min}m`,
                       },
                     }));
                   }}

@@ -1,8 +1,9 @@
 package ua.com.solidity.common.pgsql;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
-@Slf4j
+
+@CustomLog
 public enum SQLFlushMode {
     PREPARED_STATEMENT_BATCH,
     INSERT_BATCH_BUFFER,

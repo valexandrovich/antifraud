@@ -1,12 +1,13 @@
 package ua.com.solidity.importer;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.*;
 import ua.com.solidity.common.model.EnricherMessage;
 import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.ImportSource;
 
-@Slf4j
+
+@CustomLog
 public class ImporterTask extends RabbitMQTask {
     private static final String DROP_REVISION = "drop_revision";
     private static final String REMOVE_FILES = "removeFiles";

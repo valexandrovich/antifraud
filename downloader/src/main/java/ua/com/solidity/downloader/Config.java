@@ -42,6 +42,9 @@ public class Config {
     @Value("${log.rabbitmq.name}")
     private String logExchangeName;
 
+    @Value("${notification.rabbitmq.name}")
+    private String notificationExchangeName;
+
     private String downloaderOutputFolder = null;
 
     @Value("${downloader.defaultMailTo}")

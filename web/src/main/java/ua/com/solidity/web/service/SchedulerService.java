@@ -60,10 +60,10 @@ public class SchedulerService {
 		schedulerRepository.save(schedulerConverter.toEntity(dto));
 	}
 
-	public void exchangeSwitch() {
+	public void exchangeSwitch(String group) {
 		String jo;
 		try {
-			jo = new ObjectMapper().writeValueAsString(new SchedulerExchange("switch", "base"));
+			jo = new ObjectMapper().writeValueAsString(new SchedulerExchange("switch", group));
 			log.info("Emit to " + queueName);
 			template.convertAndSend(queueName, jo);
 		} catch (JsonProcessingException e) {
@@ -82,4 +82,7 @@ public class SchedulerService {
 		}
 	}
 
+	public void activateGroup(String group) {
+		SchedulerEntity.schedulerActivate(group);
+	}
 }

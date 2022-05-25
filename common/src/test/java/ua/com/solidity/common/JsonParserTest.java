@@ -1,6 +1,6 @@
 package ua.com.solidity.common;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.junit.jupiter.api.Test;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataObject;
@@ -14,7 +14,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
+
+@CustomLog
 class JsonParserTest {
     private static final String JSON_TEST_STRING = "[{'name':'Hello'}, {'name':'World'}]".replace("'", "\"");
     private static final String JSON_PARAMS_STRING = ("{}").replace("'", "\"");

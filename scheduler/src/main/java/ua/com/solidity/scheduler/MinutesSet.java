@@ -2,9 +2,10 @@ package ua.com.solidity.scheduler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
-@Slf4j
+
+@CustomLog
 public class MinutesSet extends Param {
     @Override
     protected void initialize() {
@@ -21,7 +22,7 @@ public class MinutesSet extends Param {
             return Integer.parseInt(value.substring(0, delimiterIndex).trim()) * 60 +
                     Integer.parseInt(value.substring(delimiterIndex + 1).trim());
         } catch (Exception e) {
-            log.warn("Illegal JSON value passed to minutes.value: {}", value);
+            log.warn("Illegal JSON value passed to minutes.value: {}", value, e);
             throw e;
         }
     }

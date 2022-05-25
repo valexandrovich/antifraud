@@ -10,7 +10,7 @@ const Sheduler = () => {
     ...new Set(obj.map((o) => o.groupName)),
   ];
   const uniqueArrayExchange = (obj) => [...new Set(obj.map((o) => o.exchange))];
-  const [editRow, setEditRow] = useState();
+  const [editRow, setEditRow] = useState(null);
 
   useEffect(() => {
     fetch("/api/schedule/find", { headers: authHeader() })
@@ -19,25 +19,83 @@ const Sheduler = () => {
   }, [editRow]);
   const [search, setSearch] = useState("all");
 
+  const Switch = async () => {
+    try {
+      await fetch("/api/schedule/exchangeSwitch", {
+        method: "POST",
+        headers: authHeader(),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const Refresh = async () => {
+    try {
+      await fetch("/api/schedule/exchangeRefresh", {
+        method: "POST",
+        headers: authHeader(),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const cName = (rows) => {
+    if (rows.forceDisabled && rows.enabled) {
+      return "table-header opasity-30";
+    }
+    if (rows.enabled && !rows.forceDisabled) {
+      return "table-header";
+    }
+  };
   return (
     <div className="wrapped">
       <PageTitle title={"sheduler"} />
-      <div className="form-group col-md-6 mb-3">
-        <select
-          className="form-select"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        >
-          <option value="all">Всі</option>
-          {uniqueArrayGroupName(data).map((option) => {
-            return (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            );
-          })}
-        </select>
+      <div className="row">
+        <div className="form-group col-md-6 mb-2">
+          <select
+            className="form-select"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          >
+            <option value="all">Всі</option>
+            {uniqueArrayGroupName(data).map((option) => {
+              return (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+        <div className="col-md-3 mb-2">
+          <button
+            type="button"
+            onClick={Refresh}
+            className="btn custom-btn w-100"
+          >
+            Перезавантажити Sheduler
+          </button>
+        </div>
       </div>
+      {search !== "all" && (
+        <div className="d-flex">
+          <button
+            type="button"
+            onClick={Switch}
+            className="btn btn-success mb-2 w-100"
+          >
+            Зробити групу активною
+          </button>
+
+          <button
+            type="button"
+            onClick={Switch}
+            className="btn btn-danger mb-2 w-100"
+          >
+            Зробити групу активною та перезавантажити Sheduler
+          </button>
+        </div>
+      )}
       <div className="sroll-x">
         <table className="table table-bordered w-90">
           <thead>
@@ -55,6 +113,15 @@ const Sheduler = () => {
           </thead>
           <tbody>
             {data
+              .sort((a, b) =>
+                a.groupName === b.groupName
+                  ? a.name > b.name
+                    ? 1
+                    : -1
+                  : a.groupName > b.groupName
+                  ? 1
+                  : -1
+              )
               .filter((el) => {
                 if (search === "all") {
                   return true;
@@ -64,6 +131,7 @@ const Sheduler = () => {
               .map((row, index) => {
                 return (
                   <tr
+                    className={cName(row)}
                     onClick={() => {
                       setEditRow(row);
                     }}

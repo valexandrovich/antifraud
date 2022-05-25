@@ -2,10 +2,8 @@ package ua.com.solidity.common;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.data.DataBatch;
 
-@Slf4j
 @Getter
 @Setter
 public class OutputCache {

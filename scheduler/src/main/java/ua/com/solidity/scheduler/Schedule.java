@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -15,7 +15,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.WeekFields;
 import java.util.Locale;
 
-@Slf4j
+
+@CustomLog
 @Getter
 @Setter
 public class Schedule {
@@ -68,7 +69,7 @@ public class Schedule {
         try {
             setStart(LocalDateTime.parse(start));
         } catch (Exception e) {
-            log.warn("Schedule can't parse a start date: {}", start);
+            log.warn("Schedule can't parse a start date: {}", start, e);
             throw e;
         }
     }
@@ -82,7 +83,7 @@ public class Schedule {
             if (finish == null || finish.isEmpty()) setFinish(null);
             else setFinish(LocalDateTime.parse(finish));
         } catch (Exception e) {
-            log.warn("Schedule can't parse a finish date: {}", finish);
+            log.warn("Schedule can't parse a finish date: {}", finish, e);
             throw e;
         }
     }

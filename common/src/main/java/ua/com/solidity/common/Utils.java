@@ -13,8 +13,8 @@ import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ShutdownSignalException;
+import lombok.CustomLog;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -37,7 +37,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-@Slf4j
+
+@CustomLog
 @SuppressWarnings("unused")
 public class Utils {
     @SuppressWarnings("SpellCheckingInspection")
@@ -66,13 +67,13 @@ public class Utils {
     }
 
     private static class DeferredExecutionTimerTask extends TimerTask {
-        DeferredProcedure proc;
-        public DeferredExecutionTimerTask(DeferredProcedure proc) {
-            this.proc = proc;
+        Runnable runnable;
+        public DeferredExecutionTimerTask(Runnable runnable) {
+            this.runnable = runnable;
         }
         @Override
         public void run() {
-            proc.execute();
+            runnable.run();
         }
     }
 
@@ -431,7 +432,7 @@ public class Utils {
                 }
             }
         } catch (Exception e) {
-            log.error("Exception - {} : {}", e.getCause().getClass().getName(), e.getCause().getMessage());
+            log.error("Error due stream copy", e);
             return false;
         }
         return true;
@@ -530,11 +531,10 @@ public class Utils {
     }
 
     public static synchronized void sendRabbitMQMessage(String queue, String message) {
-        if (queue == null || queue.isBlank() || message == null) return;
+        if (queue == null || queue.isBlank()) return;
         if (prepareRabbitMQQueue(queue)) {
             try {
-                channel.basicPublish(queue, queue, null, message.getBytes(StandardCharsets.UTF_8));
-
+                channel.basicPublish(queue, queue, null, (message == null ? "" : message).getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
                 rabbitMQLogError("Can't send a message", queue, queue, message, e);
             }
@@ -544,8 +544,10 @@ public class Utils {
         }
     }
 
-    public static synchronized void deferredExecute(long milliseconds, DeferredProcedure proc) {
-        timer.schedule(new DeferredExecutionTimerTask(proc), milliseconds);
+    public static synchronized TimerTask deferredExecute(long milliseconds, Runnable runnable) {
+        TimerTask timerTask = new DeferredExecutionTimerTask(runnable);
+        timer.schedule(timerTask, milliseconds);
+        return timerTask;
     }
 
     public static synchronized TimerTask periodicExecute(long milliseconds, PeriodicTask task) {

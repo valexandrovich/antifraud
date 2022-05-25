@@ -1,13 +1,14 @@
 package ua.com.solidity.downloader;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.DownloaderMessageData;
 import ua.com.solidity.common.ResourceInfoData;
 import ua.com.solidity.common.ResourceInfoFileData;
 import ua.com.solidity.common.Utils;
 
-@Slf4j
+
+@CustomLog
 public class DownloaderFileHandler implements DownloaderTaskHandler {
     private static final String EXTRA = "extra";
     private final Config config;

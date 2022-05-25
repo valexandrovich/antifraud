@@ -21,7 +21,8 @@ import ua.com.solidity.db.entities.FileDescription;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.web.dto.YPersonDto;
 import ua.com.solidity.web.request.SearchRequest;
-import ua.com.solidity.web.response.ValidatedPhysicalPersonResponse;
+import ua.com.solidity.web.response.ValidatedManualPersonResponse;
+import ua.com.solidity.web.service.SearchService;
 import ua.com.solidity.web.service.XslxService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,10 +39,11 @@ import java.util.UUID;
 public class UniversalPhysicalFileController {
 
 	private final XslxService xslxService;
+    private final SearchService searchService;
 
 	@PostMapping(path = "/upload")
 	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
-	@ApiOperation(value = "Uploads xlsx file to the data base.",
+	@ApiOperation(value = "Uploads dynamic file to the data base.",
 			consumes = "multipart/form-data",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -49,8 +51,10 @@ public class UniversalPhysicalFileController {
 			@ApiParam(
 					value = "File you need to add to the database.")
 			@RequestBody MultipartFile fileName,
+            @RequestParam String delimiter,
+            @RequestParam String code,
 			HttpServletRequest request) {
-		UUID uuid = xslxService.upload(fileName, request);
+		UUID uuid = xslxService.uploadDynamicFile(fileName, delimiter, code, request);
 		return ResponseEntity.ok(uuid);
 	}
 
@@ -87,12 +91,12 @@ public class UniversalPhysicalFileController {
 	@ApiOperation(value = "Finds all physical persons in specified file.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
-	public ResponseEntity<ValidatedPhysicalPersonResponse> getUploaded(
+	public ResponseEntity<ValidatedManualPersonResponse> getUploaded(
 			@ApiParam(
 					value = "UUID of file you need to describe.",
 					required = true)
 			@NotNull @PathVariable UUID uuid) {
-		ValidatedPhysicalPersonResponse response = xslxService.getUploaded(uuid);
+		ValidatedManualPersonResponse response = xslxService.getUploadedManualPerson(uuid);
 		return ResponseEntity.ok(response);
 	}
 
@@ -107,11 +111,11 @@ public class UniversalPhysicalFileController {
 			@RequestBody SearchRequest searchRequest,
 			HttpServletRequest httpServletRequest
 	) {
-		List<YPersonDto> personList = xslxService.search(searchRequest, httpServletRequest);
+		List<YPersonDto> personList = searchService.search(searchRequest, httpServletRequest);
 		return ResponseEntity.ok(personList);
 	}
 
-	@PostMapping(path = "/find/{id}")
+	@GetMapping(path = "/find/{id}")
 	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
 	@ApiOperation(value = "Finds person by specified id",
 			response = ResponseEntity.class,
@@ -122,7 +126,7 @@ public class UniversalPhysicalFileController {
 			@PathVariable UUID id,
 			HttpServletRequest request
 	) {
-		YPersonDto dto = xslxService.findById(id, request);
+		YPersonDto dto = searchService.findById(id, request);
 		return ResponseEntity.ok(dto);
 	}
 
@@ -155,4 +159,19 @@ public class UniversalPhysicalFileController {
 		xslxService.unSubscribe(id, request);
 		return ResponseEntity.ok().build();
 	}
+
+    @PutMapping(path = "/delete/{id}")
+    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @ApiOperation(value = "Delete FileDescription by specified id",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<FileDescription> deleteFileDescription(
+            @ApiParam(value = "FileDescription id you need delete",
+                    required = true)
+            @PathVariable UUID id,
+            HttpServletRequest request
+    ) {
+        xslxService.delete(id, request);
+        return ResponseEntity.ok().build();
+    }
 }

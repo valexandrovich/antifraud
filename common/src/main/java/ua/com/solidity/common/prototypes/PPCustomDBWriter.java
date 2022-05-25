@@ -1,6 +1,7 @@
 package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.OutputCache;
@@ -10,7 +11,8 @@ import ua.com.solidity.pipeline.Input;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
-@Slf4j
+
+@CustomLog
 public abstract class PPCustomDBWriter extends Prototype {
     public static final String OUTPUT_STATS = "outputStats";
     public static final String SOURCE = "source";

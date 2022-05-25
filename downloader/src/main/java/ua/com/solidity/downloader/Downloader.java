@@ -1,6 +1,6 @@
 package ua.com.solidity.downloader;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.*;
@@ -11,7 +11,8 @@ import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.UUID;
 
-@Slf4j
+
+@CustomLog
 @Component
 public class Downloader {
     private final File targetFolder;
@@ -80,7 +81,7 @@ public class Downloader {
 
         if (!downloaded) {
             if (fileIndex < fileCount) {
-                changer.error(String.format("Error on downloading (%d/%d) file.", fileIndex, fileCount));
+                changer.error(String.format("Error on downloading (%d/%d) secondary file.", fileIndex, fileCount));
             } else {
                 changer.error("Error on downloading main file.");
             }

@@ -1,9 +1,6 @@
 package ua.com.solidity.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.apache.commons.lang.StringUtils;
 import ua.com.solidity.common.data.DataLocation;
 
@@ -13,7 +10,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
-@Slf4j
+@CustomLog
 public class DefaultErrorLogger extends ErrorReportLogger {
     private final String fileName;
     private final String mailto;
@@ -22,17 +19,6 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     private final long maxRowCount;
     private long rowCount = 0;
     private boolean error = false;
-
-    @AllArgsConstructor
-    @Getter
-    @Setter
-    private static class NotificationMessage {
-        private String to;
-        private String subject;
-        private String body;
-        private int retries;
-        private String filePath;
-    }
 
     public DefaultErrorLogger(String fileName, String mailto, long maxRowCount) {
         this.fileName = fileName;
@@ -50,8 +36,7 @@ public class DefaultErrorLogger extends ErrorReportLogger {
             }
             writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            log.error("Can't create file {}. {}: {}", fileName, e.getClass().getName(), e.getMessage());
-            log.debug("Exception:", e);
+            log.error("Can't create file {}. ", fileName, e);
             error = true;
         }
         return true;

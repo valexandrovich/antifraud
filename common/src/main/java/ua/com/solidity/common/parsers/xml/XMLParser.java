@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.FilteredTextInputStream;
 import ua.com.solidity.common.Utils;
@@ -18,7 +18,8 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 
-@Slf4j
+
+@CustomLog
 public class XMLParser extends CustomParser {
     private FilteredTextInputStream mainStream;
     private XMLStreamReader reader;

@@ -3,13 +3,11 @@ package ua.com.solidity.common;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 public class OutputStats {
     @Getter
     @Setter

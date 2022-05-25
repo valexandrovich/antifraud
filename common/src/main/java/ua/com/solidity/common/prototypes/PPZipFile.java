@@ -1,12 +1,13 @@
 package ua.com.solidity.common.prototypes;
 
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.pipeline.Item;
 
 import java.util.zip.ZipFile;
 
-@Slf4j
+
+@CustomLog
 public class PPZipFile extends PPInputStream {
     @Override
     public Class<?> getOutputClass() {

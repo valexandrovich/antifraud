@@ -18,7 +18,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableJpaRepositories(
-        basePackages = "ua.com.solidity.dwh.repositorydwh",
+        basePackages ="ua.com.solidity.dwh.repositorydwh",
         entityManagerFactoryRef = "dwhEntityManagerFactory",
         transactionManagerRef = "dwhTransactionManager"
 )

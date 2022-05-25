@@ -1,6 +1,6 @@
 package ua.com.solidity.importer.pipeline;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import ua.com.solidity.common.ErrorReport;
 import ua.com.solidity.common.ImporterMessageData;
@@ -18,7 +18,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.UUID;
 
-@Slf4j
+
+@CustomLog
 public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     public static final String DATA = "data";
     private static class Data {

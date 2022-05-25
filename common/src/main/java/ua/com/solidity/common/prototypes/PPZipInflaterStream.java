@@ -1,6 +1,7 @@
 package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.BOMInputStream;
@@ -16,7 +17,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-@Slf4j
+
+@CustomLog
 public class PPZipInflaterStream extends Prototype {
     private static final String MATCH = "match";
     private static final String ZIP = "zip";

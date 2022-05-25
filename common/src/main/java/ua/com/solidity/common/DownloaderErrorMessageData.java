@@ -8,5 +8,5 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class DownloaderErrorMessageData {
-    private String apiKey;
+    private String source;
 }

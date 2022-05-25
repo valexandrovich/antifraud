@@ -6,13 +6,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.AccessLevel;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.BitSet;
 
-@Slf4j
+
+@CustomLog
 @Getter
 @Setter
 public abstract class Param implements CustomParam {
@@ -237,7 +238,7 @@ public abstract class Param implements CustomParam {
         try {
             activation = Activation.valueOf(obj.get(KEY_TYPE).asText().toUpperCase());
         } catch (Exception e) {
-            log.warn("Param parse error. invalid type: {}", node.getNodeType());
+            log.warn("Param parse error. invalid type: {}", node.getNodeType(), e);
             return;
         }
 

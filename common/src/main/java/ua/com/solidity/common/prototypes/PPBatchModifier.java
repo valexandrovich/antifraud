@@ -1,6 +1,7 @@
 package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.data.DataBatch;
@@ -13,7 +14,8 @@ import ua.com.solidity.pipeline.Prototype;
 
 import java.util.List;
 
-@Slf4j
+
+@CustomLog
 @SuppressWarnings("unused")
 public class PPBatchModifier extends Prototype {
     private static final String INPUT = "input";

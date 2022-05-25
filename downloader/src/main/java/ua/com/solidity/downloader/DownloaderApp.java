@@ -1,6 +1,6 @@
 package ua.com.solidity.downloader;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,7 +10,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import ua.com.solidity.common.RabbitMQListener;
 import ua.com.solidity.common.Utils;
 
-@Slf4j
+
+@CustomLog
 @EnableJpaRepositories(basePackages = "ua.com.solidity.db.repositories")
 @EntityScan("ua.com.solidity.db.entities")
 @SpringBootApplication

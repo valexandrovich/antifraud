@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1653174181434-1" author="Beetone">
+        <sqlFile encoding="utf8"
+                 path="import_revision_remove.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1653174181434-2" author="Beetone">
+        <sql>
+            ALTER TABLE public.scheduler
+            ALTER COLUMN group_name TYPE character varying(255) COLLATE pg_catalog."POSIX";
+
+            ALTER TABLE public.scheduler
+            ALTER COLUMN name TYPE character varying(255) COLLATE pg_catalog."POSIX";
+        </sql>
+        <rollback>
+
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1653174181434-3" author="Beetone">
+        <sql>
+            delete from scheduler s where s.group_name = 'init' or s.group_name = 'x-debug' or s.group_name = 'collect' or s.name like '%.switch';
+
+            update scheduler s
+            set
+                name = substring(s.name from '%.#"%#"' for '#')
+            where group_name = 'base' and substring(s.name from '%.#"%#"' for '#') is not NULL;
+
+            insert into scheduler(group_name, name, exchange, data, schedule, force_disabled, enabled)
+            values
+                ('init', 'initialization', 'otp-etl.scheduler',
+                    '{"action": "info", "message": "Waiting for command: Switch to group ({\"action\":\"switch\", \"group\":\"(groupName)\"}) or refresh ({\"action\":\"refresh\"}) for RabbitMQ \"otp-etl.scheduler\" exchange..."}',
+                    NULL, false, false),
+                ('base', '~final~', 'otp-etl.scheduler', '{"action": "switch", "group": "init"}', NULL, false, false),
+                ('~debug~', 'debug', 'otp-etl.scheduler', '{"action": "info", "message": "Debug message test"}', NULL, false, false),
+                ('~debug~', '~final~', 'otp-etl.scheduler', '{"action": "switch", "group": "init"}', NULL, false, false);
+        </sql>
+        <rollback>
+
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1653174181434-4" author="Beetone">
+        <sql>
+            select 1 from scheduler_activate('init');
+        </sql>
+        <rollback>
+
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1653174181434-5" author="Beetone">
+        <tagDatabase tag="v0021"/>
+    </changeSet>
+</databaseChangeLog>

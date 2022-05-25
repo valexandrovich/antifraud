@@ -3,7 +3,7 @@ import { Formik, Form, Field } from "formik";
 import MaskedInput from "react-text-mask";
 import * as Yup from "yup";
 
-import Card from "./Card";
+import Card from "./Card/Card.js";
 import { setAlertMessageThunk } from "../store/reducers/AuthReducer";
 import { useDispatch } from "react-redux";
 

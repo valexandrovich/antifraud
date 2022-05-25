@@ -5,12 +5,13 @@ const MultiselectDay = ({
   name,
   options,
   period,
-  // setRowDate,
   setWeekDays,
   selectedValues,
+  selectAll,
+  removeAll,
 }) => {
   return (
-    <div className="form-group form-row">
+    <div className="form-group form-row mb-3">
       <label
         className="d-flex align-items-center justify-content-between "
         htmlFor={name}
@@ -24,25 +25,25 @@ const MultiselectDay = ({
           options={options}
           disable={period !== "month"}
           selectedValues={selectedValues}
-          hidePlaceholder={true}
+          hidePlaceholder={selectedValues}
+          placeholder="-"
           emptyRecordMsg="Не знайдeно збігів"
           onSelect={(day) => {
-            var value = day.reduce(function (prev, curr) {
+            var value = day.reduce((prev, curr) => {
               return [...prev, curr.value];
             }, []);
             setWeekDays((prevState) => ({
               ...prevState,
               month: {
                 ...prevState.month,
-                [name]: value,
+                [name]: value.length === 6 ? "all" : value,
               },
             }));
           }}
           onRemove={(day) => {
-            var value = day.reduce(function (prev, curr) {
+            var value = day.reduce((prev, curr) => {
               return [...prev, curr.value];
             }, []);
-
             if (value.length > 0) {
               setWeekDays((prevState) => ({
                 ...prevState,
@@ -54,12 +55,33 @@ const MultiselectDay = ({
             } else {
               setWeekDays((prevState) => ({
                 ...prevState,
-                month: {},
+                month: {
+                  ...prevState.month,
+                  [name]: undefined,
+                },
               }));
             }
+            //  else {
+            //   setWeekDays((prevState) => ({
+            //     ...prevState,
+            //     month: {},
+            //   }));
+            //   debugger;
+            // }
           }}
         />
-        <span className="ml-10">тиждень</span>
+        <span className="ml-10 mr-10">тиждень</span>
+        <div className="d-flex flex-column">
+          <button
+            onClick={selectAll}
+            className="btn btn-sm btn-outline-success"
+          >
+            Обрати всі
+          </button>
+          <button onClick={removeAll} className="btn btn-sm btn-outline-danger">
+            Видалити всі
+          </button>
+        </div>
       </div>
     </div>
   );

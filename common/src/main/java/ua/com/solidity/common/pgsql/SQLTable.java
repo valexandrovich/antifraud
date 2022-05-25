@@ -1,7 +1,7 @@
 package ua.com.solidity.common.pgsql;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,7 +13,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.*;
 
-@Slf4j
+
+@CustomLog
 public class SQLTable {
     public final String tableName;
     public final JdbcTemplate template;
@@ -70,7 +71,7 @@ public class SQLTable {
             connection = DBUtils.createConnection("spring.datasource", "reWriteBatchedInserts=true");
             return connection;
         } catch (Exception e) {
-            log.error("DBConnection not established.");
+            log.error("DBConnection not established.", e);
         }
         return null;
     }
@@ -215,12 +216,12 @@ public class SQLTable {
                 }
             }
             if (errorBuilder.length() > 0) {
-                log.debug("----Row content error. {}", errorBuilder);
+                log.debug("Row content error. {}", errorBuilder);
                 errorBuilder.setLength(0);
                 res.error();
             }
         } catch (Exception e) {
-            log.error("--Prepare statement error. {}: {}.", e.getCause().getClass().getName(), e.getCause().getMessage());
+            log.error("Prepare statement error.", e);
             res.error();
         }
         return res;
@@ -511,7 +512,7 @@ public class SQLTable {
         if (!lengthErrors.isEmpty()) {
             log.debug("\"{}\" found for fields:", SQLAssignResult.LENGTH_ERROR.getMessage());
             for (String error : lengthErrors) {
-                log.error(error);
+                log.debug(error);
             }
         }
     }

@@ -11,7 +11,6 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
   const [rowDate, setRowDate] = useState(edit);
   const [formErrors, setFormErrors] = useState({});
   const dispatch = useDispatch();
-  console.log(rowDate, "@@@@@@@");
   const [minPeriod, setMinPeriod] = useState(null);
   const [formatedDate, setFormatedDate] = useState({
     start: "",
@@ -44,7 +43,6 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
     weeks: {},
     month: {},
   });
-  console.log(formErrors);
   const [time, setTime] = useState({
     periodic: "0h0m",
     once: { type: "once", value: "00:00" },
@@ -55,7 +53,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
     if (
       rowDate.schedule?.weeks &&
       rowDate.schedule?.weeks.type === "periodic" &&
-      rowDate.schedule?.weeks.value > 0
+      rowDate.schedule?.weeks.value > 1
     ) {
       setPeriod("weeks");
     }
@@ -65,6 +63,10 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
         rowDate.schedule?.month.type === "set")
     ) {
       setPeriod("month");
+    }
+    if (rowDate.schedule?.days_of_month) {
+      setPeriod("month");
+      setmonthPeriod("daymonth");
     }
     if (!rowDate.schedule?.weeks && !rowDate.schedule?.month) {
       if (rowDate.schedule?.days?.type !== "periodic") {
@@ -90,18 +92,37 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       setMinPeriod("once");
     }
     if (
-      rowDate.schedule?.weeks &&
-      rowDate.schedule?.weeks.type === "periodic" &&
+      !rowDate.schedule?.month &&
+      !rowDate.schedule.days_of_month &&
       rowDate.schedule?.days_of_week
     ) {
       const daysArray = Object.entries(rowDate.schedule?.days_of_week);
-      const filtered = daysArray.filter(([key, value]) => value === "all");
+      const filtered = daysArray.filter(([_key, value]) => value === "all");
       const daysAll = Object.fromEntries(filtered);
-      if (daysAll !== {}) {
+      if (daysAll) {
         setWeekDays((prevState) => ({
           ...prevState,
           weeks: daysAll,
         }));
+        setRowDate((prevState) => ({
+          ...prevState,
+          schedule: {
+            ...prevState.schedule,
+            weeks: {
+              type: "periodic",
+              value: 1,
+            },
+          },
+        }));
+        setPeriod("weeks");
+      }
+      if (Object.keys(daysAll).length === 0) {
+        setWeekDays((prevState) => ({
+          ...prevState,
+          month: rowDate.schedule?.days_of_week,
+        }));
+        setPeriod("month");
+        setmonthPeriod("dayweek");
       }
     }
     if (
@@ -116,12 +137,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       setPeriod("month");
       setmonthPeriod("dayweek");
     }
-    if (
-      rowDate.schedule?.month &&
-      (rowDate.schedule?.month.type === "set" ||
-        rowDate.schedule?.month.type === "once") &&
-      rowDate.schedule.days_of_month
-    ) {
+    if (rowDate.schedule.days_of_month) {
       setPeriod("month");
       setmonthPeriod("daymonth");
     }
@@ -159,7 +175,6 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
   //  Preset period and data
 
   useEffect(() => {
-    const day = new DateObject(rowDate.schedule?.days?.value);
     const start = new DateObject(rowDate.schedule?.start);
     const finish = new DateObject(rowDate.schedule?.finish);
 
@@ -167,31 +182,135 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       ...prevState,
       start: start.format("YYYY-MM-DDTHH:mm"),
       finish: finish.format("YYYY-MM-DDTHH:mm"),
-      day: day.format("DD"),
     }));
-  }, [rowDate]);
+  }, [rowDate.schedule.start, rowDate.schedule.finish]);
 
+  useEffect(() => {
+    setFormErrors(
+      scheduleSettings.validate(rowDate, weekDays, time, monthPeriod)
+    );
+  }, [rowDate, weekDays, time, monthPeriod]);
   const handleValidate = (e) => {
     e.preventDefault();
-    const week = () => {
-      if (
-        period === "weeks" &&
-        rowDate.schedule.weeks.type === "periodic" &&
-        rowDate.schedule.weeks.value > 0
-      ) {
-        return weekDays.weeks === {} ? undefined : weekDays.weeks;
+    const days = () => {
+      if (period === "days" && rowDate.schedule?.days?.value === 1) {
+        return undefined;
+      } else {
+        return rowDate.schedule?.days;
       }
+    };
+    const minutes = () => {
+      if (minPeriod !== "periodic") {
+        return { type: time.once.type, value: time.once.value };
+      }
+      if (minPeriod === "periodic" && time.periodic.value.indexOf("h") > 0) {
+        if (time.periodic.value && !Number.isInteger(time.periodic.value)) {
+          let t = time.periodic.value.split("h");
+          if (Number(t[0]) > 0 && Number(t[1].slice(0, -1)) > 0) {
+            return {
+              type: "periodic",
+              value: `${t[0]}h${t[1].slice(0, -1)}`,
+            };
+          }
+          if (Number(t[0]) > 0 && Number(t[1].slice(0, -1)) === 0) {
+            return {
+              type: "periodic",
+              value: `${t[0]}h`,
+            };
+          }
+          if (Number(t[0]) <= 0) {
+            return {
+              type: "periodic",
+              value: Number(`${t[1].slice(0, -1)}`),
+            };
+          }
+        }
+      }
+      if (Number.isInteger(time.periodic.value)) {
+        return { type: "periodic", value: time.periodic.value };
+      }
+    };
+    const weeks = () => {
+      if (period === "weeks" && rowDate.schedule.weeks.value === 1) {
+        return undefined;
+      }
+      if (period === "weeks" && rowDate.schedule.weeks.value > 1) {
+        return { type: "periodic", value: rowDate.schedule.weeks.value };
+      }
+    };
+    const month = () => {
       if (
         period === "month" &&
-        (rowDate.schedule.month.type === "set" ||
-          rowDate.schedule.month.type === "once")
+        (rowDate.schedule?.month?.value?.length > 0 ||
+          rowDate.schedule?.month?.value === 1) &&
+        rowDate.schedule?.month?.value?.length !== 12
       ) {
-        return weekDays.month === {} ? undefined : weekDays.month;
+        return rowDate.schedule.month;
       }
-      if (!period === "weeks" && !period === "month") {
+      if (period === "month" && rowDate.schedule?.month?.value?.length === 12) {
         return undefined;
       }
     };
+    const dayOfMonth = () => {
+      if (
+        period === "month" &&
+        monthPeriod === "daymonth" &&
+        rowDate.schedule.days_of_month.value.length !== 31 &&
+        rowDate.schedule.days_of_month.value.length > 0
+      ) {
+        return rowDate.schedule.days_of_month;
+      }
+      if (
+        period === "month" &&
+        monthPeriod === "daymonth" &&
+        rowDate.schedule.days_of_month.value.length === 31
+      ) {
+        return undefined;
+      }
+    };
+    const isAll = (val) => val === "all";
+    const allEmpty = (val) => val === undefined;
+    const daysOfWeek = () => {
+      if (
+        period === "month" &&
+        monthPeriod === "dayweek" &&
+        Object.keys(weekDays?.month).length > 0 &&
+        !Object.values(weekDays.month).every(allEmpty)
+      ) {
+        return weekDays.month;
+      }
+      if (
+        period === "month" &&
+        monthPeriod === "dayweek" &&
+        Object.values(weekDays.month).every(isAll) &&
+        Object.keys(weekDays.month).length === 7
+      ) {
+        return undefined;
+      }
+      if (
+        period === "weeks" &&
+        rowDate.schedule?.weeks?.value === 1 &&
+        Object.keys(weekDays.weeks).length !== 7
+      ) {
+        return weekDays.weeks;
+      }
+      if (
+        period === "weeks" &&
+        rowDate.schedule?.weeks?.value > 1 &&
+        // Object.values(weekDays.weeks).every(isAll) &&
+        Object.keys(weekDays.weeks).length !== 7
+      ) {
+        return weekDays.weeks;
+      }
+      if (
+        period === "month" &&
+        monthPeriod === "dayweek" &&
+        Object.values(weekDays.month).every(allEmpty)
+      ) {
+        return undefined;
+      }
+    };
+
     let data = {
       enabled: rowDate.enabled,
       data: rowDate.data,
@@ -203,25 +322,12 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
         ? {
             start: formatedDate.start,
             finish: finishTime ? formatedDate.finish : undefined,
-            minutes: rowDate.schedule.minutes,
-            days:
-              period === "days"
-                ? {
-                    type: rowDate.schedule.days.type,
-                    value: formatedDate.day,
-                  }
-                : undefined,
-
-            days_of_week: week() ? week() : undefined,
-            weeks: period === "weeks" ? rowDate.schedule.weeks : undefined,
-            month: period === "month" ? rowDate.schedule.month : undefined,
-            days_of_month:
-              monthPeriod === "daymonth" && period === "month"
-                ? {
-                    type: rowDate.schedule.days_of_month.type,
-                    value: rowDate.schedule.days_of_month.value,
-                  }
-                : undefined,
+            minutes: minutes(),
+            days: period === "days" ? days() : undefined,
+            weeks: period === "weeks" ? weeks() : undefined,
+            month: period === "month" ? month() : undefined,
+            days_of_month: dayOfMonth(),
+            days_of_week: daysOfWeek(),
           }
         : null,
     };
@@ -248,12 +354,6 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
     });
   };
 
-  useEffect(() => {
-    setFormErrors(
-      scheduleSettings.validate(rowDate, weekDays, time, monthPeriod)
-    );
-  }, [rowDate, weekDays, time, monthPeriod]);
-
   return (
     <Modal
       title={`Редактор розкладу: ${rowDate.groupName}/${rowDate.name} `}
@@ -266,17 +366,11 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
             <label htmlFor="group_name">
               Назва групи
               <input
+                value={rowDate.groupName}
+                readOnly
                 className={`form-control ${
                   formErrors.groupName ? "is-invalid" : ""
                 }`}
-                placeholder={rowDate.groupName}
-                onChange={(e) => {
-                  const { value } = e.currentTarget;
-                  setRowDate((prevState) => ({
-                    ...prevState,
-                    groupName: value,
-                  }));
-                }}
                 list="group"
                 name="group_name"
               />
@@ -300,13 +394,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
                   formErrors.name ? "is-invalid" : ""
                 }`}
                 value={rowDate.name}
-                onChange={(e) => {
-                  const { value } = e.currentTarget;
-                  setRowDate((prevState) => ({
-                    ...prevState,
-                    name: value,
-                  }));
-                }}
+                readOnly
               />
             </label>
             {formErrors.name && (
@@ -345,7 +433,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
             <label>Сповіщення</label>
             <textarea
               name="data"
-              className={`form-control ${formErrors.data ? "is-invalid" : ""}`}
+              className={`form-control ${jsonErr ? "is-invalid" : ""}`}
               rows={2}
               value={json}
               onChange={(e) => {
@@ -354,9 +442,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
                 validJson(value);
               }}
             />
-            {formErrors.data && (
-              <p className="text-danger">{formErrors.data}</p>
-            )}
+            {jsonErr && <p className="text-danger">{jsonErr}</p>}
           </div>
 
           <div className="form-group d-flex align-items-center mb-2 ">
@@ -377,22 +463,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
               Тимчасово заборонити виконання завдання
             </label>
           </div>
-          <div className="form-group d-flex align-items-center mb-2">
-            <input
-              className="big-checkbox"
-              name="enabled"
-              type="checkbox"
-              checked={JSON.stringify(rowDate.enabled) === "true"}
-              onChange={(e) => {
-                const checked = e.currentTarget.checked;
-                setRowDate((prevState) => ({
-                  ...prevState,
-                  enabled: JSON.parse(checked),
-                }));
-              }}
-            />
-            <label htmlFor="enabled">Завдання обране для виконання</label>
-          </div>
+
           <div className="d-flex align-items-center mb-3">
             <label className="miro-radiobutton d-flex align-items-center">
               <input
@@ -447,7 +518,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       </div>
       <div className="modal-footer mt-3">
         <button
-          disabled={Object.values(formErrors).length > 0}
+          disabled={jsonErr || Object.values(formErrors).length > 0}
           className="btn custom-btn"
           type="submit"
           onClick={(e) => handleValidate(e)}

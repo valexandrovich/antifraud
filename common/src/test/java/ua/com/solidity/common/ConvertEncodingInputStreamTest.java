@@ -1,6 +1,6 @@
 package ua.com.solidity.common;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -11,7 +11,8 @@ import java.util.Scanner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
+
+@CustomLog
 class ConvertEncodingInputStreamTest {
     private static final String firstTestData = "Hello, ребята, это простой тест";
     private static final String defCharsetName = "windows-1251";

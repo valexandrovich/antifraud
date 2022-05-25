@@ -13,7 +13,8 @@ import Login from "./pages/login/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Progress from "./pages/progress/Progress";
 import Sheduler from "./pages/sheduler/Sheduler";
-import SingleCard from "./pages/aside/card/SingleCard";
+import SingleCard from "./pages/card/SingleCard";
+import Monitoring from "./pages/monitoring/Monitoring";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
@@ -44,7 +45,7 @@ const App = () => {
             <ProtectedRoute exact path="/card/:id" component={SingleCard} />
             <ProtectedRoute exact path="/progress" component={Progress} />
             <ProtectedRoute exact path="/sheduler" component={Sheduler} />
-
+            <ProtectedRoute exact path="/subscription" component={Monitoring} />
             <Route path="/error" component={ErrorPage} />
           </Switch>
         </>

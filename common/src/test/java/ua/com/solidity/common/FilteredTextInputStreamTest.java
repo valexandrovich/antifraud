@@ -1,5 +1,5 @@
 package ua.com.solidity.common;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
@@ -8,7 +8,8 @@ import java.util.Scanner;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@Slf4j
+
+@CustomLog
 class FilteredTextInputStreamTest {
     public static final byte[] data = {49, 10, 50, 13, 10, 51, 13, 52, 10, 13, 53, 10, 54, 10, 55, 13, 56};
     @Test

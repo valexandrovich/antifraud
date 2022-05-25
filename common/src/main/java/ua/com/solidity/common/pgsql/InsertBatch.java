@@ -2,7 +2,6 @@ package ua.com.solidity.common.pgsql;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.xerces.impl.dv.util.Base64;
 import org.springframework.lang.NonNull;
 import ua.com.solidity.common.ValueParser;
@@ -16,7 +15,6 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-@Slf4j
 public class InsertBatch {
     public static final String NULL_STR = "null";
 

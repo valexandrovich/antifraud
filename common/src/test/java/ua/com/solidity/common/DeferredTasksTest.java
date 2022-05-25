@@ -43,7 +43,7 @@ class DeferredTasksTest {
 
     @Test
     void firstTest() {
-        DeferredTasks tasks = new DeferredTasks(200);
+        DeferredTasks tasks = new DeferredTasks(200, true);
         tasks.append(new TestTask(target, DeferredAction.APPEND, "id", "hello"));
         tasks.append(new TestTask(target, DeferredAction.APPEND, "id2", "World"));
         tasks.append(new TestTask(target, DeferredAction.REPLACE, "id", "Hello"));

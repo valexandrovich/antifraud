@@ -1,8 +1,8 @@
 package ua.com.solidity.scheduler;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.db.entities.SchedulerEntity;
@@ -17,7 +17,8 @@ import java.util.Objects;
 
 import static java.time.LocalDateTime.now;
 
-@Slf4j
+
+@CustomLog
 public class Scheduler {
     public static final String KEY_EXCHANGE = "exchange";
     public static final String KEY_SCHEDULE = "schedule";
@@ -26,7 +27,9 @@ public class Scheduler {
 
     public static final String MSG_INIT = "init";
 
-    public static final String LOG_HANDLED = "handled: {} <= {}";
+    public static final String LOG_HANDLED = "{} <= {}";
+    public static final String LOG_HANDLED_IMMEDIATE = "* {} <= {}";
+    public static final String LOG_HANDLED_TEMP = "- ({}) {} <= {}";
 
     @Autowired
     private Config config;
@@ -41,12 +44,13 @@ public class Scheduler {
         public final Schedule schedule;
         public final String exchange;
         public final JsonNode data;
-        private LocalDateTime datetime = null;
+        private LocalDateTime datetime;
 
         private Task(Schedule schedule, String exchange, JsonNode data) {
             this.schedule = schedule;
             this.exchange = exchange;
             this.data = data;
+            this.datetime = schedule.nearest(now(), false);
         }
 
         private Task(long millis, String exchange, JsonNode data) {
@@ -61,8 +65,8 @@ public class Scheduler {
             return new Task(schedule, exchange, data);
         }
 
-        public static Task createTemporaryTask(String exchange, JsonNode data, long minutes) {
-            return new Task(minutes, exchange, data);
+        public static Task createTemporaryTask(String exchange, JsonNode data, long millis) {
+            return new Task(millis, exchange, data);
         }
 
         public final synchronized boolean isTemporary() {
@@ -111,18 +115,21 @@ public class Scheduler {
 
     private static class SendThread extends Thread {
         public final Scheduler scheduler;
-        LocalDateTime now;
         LocalDateTime datetime;
 
         public SendThread(Scheduler aScheduler) {
+            super("scheduler");
             scheduler = aScheduler;
         }
 
         private boolean exitFromNextTask() {
-            long seconds = datetime.toEpochSecond(ZoneOffset.UTC) - now.toEpochSecond(ZoneOffset.UTC);
-            if (seconds > 0) {
+            long milliseconds = datetime.toInstant(ZoneOffset.UTC).toEpochMilli() - now().toInstant(ZoneOffset.UTC).toEpochMilli();
+            if (milliseconds >= 0) {
+                ++milliseconds; // protection for nanoseconds difference near 1 ms
+            }
+            if (milliseconds > 0) {
                 try {
-                    sleep(seconds * 1000);
+                    sleep(milliseconds);
                 } catch (InterruptedException e) {
                     interrupt();
                     return true;
@@ -134,32 +141,35 @@ public class Scheduler {
         @Override
         public void run() {
             while (!interrupted()) {
-                now = now().truncatedTo(ChronoUnit.MINUTES);
-                datetime = scheduler.sendMessages(now);
+                datetime = scheduler.sendMessages();
                 if (datetime == null || exitFromNextTask()) break;
             }
         }
     }
 
     private final List<Task> mTasks = new ArrayList<>();
-     private SendThread mSender;
+    private SendThread mSender;
 
     public final void clear() {
+        stopSenderThread();
         synchronized (mTasks) {
-            stopSenderThread();
             mTasks.clear();
         }
     }
 
-    private void doSendMessage(String exchange, String message) {
+    private void doSendMessage(String exchange, String message, boolean isTemporary, boolean isImmediate) {
         Utils.sendRabbitMQMessage(exchange, message);
-        log.info(LOG_HANDLED, exchange, message);
+        if (isTemporary) {
+            log.info(LOG_HANDLED_TEMP, mTasks.size() - 1, exchange, message);
+        } else if (isImmediate) {
+            log.info(LOG_HANDLED_IMMEDIATE, exchange, message);
+        } else {
+            log.info(LOG_HANDLED, exchange, message);
+        }
     }
 
     private void sendMessage(Task task) {
-        synchronized (mTasks) {
-            doSendMessage(task.exchange, task.data.toString());
-        }
+        doSendMessage(task.exchange, task.data.toString(), task.isTemporary(), false);
     }
 
     private void refreshBySendMessage() {
@@ -171,21 +181,29 @@ public class Scheduler {
         updateTasks(Utils.getJsonNode(schedulerInitTasks), "initTasks");
     }
 
-    private void logTasks() {
-        if (mTasks.isEmpty()) {
-            log.info("No tasks found from DB.");
-        } else {
-            log.info("Loaded {} tasks from DB.", mTasks.size());
+    private void logTasks(boolean someTasksExecuted) {
+        synchronized(mTasks) {
+            if (mTasks.isEmpty()) {
+                if (someTasksExecuted) {
+                    log.info("-- All tasks completed. --");
+                } else {
+                    log.info("-- No active tasks found. --");
+                }
+            } else {
+                log.info("-- {} tasks loaded. --", mTasks.size());
+            }
         }
     }
 
     private void refreshByDatabaseRequest() {
         List<SchedulerEntity> list = SchedulerEntity.getAll();
         clear();
+        boolean someTasksExecuted = false;
         if (list != null) {
             for (SchedulerEntity entity : list) {
                 if (entity.getSchedule() == null) {
-                    doSendMessage(entity.getExchange(), entity.getData().toString());
+                    doSendMessage(entity.getExchange(), entity.getData().toString(), false, true);
+                    someTasksExecuted = true;
                 } else {
                     Schedule schedule = new Schedule();
                     try {
@@ -200,38 +218,42 @@ public class Scheduler {
                 }
             }
         }
-        initialize();
-        logTasks();
+        invalidate();
+        logTasks(someTasksExecuted);
     }
 
-    public final void refresh() {
-        synchronized(mTasks) {
-            if (config.getInit().equals("test")) {
-                refreshBySendMessage();
-            } else if (config.getInit().equals("debug")) {
-                refreshByLoadingInitFile();
-            } else {
-                refreshByDatabaseRequest();
-            }
+    public final void init() {
+        if (config.getInit().equals("init")) {
+            refreshBySendMessage();
+        } else if (config.getInit().equals("debug")) {
+            refreshByLoadingInitFile();
+        } else {
+            refreshByDatabaseRequest();
         }
     }
 
-    protected final LocalDateTime sendMessages(LocalDateTime now) {
+    public final void refresh() {
+        refreshByDatabaseRequest();
+    }
+
+    protected final LocalDateTime sendMessages(/*LocalDateTime now*/) {
         synchronized (mTasks) {
             int count;
             do {
                 count = 0;
+                LocalDateTime now = now();
                 for (Task task : mTasks) {
                     if ((task.datetime.isBefore(now) || task.datetime.isEqual(now))) {
                         sendMessage(task);
                         task.next(now);
                         ++count;
-                    }
+                    } else break;
                 }
-                mTasks.removeIf(Task::removeNeeded);
-                Collections.sort(mTasks);
+                if (count > 0) {
+                    mTasks.removeIf(Task::removeNeeded);
+                    Collections.sort(mTasks);
+                }
             } while (count > 0);
-
             return mTasks.isEmpty() ? null : mTasks.get(0).datetime;
         }
     }
@@ -255,24 +277,18 @@ public class Scheduler {
         }
     }
 
-    public final void initialize() {
-        synchronized (mTasks) {
-            stopSenderThread();
-            LocalDateTime now = now().truncatedTo(ChronoUnit.MINUTES);
-            for (Task task : mTasks) {
-                if (task.schedule != null) {
-                    task.datetime = task.schedule.nearest(now, false);
-                }
-            }
+    public final void invalidate() {
+        stopSenderThread();
+        synchronized(mTasks) {
             Collections.sort(mTasks);
-            startSenderThread();
         }
+        startSenderThread();
     }
 
     private boolean addTemporaryTask(long millis, String exchange, JsonNode data) {
         if (exchange == null) return false;
         if (millis <= 0) {
-            doSendMessage(exchange, data != null ? data.toString() : "");
+            doSendMessage(exchange, data != null ? data.toString() : "", false, true);
             return false;
         } else {
             synchronized (mTasks) {
@@ -282,20 +298,13 @@ public class Scheduler {
         return true;
     }
 
-    private boolean addTemporaryTask(JsonNode task) {
-        String exchange = task.hasNonNull(KEY_EXCHANGE) ? task.get(KEY_EXCHANGE).asText(null) : null;
-        JsonNode data = task.hasNonNull(KEY_DATA) ? task.get(KEY_DATA) : null;
-        long millis = task.hasNonNull(KEY_SLEEP_MS) ? task.get(KEY_SLEEP_MS).asLong(0) : 0;
-        return addTemporaryTask(millis, exchange, data);
-    }
-
     private boolean addTask(Schedule schedule, String exchange, JsonNode data) {
-        Task task = Task.createTask(schedule, exchange, data);
-        if (task == null) return false;
         synchronized (mTasks) {
+            Task task = Task.createTask(schedule, exchange, data);
+            if (task == null) return false;
             mTasks.add(task);
+            return true;
         }
-        return true;
     }
 
     private boolean addTask(JsonNode task) {
@@ -314,29 +323,43 @@ public class Scheduler {
                 log.warn("Error Scheduler Task parsing from JSON", e);
             }
         } else {
-            return addTemporaryTask(task);
+            return addTemporaryTask(
+                    task.hasNonNull(KEY_SLEEP_MS) ? task.get(KEY_SLEEP_MS).asLong(0) : 0,
+                    exchange, data);
         }
         return false;
     }
 
     public final void updateTasks(JsonNode arr, String from) {
-        synchronized (mTasks) {
-            clear();
-            if (arr == null) return;
+        clear();
+        if (arr == null || !arr.isArray()) {
+            log.error("UpdateTasks error. Invalid Argument, json-array needed.");
+            return;
+        }
 
-            for (JsonNode obj : arr) {
-                if (obj.isObject()) {
-                    addTask(obj);
-                }
+        for (JsonNode obj : arr) {
+            if (obj.isObject()) {
+                addTask(obj);
             }
-            initialize();
-            log.info("Loading {} tasks from {}.", mTasks.size(), from);
+        }
+        invalidate();
+        log.info("{} tasks loaded from {}.", mTasks.size(), from);
+    }
+
+    private void logAddedTask(JsonNode data) {
+        synchronized(mTasks) {
+            if (data.hasNonNull(KEY_SCHEDULE)) {
+                log.info("+ ({}) task: {} <= {}, schedule: {} --", mTasks.size(), data.get(KEY_EXCHANGE).asText(), data.get(KEY_DATA).toString(), data.get(KEY_SCHEDULE).asText());
+            } else {
+                log.info("+ ({}, ms:{}) task: {} <= {}", mTasks.size(), data.get(KEY_SLEEP_MS).asLong(0), data.get(KEY_EXCHANGE).asText(), data.get(KEY_DATA).toString());
+            }
         }
     }
 
     public final void executeTask(JsonNode data) {
         if (addTask(data)) {
-            initialize();
+            logAddedTask(data);
+            invalidate();
         }
     }
 }

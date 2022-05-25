@@ -1,6 +1,6 @@
 package ua.com.solidity.common.parsers.xls;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -17,7 +17,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-@Slf4j
+
+@CustomLog
 public class XLSParser extends CustomParser {
     public static final String PREFIX = "#";
     public static final String DEFAULT_NAMES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

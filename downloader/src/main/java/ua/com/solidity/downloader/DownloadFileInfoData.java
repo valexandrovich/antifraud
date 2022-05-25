@@ -2,9 +2,9 @@ package ua.com.solidity.downloader;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-@Slf4j
+
+@CustomLog
 @Getter
 @Setter
 @AllArgsConstructor
@@ -34,7 +35,7 @@ public class DownloadFileInfoData {
                         attributes.size());
             }
         } catch (Exception e) {
-            log.error("Invalid local path.");
+            log.error("Invalid local path.", e);
         }
         return null;
     }

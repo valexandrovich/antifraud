@@ -1,11 +1,12 @@
 package ua.com.solidity.common.pgsql;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.data.DataField;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 
-@Slf4j
+
+@CustomLog
 public class SQLTextType extends SQLType {
     @Override
     protected SQLError getValue(SQLField sqlField, DataField field, Object[] arguments, int position) {

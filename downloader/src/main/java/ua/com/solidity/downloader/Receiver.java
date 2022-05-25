@@ -1,8 +1,8 @@
 package ua.com.solidity.downloader;
 
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,8 @@ import ua.com.solidity.common.DownloaderMessageData;
 import ua.com.solidity.common.RabbitMQReceiver;
 import ua.com.solidity.common.Utils;
 
-@Slf4j
+
+@CustomLog
 @Getter
 @Setter
 @Component
@@ -35,7 +36,7 @@ public class Receiver extends RabbitMQReceiver {
         try {
             data = Utils.jsonToValue(message, DownloaderMessageData.class);
         } catch (Exception e) {
-            log.error("Message parsing error.", e);
+            log.error("Message parse error.", e);
         }
         if (data != null) {
             return new DownloaderTask(this, data);

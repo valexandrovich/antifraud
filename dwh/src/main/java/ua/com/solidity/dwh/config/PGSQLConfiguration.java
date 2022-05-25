@@ -17,7 +17,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableJpaRepositories(
-        basePackages = "ua.com.solidity.dwh.repository",
+        basePackages = "ua.com.solidity.db.repositories",
         entityManagerFactoryRef = "pgsqlEntityManagerFactory",
         transactionManagerRef = "pgsqlTransactionManager"
 )
@@ -39,7 +39,7 @@ public class PGSQLConfiguration {
     public LocalContainerEntityManagerFactoryBean pgsqlEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("pgsqlDataSource") DataSource dataSource) {
         return builder
                 .dataSource(dataSource)
-                .packages("ua.com.solidity.dwh.entities")
+                .packages("ua.com.solidity.db.entities")
                 .build();
     }
 

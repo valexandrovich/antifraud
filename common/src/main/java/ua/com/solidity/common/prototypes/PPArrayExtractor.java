@@ -1,14 +1,15 @@
 package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import ua.com.solidity.common.data.*;
 import ua.com.solidity.pipeline.Input;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
-@Slf4j
+
+@CustomLog
 public class PPArrayExtractor extends Prototype {
     public static final String INPUT = "input";
     public static final String EXTENSION = "ext";

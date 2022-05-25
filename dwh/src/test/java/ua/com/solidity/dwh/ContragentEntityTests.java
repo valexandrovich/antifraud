@@ -3,7 +3,7 @@ package ua.com.solidity.dwh;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import org.junit.Test;
-import ua.com.solidity.dwh.entities.Contragent;
+import ua.com.solidity.db.entities.Contragent;
 
 import java.time.LocalDate;
 

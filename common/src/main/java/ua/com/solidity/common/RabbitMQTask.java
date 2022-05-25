@@ -1,13 +1,15 @@
 package ua.com.solidity.common;
 
+import com.rabbitmq.client.Delivery;
+import lombok.CustomLog;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
+
+@CustomLog
 @Getter
 public abstract class RabbitMQTask extends DeferredTask {
     private RabbitMQListener listener;
-    private long deliveryTag;
+    private Delivery message;
     private final boolean autoAck;
     private boolean acknowledgeSent = false;
 
@@ -15,10 +17,10 @@ public abstract class RabbitMQTask extends DeferredTask {
         this.autoAck = autoAck;
     }
 
-    final synchronized RabbitMQTask setContext(RabbitMQListener listener, long deliveryTag) {
+    final synchronized void setContext(RabbitMQListener listener, Delivery message, boolean acknowledgeSent) {
         this.listener = listener;
-        this.deliveryTag = deliveryTag;
-        return this;
+        this.message = message;
+        this.acknowledgeSent = acknowledgeSent;
     }
 
     private synchronized void internalExecute() {
@@ -29,24 +31,24 @@ public abstract class RabbitMQTask extends DeferredTask {
         } finally {
             if (!acknowledgeSent) acknowledge(true);
             listener = null;
-            deliveryTag = 0;
+            message = null;
         }
     }
 
     @Override
     public void run() {
+        if (autoAck) {
+            acknowledge(true);
+        }
+
         if (listener != null) {
-            if (autoAck) {
-                listener.doAcknowledge(deliveryTag, true);
-                acknowledgeSent = true;
-            }
             internalExecute();
         }
     }
 
     protected final void acknowledge(boolean ack) {
         if (listener != null && !acknowledgeSent) {
-            listener.doAcknowledge(deliveryTag, ack);
+            listener.doAcknowledge(message.getEnvelope().getDeliveryTag(), ack);
             acknowledgeSent = true;
         }
     }

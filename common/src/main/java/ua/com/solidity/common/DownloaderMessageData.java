@@ -1,6 +1,7 @@
 package ua.com.solidity.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 @Getter
@@ -8,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DownloaderMessageData {
     private String ident;
     private String localPath;
@@ -17,7 +19,7 @@ public class DownloaderMessageData {
     private String logMailTo;
     private long logLimit = -1;
     private int attemptsLeft;
-    private int delayMinutes = 0;
+    private int delayMinutes = 1;
 
     @JsonIgnore
     @SuppressWarnings("unused")

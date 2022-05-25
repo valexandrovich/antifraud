@@ -2,7 +2,7 @@ package ua.com.solidity.common.parsers.json;
 
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import ua.com.solidity.common.ConvertEncodingInputStream;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.FilteredTextInputStream;
@@ -15,7 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Deque;
 import java.util.LinkedList;
 
-@Slf4j
+
+@CustomLog
 public class JSONParser extends CustomParser {
     private static final String BASE_ENCODING = "UTF-8";
     private static final int QUEUE_FIELD = 0;
@@ -62,8 +63,7 @@ public class JSONParser extends CustomParser {
                                 0, BASE_ENCODING), e);
                 errorReporting(mainStream.getErrorReport(location, BASE_ENCODING));
             } catch (Exception e) {
-                log.error("JSONParser lookup value error. {}:{}", e.getClass().getName(), e.getMessage());
-                log.debug("Exception:", e);
+                log.error("JSONParser lookup value error.", e);
                 errorReporting(mainStream.getErrorReport(location, BASE_ENCODING));
             }
         }

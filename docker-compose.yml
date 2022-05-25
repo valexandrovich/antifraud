@@ -86,24 +86,6 @@ services:
     networks:
       - otp-etl-network
 
-# Scheduler Test is no longer required
-#  scheduler_test:
-#    container_name: otp-scheduler_test
-#    build:
-#      dockerfile: Dockerfile
-#      context: .
-#      args:
-#        - JAR_FILE=scheduler_test/target/*.jar
-#    environment:
-#      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=scheduler-test.otp-etl
-#    image: otp-scheduler_test:latest
-#    depends_on:
-#      - migration-k8s
-#      - queue
-##      - zipkin
-#    networks:
-#      - otp-etl-network
-
   emailer:
     container_name: otp-notification
     build:
@@ -114,6 +96,24 @@ services:
     environment:
       - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=emailer.otp-etl
     image: otp-notification:latest
+    depends_on:
+      - mail
+      - migration-k8s
+      - queue
+      - zipkin
+    networks:
+      - otp-etl-network
+
+  report:
+    container_name: otp-report
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=report/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=report.otp-etl
+    image: otp-report:latest
     depends_on:
       - mail
       - migration-k8s

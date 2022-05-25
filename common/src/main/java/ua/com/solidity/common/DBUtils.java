@@ -1,6 +1,6 @@
 package ua.com.solidity.common;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
@@ -9,7 +9,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
 
-@Slf4j
+
+@CustomLog
 public class DBUtils {
 
     private DBUtils() {

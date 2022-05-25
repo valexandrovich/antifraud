@@ -1,6 +1,6 @@
 package ua.com.solidity.common;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.junit.jupiter.api.Test;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataObject;
@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
+
+@CustomLog
 class XMLParserTest {
     private static final String XML_TEST_STRING = "<?xml version=\"1.1\" encoding=\"UTF-8\"?><data><group><item><name>Hello</name></item><item><name>World</name></item></group></data>";
     private static final String XML_PARAMS_STRING = ("{'path': ['data', 'group']}").replace("'", "\"");

@@ -1,7 +1,7 @@
 package ua.com.solidity.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -9,7 +9,8 @@ import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@Slf4j
+
+@CustomLog
 class UtilsTest {
     private static final String[] dateValues = {"31/5/2017 11:12:40.427"};
     private static final String testJson = ("{'lastName': 'Иванов', 'firstName': 'Иван', 'surName': 'Иванович'}").replace("'", "\"");

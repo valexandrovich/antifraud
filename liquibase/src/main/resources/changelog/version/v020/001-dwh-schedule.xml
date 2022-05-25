@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v0020-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v0020-0"/>
+    </changeSet>
+
+    <changeSet id="v0020-1" author="Kyrylo Chornobryvets">
+        <sql>
+            insert into scheduler(group_name, name, exchange, data, schedule, force_disabled, enabled)
+            values ('active', 'dwh', 'otp-etl.dwh', '{"lastModified": 0}',
+                    '{"start": "2021-01-01T00:00", "minutes": {"type": "once", "value": "02:00"}}', false, false);
+        </sql>
+        <rollback>
+            <delete tableName="scheduler">
+                <where>:name=:value and :name=:value</where>
+                <whereParams>
+                    <param name="group_name" value="active"/>
+                    <param name="name" value="dwh"/>
+                </whereParams>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v0020-2" author="Kyrylo Chornobryvets">
+        <dropNotNullConstraint tableName="import_source" columnName="source_info"/>
+    </changeSet>
+
+    <changeSet id="v0020-3" author="Kyrylo Chornobryvets">
+        <dropNotNullConstraint tableName="import_source" columnName="pipeline_info"/>
+    </changeSet>
+
+    <changeSet id="v0020-4" author="Kyrylo Chornobryvets">
+        <sql>
+            insert into import_source(id,name)
+            values (9000,'dwh');
+        </sql>
+        <rollback>
+            <delete tableName="import_source">
+                <where>id=9000</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v0020-5" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v0020-5"/>
+    </changeSet>
+</databaseChangeLog>

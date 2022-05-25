@@ -1,8 +1,8 @@
 package ua.com.solidity.common.prototypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.BOMInputStream;
 import ua.com.solidity.common.*;
 import ua.com.solidity.pipeline.Item;
@@ -12,7 +12,8 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-@Slf4j
+
+@CustomLog
 public class PPInputStream extends Prototype {
     private static final String STREAM = "stream";
     private static final String SCHEMA = "schema";

@@ -2,13 +2,11 @@ package ua.com.solidity.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@Slf4j
 public class StatusChanger {
     public static final String UNIT_BYTES = "bytes";
     private static final String PERIOD_PROPERTY = "statusChanger.defaultPeriodMSecs";
@@ -247,6 +245,7 @@ public class StatusChanger {
 
     public final void complete(String status) {
         synchronized(this) {
+            statusObject.name = name;
             doOnComplete();
             finalStatus(status);
         }

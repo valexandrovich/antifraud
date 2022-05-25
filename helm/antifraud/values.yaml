@@ -22,6 +22,7 @@ spec:
       liquibase: version
       enricher: version
       statuslogger: version
+      report: version
     name:
       downloader: downloader
       importer: importer
@@ -33,3 +34,4 @@ spec:
       liquibase: liquibase
       enricher: enricher
       statuslogger: statuslogger
+      report: report

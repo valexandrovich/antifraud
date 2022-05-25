@@ -52,6 +52,7 @@ maven-package:
       - dwh/target/*.jar
       - enricher/target/*.jar
       - statuslogger/target/*.jar
+      - report/target/*.jar
 
 
 # liquibase-update:

@@ -1,6 +1,6 @@
 FROM openjdk:11-jre
 
-ENV JAVA_OPTS="-Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
+ENV JAVA_OPTS="-Xms256m -Xmx2G -Xx:+ExitOnOutOfMemoryError -Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
 ENV OTP_TEMP=/tmp
 ENV TZ=Europe/Kiev
 

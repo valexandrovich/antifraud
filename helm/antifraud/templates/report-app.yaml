@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.spec.source.name.report }}
+  namespace: {{ .Values.spec.rootnamespace }}
+  labels:
+    argocd.argoproj.io/instance: {{ .Values.spec.project }}
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ .Values.spec.rootnamespace }}
+    server: {{ .Values.spec.destination.server }}
+  project: {{ .Values.spec.project }}
+  source:
+    chart: {{ .Values.spec.source.name.report }}
+    path: {{ .Values.spec.source.name.report }}
+    repoURL: {{ .Values.spec.repourl }}
+    targetRevision: {{ .Values.spec.source.targetrevision.report }}
+    helm:
+      {{- with .Values.valueFiles }}
+      valueFiles:
+        {{- toYaml . | nindent 6 }}
+      {{- end }}

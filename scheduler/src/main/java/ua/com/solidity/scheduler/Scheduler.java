@@ -29,7 +29,9 @@ public class Scheduler {
 
     public static final String LOG_HANDLED = "{} <= {}";
     public static final String LOG_HANDLED_IMMEDIATE = "* {} <= {}";
-    public static final String LOG_HANDLED_TEMP = "- ({}) {} <= {}";
+    public static final String LOG_HANDLED_TEMP = "- (tasks: {}) {} <= {}";
+    public static final String LOG_ADD_SCHEDULED_TASK = "+ (tasks: {}) task: {} <= {}, schedule: {} --";
+    public static final String LOG_ADD_DELAYED_TASK = "+ (tasks: {}, ms:{}) task: {} <= {}";
 
     @Autowired
     private Config config;
@@ -309,10 +311,12 @@ public class Scheduler {
 
     private boolean addTask(JsonNode task) {
         String exchange = task.get(KEY_EXCHANGE).asText();
+        if (exchange == null || exchange.isBlank()) return false;
         JsonNode data = task.get(KEY_DATA);
 
         if (task.hasNonNull(KEY_SCHEDULE)) {
             Schedule schedule = new Schedule();
+            schedule.setLocale(config.getSchedulerLocale());
             try {
                 if (!schedule.assignNode(task.get(KEY_SCHEDULE))) {
                     log.warn("Schedule JSON parse error.");
@@ -349,9 +353,9 @@ public class Scheduler {
     private void logAddedTask(JsonNode data) {
         synchronized(mTasks) {
             if (data.hasNonNull(KEY_SCHEDULE)) {
-                log.info("+ ({}) task: {} <= {}, schedule: {} --", mTasks.size(), data.get(KEY_EXCHANGE).asText(), data.get(KEY_DATA).toString(), data.get(KEY_SCHEDULE).asText());
+                log.info(LOG_ADD_SCHEDULED_TASK, mTasks.size(), data.get(KEY_EXCHANGE).asText(), data.get(KEY_DATA).toString(), data.get(KEY_SCHEDULE).asText());
             } else {
-                log.info("+ ({}, ms:{}) task: {} <= {}", mTasks.size(), data.get(KEY_SLEEP_MS).asLong(0), data.get(KEY_EXCHANGE).asText(), data.get(KEY_DATA).toString());
+                log.info(LOG_ADD_DELAYED_TASK, mTasks.size(), data.get(KEY_SLEEP_MS).asLong(0), data.get(KEY_EXCHANGE).asText(), data.get(KEY_DATA).toString());
             }
         }
     }

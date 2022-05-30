@@ -1,11 +1,14 @@
 package ua.com.solidity.web.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CharMatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -14,8 +17,10 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ua.com.solidity.common.model.EnricherMessage;
 import ua.com.solidity.db.entities.FileDescription;
 import ua.com.solidity.db.entities.ManualPerson;
 import ua.com.solidity.db.entities.ManualTag;
@@ -23,6 +28,7 @@ import ua.com.solidity.db.entities.PhysicalPerson;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.FileDescriptionRepository;
 import ua.com.solidity.db.repositories.ManualPersonRepository;
+import ua.com.solidity.db.repositories.ManualTagRepository;
 import ua.com.solidity.db.repositories.PhysicalPersonRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
 import ua.com.solidity.web.dto.ManualPersonDto;
@@ -65,6 +71,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -80,6 +87,14 @@ public class XslxService {
 	private final YPersonRepository ypr;
 	private final UserRepository userRepository;
     private final ManualPersonRepository manualPersonRepository;
+    private final ManualTagRepository manualTagRepository;
+    private int count;
+
+    private static final String MANUAL_PERSON = "manual_person";
+
+    @Value("${enricher.rabbitmq.name}")
+    private String enricherQueue;
+    private final AmqpTemplate template;
 
 	public UUID upload(MultipartFile multipartFile, HttpServletRequest request) {
 		log.debug("Attempting to parse file in XlsxService for uploading into DB.");
@@ -167,7 +182,7 @@ public class XslxService {
 	}
 
 	public List<FileDescription> getUploaded() {
-		return fileDescriptionRepository.findAll();
+		return fileDescriptionRepository.findByValidated(true);
 	}
 
 	public ValidatedPhysicalPersonResponse getUploaded(UUID uuid) {
@@ -267,16 +282,19 @@ public class XslxService {
         fileDescriptionRepository.save(fileDescription);
 
         String fileType = "";
+        count = 0;
 
         String fileName = UtilString.toLowerCase(multipartFile.getOriginalFilename());
         if (!StringUtils.isBlank(fileName))
-            fileType = fileName.substring(fileName.indexOf(".") + 1);
+            fileType = fileName.substring(fileName.lastIndexOf(".") + 1);
 
         if (!StringUtils.isBlank(fileType) && fileType.equals("xlsx")) {
             parseXlsx(multipartFile, fileDescription);
         } else if (!StringUtils.isBlank(fileType) && (fileType.equals("csv") || fileType.equals("txt"))) {
             parseCsv(multipartFile, delimiter, code, fileDescription);
         }
+        fileDescription.setRowCount(count);
+        fileDescriptionRepository.save(fileDescription);
         getUploadedManualPerson(fileDescription.getUuid());
         return uuid;
     }
@@ -592,7 +610,10 @@ public class XslxService {
                 }
             }
         }
-        if (notEmpty) manualPersonRepository.save(person);
+        if (notEmpty) {
+            manualPersonRepository.save(person);
+            count++;
+        }
     }
 
     private boolean findColumn(String column, List<String> header, List<String> line) {
@@ -628,6 +649,12 @@ public class XslxService {
                 .filter(c -> !StringUtils.isBlank(c))
                 .collect(Collectors.toSet());
 
+        if (!peopleDto.isEmpty() && peopleStatus.isEmpty()
+                && tagsStatus.isEmpty() && wrongColumns.isEmpty()) {
+            description.setValidated(true);
+            fileDescriptionRepository.save(description);
+        }
+
         return new ValidatedManualPersonResponse(peopleDto, peopleStatus, tagsStatus, wrongColumns);
     }
 
@@ -641,9 +668,89 @@ public class XslxService {
         fileDescriptionRepository.save(fileDescription);
     }
 
-    public void delete(UUID id, HttpServletRequest request) {
+    public void delete(UUID id) {
         FileDescription fileDescription = fileDescriptionRepository.findByUuid(id)
                 .orElseThrow(() -> new RuntimeException("Can't find FileDescription with id= " + id));
+        List<ManualPerson> people = manualPersonRepository.findByUuid(fileDescription);
+
+        people.stream().flatMap(p -> p.tags.stream()).forEach(manualTagRepository::delete);
+
+        manualPersonRepository.deleteAll(people);
+
         fileDescriptionRepository.delete(fileDescription);
+    }
+
+    public void enrich(UUID id) {
+        String jo;
+        try {
+            jo = new ObjectMapper().writeValueAsString(new EnricherMessage(MANUAL_PERSON, id));
+            log.info("Emit to " + enricherQueue);
+            template.convertAndSend(enricherQueue, jo);
+        } catch (JsonProcessingException e) {
+            log.error("Couldn't convert json: {}", e.getMessage());
+        }
+    }
+
+    public ValidatedManualPersonResponse update(Long id, int index, String value) {
+        if (manualPersonRepository.findById(id).isPresent())
+            return updateManualPerson(id, index, value);
+        return updateManualTag(id, index, value);
+    }
+
+
+    public ValidatedManualPersonResponse updateManualPerson(Long id, int index, String value) {
+        ManualPerson person = manualPersonRepository.getById(id);
+        List<Consumer<ManualPerson>> consumerList = List.of(
+                p -> p.setCnum(value),
+                p -> p.setLnameUk(value),
+                p -> p.setFnameUk(value),
+                p -> p.setPnameUk(value),
+                p -> p.setLnameRu(value),
+                p -> p.setFnameRu(value),
+                p -> p.setPnameRu(value),
+                p -> p.setLnameEn(value),
+                p -> p.setFnameEn(value),
+                p -> p.setPnameEn(value),
+                p -> p.setBirthday(value),
+                p -> p.setOkpo(value),
+                p -> p.setCountry(value),
+                p -> p.setAddress(value),
+                p -> p.setPhone(value),
+                p -> p.setEmail(value),
+                p -> p.setBirthPlace(value),
+                p -> p.setSex(value),
+                p -> p.setComment(value),
+                p -> p.setPassLocalNum(value),
+                p -> p.setPassLocalSerial(value),
+                p -> p.setPassLocalIssuer(value),
+                p -> p.setPassLocalIssueDate(value),
+                p -> p.setPassIntNum(value),
+                p -> p.setPassIntRecNum(value),
+                p -> p.setPassIntIssuer(value),
+                p -> p.setPassIntIssueDate(value),
+                p -> p.setPassIdNum(value),
+                p -> p.setPassIdRecNum(value),
+                p -> p.setPassIdIssuer(value),
+                p -> p.setPassIdIssueDate(value));
+        consumerList.get(index).accept(person);
+        manualPersonRepository.save(person);
+        return getUploadedManualPerson(person.getUuid().getUuid());
+    }
+
+    public ValidatedManualPersonResponse updateManualTag(Long id, int index, String value) {
+        ManualTag tag = manualTagRepository.getById(id);
+        List<Consumer<ManualTag>> consumerList = List.of(
+                t -> t.setMkId(value),
+                t -> t.setName(value),
+                t -> t.setMkEventDate(value),
+                t -> t.setMkStart(value),
+                t -> t.setMkExpire(value),
+                t -> t.setMkNumberValue(value),
+                t -> t.setMkTextValue(value),
+                t -> t.setMkDescription(value),
+                t -> t.setMkSource(value));
+        consumerList.get(index).accept(tag);
+        manualTagRepository.save(tag);
+        return getUploadedManualPerson(tag.getPerson().getUuid().getUuid());
     }
 }

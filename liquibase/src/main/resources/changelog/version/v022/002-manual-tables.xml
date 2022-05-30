@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v022-2" author="Olha Tankevych">
+        <createTable tableName="manual_person">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="manual_person_pkey"/>
+            </column>
+            <column name="last_name_uk" type="VARCHAR(255)"/>
+            <column name="first_name_uk" type="VARCHAR(255)"/>
+            <column name="patronymic_name_uk" type="VARCHAR(255)"/>
+            <column name="last_name_ru" type="VARCHAR(255)"/>
+            <column name="first_name_ru" type="VARCHAR(255)"/>
+            <column name="patronymic_name_ru" type="VARCHAR(255)"/>
+            <column name="last_name_en" type="VARCHAR(255)"/>
+            <column name="first_name_en" type="VARCHAR(255)"/>
+            <column name="patronymic_name_en" type="VARCHAR(255)"/>
+            <column name="birthday" type="VARCHAR(10)"/>
+            <column name="okpo" type="VARCHAR(12)"/>
+            <column name="country" type="VARCHAR(50)"/>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(20)"/>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="birth_place" type="VARCHAR(255)"/>
+            <column name="sex" type="VARCHAR(1)"/>
+            <column name="comment" type="VARCHAR(255)"/>
+            <column name="pass_local_num" type="VARCHAR(6)"/>
+            <column name="pass_local_serial" type="VARCHAR(2)"/>
+            <column name="pass_local_issuer" type="VARCHAR(255)"/>
+            <column name="pass_local_issue_date" type="VARCHAR(10)"/>
+            <column name="pass_int_num" type="VARCHAR(8)"/>
+            <column name="pass_int_rec_num" type="VARCHAR(14)"/>
+            <column name="pass_int_issuer" type="VARCHAR(4)"/>
+            <column name="pass_int_issue_date" type="VARCHAR(10)"/>
+            <column name="pass_id_num" type="VARCHAR(9)"/>
+            <column name="pass_id_rec_num" type="VARCHAR(14)"/>
+            <column name="pass_id_issuer" type="VARCHAR(4)"/>
+            <column name="pass_id_issue_date" type="VARCHAR(10)"/>
+            <column name="uuid" type="UUID"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="v022-3" author="Olha Tankevych">
+        <addForeignKeyConstraint baseColumnNames="uuid"
+                                 baseTableName="manual_person"
+                                 constraintName="FK_MANUAL_PERSON_ON_FILE"
+                                 referencedColumnNames="uuid"
+                                 referencedTableName="file_description"/>
+    </changeSet>
+
+    <changeSet id="v022-4" author="Olha Tankevych">
+        <createTable tableName="manual_tag">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="manual_tag_pkey"/>
+            </column>
+            <column name="mk_id" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="mk_event_date" type="VARCHAR(10)"/>
+            <column name="mk_start" type="VARCHAR(10)"/>
+            <column name="mk_expire" type="VARCHAR(10)"/>
+            <column name="mk_number_value" type="VARCHAR(25)"/>
+            <column name="mk_text_value" type="VARCHAR(255)"/>
+            <column name="mk_description" type="VARCHAR(255)"/>
+            <column name="mk_source" type="VARCHAR(255)"/>
+            <column name="person_id" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="v022-5" author="Olha Tankevych">
+        <addForeignKeyConstraint baseColumnNames="person_id"
+                                 baseTableName="manual_tag"
+                                 constraintName="FK_MANUAL_TAG_ON_MANUAL_PERSON"
+                                 referencedColumnNames="id"
+                                 referencedTableName="manual_person"/>
+    </changeSet>
+</databaseChangeLog>

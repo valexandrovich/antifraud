@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v023-1" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="birthday" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="birthday" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-2" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="okpo" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="okpo" newDataType="VARCHAR(12)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-3" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="country" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="country" newDataType="VARCHAR(50)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-4" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="phone" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="phone" newDataType="VARCHAR(20)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-5" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="sex" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="sex" newDataType="VARCHAR(1)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-6" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_local_num" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_local_num" newDataType="VARCHAR(6)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-7" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_local_serial" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_local_serial" newDataType="VARCHAR(2)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-8" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_local_issue_date" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_local_issue_date" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-9" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_int_num" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_int_num" newDataType="VARCHAR(8)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-10" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_int_rec_num" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_int_rec_num" newDataType="VARCHAR(14)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-11" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_int_issuer" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_int_issuer" newDataType="VARCHAR(4)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-12" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_int_issue_date" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_int_issue_date" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-13" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_id_num" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_id_num" newDataType="VARCHAR(9)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-14" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_id_rec_num" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_id_rec_num" newDataType="VARCHAR(14)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-15" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_id_issuer" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_id_issuer" newDataType="VARCHAR(4)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-16" author="Olha Tankevych">
+        <modifyDataType tableName="manual_person" columnName="pass_id_issue_date" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_person" columnName="pass_id_issue_date" newDataType="VARCHAR(12)"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -232,7 +232,7 @@ public class DataField {
             case BOOLEAN:
                 return "BOOLEAN/" + field.internalGetBoolean();
             case NUMBER:
-                return "NUMBER/" + field.internalGetBoolean();
+                return "NUMBER/" + field.internalGetNumber();
             case OBJECT:
                 return "<OBJECT>";
             case ARRAY:

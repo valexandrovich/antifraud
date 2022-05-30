@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="1653868640207-1" author="Beetone">
+        <tagDatabase tag="v0024-before"/>
+    </changeSet>
+
+    <changeSet id="1653868640207-2" author="Beetone">
+        <sqlFile encoding="utf8"
+                 path="import_source_get_last_revision.func"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            DROP FUNCTION IF EXISTS public.import_source_get_last_revision(character varying);
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1653868640207-3" author="Beetone">
+        <sql>
+            update import_source
+            set
+                pipeline_info = '{
+                  "pipeline": [
+                    {
+                      "name": "stream",
+                      "prototype": "InputStream"
+                    },
+                    {
+                      "name": "extension",
+                      "prototype": "RevisionExtension"
+                    },
+                    {
+                      "data": {
+                        "format": {
+                          "quote": "\"",
+                          "encoding": "windows-1251",
+                          "delimiter": "|",
+                          "splitMode": true,
+                          "columnCount": 32,
+                          "parseFieldNames": true,
+                          "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "
+                        },
+                        "limits": {
+                          "batchRows": 16384,
+                          "batchErrors": 1024
+                        }
+                      },
+                      "name": "parser",
+                      "inputs": {
+                        "ext": "extension",
+                        "stream": "stream"
+                      },
+                      "prototype": "CSVParser"
+                    },
+                    {
+                      "data": {
+                        "mode": "statement",
+                        "table": "base_fodb",
+                        "mapping": {
+                          "inn": "INN",
+                          "sex": "SEX",
+                          "birthdate": "BIRTHDAY",
+                          "live_phone": "LIVE_PHONE",
+                          "live_county": "LIVE_COUNTY",
+                          "live_region": "LIVE_REGION",
+                          "live_street": "LIVE_STREET",
+                          "birth_county": "BIRTH_COUNTY",
+                          "birth_region": "BIRTH_REGION",
+                          "last_name_ru": "LAST_NAME_RU",
+                          "last_name_ua": "LAST_NAME_UA",
+                          "live_city_ua": "LIVE_CITY_UA",
+                          "live_country": "LIVE_COUNTRY",
+                          "birth_city_ua": "BIRTH_CITY_UA",
+                          "birth_country": "BIRTH_COUNTRY",
+                          "first_name_ru": "FIRST_NAME_RU",
+                          "first_name_ua": "FIRST_NAME_UA",
+                          "live_city_type": "LIVE_CITY_TYPE",
+                          "middle_name_ru": "MIDDLE_NAME_RU",
+                          "middle_name_ua": "MIDDLE_NAME_UA",
+                          "birth_city_type": "BIRTH_CITY_TYPE",
+                          "date_inn_create": "DATE_INN_CREATE",
+                          "live_street_type": "LIVE_STREET_TYPE",
+                          "live_city_foreign": "LIVE_CITY_FOREIGN",
+                          "birth_city_foreign": "BIRTH_CITY_FOREIGN",
+                          "live_building_part": "LIVE_BUILDING_PART",
+                          "live_building_letter": "LIVE_BUILDING_LETTER",
+                          "live_building_number": "LIVE_BUILDING_NUMBER",
+                          "live_building_apartment": "LIVE_BUILDING_APARTMENT",
+                          "live_code_register_date": "LIVE_CODE_REGISTER_DATE"
+                        }
+                      },
+                      "name": "writer",
+                      "inputs": {
+                        "ext": "extension",
+                        "input": "parser"
+                      },
+                      "prototype": "TableWriter"
+                    }
+                  ]
+                }'
+            where name='base_fodb'
+        </sql>
+        <rollback>
+             update import_source
+             set
+                pipeline_info = '{
+                "pipeline": [
+                {
+                "name": "stream",
+                "prototype": "InputStream"
+                },
+                {
+                "name": "extension",
+                "prototype": "RevisionExtension"
+                },
+                {
+                "data": {
+                "format": {
+                "quote": "\"",
+                "encoding": "windows-1251",
+                "delimiter": "|",
+                "splitMode": false,
+                "parseFieldNames": true,
+                "ignoreCharsNearDelimiter": "\\b\\r\\f\\t "
+                },
+                "limits": {
+                "batchRows": 16384,
+                "batchErrors": 1024
+                }
+                },
+                "name": "parser",
+                "inputs": {
+                "ext": "extension",
+                "stream": "stream"
+                },
+                "prototype": "CSVParser"
+                },
+                {
+                "data": {
+                "mode": "statement",
+                "table": "base_fodb",
+                "mapping": {
+                "inn": "INN",
+                "sex": "SEX",
+                "birthdate": "BIRTHDAY",
+                "live_phone": "LIVE_PHONE",
+                "live_county": "LIVE_COUNTY",
+                "live_region": "LIVE_REGION",
+                "live_street": "LIVE_STREET",
+                "birth_county": "BIRTH_COUNTY",
+                "birth_region": "BIRTH_REGION",
+                "last_name_ru": "LAST_NAME_RU",
+                "last_name_ua": "LAST_NAME_UA",
+                "live_city_ua": "LIVE_CITY_UA",
+                "live_country": "LIVE_COUNTRY",
+                "birth_city_ua": "BIRTH_CITY_UA",
+                "birth_country": "BIRTH_COUNTRY",
+                "first_name_ru": "FIRST_NAME_RU",
+                "first_name_ua": "FIRST_NAME_UA",
+                "live_city_type": "LIVE_CITY_TYPE",
+                "middle_name_ru": "MIDDLE_NAME_RU",
+                "middle_name_ua": "MIDDLE_NAME_UA",
+                "birth_city_type": "BIRTH_CITY_TYPE",
+                "date_inn_create": "DATE_INN_CREATE",
+                "live_street_type": "LIVE_STREET_TYPE",
+                "live_city_foreign": "LIVE_CITY_FOREIGN",
+                "birth_city_foreign": "BIRTH_CITY_FOREIGN",
+                "live_building_part": "LIVE_BUILDING_PART",
+                "live_building_letter": "LIVE_BUILDING_LETTER",
+                "live_building_number": "LIVE_BUILDING_NUMBER",
+                "live_building_apartment": "LIVE_BUILDING_APARTMENT",
+                "live_code_register_date": "LIVE_CODE_REGISTER_DATE"
+                }
+                },
+                "name": "writer",
+                "inputs": {
+                "ext": "extension",
+                "input": "parser"
+                },
+                "prototype": "TableWriter"
+                }
+                ]
+                }'
+            where name='base_fodb'
+        </rollback>
+    </changeSet>
+
+    <changeSet id="1653868640207-4" author="Beetone">
+        <tagDatabase tag="v0024"/>
+    </changeSet>
+
+</databaseChangeLog>

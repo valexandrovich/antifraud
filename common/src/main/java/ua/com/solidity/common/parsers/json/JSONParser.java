@@ -129,7 +129,7 @@ public class JSONParser extends CustomParser {
 
     @Override
     protected DataObject internalDataObject() {
-       return JsonDataObject.create(null, lastNode, lastLocation.getLineNr(), lastLocation.getColumnNr(), lastLocation.getByteOffset(), lastLocation.getCharOffset());
+        return JsonDataObject.create(null, lastNode, lastLocation.getLineNr(), lastLocation.getColumnNr(), lastLocation.getByteOffset(), lastLocation.getCharOffset());
     }
 
     @Override

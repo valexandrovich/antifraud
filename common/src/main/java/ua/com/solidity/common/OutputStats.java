@@ -48,8 +48,14 @@ public class OutputStats {
         public final void incInsertErrorCount(long count) { insertErrorCount += count; }
 
         public final String getStatsMessage() {
-            return Utils.messageFormat("{}: [total: {}/parse errors: {}({}%)/insert errors: {}({}%)/inserted: {}({}%)] due {}",
-                    fullName, totalRowCount, parseErrorCount, getParseErrorPercent(), insertErrorCount, getInsertErrorPercent(), insertCount, getInsertedPercent(), printer.getDurationString());
+            return Utils.messageFormat("{}: [total: {}/parse errors: {}({})/insert errors: {}({})/inserted: {}({})] due {}",
+                    fullName, totalRowCount, parseErrorCount, formatPercent(getParseErrorPercent()),
+                    insertErrorCount, formatPercent(getInsertErrorPercent()),
+                    insertCount, formatPercent(getInsertedPercent()), printer.getDurationString());
+        }
+
+        private String formatPercent(double percent) {
+            return String.format("%.3f%%", percent);
         }
 
         public final double getParseErrorPercent() {

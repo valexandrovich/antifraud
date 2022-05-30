@@ -14,12 +14,12 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import ua.com.solidity.db.entities.Role;
+import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.repositories.RoleMapRepository;
 import ua.com.solidity.db.repositories.RoleRepository;
-import ua.com.solidity.db.entities.User;
+import ua.com.solidity.db.repositories.UserRepository;
 import ua.com.solidity.web.entry.Person;
 import ua.com.solidity.web.repositories.PersonRepository;
-import ua.com.solidity.db.repositories.UserRepository;
 import ua.com.solidity.web.security.exception.ExtensionBadCredentialsException;
 import ua.com.solidity.web.security.exception.NoSuchRoleException;
 import ua.com.solidity.web.security.model.UserDetailsImpl;
@@ -63,7 +63,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 	private static final String EMAIL_DOMAIN = "@gmail.com";
 	private static final String PHONE_NUMBER_MOCK = "0500000000";
 
-	private final static String PASSWORD_INCORRECT_MESSAGE = "Невірний пароль.";
+	private final static String INCORRECT_PASSWORD_MESSAGE = "Невірний пароль.";
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -82,7 +82,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 		UserDetailsImpl userDetails;
 		if (superName.equals(requestUserLogin)) {
 			if (!superPassword.equals(requestPassword))
-				throw new AuthenticationServiceException(PASSWORD_INCORRECT_MESSAGE);
+				throw new AuthenticationServiceException(INCORRECT_PASSWORD_MESSAGE);
 			person = new Person();
 			person.setDisplayName(superName);
 			person.setUsername(superName);
@@ -98,7 +98,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 			}
 		} else if (basicName.equals(requestUserLogin)) {
 			if (!basicPassword.equals(requestPassword))
-				throw new AuthenticationServiceException(PASSWORD_INCORRECT_MESSAGE);
+				throw new AuthenticationServiceException(INCORRECT_PASSWORD_MESSAGE);
 			person = new Person();
 			person.setDisplayName(basicName);
 			person.setUsername(basicName);
@@ -134,7 +134,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 					              requestPassword);
 
 			if (!authenticated) {
-				throw new AuthenticationServiceException(PASSWORD_INCORRECT_MESSAGE);
+				throw new AuthenticationServiceException(INCORRECT_PASSWORD_MESSAGE);
 			}
 
 			Optional<User> userOptional = userRepository.findByUsername(requestUserLogin);

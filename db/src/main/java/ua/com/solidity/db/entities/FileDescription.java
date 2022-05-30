@@ -18,7 +18,6 @@ import java.util.UUID;
 @Entity
 public class FileDescription {
 
-
     @Id
     @Column(name = "uuid")
     private UUID uuid;
@@ -37,4 +36,7 @@ public class FileDescription {
 
     @Column(name = "wrong_column", length = 1500)
     private String wrongColumn;
+
+    @Column(name = "validated")
+    private boolean validated;
 }

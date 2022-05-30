@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v023-17" author="Olha Tankevych">
+        <modifyDataType tableName="manual_tag" columnName="mk_event_date" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_tag" columnName="mk_event_date" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-18" author="Olha Tankevych">
+        <modifyDataType tableName="manual_tag" columnName="mk_start" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_tag" columnName="mk_start" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-19" author="Olha Tankevych">
+        <modifyDataType tableName="manual_tag" columnName="mk_expire" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_tag" columnName="mk_expire" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v023-20" author="Olha Tankevych">
+        <modifyDataType tableName="manual_tag" columnName="mk_number_value" newDataType="VARCHAR(255)"/>
+        <rollback>
+            <modifyDataType tableName="manual_tag" columnName="mk_number_value" newDataType="VARCHAR(10)"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

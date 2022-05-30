@@ -2,6 +2,7 @@ package ua.com.solidity.common.parsers.csv;
 
 import lombok.CustomLog;
 import ua.com.solidity.common.CustomParser;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.data.DataHeader;
 import ua.com.solidity.common.data.DataObject;
 
@@ -10,7 +11,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-
 @CustomLog
 public class CSVParser extends CustomParser {
     private Scanner scanner;
@@ -18,6 +18,7 @@ public class CSVParser extends CustomParser {
     public final Map<String, Integer> fieldNames = new HashMap<>();
     public final List<String> dataFields = new ArrayList<>();
     private final StringBuilder mBuilder = new StringBuilder();
+    private final int forceColumnCount;
     private int colCount = -1;
     private final ParseRowData data;
 
@@ -25,7 +26,6 @@ public class CSVParser extends CustomParser {
         int fieldStart = 0;
         int lineNumber = 0;
         int lineColumn = 0;
-        int dataLineNumber = 0;
         final List<String> cache = new ArrayList<>();
         String row;
         boolean quoted = false;
@@ -40,7 +40,6 @@ public class CSVParser extends CustomParser {
 
         public final void startDataRow(String row) {
             ++lineNumber;
-            dataLineNumber = lineNumber;
             lineColumn = 0;
             start = offset = 0;
             delimiter = 0;
@@ -133,6 +132,10 @@ public class CSVParser extends CustomParser {
 
     public CSVParser(CSVParams params) {
         data = new ParseRowData(params == null ? new CSVParams() : params);
+        forceColumnCount = data.params.getColumnCount();
+        if (forceColumnCount > 0) {
+            colCount = forceColumnCount;
+        }
     }
 
     private String initFieldName(String fieldName) {
@@ -158,6 +161,10 @@ public class CSVParser extends CustomParser {
         InputStreamReader reader = new InputStreamReader(stream,
                 Charset.availableCharsets().getOrDefault(data.params.getEncoding(), StandardCharsets.UTF_8));
         scanner = new Scanner(reader);
+
+        if (forceColumnCount > 0) {
+            colCount = forceColumnCount;
+        }
 
         if (data.params.isParseFieldNames()) {
             if (!parseRow()) return false;
@@ -204,13 +211,14 @@ public class CSVParser extends CustomParser {
     }
 
     private void doSplitRow() {
-        String[] items = data.row.split(String.valueOf(data.params.getDelimiter()));
+        String[] items = data.row.split(data.params.getDelimiterRegex());
         String quote = String.valueOf(data.params.getQuoteChar());
+        String escapeQuote = data.params.getEscapeChar() + quote;
         for (int i = 0; i < items.length; ++i) {
             String item = trimByIgnoredChars(items[i]);
             boolean isQuoted = item.startsWith(quote) && item.endsWith(quote) && item.length() > 1;
             if (isQuoted) {
-                item = item.substring(1, item.length() - 1).replace(quote + quote, quote);
+                item = item.substring(1, item.length() - 1).replace(escapeQuote, quote);
                 items[i] = item;
             }
             pushField(item, isQuoted);
@@ -318,11 +326,39 @@ public class CSVParser extends CustomParser {
         }
     }
 
+    private void doErrorReporting(String clarification) {
+        StringBuilder errorBuilder = new StringBuilder();
+        for (int i = 0; i < data.cache.size(); ++i) {
+            if (i > 0) errorBuilder.append("\n");
+            errorBuilder.append(data.cache.get(i));
+        }
+        errorReporting(data.lineNumber, data.offset, -1, -1, -1, errorBuilder.toString(), clarification);
+    }
+
+    private void checkFieldCount() {
+        if (dataFields.size() < colCount) {
+            if (data.params.isAutoComplete()) {
+                while (dataFields.size() < colCount) {
+                    dataFields.add(null);
+                }
+            } else {
+                doErrorReporting(Utils.messageFormat("Too few fields. ({} found, but {} needed).", dataFields.size(), colCount));
+            }
+        } else if (dataFields.size() > colCount) {
+            doErrorReporting(Utils.messageFormat("Too many fields. ({} found, but {} needed). Redundant fields are ignored.", dataFields.size(), colCount));
+            deferErrorReport();
+            while (dataFields.size() > colCount) {
+                dataFields.remove(dataFields.size() - 1);
+            }
+        }
+    }
+
     private boolean parseRow() {
         dataFields.clear();
         if (!scanner.hasNextLine()) {
             return false;
         }
+
         data.startDataRow(scanner.nextLine());
 
         if (data.params.isSplitMode()) {
@@ -334,14 +370,7 @@ public class CSVParser extends CustomParser {
         if (colCount < 0) {
             colCount = dataFields.size();
         } else {
-            if (dataFields.size() != colCount) {
-                StringBuilder errorBuilder = new StringBuilder();
-                for (int i = 0; i < data.cache.size(); ++i) {
-                    if (i > 0) errorBuilder.append("\n");
-                    errorBuilder.append(data.cache.get(i));
-                }
-                errorReporting(data.lineNumber, data.offset, -1, -1, -1, errorBuilder.toString());
-            }
+            checkFieldCount();
         }
 
         return true;

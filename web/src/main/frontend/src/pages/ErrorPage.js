@@ -4,7 +4,7 @@ import { useHistory } from "react-router";
 const ErrorPage = () => {
   const history = useHistory();
   return (
-    <>
+    <div className="wrapped">
       <div className="center">
         <div className="error">
           <div className="number">4</div>
@@ -31,7 +31,7 @@ const ErrorPage = () => {
           Повернутися
         </button>
       </div>
-    </>
+    </div>
   );
 };
 

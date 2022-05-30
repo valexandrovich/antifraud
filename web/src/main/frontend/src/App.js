@@ -42,10 +42,10 @@ const App = () => {
               path="/uploaded_files"
               component={UploadedFiles}
             />
-            <ProtectedRoute exact path="/card/:id" component={SingleCard} />
+            <Route exact path="/card/:id" component={SingleCard} />
             <ProtectedRoute exact path="/progress" component={Progress} />
             <ProtectedRoute exact path="/sheduler" component={Sheduler} />
-            <ProtectedRoute exact path="/subscription" component={Monitoring} />
+            <Route exact path="/subscription" component={Monitoring} />
             <Route path="/error" component={ErrorPage} />
           </Switch>
         </>

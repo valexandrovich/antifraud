@@ -51,4 +51,16 @@ class DeferredTasksTest {
         tasks.append(new TestTask(target, DeferredAction.APPEND, "id", "!"));
         assertThat(target).isEqualTo(WaitingResult);
     }
+
+    @Test
+    void secondTest() {
+        DeferredTasks tasks = new DeferredTasks(200, false);
+        tasks.append(new TestTask(target, DeferredAction.APPEND, "id", "hello"));
+        tasks.append(new TestTask(target, DeferredAction.APPEND, "id2", "World"));
+        tasks.append(new TestTask(target, DeferredAction.REPLACE, "id", "Hello"));
+        tasks.waitForExecution();
+        tasks.append(new TestTask(target, DeferredAction.APPEND, "id", "!"));
+        tasks.waitForExecution();
+        assertThat(target).isEqualTo(WaitingResult);
+    }
 }

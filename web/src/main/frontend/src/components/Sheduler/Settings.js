@@ -69,7 +69,7 @@ const ua = {
   ],
 };
 
-const validate = (values, weekDays, time, period) => {
+const validate = (values, weekDays, time, period, minperiod) => {
   let errors = {};
   if (!values.groupName) {
     errors.groupName = "Назва групи обов'язкова для заповнення";
@@ -93,23 +93,16 @@ const validate = (values, weekDays, time, period) => {
   }
 
   if (
-    time &&
-    time.once.type === "once" &&
-    /^([0-1]?[\d]|2[0-4]):([0-5][\d])(:[0-5][\d])?$/.test(time.once.value) !==
-      true
+    time && minperiod === "periodic" && time.periodic === "0h0m"
   ) {
-    errors.minutes_once = "Невірний формат данних Введіть в форматі HH:mm";
+    errors.minutes_periodic = "Період повинен бути більше 1";
   }
   if (
     time &&
     time.once.type === "set" &&
-    time.once.value.map((el) => {
-      if (/^([0-1]?[\d]|2[0-4]):([0-5][\d])(:[0-5][\d])?$/.test(el) !== true) {
-        errors.minutes_set = "Невірний формат данних Введіть в форматі HH:mm";
-      }
-    })
+    time.once.value.some((el) => /^([0-1]?[\d]|2[0-4]):([0-5][\d])(:[0-5][\d])?$/.test(el) !== true)
   ) {
-    return errors;
+    errors.minutes_set = "Невірний формат данних Введіть в форматі HH:mm";
   }
   return errors;
 };

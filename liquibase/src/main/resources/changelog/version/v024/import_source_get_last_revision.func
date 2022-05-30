@@ -1,0 +1,24 @@
+DROP FUNCTION IF EXISTS public.import_source_get_last_revision(character varying);
+
+CREATE OR REPLACE FUNCTION public.import_source_get_last_revision(
+    source character varying)
+    RETURNS uuid
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+Declare
+    revision uuid DEFAULT NULL;
+BEGIN
+    Select r.id into revision
+    from
+        import_revision r
+            inner join
+        import_source s
+        on s.id = r.source and s.name = $1
+    order by r.revision_date desc
+    limit 1;
+
+    return revision;
+END;
+$BODY$;

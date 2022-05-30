@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v022-1" author="Olha Tankevych">
+        <modifyDataType tableName="ypassport" columnName="number" newDataType="DECIMAL(9)"/>
+        <rollback>
+            <modifyDataType tableName="ypassport" columnName="number" newDataType="DECIMAL(6)"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

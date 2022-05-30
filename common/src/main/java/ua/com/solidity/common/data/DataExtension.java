@@ -24,4 +24,11 @@ public class DataExtension {
         if (parent == null || (parentExtension = parent.getExtension()) == null) return null;
         return parentExtension.id;
     }
+
+    public static String getParentExtraID(DataObject obj) {
+        DataObject parent = obj.getParent();
+        DataExtension parentExtension;
+        if (parent == null || (parentExtension = parent.getExtension()) == null) return null;
+        return parentExtension.extraId;
+    }
 }

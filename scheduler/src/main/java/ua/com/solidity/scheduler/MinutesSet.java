@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.CustomLog;
 
-
 @CustomLog
 public class MinutesSet extends Param {
     @Override

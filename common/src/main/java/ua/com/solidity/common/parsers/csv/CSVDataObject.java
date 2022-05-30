@@ -1,17 +1,14 @@
 package ua.com.solidity.common.parsers.csv;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataFieldType;
 import ua.com.solidity.common.data.DataHeader;
 import ua.com.solidity.common.data.DataObject;
 
-import java.util.List;
+import java.util.*;
 
 public class CSVDataObject extends DataObject {
+
     private static class CSVField extends DataField {
         private final String data;
 
@@ -22,18 +19,17 @@ public class CSVDataObject extends DataObject {
 
         @Override
         public DataFieldType internalGetType() {
-            return DataFieldType.STRING;
+            return data == null ? DataFieldType.NULL : DataFieldType.STRING;
         }
 
         @Override
         public String internalGetString() {
-            return data;
+            return data == null ? "" : data;
         }
     }
 
     private final DataHeader header;
     private final CSVField[] data;
-    private JsonNode node = null;
 
     private CSVField createField(String data) {
         return new CSVField(this, data);
@@ -56,14 +52,7 @@ public class CSVDataObject extends DataObject {
     }
 
     @Override
-    public JsonNode getNode() {
-        if (node != null) return node;
-        ObjectNode obj = Utils.getSortedMapper().createObjectNode();
-        for (var entry: header.getFieldIndexes()) {
-            CSVField field = data[entry.getValue()];
-            obj.set(entry.getKey(), field == null ? null : JsonNodeFactory.instance.textNode(DataField.getString(field)));
-        }
-        node = obj;
-        return node;
+    public Iterable<FieldEntry> getFields() {
+        return header.fieldsIterator(data);
     }
 }

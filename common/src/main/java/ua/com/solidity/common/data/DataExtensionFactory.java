@@ -61,7 +61,6 @@ public class DataExtensionFactory {
         return true;
     }
 
-    @SuppressWarnings("unused")
     protected DataExtension createExtension() {
         return new DataExtension();
     }
@@ -81,6 +80,7 @@ public class DataExtensionFactory {
         return 1;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean assignInsertBatch(DataObject obj, InsertBatch batch) {
         DataExtension extension = obj.getExtension();
         if (extension == null) return false;

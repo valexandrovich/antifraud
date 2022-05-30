@@ -32,11 +32,11 @@ const fizSchema = Yup.object().shape({
   month: Yup.string().matches("^(1[0-2]|[1-9])$", "1-12"),
   year: Yup.string().matches("^(([1][9]|[2][0])\\d{2,2})|2100$", "1900-2100 "),
   age: Yup.string().matches("^([1-9]|[1-9][0-9]|1[01][0-9]|120)$", "1-120"),
-  phone: Yup.string().matches("^(?:\\+38)?(\\d{10})$", "Не вірний формат"),
+  phone: Yup.string().matches("^(?:\\+)?(\\d{5,12})$", "Не вірний формат"),
   address: Yup.string().max(255, "Занадто довге"),
   inn: Yup.string()
     .matches("^[0-9]{7,12}$", "7-12")
-    .min(7, " Мін 7 Символів")
+    .min(7, " Мін 7 cимволів")
     .matches("^[0-9]{7,12}$", "Макс 12 Символів"),
   passportNumber: Yup.string()
     .min(6, "6 Символів")
@@ -163,9 +163,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.surname}
-                    className={`form-control ${
-                      touched.surname && errors.surname ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.surname && errors.surname ? "is-invalid" : ""
+                      }`}
                     maxLength={64}
                     id="surname"
                     type="text"
@@ -188,9 +187,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.name}
-                    className={`form-control ${
-                      touched.name && errors.name ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.name && errors.name ? "is-invalid" : ""
+                      }`}
                     maxLength={64}
                     id="name"
                     type="text"
@@ -213,11 +211,10 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.patronymic}
-                    className={`form-control ${
-                      touched.patronymic && errors.patronymic
-                        ? "is-invalid"
-                        : ""
-                    }`}
+                    className={`form-control ${touched.patronymic && errors.patronymic
+                      ? "is-invalid"
+                      : ""
+                      }`}
                     maxLength={64}
                     id="patronymic"
                     type="text"
@@ -242,9 +239,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.day}
-                    className={`form-control ${
-                      touched.day && errors.day ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.day && errors.day ? "is-invalid" : ""
+                      }`}
                     id="day"
                     type="text"
                     placeholder="День"
@@ -270,9 +266,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.month}
-                    className={`form-control ${
-                      touched.month && errors.month ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.month && errors.month ? "is-invalid" : ""
+                      }`}
                     maxLength={2}
                     id="month"
                     type="text"
@@ -295,9 +290,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.year}
-                    className={`form-control ${
-                      touched.year && errors.year ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.year && errors.year ? "is-invalid" : ""
+                      }`}
                     maxLength={4}
                     id="year"
                     type="text"
@@ -320,9 +314,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.age}
-                    className={`form-control ${
-                      touched.age && errors.age ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.age && errors.age ? "is-invalid" : ""
+                      }`}
                     maxLength={3}
                     id="age"
                     type="string"
@@ -347,9 +340,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.phone}
-                    className={`form-control ${
-                      touched.phone && errors.phone ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.phone && errors.phone ? "is-invalid" : ""
+                      }`}
                     maxLength={13}
                     id="phone"
                     type="text"
@@ -372,9 +364,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.address}
-                    className={`form-control ${
-                      touched.address && errors.address ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.address && errors.address ? "is-invalid" : ""
+                      }`}
                     maxLength={255}
                     id="address"
                     type="text"
@@ -418,11 +409,10 @@ const FizFormSearch = () => {
                         }}
                         onBlur={handleBlur}
                         value={values.passportSeria}
-                        className={`form-control ${
-                          touched.passportSeria && errors.passportSeria
-                            ? "is-invalid"
-                            : ""
-                        }`}
+                        className={`form-control ${touched.passportSeria && errors.passportSeria
+                          ? "is-invalid"
+                          : ""
+                          }`}
                         maxLength={2}
                         id="passportSeria"
                         type="text"
@@ -447,11 +437,10 @@ const FizFormSearch = () => {
                         }}
                         onBlur={handleBlur}
                         value={values.passportNumber}
-                        className={`form-control ${
-                          touched.passportNumber && errors.passportNumber
-                            ? "is-invalid"
-                            : ""
-                        }`}
+                        className={`form-control ${touched.passportNumber && errors.passportNumber
+                          ? "is-invalid"
+                          : ""
+                          }`}
                         maxLength={6}
                         id="passportNumber"
                         type="text"
@@ -480,11 +469,10 @@ const FizFormSearch = () => {
                         }}
                         onBlur={handleBlur}
                         value={values.id_documentNumber}
-                        className={`form-control ${
-                          touched.id_documentNumber && errors.id_documentNumber
-                            ? "is-invalid"
-                            : ""
-                        }`}
+                        className={`form-control ${touched.id_documentNumber && errors.id_documentNumber
+                          ? "is-invalid"
+                          : ""
+                          }`}
                         maxLength={9}
                         id="id_documentNumber"
                         type="text"
@@ -513,12 +501,11 @@ const FizFormSearch = () => {
                             }}
                             onBlur={handleBlur}
                             value={values.id_registryNumber}
-                            className={`form-control ${
-                              touched.id_registryNumber &&
+                            className={`form-control ${touched.id_registryNumber &&
                               errors.id_registryNumber
-                                ? "is-invalid"
-                                : ""
-                            }`}
+                              ? "is-invalid"
+                              : ""
+                              }`}
                             id="id_registryNumber"
                             type="text"
                             placeholder="Номер запису в реєстрі"
@@ -549,12 +536,11 @@ const FizFormSearch = () => {
                         }}
                         onBlur={handleBlur}
                         value={values.foreignP_documentNumber}
-                        className={`form-control ${
-                          touched.foreignP_documentNumber &&
+                        className={`form-control ${touched.foreignP_documentNumber &&
                           errors.foreignP_documentNumber
-                            ? "is-invalid"
-                            : ""
-                        }`}
+                          ? "is-invalid"
+                          : ""
+                          }`}
                         maxLength={8}
                         id="foreignP_documentNumber"
                         type="text"
@@ -585,12 +571,11 @@ const FizFormSearch = () => {
                             }}
                             onBlur={handleBlur}
                             value={values.foreignP_registryNumber}
-                            className={`form-control ${
-                              touched.foreignP_registryNumber &&
+                            className={`form-control ${touched.foreignP_registryNumber &&
                               errors.foreignP_registryNumber
-                                ? "is-invalid"
-                                : ""
-                            }`}
+                              ? "is-invalid"
+                              : ""
+                              }`}
                             id="foreignP_registryNumber"
                             type="text"
                             placeholder="Номер запису в реестрі"
@@ -621,9 +606,8 @@ const FizFormSearch = () => {
                     }}
                     onBlur={handleBlur}
                     value={values.inn}
-                    className={`form-control ${
-                      touched.inn && errors.inn ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${touched.inn && errors.inn ? "is-invalid" : ""
+                      }`}
                     maxLength={12}
                     id="inn"
                     type="text"
@@ -663,7 +647,7 @@ const FizFormSearch = () => {
           </Form>
         )}
       </Formik>
-      <div className="d-flex flex-wrap justify-content-between">
+      <div className="d-flex flex-wrap">
         {searchResults?.map((el) => {
           return <Card key={el.id} data={el} />;
         })}

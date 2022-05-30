@@ -10,15 +10,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.request.PaginationRequest;
 import ua.com.solidity.web.service.UserService;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.Min;
+import javax.validation.Valid;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,18 +31,17 @@ public class UserController {
 
 	private final UserService userService;
 
-	@GetMapping("/subscriptions")
+	@PostMapping("/subscriptions")
 	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
 	@ApiOperation(value = "Shows all subscriptions with paging.",
-			response = Page.class,
+			notes = "Provide simple sort param like<id> or array params sort like<id,asc> or <title,desc>, page like<0> and size like<20>.",
+			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
 	public ResponseEntity<Page<YPersonDto>> subscriptions(
-			@ApiParam(value = "page number.", required = true)
-			@RequestParam @Min(value = 0, message = "Shouldn't be less than 0") int pageNo,
-			@ApiParam(value = "page size.", required = true)
-			@RequestParam @Min(value = 1, message = "Shouldn't be less than 1") int pageSize,
+			@ApiParam()
+			@Valid @RequestBody PaginationRequest paginationRequest,
 			HttpServletRequest request) {
-		Page<YPersonDto> subscriptions = userService.subscriptions(pageNo, pageSize, request);
+		Page<YPersonDto> subscriptions = userService.subscriptions(paginationRequest, request);
 		return ResponseEntity.ok(subscriptions);
 	}
 }

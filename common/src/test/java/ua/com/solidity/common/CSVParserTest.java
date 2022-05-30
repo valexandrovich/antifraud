@@ -19,6 +19,7 @@ class CSVParserTest {
     private static final String CSVTestFirst = "lastName, firstName,surName\n\"Иванов\",\"Иван\",\"Иванович\"\n\"Петров\",\"Петр\",\"Петрович\"";
     private static final String CSVTestSecond = "lastName, firstName,surName\n\"\nИванов\",\"Иван\n\",\"Иванович\"\n\"Петров\",\"Петр\",\"Петрович\"";
     private static final String CSVTestFifth = "name,id\n\"ТОВ \\\"Рога и копыта\\\"\", 1234567\n\"ЗАО \\\"Вася и Петя\\\"\", 7654321";
+    private static final String CSVTestSixth = "name,id,\"ВАСЯ\",1000\n\"ПЕТЯ\",2000,\"CЕРЕЖА\"\n\"СТЕПА\",4000";
     private static final String[] firstTestResult = new String[] {
             ("{'lastName': 'Иванов', 'firstName': 'Иван', 'surName': 'Иванович'}").replace("'", "\""),
             ("{'lastName': 'Петров', 'firstName': 'Петр', 'surName': 'Петрович'}").replace("'", "\"")
@@ -27,6 +28,11 @@ class CSVParserTest {
     private static final String[] fifthTestResult = new String[] {
             ("{'name': 'ТОВ \\'Рога и копыта\\'', 'id': '1234567'}").replace("'", "\""),
             ("{'name': 'ЗАО \\'Вася и Петя\\'', 'id': '7654321'}").replace("'", "\""),
+    };
+
+    private static final String[] sixthTestResult = new String[] {
+            ("{'name': 'ПЕТЯ', 'id': '2000'}").replace("'", "\""),
+            ("{'name': 'СТЕПА', 'id': '4000'}").replace("'", "\""),
     };
 
 
@@ -68,25 +74,25 @@ class CSVParserTest {
 
     public boolean doTestFirst() {
         CSVParams params = new CSVParams("UTF-8", ",", "\"", null,
-                "\t ", CSVParams.FLAG_PARSE_FIELD_NAMES);
+                "\t ", CSVParams.FLAG_PARSE_FIELD_NAMES, -1);
         return doTestAt(params, CSVTestFirst, firstTestResult);
     }
 
     public boolean doSecondTest() {
         CSVParams params = new CSVParams("UTF-8", ",", "\"", null,
-                "\\t ",CSVParams.FLAG_SPLIT_MODE | CSVParams.FLAG_PARSE_FIELD_NAMES);
+                "\\t ",CSVParams.FLAG_SPLIT_MODE | CSVParams.FLAG_PARSE_FIELD_NAMES, -1);
         return doTestAt(params, CSVTestFirst, firstTestResult);
     }
 
     public boolean doThirdTest() {
         CSVParams params = new CSVParams("UTF-8", ",", "\"", null,
-                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM);
+                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM, -1);
         return doTestAt(params, CSVTestSecond, firstTestResult);
     }
 
     public boolean doFourthTest() {
         CSVParams params = new CSVParams("UTF-8", "\t", "\"", null,
-                "\b\r\f\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM);
+                "\b\r\f\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM, -1);
         List<DataObject> objects = getParsedList(params, CSVTestEx);
         if (objects == null) return false;
 
@@ -101,8 +107,14 @@ class CSVParserTest {
 
     public boolean doFifthTest() {
         CSVParams params = new CSVParams("UTF-8", ",", "\"", "\\\\",
-                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM);
+                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM, -1);
         return doTestAt(params, CSVTestFifth, fifthTestResult);
+    }
+
+    public boolean doSixthTest() {
+        CSVParams params = new CSVParams("UTF-8", ",", "\"", "\\\\",
+                "\\t ", CSVParams.FLAG_PARSE_FIELD_NAMES | CSVParams.FLAG_AUTO_TRIM, 2);
+        return doTestAt(params, CSVTestSixth, sixthTestResult);
     }
 
     @Test
@@ -126,5 +138,10 @@ class CSVParserTest {
     @Test
     void fifthTest() {
         assertThat(doFifthTest()).isTrue();
+    }
+
+    @Test
+    void sixthTest() {
+        assertThat(doSixthTest()).isTrue();
     }
 }

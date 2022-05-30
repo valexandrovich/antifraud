@@ -35,6 +35,14 @@ const Aside = () => {
                 <span className="icons">{SidebarData.Search.title}</span>
               </NavLink>
             </li>
+            <li className={SidebarData.Monitoring.cName}>
+              <NavLink to={SidebarData.Monitoring.path}>
+                {SidebarData.Monitoring.icon}
+                <span className="icons">
+                  {SidebarData.Monitoring.title}
+                </span>
+              </NavLink>
+            </li>
             {role === "ADVANCED" ? (
               <>
                 <li className={SidebarData.AddFile.cName}>
@@ -61,14 +69,7 @@ const Aside = () => {
                     <span className="icons">{SidebarData.Sheduler.title}</span>
                   </NavLink>
                 </li>
-                <li className={SidebarData.Monitoring.cName}>
-                  <NavLink to={SidebarData.Monitoring.path}>
-                    {SidebarData.Monitoring.icon}
-                    <span className="icons">
-                      {SidebarData.Monitoring.title}
-                    </span>
-                  </NavLink>
-                </li>
+
               </>
             ) : (
               ""

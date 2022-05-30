@@ -1,5 +1,6 @@
 import Multiselect from "multiselect-react-dropdown";
 import React from "react";
+import * as IoIcons from "react-icons/io";
 
 const MultiselectDay = ({
   name,
@@ -32,6 +33,7 @@ const MultiselectDay = ({
             var value = day.reduce((prev, curr) => {
               return [...prev, curr.value];
             }, []);
+
             setWeekDays((prevState) => ({
               ...prevState,
               month: {
@@ -61,26 +63,19 @@ const MultiselectDay = ({
                 },
               }));
             }
-            //  else {
-            //   setWeekDays((prevState) => ({
-            //     ...prevState,
-            //     month: {},
-            //   }));
-            //   debugger;
-            // }
           }}
         />
         <span className="ml-10 mr-10">тиждень</span>
-        <div className="d-flex flex-column">
-          <button
-            onClick={selectAll}
-            className="btn btn-sm btn-outline-success"
-          >
-            Обрати всі
-          </button>
-          <button onClick={removeAll} className="btn btn-sm btn-outline-danger">
-            Видалити всі
-          </button>
+        <div className="d-flex">
+          <span onClick={selectAll} className="addAll">
+
+            <IoIcons.IoMdDoneAll />
+            <span className="text">Обрати всі</span>
+          </span>
+          <span onClick={removeAll} className="removeAll">
+            <IoIcons.IoMdRemoveCircleOutline />
+            <span className="text">Видалити всі</span>
+          </span>
         </div>
       </div>
     </div>

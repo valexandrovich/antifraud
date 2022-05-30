@@ -49,74 +49,90 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
   });
 
   //  Preset period and data
-  const selectedPeriod = () => {
-    if (
-      rowDate.schedule?.weeks &&
-      rowDate.schedule?.weeks.type === "periodic" &&
-      rowDate.schedule?.weeks.value > 1
-    ) {
-      setPeriod("weeks");
-    }
-    if (
-      rowDate.schedule?.month &&
-      (rowDate.schedule?.month.type === "once" ||
-        rowDate.schedule?.month.type === "set")
-    ) {
-      setPeriod("month");
-    }
-    if (rowDate.schedule?.days_of_month) {
-      setPeriod("month");
-      setmonthPeriod("daymonth");
-    }
-    if (!rowDate.schedule?.weeks && !rowDate.schedule?.month) {
-      if (rowDate.schedule?.days?.type !== "periodic") {
-        setRowDate((prevState) => ({
-          ...prevState,
-          schedule: {
-            ...prevState.schedule,
-            days: {
-              type: "periodic",
-              value:
-                rowDate.schedule?.days?.value > 0
-                  ? rowDate.schedule?.days?.value
-                  : 1,
-            },
-            minutes: {
-              type: "once",
-              value: "00:01",
-            },
-          },
-        }));
-      }
-      setPeriod("days");
-      setMinPeriod("once");
-    }
-    if (
-      !rowDate.schedule?.month &&
-      !rowDate.schedule.days_of_month &&
-      rowDate.schedule?.days_of_week
-    ) {
-      const daysArray = Object.entries(rowDate.schedule?.days_of_week);
-      const filtered = daysArray.filter(([_key, value]) => value === "all");
-      const daysAll = Object.fromEntries(filtered);
-      if (daysAll) {
-        setWeekDays((prevState) => ({
-          ...prevState,
-          weeks: daysAll,
-        }));
-        setRowDate((prevState) => ({
-          ...prevState,
-          schedule: {
-            ...prevState.schedule,
-            weeks: {
-              type: "periodic",
-              value: 1,
-            },
-          },
-        }));
+
+
+  useEffect(() => {
+    const selectedPeriod = () => {
+      if (
+        rowDate.schedule?.weeks &&
+        rowDate.schedule?.weeks.type === "periodic" &&
+        rowDate.schedule?.weeks.value > 1
+      ) {
         setPeriod("weeks");
       }
-      if (Object.keys(daysAll).length === 0) {
+      if (
+        rowDate.schedule?.month &&
+        (rowDate.schedule?.month.type === "once" ||
+          rowDate.schedule?.month.type === "set")
+      ) {
+        setPeriod("month");
+      }
+      if (rowDate.schedule?.days_of_month) {
+        setPeriod("month");
+        setmonthPeriod("daymonth");
+      }
+      if (!rowDate.schedule?.weeks && !rowDate.schedule?.month && !rowDate.schedule?.minutes) {
+        if (rowDate.schedule?.days?.type !== "periodic") {
+          setRowDate((prevState) => ({
+            ...prevState,
+            schedule: {
+              ...prevState.schedule,
+              days: {
+                type: "periodic",
+                value:
+                  rowDate.schedule?.days?.value > 0
+                    ? rowDate.schedule?.days?.value
+                    : 1,
+              },
+              minutes: {
+                type: "once",
+                value: "00:00",
+              },
+            },
+          }));
+        }
+        setPeriod("days");
+        setMinPeriod("once");
+      }
+      if (
+        !rowDate.schedule?.month &&
+        !rowDate.schedule?.days_of_month &&
+        rowDate.schedule?.days_of_week
+      ) {
+        const daysArray = Object.entries(rowDate.schedule?.days_of_week);
+        const filtered = daysArray.filter(([_key, value]) => value === "all");
+        const daysAll = Object.fromEntries(filtered);
+        if (daysAll) {
+          setWeekDays((prevState) => ({
+            ...prevState,
+            weeks: daysAll,
+          }));
+          setRowDate((prevState) => ({
+            ...prevState,
+            schedule: {
+              ...prevState.schedule,
+              weeks: {
+                type: "periodic",
+                value: 1,
+              },
+            },
+          }));
+          setPeriod("weeks");
+        }
+        if (Object.keys(daysAll).length === 0) {
+          setWeekDays((prevState) => ({
+            ...prevState,
+            month: rowDate.schedule?.days_of_week,
+          }));
+          setPeriod("month");
+          setmonthPeriod("dayweek");
+        }
+      }
+      if (
+        rowDate.schedule?.month &&
+        (rowDate.schedule?.month.type === "set" ||
+          rowDate.schedule?.month.type === "once")
+      ) {
         setWeekDays((prevState) => ({
           ...prevState,
           month: rowDate.schedule?.days_of_week,
@@ -124,56 +140,42 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
         setPeriod("month");
         setmonthPeriod("dayweek");
       }
-    }
-    if (
-      rowDate.schedule?.month &&
-      (rowDate.schedule?.month.type === "set" ||
-        rowDate.schedule?.month.type === "once")
-    ) {
-      setWeekDays((prevState) => ({
-        ...prevState,
-        month: rowDate.schedule?.days_of_week,
-      }));
-      setPeriod("month");
-      setmonthPeriod("dayweek");
-    }
-    if (rowDate.schedule.days_of_month) {
-      setPeriod("month");
-      setmonthPeriod("daymonth");
-    }
-    if (rowDate.schedule?.minutes) {
-      if (rowDate.schedule?.minutes.type === "periodic") {
-        setMinPeriod("periodic");
-        setTime((prevState) => ({
-          ...prevState,
-          periodic: {
-            type: rowDate.schedule?.minutes.type,
-            value: rowDate.schedule?.minutes.value,
-          },
-        }));
+      if (rowDate.schedule?.days_of_month) {
+        setPeriod("month");
+        setmonthPeriod("daymonth");
       }
-      if (
-        rowDate.schedule?.minutes.type === "set" ||
-        rowDate.schedule?.minutes.type === "once"
-      ) {
-        setMinPeriod("once");
-        setTime((prevState) => ({
-          ...prevState,
-          once: {
-            type: rowDate.schedule?.minutes.type,
-            value: rowDate.schedule?.minutes.value,
-          },
-        }));
+      if (rowDate.schedule?.minutes) {
+        if (rowDate.schedule?.minutes.type === "periodic") {
+          setMinPeriod("periodic");
+          setTime((prevState) => ({
+            ...prevState,
+            periodic: {
+              type: rowDate.schedule?.minutes.type,
+              value: rowDate.schedule?.minutes.value,
+            },
+          }));
+        }
+        if (
+          rowDate.schedule?.minutes.type === "set" ||
+          rowDate.schedule?.minutes.type === "once"
+        ) {
+          setMinPeriod("once");
+          setTime((prevState) => ({
+            ...prevState,
+            once: {
+              type: rowDate.schedule?.minutes.type,
+              value: rowDate.schedule?.minutes.value,
+            },
+          }));
+        }
       }
-    }
-  };
-
-  useEffect(() => {
+    };
     selectedPeriod();
-  }, []);
+  }, [rowDate.schedule]);
 
   //  Preset period and data
-
+  let start = rowDate.schedule?.start;
+  let finish = rowDate.schedule?.finish;
   useEffect(() => {
     const start = new DateObject(rowDate.schedule?.start);
     const finish = new DateObject(rowDate.schedule?.finish);
@@ -183,13 +185,13 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       start: start.format("YYYY-MM-DDTHH:mm"),
       finish: finish.format("YYYY-MM-DDTHH:mm"),
     }));
-  }, [rowDate.schedule.start, rowDate.schedule.finish]);
+  }, [start, finish, rowDate.schedule]);
 
   useEffect(() => {
     setFormErrors(
-      scheduleSettings.validate(rowDate, weekDays, time, monthPeriod)
+      scheduleSettings.validate(rowDate, weekDays, time, monthPeriod, minPeriod)
     );
-  }, [rowDate, weekDays, time, monthPeriod]);
+  }, [rowDate, weekDays, time, monthPeriod, minPeriod]);
   const handleValidate = (e) => {
     e.preventDefault();
     const days = () => {
@@ -200,8 +202,13 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       }
     };
     const minutes = () => {
-      if (minPeriod !== "periodic") {
-        return { type: time.once.type, value: time.once.value };
+      if (minPeriod !== "periodic" && time.once.value === "00:00") {
+        debugger;
+        return undefined;
+      }
+      if (minPeriod === "once") {
+        debugger;
+        return time.once;
       }
       if (minPeriod === "periodic" && time.periodic.value.indexOf("h") > 0) {
         if (time.periodic.value && !Number.isInteger(time.periodic.value)) {
@@ -229,6 +236,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       if (Number.isInteger(time.periodic.value)) {
         return { type: "periodic", value: time.periodic.value };
       }
+
     };
     const weeks = () => {
       if (period === "weeks" && rowDate.schedule.weeks.value === 1) {
@@ -255,15 +263,20 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       if (
         period === "month" &&
         monthPeriod === "daymonth" &&
-        rowDate.schedule.days_of_month.value.length !== 31 &&
-        rowDate.schedule.days_of_month.value.length > 0
+        rowDate.schedule?.days_of_month?.value.length !== 31 &&
+        rowDate.schedule?.days_of_month?.value.length > 0
       ) {
+        return rowDate.schedule.days_of_month;
+      }
+      if (period === "month" &&
+        monthPeriod === "daymonth" &&
+        rowDate.schedule?.days_of_month?.type === "once") {
         return rowDate.schedule.days_of_month;
       }
       if (
         period === "month" &&
         monthPeriod === "daymonth" &&
-        rowDate.schedule.days_of_month.value.length === 31
+        rowDate.schedule?.days_of_month?.value.length === 31
       ) {
         return undefined;
       }
@@ -289,6 +302,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       }
       if (
         period === "weeks" &&
+        weekDays.weeks &&
         rowDate.schedule?.weeks?.value === 1 &&
         Object.keys(weekDays.weeks).length !== 7
       ) {
@@ -297,7 +311,7 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       if (
         period === "weeks" &&
         rowDate.schedule?.weeks?.value > 1 &&
-        // Object.values(weekDays.weeks).every(isAll) &&
+        weekDays.weeks &&
         Object.keys(weekDays.weeks).length !== 7
       ) {
         return weekDays.weeks;
@@ -320,16 +334,16 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
       name: rowDate.name,
       schedule: shedule
         ? {
-            start: formatedDate.start,
-            finish: finishTime ? formatedDate.finish : undefined,
-            minutes: minutes(),
-            days: period === "days" ? days() : undefined,
-            weeks: period === "weeks" ? weeks() : undefined,
-            month: period === "month" ? month() : undefined,
-            days_of_month: dayOfMonth(),
-            days_of_week: daysOfWeek(),
-          }
-        : null,
+          start: formatedDate.start,
+          finish: finishTime ? formatedDate.finish : undefined,
+          minutes: minutes(),
+          days: period === "days" ? days() : undefined,
+          weeks: period === "weeks" ? weeks() : undefined,
+          month: period === "month" ? month() : undefined,
+          days_of_month: dayOfMonth(),
+          days_of_week: daysOfWeek(),
+        }
+        : undefined,
     };
 
     const requestOptions = {
@@ -368,9 +382,8 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
               <input
                 value={rowDate.groupName}
                 readOnly
-                className={`form-control ${
-                  formErrors.groupName ? "is-invalid" : ""
-                }`}
+                className={`form-control ${formErrors.groupName ? "is-invalid" : ""
+                  }`}
                 list="group"
                 name="group_name"
               />
@@ -390,9 +403,8 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
               <input
                 type="text"
                 name="name"
-                className={`form-control ${
-                  formErrors.name ? "is-invalid" : ""
-                }`}
+                className={`form-control ${formErrors.name ? "is-invalid" : ""
+                  }`}
                 value={rowDate.name}
                 readOnly
               />
@@ -405,9 +417,8 @@ const ShedulerEditModal = ({ open, onClose, edit, groupName, exchange }) => {
             <label htmlFor="exchange">
               Назва черги сповіщень
               <input
-                className={`form-control ${
-                  formErrors.exchange ? "is-invalid" : ""
-                }`}
+                className={`form-control ${formErrors.exchange ? "is-invalid" : ""
+                  }`}
                 placeholder={rowDate.exchange}
                 onChange={(e) => {
                   const { value } = e.currentTarget;

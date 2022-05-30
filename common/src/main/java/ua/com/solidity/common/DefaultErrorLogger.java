@@ -27,7 +27,9 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     }
 
     private boolean streamNeeded() {
-        if (writer != null || error) return false;
+        if (writer != null || error) return !error;
+
+        error = true;
         try {
             if (fileName == null || fileName.isBlank() || StringUtils.equals(fileName, "?")) {
                 stream = new ByteArrayOutputStream();
@@ -35,9 +37,9 @@ public class DefaultErrorLogger extends ErrorReportLogger {
                 stream = new FileOutputStream(fileName);
             }
             writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8);
+            error = false;
         } catch (Exception e) {
             log.error("Can't create file {}. ", fileName, e);
-            error = true;
         }
         return true;
     }

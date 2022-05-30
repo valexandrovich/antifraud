@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import ua.com.solidity.common.Utils;
-import ua.com.solidity.common.data.DataField;
-import ua.com.solidity.common.data.DataFieldType;
-import ua.com.solidity.common.data.DataHeader;
-import ua.com.solidity.common.data.DataObject;
+import ua.com.solidity.common.data.*;
 import java.util.stream.Stream;
 
 public class XLSDataObject extends DataObject {
@@ -72,6 +69,11 @@ public class XLSDataObject extends DataObject {
     public DataField getField(String fieldName) {
         int index = header.getFieldIndex(fieldName);
         return index >= 0 && index < data.length ? data[index] : null;
+    }
+
+    @Override
+    public Iterable<FieldEntry> getFields() {
+        return header.fieldsIterator(data);
     }
 
     @Override

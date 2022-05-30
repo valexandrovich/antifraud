@@ -1,14 +1,15 @@
 import React from "react";
+import { DateObject } from "react-multi-date-picker";
 
 const Passports = ({ data }) => {
   const {
     series,
     number,
     authority,
-    issued,
+    // issued,
     endDate,
-    recordNumber,
-    type,
+    // recordNumber,
+    // type,
     validity,
   } = data;
 
@@ -25,7 +26,7 @@ const Passports = ({ data }) => {
       </p>
 
       <p>
-        <b className="mr-10">Дата закінчення</b> :{endDate}
+        <b className="mr-10">Дата закінчення</b> :{new DateObject(endDate).format("DD.MM.YYYY")}
       </p>
       <p> {validity ? "Дійсний" : "Недійсний"} </p>
     </div>

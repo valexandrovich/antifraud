@@ -19,6 +19,7 @@ public class CSVParams {
     public static final int FLAG_PARSE_FIELD_NAMES = 2;
     public static final int FLAG_UNESCAPE_VALUES = 4;
     public static final int FLAG_AUTO_TRIM = 8;
+    public static final int FLAG_AUTO_COMPLETE = 16;
 
     private boolean splitMode;
     private String encoding = DEFAULT_ENCODING;
@@ -28,9 +29,12 @@ public class CSVParams {
     private String escape = null;
     private String ignoreCharsNearDelimiter = DEFAULT_IGNORE_CHARS_NEAR_DELIMITER;
     private boolean unescapeValues = false;
+    private boolean autoComplete = false;
     private boolean autoTrim = true;
+    private int columnCount = 0;
 
-    public CSVParams(String encoding, String delimiter, String quote, String escape, String ignoreCharsNearDelimiter, int flags) {
+    public CSVParams(String encoding, String delimiter, String quote, String escape, String ignoreCharsNearDelimiter, int flags, int columnCount) {
+        this.columnCount = columnCount;
         this.splitMode = (flags & FLAG_SPLIT_MODE) != 0;
         setEncoding(encoding);
         this.parseFieldNames = (flags & FLAG_PARSE_FIELD_NAMES) != 0;
@@ -39,14 +43,16 @@ public class CSVParams {
         setIgnoreCharsNearDelimiter(ignoreCharsNearDelimiter);
         this.unescapeValues = (flags & FLAG_UNESCAPE_VALUES) != 0;
         this.autoTrim = (flags & FLAG_AUTO_TRIM) != 0;
+        this.autoComplete = (flags & FLAG_AUTO_COMPLETE) != 0;
     }
 
-    public static int flags(boolean splitMode, boolean parseFieldNames, boolean unescapeValues, boolean autoTrim) {
+    public static int flags(boolean splitMode, boolean parseFieldNames, boolean unescapeValues, boolean autoTrim, boolean autoComplete) {
         int res = 0;
         if (splitMode) res |= FLAG_SPLIT_MODE;
         if (parseFieldNames) res |= FLAG_PARSE_FIELD_NAMES;
         if (unescapeValues) res |= FLAG_UNESCAPE_VALUES;
         if (autoTrim) res |= FLAG_AUTO_TRIM;
+        if (autoComplete) res |= FLAG_AUTO_COMPLETE;
         return res;
     }
 
@@ -131,6 +137,10 @@ public class CSVParams {
 
     public final char getDelimiter() {
         return delimiter.charAt(0);
+    }
+
+    public final String getDelimiterRegex() {
+        return "\\" + getDelimiter();
     }
 
     public final boolean isDelimiter(char value) {

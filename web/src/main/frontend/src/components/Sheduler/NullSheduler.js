@@ -39,7 +39,7 @@ const NullSheduler = ({
       ...prevState,
       month: {
         ...prevState.month,
-        [name]: [],
+        [name]: undefined,
       },
     }));
   };
@@ -66,32 +66,32 @@ const NullSheduler = ({
       ? getDayMonth(rowDate.schedule?.days_of_month)
       : []
   );
-
   const monthVal = rowDate.schedule?.month
     ? getMonth(rowDate.schedule.month)
     : [];
 
-  const formatTime = (times) => {
-    if (typeof times === "string") {
-      times.toLowerCase();
-      let withHours = times.indexOf("h");
-      if (withHours >= 0) {
-        let hours = parseInt(times.substring(0, withHours));
-        setHour(hours);
-        setMin(times.substring(withHours + 1));
-        times = times.substring(withHours + 1);
-      }
-      if (times.endsWith("m")) {
-        setMin(times.substring(0, times.length - 1));
-        time = times.substr(0, times.length - 1);
-      }
-    }
-    if (Number.isInteger(times)) {
-      setMin(times);
-    }
-  };
+
 
   useEffect(() => {
+    const formatTime = (times) => {
+      if (typeof times === "string") {
+        times.toLowerCase();
+        let withHours = times.indexOf("h");
+        if (withHours >= 0) {
+          let hours = parseInt(times.substring(0, withHours));
+          setHour(hours);
+          setMin(times.substring(withHours + 1));
+          times = times.substring(withHours + 1);
+        }
+        if (times.endsWith("m")) {
+          setMin(times.substring(0, times.length - 1));
+          times = times.substr(0, times.length - 1);
+        }
+      }
+      if (Number.isInteger(times)) {
+        setMin(times);
+      }
+    };
     formatTime(time.periodic.value);
   }, [time.periodic.value]);
   const select = (name) => {
@@ -236,16 +236,6 @@ const NullSheduler = ({
                   name="period"
                   onChange={(e) => {
                     setPeriod(e.target.value);
-                    setRowDate((prevState) => ({
-                      ...prevState,
-                      schedule: {
-                        ...prevState.schedule,
-                        weeks: {
-                          type: "periodic",
-                          value: 1,
-                        },
-                      },
-                    }));
                   }}
                   checked={period === "weeks"}
                 />
@@ -262,6 +252,7 @@ const NullSheduler = ({
                     value={rowDate.schedule?.weeks?.value}
                     onChange={(e) => {
                       const { value } = e.target;
+
                       setRowDate((prevState) => ({
                         ...prevState,
                         schedule: {
@@ -297,7 +288,7 @@ const NullSheduler = ({
                       selectedValues={
                         weekDays.weeks && Object.keys(weekDays.weeks)
                       }
-                      placeholder="Оберіть дні тижня"
+                      placeholder="Всі дні тижня"
                       hidePlaceholder={true}
                       emptyRecordMsg="Не знайдeно збігів"
                       onSelect={(day) => {
@@ -305,6 +296,7 @@ const NullSheduler = ({
                           acc[item] = "all";
                           return acc;
                         }, {});
+
                         setWeekDays((prevState) => ({
                           ...prevState,
                           weeks,
@@ -317,7 +309,7 @@ const NullSheduler = ({
                         }, {});
                         setWeekDays((prevState) => ({
                           ...prevState,
-                          weeks,
+                          weeks: Object.keys(weeks).length > 0 ? weeks : undefined,
                         }));
                       }}
                     />
@@ -473,9 +465,9 @@ const NullSheduler = ({
 
                   {monthPeriod === "dayweek" && (
                     <div className="d-flex flex-column mt-3">
-                      {scheduleSettings.options.map((day) => {
+                      {scheduleSettings.options.map((day, index) => {
                         return (
-                          <MultiselectDay
+                          <MultiselectDay key={index}
                             name={day}
                             selectAll={() => selectAll(day)}
                             removeAll={() => removeAll(day)}
@@ -486,8 +478,8 @@ const NullSheduler = ({
                             selectedValues={
                               weekDays.month && weekDays.month[day] !== "all"
                                 ? scheduleSettings.datOptions.filter((el) =>
-                                    weekDays.month[day]?.includes(el.value)
-                                  )
+                                  weekDays.month[day]?.includes(el.value)
+                                )
                                 : select(day)
                             }
                           />
@@ -565,6 +557,9 @@ const NullSheduler = ({
               </label>
               <span>Хвилин</span>
             </label>
+            {minPeriod === "periodic" && formErrors.minutes_periodic && (
+              <p className="text-danger">{formErrors.minutes_periodic}</p>
+            )}
           </div>
           <label className="miro-radiobutton d-flex align-items-center">
             <input
@@ -580,11 +575,10 @@ const NullSheduler = ({
               <input
                 disabled={minPeriod !== "once"}
                 value={time.once.value}
-                className={`form-control ${
-                  formErrors.minutes_once || formErrors.minutes_set
-                    ? "is-invalid"
-                    : ""
-                }`}
+                className={`form-control ${formErrors.minutes_once || formErrors.minutes_set
+                  ? "is-invalid"
+                  : ""
+                  }`}
                 name="minOnce"
                 type="text"
                 onChange={(e) => {

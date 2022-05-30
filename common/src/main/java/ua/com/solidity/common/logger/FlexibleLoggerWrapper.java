@@ -1,18 +1,78 @@
 package ua.com.solidity.common.logger;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
-import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 import org.slf4j.spi.LocationAwareLogger;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class FlexibleLoggerWrapper implements Logger {
     protected Logger logger;
     final String fqcn;
     protected boolean instanceofLAL;
-    
+
+    private interface ILogThrowable {
+        void log(String msg, Throwable t);
+    }
+
+    private interface ILogMarkerThrowable {
+        void log(Marker marker, String msg, Throwable t);
+    }
+
+    @Getter
+    private static class LoggerInfo {
+        private final ILogThrowable logThrowable;
+        private final ILogMarkerThrowable logMarkerThrowable;
+        private final Marker marker;
+        private String message;
+        private Object[] objects = null;
+        Throwable throwable = null;
+        private final boolean redirected;
+
+        public static LoggerInfo createByArray(ILogThrowable logThrowable, ILogMarkerThrowable logMarkerThrowable, Marker marker, String message, Object[] args) {
+            return new LoggerInfo(logThrowable, logMarkerThrowable, marker, message, args);
+        }
+
+        public static LoggerInfo create(ILogThrowable logThrowable, ILogMarkerThrowable logMarkerThrowable, Marker marker, String message, Object... args) {
+            return new LoggerInfo(logThrowable, logMarkerThrowable, marker, message, args);
+        }
+
+        private LoggerInfo(ILogThrowable logThrowable, ILogMarkerThrowable logMarkerThrowable, Marker marker, String message, Object[] args) {
+            this.logThrowable = logThrowable;
+            this.logMarkerThrowable = logMarkerThrowable;
+            this.marker = marker;
+            this.redirected = args.length > 0 && args[args.length - 1] instanceof Throwable;
+            this.message = message;
+            if (this.redirected) {
+                initThrowable(args);
+            } else {
+                this.throwable = null;
+                this.message = MessageFormatter.arrayFormat(message, args).getMessage();
+                this.objects = args;
+            }
+        }
+
+        private void initThrowable(Object[] args) {
+            throwable = (Throwable) args[args.length - 1];
+            if (args.length > 1) {
+                message = MessageFormatter.arrayFormat(message, Arrays.copyOf(args, args.length - 1)).getMessage();
+            }
+            this.objects = null;
+
+            if (marker != null && logMarkerThrowable != null) {
+                logMarkerThrowable.log(marker, message, throwable);
+                return;
+            }
+
+            if (logThrowable != null) {
+                logThrowable.log(message, throwable);
+            }
+        }
+    }
+
     public FlexibleLoggerWrapper(Logger logger, String fqcn) {
         this.logger = logger;
         this.fqcn = fqcn;
@@ -36,15 +96,15 @@ public class FlexibleLoggerWrapper implements Logger {
         }
         this.instanceofLAL = logger instanceof LocationAwareLogger;
     }
-    
+
     public boolean isTraceEnabled() {
         return this.logger.isTraceEnabled();
     }
-    
+
     public boolean isTraceEnabled(Marker marker) {
         return this.logger.isTraceEnabled(marker);
     }
-    
+
     public void trace(String msg) {
         if (this.logger.isTraceEnabled()) {
             if (this.instanceofLAL) {
@@ -57,33 +117,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void trace(String format, Object arg) {
         if (this.logger.isTraceEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.trace(format, arg);
+            LoggerInfo info = LoggerInfo.create(this::trace, this::trace, null, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, info.message, info.objects, null);
+                } else {
+                    this.logger.trace(format, arg);
+                }
             }
         }
     }
 
     public void trace(String format, Object arg1, Object arg2) {
         if (this.logger.isTraceEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.trace(format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::trace, this::trace, null, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, info.message, info.objects, null);
+                } else {
+                    this.logger.trace(format, arg1, arg2);
+                }
             }
         }
     }
 
-    public void trace(String format, Object... args) {
+    public void trace(String format, Object...args) {
         if (this.logger.isTraceEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, formattedMessage, args, null);
-            } else {
-                this.logger.trace(format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::trace, this::trace, null,  format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 0, info.message, info.objects, null);
+                } else {
+                    this.logger.trace(format, args);
+                }
             }
         }
     }
@@ -110,33 +176,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void trace(Marker marker, String format, Object arg) {
         if (this.logger.isTraceEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 0, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.trace(marker, format, arg);
+            LoggerInfo info = LoggerInfo.create(this::trace, this::trace, marker, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 0, info.message, info.objects, null);
+                } else {
+                    this.logger.trace(marker, format, arg);
+                }
             }
         }
     }
 
     public void trace(Marker marker, String format, Object arg1, Object arg2) {
         if (this.logger.isTraceEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 0, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.trace(marker, format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::trace, this::trace, marker, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 0, info.message, info.objects, null);
+                } else {
+                    this.logger.trace(marker, format, arg1, arg2);
+                }
             }
         }
     }
 
     public void trace(Marker marker, String format, Object... args) {
         if (this.logger.isTraceEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 0, formattedMessage, args, null);
-            } else {
-                this.logger.trace(marker, format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::trace, this::trace, marker, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 0, info.message, info.objects, null);
+                } else {
+                    this.logger.trace(marker, format, args);
+                }
             }
         }
     }
@@ -171,33 +243,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void debug(String format, Object arg) {
         if (this.logger.isDebugEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 10, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.debug(format, arg);
+            LoggerInfo info = LoggerInfo.create(this::debug, this::debug, null, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 10, info.message, info.objects, null);
+                } else {
+                    this.logger.debug(format, arg);
+                }
             }
         }
     }
 
     public void debug(String format, Object arg1, Object arg2) {
         if (this.logger.isDebugEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 10, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.debug(format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::debug, this::debug, null, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 10, info.message, info.objects, null);
+                } else {
+                    this.logger.debug(format, arg1, arg2);
+                }
             }
         }
     }
 
-    public void debug(String format, Object... argArray) {
+    public void debug(String format, Object... args) {
         if (this.logger.isDebugEnabled()) {
-            if (this.instanceofLAL) {
-                FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 10, ft.getMessage(), ft.getArgArray(), ft.getThrowable());
-            } else {
-                this.logger.debug(format, argArray);
+            LoggerInfo info = LoggerInfo.createByArray(this::debug, this::debug, null, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 10, info.message, info.objects, null);
+                } else {
+                    this.logger.debug(format, args);
+                }
             }
         }
     }
@@ -224,33 +302,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void debug(Marker marker, String format, Object arg) {
         if (this.logger.isDebugEnabled(marker)) {
-            if (this.instanceofLAL) {
-                FormattingTuple ft = MessageFormatter.format(format, arg);
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 10, ft.getMessage(), ft.getArgArray(), ft.getThrowable());
-            } else {
-                this.logger.debug(marker, format, arg);
+            LoggerInfo info = LoggerInfo.create(this::debug, this::debug, marker, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 10, info.message, info.objects, null);
+                } else {
+                    this.logger.debug(marker, format, arg);
+                }
             }
         }
     }
 
     public void debug(Marker marker, String format, Object arg1, Object arg2) {
         if (this.logger.isDebugEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 10, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.debug(marker, format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::debug, this::debug, marker, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 10, info.message, info.objects, null);
+                } else {
+                    this.logger.debug(marker, format, arg1, arg2);
+                }
             }
         }
     }
 
-    public void debug(Marker marker, String format, Object... argArray) {
+    public void debug(Marker marker, String format, Object... args) {
         if (this.logger.isDebugEnabled(marker)) {
-            if (this.instanceofLAL) {
-                FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 10, ft.getMessage(), argArray, ft.getThrowable());
-            } else {
-                this.logger.debug(marker, format, argArray);
+            LoggerInfo info = LoggerInfo.createByArray(this::debug, this::debug, marker, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 10, info.message, info.objects, null);
+                } else {
+                    this.logger.debug(marker, format, args);
+                }
             }
         }
     }
@@ -285,33 +369,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void info(String format, Object arg) {
         if (this.logger.isInfoEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 20, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.info(format, arg);
+            LoggerInfo info = LoggerInfo.create(this::info, this::info, null, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 20, info.message, info.objects, null);
+                } else {
+                    this.logger.info(format, arg);
+                }
             }
         }
     }
 
     public void info(String format, Object arg1, Object arg2) {
         if (this.logger.isInfoEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 20, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.info(format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::info, this::info, null, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 20, info.message, info.objects, null);
+                } else {
+                    this.logger.info(format, arg1, arg2);
+                }
             }
         }
     }
 
     public void info(String format, Object... args) {
         if (this.logger.isInfoEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 20, formattedMessage, args, null);
-            } else {
-                this.logger.info(format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::info, this::info, null, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger)this.logger).log(null, this.fqcn, 20, info.message, info.objects, null);
+                } else {
+                    this.logger.info(format, args);
+                }
             }
         }
     }
@@ -338,33 +428,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void info(Marker marker, String format, Object arg) {
         if (this.logger.isInfoEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.info(marker, format, arg);
+            LoggerInfo info = LoggerInfo.create(this::info, this::info, marker, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, info.message, info.objects, null);
+                } else {
+                    this.logger.info(marker, format, arg);
+                }
             }
         }
     }
 
     public void info(Marker marker, String format, Object arg1, Object arg2) {
         if (this.logger.isInfoEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.info(marker, format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::info, this::info, marker, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, info.message, info.objects, null);
+                } else {
+                    this.logger.info(marker, format, arg1, arg2);
+                }
             }
         }
     }
 
     public void info(Marker marker, String format, Object... args) {
         if (this.logger.isInfoEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, formattedMessage, args, null);
-            } else {
-                this.logger.info(marker, format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::info, this::info, marker, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 20, info.message, info.objects, null);
+                } else {
+                    this.logger.info(marker, format, args);
+                }
             }
         }
     }
@@ -399,33 +495,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void warn(String format, Object arg) {
         if (this.logger.isWarnEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 30, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.warn(format, arg);
+            LoggerInfo info = LoggerInfo.create(this::warn, this::warn, null, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 30, info.message, info.objects, null);
+                } else {
+                    this.logger.warn(format, arg);
+                }
             }
         }
     }
 
     public void warn(String format, Object arg1, Object arg2) {
         if (this.logger.isWarnEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 30, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.warn(format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::warn, this::warn, null, format, arg1, 2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 30, info.message, info.objects, null);
+                } else {
+                    this.logger.warn(format, arg1, arg2);
+                }
             }
         }
     }
 
     public void warn(String format, Object... args) {
         if (this.logger.isWarnEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 30, formattedMessage, args, null);
-            } else {
-                this.logger.warn(format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::warn, this::warn, null, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 30, info.message, info.objects, null);
+                } else {
+                    this.logger.warn(format, args);
+                }
             }
         }
     }
@@ -452,33 +554,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void warn(Marker marker, String format, Object arg) {
         if (this.logger.isWarnEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 30, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.warn(marker, format, arg);
+            LoggerInfo info = LoggerInfo.create(this::warn, this::warn, marker, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 30, info.message, info.objects, null);
+                } else {
+                    this.logger.warn(marker, format, arg);
+                }
             }
         }
     }
 
     public void warn(Marker marker, String format, Object arg1, Object arg2) {
         if (this.logger.isWarnEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 30, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.warn(marker, format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::warn, this::warn, marker, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 30, info.message, info.objects, null);
+                } else {
+                    this.logger.warn(marker, format, arg1, arg2);
+                }
             }
         }
     }
 
     public void warn(Marker marker, String format, Object... args) {
         if (this.logger.isWarnEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 30, formattedMessage, args, null);
-            } else {
-                this.logger.warn(marker, format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::warn, this::warn, marker, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 30, info.message, info.objects, null);
+                } else {
+                    this.logger.warn(marker, format, args);
+                }
             }
         }
     }
@@ -513,33 +621,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void error(String format, Object arg) {
         if (this.logger.isErrorEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 40, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.error(format, arg);
+            LoggerInfo info = LoggerInfo.create(this::error, this::error, null, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 40, info.message, info.objects, null);
+                } else {
+                    this.logger.error(format, arg);
+                }
             }
         }
     }
 
     public void error(String format, Object arg1, Object arg2) {
         if (this.logger.isErrorEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 40, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.error(format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::error, this::error, null, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 40, info.message, info.objects, null);
+                } else {
+                    this.logger.error(format, arg1, arg2);
+                }
             }
         }
     }
 
     public void error(String format, Object... args) {
         if (this.logger.isErrorEnabled()) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(null, this.fqcn, 40, formattedMessage, args, null);
-            } else {
-                this.logger.error(format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::error, this::error, null, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(null, this.fqcn, 40, info.message, info.objects, null);
+                } else {
+                    this.logger.error(format, args);
+                }
             }
         }
     }
@@ -566,33 +680,39 @@ public class FlexibleLoggerWrapper implements Logger {
 
     public void error(Marker marker, String format, Object arg) {
         if (this.logger.isErrorEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 40, formattedMessage, new Object[]{arg}, null);
-            } else {
-                this.logger.error(marker, format, arg);
+            LoggerInfo info = LoggerInfo.create(this::error, this::error, marker, format, arg);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 40, info.message, info.objects, null);
+                } else {
+                    this.logger.error(marker, format, arg);
+                }
             }
         }
     }
 
     public void error(Marker marker, String format, Object arg1, Object arg2) {
         if (this.logger.isErrorEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.format(format, arg1, arg2).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 40, formattedMessage, new Object[]{arg1, arg2}, null);
-            } else {
-                this.logger.error(marker, format, arg1, arg2);
+            LoggerInfo info = LoggerInfo.create(this::error, this::error, marker, format, arg1, arg2);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 40, info.message, info.objects, null);
+                } else {
+                    this.logger.error(marker, format, arg1, arg2);
+                }
             }
         }
     }
 
     public void error(Marker marker, String format, Object... args) {
         if (this.logger.isErrorEnabled(marker)) {
-            if (this.instanceofLAL) {
-                String formattedMessage = MessageFormatter.arrayFormat(format, args).getMessage();
-                ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 40, formattedMessage, args, null);
-            } else {
-                this.logger.error(marker, format, args);
+            LoggerInfo info = LoggerInfo.createByArray(this::error, this::error, marker, format, args);
+            if (!info.redirected) {
+                if (this.instanceofLAL) {
+                    ((LocationAwareLogger) this.logger).log(marker, this.fqcn, 40, info.message, info.objects, null);
+                } else {
+                    this.logger.error(marker, format, args);
+                }
             }
         }
     }
@@ -611,4 +731,3 @@ public class FlexibleLoggerWrapper implements Logger {
         return this.logger.getName();
     }
 }
-

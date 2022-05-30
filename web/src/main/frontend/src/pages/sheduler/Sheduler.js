@@ -11,19 +11,34 @@ const Sheduler = () => {
   ];
   const uniqueArrayExchange = (obj) => [...new Set(obj.map((o) => o.exchange))];
   const [editRow, setEditRow] = useState(null);
-
-  useEffect(() => {
+  const fetchSchedule = () => {
     fetch("/api/schedule/find", { headers: authHeader() })
       .then((response) => response.json())
       .then((res) => setData(res));
+  };
+  useEffect(() => {
+    fetchSchedule();
   }, [editRow]);
   const [search, setSearch] = useState("all");
-
-  const Switch = async () => {
+  const exchangeSwitch = async (group) => {
     try {
-      await fetch("/api/schedule/exchangeSwitch", {
+      await fetch(`/api/schedule/exchangeSwitch/${group}`, {
         method: "POST",
         headers: authHeader(),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const exchangeActivate = async (group) => {
+    try {
+      await fetch(`/api/schedule/exchangeActivate/${group}`, {
+        method: "POST",
+        headers: authHeader(),
+      }).then(res => {
+        if (res.status === 200) {
+          fetchSchedule();
+        }
       });
     } catch (error) {
       console.log(error);
@@ -34,6 +49,10 @@ const Sheduler = () => {
       await fetch("/api/schedule/exchangeRefresh", {
         method: "POST",
         headers: authHeader(),
+      }).then(res => {
+        if (res.status === 200) {
+          fetchSchedule();
+        }
       });
     } catch (error) {
       console.log(error);
@@ -67,10 +86,10 @@ const Sheduler = () => {
             })}
           </select>
         </div>
-        <div className="col-md-3 mb-2">
+        <div className="col-md-4 mb-2">
           <button
             type="button"
-            onClick={Refresh}
+            onClick={() => Refresh()}
             className="btn custom-btn w-100"
           >
             Перезавантажити Sheduler
@@ -78,22 +97,25 @@ const Sheduler = () => {
         </div>
       </div>
       {search !== "all" && (
-        <div className="d-flex">
-          <button
-            type="button"
-            onClick={Switch}
-            className="btn btn-success mb-2 w-100"
-          >
-            Зробити групу активною
-          </button>
-
-          <button
-            type="button"
-            onClick={Switch}
-            className="btn btn-danger mb-2 w-100"
-          >
-            Зробити групу активною та перезавантажити Sheduler
-          </button>
+        <div className="row">
+          <div className="col-md-4">
+            <button
+              type="button"
+              onClick={() => exchangeActivate(search)}
+              className="btn btn-success mb-2 w-100"
+            >
+              Зробити групу активною
+            </button>
+          </div>
+          <div className="col-md-5">
+            <button
+              type="button"
+              onClick={() => exchangeSwitch(search)}
+              className="btn btn-danger mb-2 w-100"
+            >
+              Зробити групу активною та перезавантажити Sheduler
+            </button>
+          </div>
         </div>
       )}
       <div className="sroll-x">
@@ -119,8 +141,8 @@ const Sheduler = () => {
                     ? 1
                     : -1
                   : a.groupName > b.groupName
-                  ? 1
-                  : -1
+                    ? 1
+                    : -1
               )
               .filter((el) => {
                 if (search === "all") {

@@ -510,3 +510,70 @@ datalist {
 .pointer {
   cursor: pointer;
 }
+.tags span {
+  padding: 0 5px;
+  width: max-content;
+}
+.addAll {
+  position: relative;
+  font-weight: bold;
+  font-size: 24px;
+  margin: 0 10px;
+  color: var(--main);
+  cursor: pointer;
+  display: inline-block;
+}
+.addAll
+ .text {
+  visibility: hidden;
+  width: 120px;
+  font-size: 14px;
+  color: var(--main); 
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  top: -100px;
+  left: -20px;
+  transition: 0.3s;
+}
+.addAll:hover .text{
+  visibility: visible;
+  
+}
+
+.removeAll{
+  position: relative;
+  font-weight: bold;
+  font-size: 24px;
+  margin: 0 10px;
+  color: red;
+  cursor: pointer;
+}
+.removeAll
+ .text {
+  visibility: hidden;
+  width: 120px;
+  font-size: 14px;
+  color: red; 
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  top: -100px;
+  left: -10px;
+  transition: 0.3s;
+}
+
+.removeAll:hover .text {
+  visibility: visible;
+}
+
+.paginate-active{
+  display: block;
+  font-size: 24px;
+  color: var(--main);
+  padding: 5px;
+}

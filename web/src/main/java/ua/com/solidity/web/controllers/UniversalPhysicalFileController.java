@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -160,18 +161,43 @@ public class UniversalPhysicalFileController {
 		return ResponseEntity.ok().build();
 	}
 
-    @PutMapping(path = "/delete/{id}")
+    @DeleteMapping(path = "/delete/{id}")
     @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
     @ApiOperation(value = "Delete FileDescription by specified id",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
-    public ResponseEntity<FileDescription> deleteFileDescription(
+    public ResponseEntity<Void> deleteFileDescription(
             @ApiParam(value = "FileDescription id you need delete",
                     required = true)
-            @PathVariable UUID id,
-            HttpServletRequest request
-    ) {
-        xslxService.delete(id, request);
+            @PathVariable UUID id) {
+        xslxService.delete(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(path = "/enricher/{uuid}")
+    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @ApiOperation(value = "Send file to Enricher",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<Void> enricher(
+            @ApiParam(
+                    value = "UUID of file you need to enrich.",
+                    required = true)
+            @NotNull @PathVariable UUID uuid) {
+        xslxService.enrich(uuid);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping(path = "/update")
+    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @ApiOperation(value = "Update the manual data by id and index parameter",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<ValidatedManualPersonResponse> updateManualPerson(
+            @RequestParam Long id,
+            @RequestParam int index,
+            @RequestParam String value) {
+        ValidatedManualPersonResponse response = xslxService.update(id, index, value);
+        return ResponseEntity.ok(response);
     }
 }

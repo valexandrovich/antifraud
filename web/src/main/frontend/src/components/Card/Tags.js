@@ -1,5 +1,5 @@
 import React from "react";
-
+import { DateObject } from "react-multi-date-picker";
 const Tags = ({ data }) => {
   const { name, asOf, until, source } = data;
   return (
@@ -11,13 +11,14 @@ const Tags = ({ data }) => {
       <div className="d-flex">
         <span className="mr-10">
           <b className="mr-10">З:</b>
-          {asOf}
+          {new DateObject(asOf).format("DD.MM.YYYY")}
         </span>
         <span>
           <b className="mr-10">По:</b>
-          {until === null ? "(Теперішній)" : until}
+          {until === null ? "(Теперішній)" : new DateObject(until).format("DD.MM.YYYY")}
         </span>
       </div>
+      <small>{source}</small>
     </div>
   );
 };

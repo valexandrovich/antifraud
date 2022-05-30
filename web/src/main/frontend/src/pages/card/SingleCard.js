@@ -8,10 +8,10 @@ import Addresses from "../../components/Card/Addresses";
 import Email from "../../components/Card/Email";
 import Tags from "../../components/Card/Tags";
 import Phone from "../../components/Card/Phone";
+import authHeader from "../../api/AuthHeader";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import AltPerson from "../../components/Card/AltPerson";
-import authHeader from "../../api/AuthHeader";
 import { DateObject } from "react-multi-date-picker";
 
 const SingleCard = () => {
@@ -26,21 +26,22 @@ const SingleCard = () => {
     phone: false,
     alt: false,
   });
-  const getPersonDetails = async () => {
-    try {
-      const response = await fetch(`/api/uniPF/find/${id}`, {
-        method: "POST",
-        headers: authHeader(),
-      });
-      const res = await response.json();
-      setPersonDetails(res);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+
   useEffect(() => {
+    const getPersonDetails = async () => {
+      try {
+        const response = await fetch(`/api/uniPF/find/${id}`, {
+          method: "GET",
+          headers: authHeader(),
+        });
+        const res = await response.json();
+        setPersonDetails(res);
+      } catch (error) {
+        console.log(error);
+      }
+    };
     getPersonDetails();
-  }, []);
+  }, [id]);
   const exportPdf = () => {
     html2canvas(document.querySelector("#print")).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
@@ -81,12 +82,11 @@ const SingleCard = () => {
               </div>
               <div className="d-flex">
                 <b className="mr-10">Дата народження:</b>
-                <p>
-                  {new DateObject(personDetails.birthdate).format("DD-MM-YYYY")}
-                </p>
+
+                <p>{new DateObject(personDetails.birthdate).format("DD.MM.YYYY")}</p>
               </div>
               <div className="d-flex">
-                <b className="mr-10">ІПН:</b>
+                <b className="mr-10">Ипн:</b>
                 <p>
                   {personDetails.inns.length > 0
                     ? personDetails.inns[0].inn
@@ -141,7 +141,7 @@ const SingleCard = () => {
                 }));
               }}
             >
-              ІПН
+              ИПН
               {components.inn &&
                 personDetails.inns.map((inn) => (
                   <Inn key={inn.id} data={inn} />

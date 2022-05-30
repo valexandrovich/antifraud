@@ -18,8 +18,7 @@
   position: relative;
   z-index: 51;
   max-height: calc(100vh - 150px);
-  max-width: 70vw;
-  min-width: 60%;
+  width: 70vw;
   overflow-y: scroll;
 }
 

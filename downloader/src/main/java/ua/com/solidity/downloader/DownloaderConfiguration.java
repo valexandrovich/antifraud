@@ -2,7 +2,10 @@ package ua.com.solidity.downloader;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ua.com.solidity.common.ActionObject;
 import ua.com.solidity.common.RabbitMQListener;
+
+import javax.annotation.PostConstruct;
 
 @Configuration
 public class DownloaderConfiguration {
@@ -19,5 +22,11 @@ public class DownloaderConfiguration {
     @Bean
     RabbitMQListener listener(Config config, Receiver receiver) {
         return new RabbitMQListener(receiver, config.getCollectMSecs(), config.getName());
+    }
+
+    @PostConstruct
+    void initRabbitMQActions() {
+        ActionObject.register(DownloaderDropRevisionAction.class, "drop_revision");
+        ActionObject.register(DownloaderDropLastRevisionAction.class, "drop_last_revision");
     }
 }

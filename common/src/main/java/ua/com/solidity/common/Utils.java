@@ -664,4 +664,21 @@ public class Utils {
     public static String messageFormat(String pattern, Object ... args) {
         return MessageFormatter.arrayFormat(pattern, args).getMessage();
     }
+
+    @SuppressWarnings("unused")
+    public static boolean registerActions(Class<? extends ActionObject> clazz, String ...actions) {
+        boolean res = clazz == null || actions.length == 0;
+        if (res) ActionObject.register(clazz, actions);
+        return res;
+    }
+
+    @SuppressWarnings("unused")
+    public static ActionObject getActionObject(JsonNode node) {
+        return ActionObject.getAction(node);
+    }
+
+    @SuppressWarnings("unsed")
+    public static ActionObject getActionObject(String json) {
+        return ActionObject.getAction(json);
+    }
 }

@@ -2,6 +2,7 @@ package ua.com.solidity.downloader;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.StatusChanger;
@@ -64,6 +65,7 @@ public class Config {
 
     public final String getLogFileName(String fileName) {
         if (fileName == null || fileName.isBlank()) return null;
+        if (StringUtils.equals(fileName, "?")) return "?";
         String folder = getDownloaderOutputFolder() + "/logs";
         Path path = Path.of(folder);
         try {

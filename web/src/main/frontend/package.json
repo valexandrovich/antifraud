@@ -26,6 +26,7 @@
     "redux-devtools-extension": "^2.13.9",
     "redux-thunk": "^2.4.1",
     "sweetalert": "^2.1.2",
+    "v4": "^0.0.1",
     "yup": "^0.32.11"
   },
   "proxy": "http://localhost:8025",

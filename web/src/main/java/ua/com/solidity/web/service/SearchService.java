@@ -45,6 +45,9 @@ public class SearchService {
     private static final String INN = "inn";
     private static final String INNS = "inns";
     private static final String ADDRESSES = "addresses";
+    private static final String PHONE = "phone";
+    private static final String PHONES = "phones";
+
 
     public List<YPersonDto> search(SearchRequest searchRequest, HttpServletRequest httpServletRequest) {
         boolean criteriaFound = false;
@@ -120,7 +123,8 @@ public class SearchService {
         String foreignPassportRecord = Objects.toString(searchRequest.getForeignP_registryNumber(), "");
         if (!foreignPassportNumber.equals("") && !foreignPassportRecord.equals("")) {
             criteriaFound = true;
-            gs.add(new SearchCriteria(NUMBER, foreignPassportNumber, PASSPORTS, SearchOperation.EQUALS));
+            gs.add(new SearchCriteria(SERIES, foreignPassportNumber.substring(0,2), PASSPORTS, SearchOperation.EQUALS));
+            gs.add(new SearchCriteria(NUMBER, foreignPassportNumber.substring(2), PASSPORTS, SearchOperation.EQUALS));
             gs.add(new SearchCriteria(RECORD_NUMBER, foreignPassportRecord, PASSPORTS, SearchOperation.EQUALS));
         }
 
@@ -135,6 +139,12 @@ public class SearchService {
             criteriaFound = true;
             LocalDate finishDate = LocalDate.now().minusYears(Integer.parseInt(age));
             gs.add(new SearchCriteria(BIRTHDATE, finishDate, null, SearchOperation.BETWEEN));
+        }
+
+        String phone = Objects.toString(searchRequest.getPhone(), "");
+        if (!phone.equals("")) {
+            criteriaFound = true;
+            gs.add(new SearchCriteria(PHONE, phone, PHONES, SearchOperation.MATCH));
         }
 
         if (criteriaFound) {

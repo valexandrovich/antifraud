@@ -30,7 +30,9 @@ node {
           credentialsId: '6b229787-40c7-4810-b6c3-4b337de89180',
           url: 'https://drSolidity@bitbucket.org/solidityprojects/otp_qa_mvn.git'
       def mvn = tool 'Default Maven';
-      sh "${mvn}/bin/mvn clean test -Dotp.url=http://localhost:2022"
+      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        sh "DISPLAY=:99 && ${mvn}/bin/mvn clean test"
+      }
     }
   }
 

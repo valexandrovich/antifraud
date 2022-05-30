@@ -23,7 +23,7 @@ public enum PhysicalPersonRegex {
     GENDER("^[MFМЖЧ]$", "один із символів -> M F Ч Ж"),
     UK_RU_MULTIPLE("^[А-Яа-яҐЄІЇґєії'\\W]+", "текст може містити українські та російські слова, включаючи символи та пробіли"),
     CNUM("^[0-9]{2,6}$", "номер може містити до 6 цифр"),
-    NUMBER("^\\d+$", "може містити цифри");
+    NUMBER("^([0-9]*[.,][0-9]+)?(\\d+)$", "може містити цифри");
 
 	PhysicalPersonRegex(String regex, String message) {
 		this.regex = regex;

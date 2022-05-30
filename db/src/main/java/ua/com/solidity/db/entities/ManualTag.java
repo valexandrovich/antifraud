@@ -25,14 +25,22 @@ public class ManualTag {
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", unique = true)
     private Long id;
+    @Column(name = "mk_id")
     private String mkId;
     private String name;
+    @Column(name = "mk_event_date")
     private String mkEventDate;
+    @Column(name = "mk_start")
     private String mkStart;
+    @Column(name = "mk_expire")
     private String mkExpire;
+    @Column(name = "mk_number_value")
     private String mkNumberValue;
+    @Column(name = "mk_text_value")
     private String mkTextValue;
+    @Column(name = "mk_description")
     private String mkDescription;
+    @Column(name = "mk_source")
     private String mkSource;
     @ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference

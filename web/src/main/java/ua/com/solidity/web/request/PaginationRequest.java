@@ -13,7 +13,7 @@ import javax.validation.constraints.Pattern;
 @Setter
 public class PaginationRequest {
 
-	@Pattern(message = "Має бути 'ASC' або 'DESC'(не чутливий до регістру)", regexp = "^([aA][sS][cC])|([dD][eE][sS][cC])$")
+	@Pattern(message = "Має бути 'ASC' або 'DESC'(не чутливий до регістру)", regexp = "^([aA][sS][cC]|[dD][eE][sS][cC])$")
 	private String direction;
 
 	@NotEmpty(message = "Потрібен хоча б 1 критерій")

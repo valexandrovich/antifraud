@@ -112,19 +112,27 @@ public class SearchService {
         }
 
         String idpassportNumber = Objects.toString(searchRequest.getId_documentNumber(), "");
-        String idpassportRecord = Objects.toString(searchRequest.getId_registryNumber(), "");
-        if (!idpassportNumber.equals("") && !idpassportRecord.equals("")) {
+        if (!idpassportNumber.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(NUMBER, idpassportNumber, PASSPORTS, SearchOperation.EQUALS));
+        }
+
+        String idpassportRecord = Objects.toString(searchRequest.getId_registryNumber(), "");
+        if (!idpassportRecord.equals("")) {
+            criteriaFound = true;
             gs.add(new SearchCriteria(RECORD_NUMBER, idpassportRecord, PASSPORTS, SearchOperation.EQUALS));
         }
 
         String foreignPassportNumber = Objects.toString(searchRequest.getForeignP_documentNumber(), "");
-        String foreignPassportRecord = Objects.toString(searchRequest.getForeignP_registryNumber(), "");
-        if (!foreignPassportNumber.equals("") && !foreignPassportRecord.equals("")) {
+        if (!foreignPassportNumber.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(SERIES, foreignPassportNumber.substring(0,2), PASSPORTS, SearchOperation.EQUALS));
             gs.add(new SearchCriteria(NUMBER, foreignPassportNumber.substring(2), PASSPORTS, SearchOperation.EQUALS));
+        }
+
+        String foreignPassportRecord = Objects.toString(searchRequest.getForeignP_registryNumber(), "");
+        if (!foreignPassportRecord.equals("")) {
+            criteriaFound = true;
             gs.add(new SearchCriteria(RECORD_NUMBER, foreignPassportRecord, PASSPORTS, SearchOperation.EQUALS));
         }
 

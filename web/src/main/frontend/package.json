@@ -13,6 +13,7 @@
     "formik": "^2.2.9",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
+    "jwt-decode": "^3.1.2",
     "multiselect-react-dropdown": "^2.0.21",
     "react": "^16.13.1",
     "react-bootstrap": "^1.2.2",

@@ -1,7 +1,7 @@
 import React from 'react';
 import Modal from './Modal';
 
-const ConfirmDeletemodal = ({ open, onClose, uuid, deleteAction }) => {
+const ConfirmDeletemodal = ({open, onClose, uuid, deleteAction}) => {
 
     return (<Modal
         title={`Видалити файл ${uuid}`}

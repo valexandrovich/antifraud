@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import ua.com.solidity.web.request.AuthenticationRequest;
 import ua.com.solidity.web.security.exception.CRUDMethodNotSupportedException;
+import ua.com.solidity.web.security.model.UserDetailsImpl;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -59,14 +60,18 @@ public class LoginRequestFilter extends AbstractAuthenticationProcessingFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
-        log.debug("Authentication Successful");
+        UsernamePasswordAuthenticationToken sourceToken = (UsernamePasswordAuthenticationToken) authResult;
+        UserDetailsImpl authenticationDetails = (UserDetailsImpl) sourceToken.getDetails();
+        log.debug("Authentication Successful - user: {}, role: {}",
+                  authenticationDetails.getDisplayName(),
+                  authenticationDetails.getSimpleRole());
         successHandler.onAuthenticationSuccess(request, response, authResult);
     }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                               AuthenticationException failed) throws IOException, ServletException {
-        log.error("Authentication Failed");
+        log.error("Authentication Failed: {}", failed.getMessage());
         SecurityContextHolder.clearContext();
         failureHandler.onAuthenticationFailure(request, response, failed);
     }

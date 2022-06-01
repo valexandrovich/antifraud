@@ -6,7 +6,7 @@ import ua.com.solidity.web.security.token.JwtToken;
 
 public class JwtTokenExpiredException extends AuthenticationException {
 
-    private JwtToken token;
+    transient private JwtToken token;
 
     public JwtTokenExpiredException(String msg) {
         super(msg);

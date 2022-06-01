@@ -27,7 +27,7 @@
     </parent>
     <groupId>ua.com.solidity</groupId>
     <artifactId>otp</artifactId>
-    <version>3.4.155-SNAPSHOT</version>
+    <version>3.4.197</version>
     <name>otp</name>
     <description>ETL project for OTP</description>
     <properties>

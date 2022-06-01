@@ -5,7 +5,7 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>3.4.155-SNAPSHOT</version>
+        <version>3.4.197</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -47,7 +47,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>3.4.155-SNAPSHOT</version>
+            <version>3.4.197</version>
         </dependency>
     </dependencies>
 

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import ua.com.solidity.web.security.exception.JwtTokenExpiredException;
 import ua.com.solidity.web.security.exception.NoSuchRoleException;
 
 import javax.validation.ConstraintViolation;
@@ -24,6 +25,17 @@ import java.util.List;
 
 @ControllerAdvice
 public class ExceptionAdvice extends ResponseEntityExceptionHandler {
+
+	@ResponseBody
+	@ExceptionHandler(JwtTokenExpiredException.class)
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	ExceptionResponse propertyReferenceHandler(JwtTokenExpiredException ex) {
+		return ExceptionResponse.builder()
+				.messages(List.of(ex.getMessage()))
+				.status(HttpStatus.BAD_REQUEST)
+				.statusCode(HttpStatus.BAD_REQUEST.value())
+				.build();
+	}
 
 	@ResponseBody
 	@ExceptionHandler(PropertyReferenceException.class)
@@ -52,12 +64,14 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	}
 
 	@Override
-	protected @NotNull ResponseEntity<Object> handleMethodArgumentNotValid(final MethodArgumentNotValidException ex, final HttpHeaders headers, final HttpStatus status, final WebRequest request) {
+	protected @NotNull ResponseEntity<Object> handleMethodArgumentNotValid(final MethodArgumentNotValidException ex,
+	                                                                       final @NotNull HttpHeaders headers,
+	                                                                       final @NotNull HttpStatus status,
+	                                                                       final @NotNull WebRequest request) {
 		List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
 		List<String> messages = new ArrayList<>();
 
-		for (int i = 0; i < fieldErrors.size(); i++) {
-			FieldError error = fieldErrors.get(i);
+		for (FieldError error : fieldErrors) {
 			String field = error.getField();
 			String message = error.getDefaultMessage();
 			messages.add(field + ": " + message);

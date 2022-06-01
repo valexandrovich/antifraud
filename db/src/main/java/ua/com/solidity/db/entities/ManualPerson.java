@@ -86,5 +86,5 @@ public class ManualPerson {
     private String passIdIssueDate;
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
     @JsonManagedReference
-    public Set<ManualTag> tags = new HashSet();
+    public Set<ManualTag> tags = new HashSet<>();
 }

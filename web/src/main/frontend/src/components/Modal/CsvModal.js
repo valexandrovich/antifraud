@@ -3,9 +3,9 @@ import csvSettings from "../Csv/CsvSettings";
 
 import Modal from "./Modal";
 
-const CsvModal = ({ open, onClose, csvoptions, setCsvOptions }) => {
+const CsvModal = ({open, onClose, csvoptions, setCsvOptions}) => {
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setCsvOptions({
             ...csvoptions,
             [name]: value
@@ -28,7 +28,7 @@ const CsvModal = ({ open, onClose, csvoptions, setCsvOptions }) => {
                             value={csvoptions.delimeter}
                             onChange={handleChange}
                         >
-                            {csvSettings.delimeter.map(({ id, name }) => {
+                            {csvSettings.delimeter.map(({id, name}) => {
                                 return (<option value={name} key={id}>{name}</option>);
                             })}
                         </select>
@@ -41,7 +41,7 @@ const CsvModal = ({ open, onClose, csvoptions, setCsvOptions }) => {
                             value={csvoptions.codingType}
                             onChange={handleChange}
                         >
-                            {csvSettings.codingType.map(({ id, name }) => {
+                            {csvSettings.codingType.map(({id, name}) => {
                                 return (<option value={name} key={id}>{name}</option>);
                             })}
                         </select>

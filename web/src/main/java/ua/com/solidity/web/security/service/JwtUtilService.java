@@ -10,6 +10,7 @@ import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,12 @@ import java.util.function.Function;
 @Slf4j
 public class JwtUtilService {
 
-	private final String secretKey = "fwijn23845lkasd--&%#E";
+	@Value("#{new Integer('${token.duration.minutes}')}")
+	private Integer tokenDuration;
+	@Value("${token.secret.key}")
+	private String secretKey;
+
+	private static final String NUMBER_REGEX = "^[0-9]+$";
 
 	public String extractUserLogin(JwtToken token) {
 		return extractClaim(token, Claims::getSubject);
@@ -45,13 +51,12 @@ public class JwtUtilService {
 		try {
 			return Jwts.parser().setSigningKey(getSecretKey()).parseClaimsJws(token.getToken()).getBody();
 		} catch (UnsupportedJwtException | MalformedJwtException | IllegalArgumentException | SignatureException ex) {
-			log.error("Invalid JWT Token", ex);
+			log.error("Invalid JWT Token: {}", ex.getMessage());
 			throw new BadCredentialsException("Invalid JWT token: ", ex);
 		} catch (ExpiredJwtException expiredEx) {
-			log.info("JWT Token is expired", expiredEx);
+			log.info("JWT Token is expired: {}", expiredEx.getMessage());
 			throw new JwtTokenExpiredException(token, "JWT Token expired", expiredEx);
 		}
-
 	}
 
 	private Boolean isTokenExpired(JwtToken token) {
@@ -71,7 +76,7 @@ public class JwtUtilService {
 		return Jwts.builder()
 				.setClaims(claims)
 				.setIssuedAt(new Date(timeMillis))
-				.setExpiration(new Date(timeMillis + (1000 * 60 * 60 * 10)))
+				.setExpiration(new Date(timeMillis + 1000L * 60 * tokenDuration))
 				.signWith(SignatureAlgorithm.HS256, getSecretKey())
 				.compact();
 	}

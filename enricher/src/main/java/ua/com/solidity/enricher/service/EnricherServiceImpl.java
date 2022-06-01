@@ -798,7 +798,7 @@ public class EnricherServiceImpl implements EnricherService {
             Optional<YPassport> passportOptional = person.getPassports()
                     .parallelStream()
                     .filter(p -> Objects.equals(p.getNumber(), number) && Objects.equals(p.getSeries(), passportSeries)
-                            && Objects.equals(p.getRecordNumber(), recordNumber)).findAny();
+                            || Objects.equals(p.getRecordNumber(), recordNumber)).findAny();
             passport = passportOptional.orElseGet(YPassport::new);
             passport.setType("UA_FOREIGN");
             if (passportOptional.isEmpty()) newPassport = true;
@@ -806,7 +806,7 @@ public class EnricherServiceImpl implements EnricherService {
             Optional<YPassport> passportOptional = person.getPassports()
                     .parallelStream()
                     .filter(p -> Objects.equals(p.getNumber(), number)
-                            && Objects.equals(p.getRecordNumber(), recordNumber)).findAny();
+                            || Objects.equals(p.getRecordNumber(), recordNumber)).findAny();
             passport = passportOptional.orElseGet(YPassport::new);
             passport.setType("UA_IDCARD");
             if (passportOptional.isEmpty()) newPassport = true;

@@ -139,8 +139,8 @@ helm-package:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
-        app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
-        version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
+        app_name=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
+        version=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
         sed -i "s/$app_name: version/$app_name: $version/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml
         helm package $CI_PROJECT_DIR/helm/services/$app_name --app-version $version --version $version
         find . -name $app_name*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;

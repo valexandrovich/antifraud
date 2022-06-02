@@ -16,7 +16,6 @@ spec:
       importer: version
       notification: version
       scheduler: version
-      schedulertest: version
       web: version
       dwh: version
       liquibase: version
@@ -28,7 +27,6 @@ spec:
       importer: importer
       notification: notification
       scheduler: scheduler
-      schedulertest: schedulertest
       web: web
       dwh: dwh
       liquibase: liquibase

@@ -86,8 +86,8 @@ kaniko-build:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
-        app_name=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
-        version=$(echo $file | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
+        app_name=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
+        version=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
         /kaniko/executor \
         --context . \
         --dockerfile $CI_PROJECT_DIR/Dockerfile \

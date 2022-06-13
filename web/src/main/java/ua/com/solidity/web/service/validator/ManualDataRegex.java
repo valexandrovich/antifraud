@@ -1,7 +1,6 @@
 package ua.com.solidity.web.service.validator;
 
-public enum PhysicalPersonRegex {
-
+public enum ManualDataRegex {
     NAME_UK("^[А-ГҐДЕЄЖЗИІЇЙ-ЩЬЮЯа-гґдеєжзиіїй-щьюя']+$", "одне слово українськими літерами"),
     NAME_RU("^[А-Яа-я]+$", "одне слово російськими літерами"),
     NAME_EN("^[A-Za-z]+$", "одне слово англійськими літерами"),
@@ -25,20 +24,20 @@ public enum PhysicalPersonRegex {
     CNUM("^[0-9]{2,6}$", "номер може містити до 6 цифр"),
     NUMBER("^([0-9]*[.,][0-9]+)?(\\d+)$", "може містити цифри");
 
-	PhysicalPersonRegex(String regex, String message) {
-		this.regex = regex;
-		this.message = message;
-	}
+    ManualDataRegex(String regex, String message) {
+        this.regex = regex;
+        this.message = message;
+    }
 
-	private String regex;
+    private String regex;
 
-	private String message;
+    private String message;
 
-	public String getRegex() {
-		return regex;
-	}
+    public String getRegex() {
+        return regex;
+    }
 
-	public String getMessage() {
-		return message;
-	}
+    public String getMessage() {
+        return message;
+    }
 }

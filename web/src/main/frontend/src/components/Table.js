@@ -105,10 +105,10 @@ const Tag = ({data, errTag, updateErrors}) => {
                     return (
                         <div key={el.id} className="tags d-flex border-bottom">
                             {Object.entries(el).slice(1).map(([k, v], index) => {
-                                    const errCell = err?.find((e) => e.columnIndex + 1 === index);
-                                    if (errCell?.columnIndex + 1 === index) {
+                                    const errCell = err?.find((e) => e.columnIndex === index);
+                                    if (errCell?.columnIndex === index) {
                                         return (<>{<ErrCell updateErrors={updateErrors} key={index} idx={index} id={el.id}
-                                                            data={v} mis={errCell.columnIndex + 1 === index && errCell}
+                                                            data={v} mis={errCell.columnIndex === index && errCell}
                                                             name={k}/>}</>);
                                     }
                                     return (<div className="d-flex flex-column align-items-center" key={index}><span

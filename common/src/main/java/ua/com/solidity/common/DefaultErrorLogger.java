@@ -1,14 +1,13 @@
 package ua.com.solidity.common;
 
-import lombok.CustomLog;
-import org.apache.commons.lang.StringUtils;
-import ua.com.solidity.common.data.DataLocation;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import lombok.CustomLog;
+import org.apache.commons.lang.StringUtils;
+import ua.com.solidity.common.data.DataLocation;
 
 @CustomLog
 public class DefaultErrorLogger extends ErrorReportLogger {
@@ -19,11 +18,19 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     private final long maxRowCount;
     private long rowCount = 0;
     private boolean error = false;
+    private String subject = "Importer error report";
 
     public DefaultErrorLogger(String fileName, String mailto, long maxRowCount) {
         this.fileName = fileName;
         this.mailto = mailto;
         this.maxRowCount = maxRowCount;
+    }
+
+    public DefaultErrorLogger(String fileName, String mailto, long maxRowCount, String subject) {
+        this.fileName = fileName;
+        this.mailto = mailto;
+        this.maxRowCount = maxRowCount;
+        this.subject = subject;
     }
 
     private boolean streamNeeded() {
@@ -69,7 +76,7 @@ public class DefaultErrorLogger extends ErrorReportLogger {
 
     @Override
     protected void handleLineReport(DataLocation location, String clarification) {
-        doWrite("\t at:" + location.toString() + ", " + clarification);
+        doWrite("\t at:" + location.toString() + ", " + clarification + System.lineSeparator());
     }
 
     @Override
@@ -81,13 +88,13 @@ public class DefaultErrorLogger extends ErrorReportLogger {
             } catch(Exception e) {
                 // nothing
             }
-            if (mailto != null) {
+            if (mailto != null && !mailto.isBlank()) {
                 NotificationMessage msg;
                 if (stream instanceof ByteArrayOutputStream) {
-                    msg = new NotificationMessage(mailto, "Importer error report",
+                    msg = new NotificationMessage(mailto, subject,
                             ((ByteArrayOutputStream) stream).toString(StandardCharsets.UTF_8), 3, null);
                 } else {
-                    msg = new NotificationMessage(mailto, "Importer error report", "", 3, fileName);
+                    msg = new NotificationMessage(mailto, subject, "", 3, fileName);
                 }
                 Utils.sendRabbitMQMessage("otp-etl.notification", Utils.objectToJsonString(msg));
             }

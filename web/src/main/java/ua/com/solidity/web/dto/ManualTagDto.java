@@ -10,7 +10,6 @@ import lombok.Setter;
 public class ManualTagDto {
     private Long id;
     private String mkId;
-    private String name;
     private String mkEventDate;
     private String mkStart;
     private String mkExpire;

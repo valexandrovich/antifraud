@@ -11,4 +11,8 @@ public final class UtilString {
     public static String toLowerCase(String value) {
         return value == null ? null : value.toLowerCase();
     }
+
+    public static boolean equalsIgnoreCase(String a, String b) {
+        return a != null && a.equalsIgnoreCase(b);
+    }
 }

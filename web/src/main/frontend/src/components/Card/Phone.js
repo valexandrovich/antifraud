@@ -1,15 +1,21 @@
 import React from "react";
+import { sourceName } from "./Card";
 
-const Phone = ({data}) => {
-    const {phone} = data;
-    return (
-        <div className="card mb-3">
-            <p>
-                <b className="mr-10">Телефон:</b>
-                {phone}
-            </p>
-        </div>
-    );
+const Phone = ({ data }) => {
+  const { phone, importSources } = data;
+  return (
+    <div className="card mb-3">
+      <p>
+        <b className="mr-10">Телефон:</b>
+        {phone}
+        <span className="ml-10">
+          {importSources && importSources.length > 0
+            ? `(${importSources.length} ${sourceName(importSources)})`
+            : ""}
+        </span>
+      </p>
+    </div>
+  );
 };
 
 export default Phone;

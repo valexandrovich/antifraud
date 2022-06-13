@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class PersonService {
+public class LdapPersonService {
 
 	private final PersonRepository personRepository;
 

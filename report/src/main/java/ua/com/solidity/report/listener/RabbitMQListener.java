@@ -44,7 +44,6 @@ public class RabbitMQListener {
 		log.debug("Receive task from " + reportQueue);
 
 		List<User> userList = userRepository.findAll();
-//		List<SendEmailRequest> sendEmailRequests = new ArrayList<>();
 
 		userList.forEach(user -> {
 			List<MonitoringNotification> monitoringNotificationList = new ArrayList<>();
@@ -67,7 +66,7 @@ public class RabbitMQListener {
 				String jo;
 				try {
 					jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
-					log.info("Emit to " + notificationQueue);
+					log.info("Sending task to {}", notificationQueue);
 					template.convertAndSend(notificationQueue, jo);
 				} catch (JsonProcessingException e) {
 					log.error("Couldn't convert json: {}", e.getMessage());
@@ -75,21 +74,7 @@ public class RabbitMQListener {
 
 				monitoringNotificationList.forEach(monitoringNotification -> monitoringNotification.setSent(true));
 				mnRepository.saveAll(monitoringNotificationList);
-
-//				sendEmailRequests.add(sendEmailRequest);
 			}
 		});
-//
-//		sendEmailRequests.forEach(sendEmailRequest -> {
-//			String jo;
-//			try {
-//				jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
-//				log.info("Emit to " + notificationQueue);
-//				template.convertAndSend(notificationQueue, jo);
-//			} catch (JsonProcessingException e) {
-//				log.error("Couldn't convert json: {}", e.getMessage());
-//			}
-//		});
-
 	}
 }

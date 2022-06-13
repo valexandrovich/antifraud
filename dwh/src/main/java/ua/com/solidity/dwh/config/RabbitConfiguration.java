@@ -11,8 +11,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import ua.com.solidity.common.RabbitMQListener;
-import ua.com.solidity.dwh.listener.Receiver;
 
 @Slf4j
 @Configuration
@@ -49,10 +47,5 @@ public class RabbitConfiguration {
     @Bean(name = "dwhQueue")
     public Queue dwhQueue() {
         return new Queue(dwhQueue);
-    }
-
-    @Bean
-    RabbitMQListener listener(Receiver receiver) {
-        return new RabbitMQListener(receiver, dwhQueue);
     }
 }

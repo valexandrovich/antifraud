@@ -36,8 +36,11 @@ public class DataLocation {
             builder.append("char position:").append(charOffset).append(", ");
         }
 
-        builder.append("row:").append(row).append(", ");
-        builder.append("col:").append(col).append("]");
-        return builder.toString();
+        builder.append("row:").append(row);
+
+        if (col >= 0) {
+            builder.append(", col:").append(col);
+        }
+        return builder.append("]").toString();
     }
 }

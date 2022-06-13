@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v026-0" author="Olha Tankevych">
+        <tagDatabase tag="v026-0"/>
+    </changeSet>
+
+    <changeSet id="v026-1" author="Olha Tankevych">
+        <createTable tableName="ymanager">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager"/>
+            </column>
+            <column name="okpo" type="VARCHAR(255)"/>
+            <column name="inn_id" type="BIGINT"/>
+            <column name="type_id" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="v026-2" author="Olha Tankevych">
+        <createTable tableName="ymanager_import_source">
+            <column autoIncrement="true" name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager_import_source"/>
+            </column>
+            <column name="ymanager_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="v026-3" author="Olha Tankevych">
+        <createTable tableName="ymanager_type">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager_type"/>
+            </column>
+            <column name="type" type="VARCHAR(255)"/>
+        </createTable>
+        <insert tableName="ymanager_type">
+            <column name="type" value="DIRECTOR"/>
+        </insert>
+        <insert tableName="ymanager_type">
+            <column name="type" value="CREATOR"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="ymanager_type"/>
+            <dropTable tableName="ymanager_type"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v026-4" author="Olha Tankevych">
+        <addForeignKeyConstraint baseColumnNames="inn_id" baseTableName="ymanager" constraintName="FK_YMANAGER_ON_INN"
+                                 referencedColumnNames="id" referencedTableName="yinn"/>
+    </changeSet>
+
+    <changeSet id="v026-5" author="Olha Tankevych">
+        <addForeignKeyConstraint baseColumnNames="type_id" baseTableName="ymanager"
+                                 constraintName="FK_YMANAGER_ON_TYPE" referencedColumnNames="id"
+                                 referencedTableName="ymanager_type"/>
+    </changeSet>
+
+    <changeSet id="v026-6" author="Olha Tankevych">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="ymanager_import_source"
+                                 constraintName="fk_ymaimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+
+    <changeSet id="v026-7" author="Olha Tankevych">
+        <addForeignKeyConstraint baseColumnNames="ymanager_id" baseTableName="ymanager_import_source"
+                                 constraintName="fk_ymaimpsou_on_y_manager" referencedColumnNames="id"
+                                 referencedTableName="ymanager"/>
+    </changeSet>
+</databaseChangeLog>

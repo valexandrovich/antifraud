@@ -6,7 +6,5 @@ import ua.com.solidity.db.entities.YPassport;
 
 public interface YPassportRepository extends JpaRepository<YPassport, Long> {
 
-    Optional<YPassport> findByNumberAndSeries(Integer number, String series);
-
-    Optional<YPassport> findByNumberAndRecordNumber(Integer number,String recordNumber);
+    Optional<YPassport> findByTypeAndNumberAndSeries(String type, Integer number, String series);
 }

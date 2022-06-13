@@ -29,7 +29,7 @@ public class SchedulerService {
 	private final SchedulerConverter schedulerConverter;
 
 	@Value("${scheduler.rabbitmq.name}")
-	private String queueName;
+	private String schedulerQueue;
 	private final AmqpTemplate template;
 
 	public List<SchedulerEntityDto> findAll() {
@@ -40,8 +40,10 @@ public class SchedulerService {
 	}
 
 	public void update(SchedulerEntityDto dto) {
-		schedulerRepository.findById(new SchedulerEntityId(dto.getGroupName(), dto.getName()))
-				.orElseThrow(() -> new EntityAlreadyExistException("не вдалося знайти розклад із групою " + dto.getGroupName() + " та ім'ям " + dto.getName()));
+		Optional<SchedulerEntity> scheduler = schedulerRepository.findById(new SchedulerEntityId(dto.getGroupName(), dto.getName()));
+		if (scheduler.isEmpty()) {
+			throw new EntityAlreadyExistException("не вдалося знайти розклад із групою " + dto.getGroupName() + " та ім'ям " + dto.getName());
+		}
 
 		schedulerRepository.save(schedulerConverter.toEntity(dto));
 	}
@@ -64,8 +66,8 @@ public class SchedulerService {
 		String jo;
 		try {
 			jo = new ObjectMapper().writeValueAsString(new SchedulerExchange("switch", group));
-			log.info("Emit to " + queueName);
-			template.convertAndSend(queueName, jo);
+			log.info("Sending task to {}", schedulerQueue);
+			template.convertAndSend(schedulerQueue, jo);
 		} catch (JsonProcessingException e) {
 			log.error("Couldn't convert json: {}", e.getMessage());
 		}
@@ -75,8 +77,8 @@ public class SchedulerService {
 		String jo;
 		try {
 			jo = new ObjectMapper().writeValueAsString(new SchedulerExchange("refresh", null));
-			log.info("Emit to " + queueName);
-			template.convertAndSend(queueName, jo);
+			log.info("Sending task to {}", schedulerQueue);
+			template.convertAndSend(schedulerQueue, jo);
 		} catch (JsonProcessingException e) {
 			log.error("Couldn't convert json: {}", e.getMessage());
 		}

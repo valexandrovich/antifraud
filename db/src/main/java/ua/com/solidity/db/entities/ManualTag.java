@@ -27,7 +27,6 @@ public class ManualTag {
     private Long id;
     @Column(name = "mk_id")
     private String mkId;
-    private String name;
     @Column(name = "mk_event_date")
     private String mkEventDate;
     @Column(name = "mk_start")

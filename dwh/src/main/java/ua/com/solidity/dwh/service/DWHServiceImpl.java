@@ -1,7 +1,9 @@
 package ua.com.solidity.dwh.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,7 +16,9 @@ import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.StatusLogger;
 import ua.com.solidity.db.repositories.ContragentRepository;
 import ua.com.solidity.db.repositories.ImportRevisionRepository;
+import ua.com.solidity.db.repositories.SchedulerEntityRepository;
 import ua.com.solidity.dwh.entities.ArContragent;
+import ua.com.solidity.dwh.model.UpdateDWHRequest;
 import ua.com.solidity.dwh.repositorydwh.ArContragentRepository;
 
 import java.sql.Timestamp;
@@ -23,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -33,6 +38,7 @@ public class DWHServiceImpl implements DWHService {
 	private final ArContragentRepository acr;
 	private final ContragentRepository cr;
 	private final ImportRevisionRepository irr;
+	private final SchedulerEntityRepository ser;
 
 	private static final String DWH = "DWH";
 	private static final String AR_CONTRAGENT = "AR_CONTRAGENT";
@@ -45,30 +51,54 @@ public class DWHServiceImpl implements DWHService {
 	private String loggerQueue;
 	@Value("${otp.dwh.page-size}")
 	private Integer pageSize;
+	private final AmqpTemplate template;
+
+	private final ObjectMapper objectMapper;
 
 	private String importedRecords(long num, LocalDate date) {
 		return String.format("Imported %d records archived after %s", num, Timestamp.valueOf(date.atStartOfDay()));
 	}
 
 	@Override
-	public void update() { // Find records updated as of specified arcdate and import them from DWH
+	public void update(UpdateDWHRequest updateDWHRequest) { // Find records updated as of specified arcdate and import them from DWH
 		long[] counter = new long[1];
 		LocalDateTime startTime = LocalDateTime.now();
-		Instant instant;
 		LocalDate date;
 		UUID revision = UUID.randomUUID();
 
+		Timestamp lastModified = updateDWHRequest != null
+				? Optional.of(updateDWHRequest.getLastModified()).orElseGet(() -> null)
+				: null;
+
 		ImportRevision importRevision = irr.findFirstBySource(SOURCE);
-		if (importRevision != null && (instant = importRevision.getRevisionDate()) != null) {
-			date = Timestamp.from(instant).toLocalDateTime().toLocalDate();
+		Instant instant = importRevision != null
+				? Optional.of(importRevision.getRevisionDate()).orElseGet(() -> null)
+				: null;
+
+		if (lastModified != null) {
+			if (lastModified.getTime() >= 0L) {
+				date = lastModified.toLocalDateTime().toLocalDate();
+			} else {
+				if (instant != null) {
+					date = Timestamp.from(instant).toLocalDateTime().toLocalDate();
+				} else {
+					date = new Timestamp(0L).toLocalDateTime().toLocalDate();
+				}
+			}
 		} else {
-			date = new Timestamp(0L).toLocalDateTime().toLocalDate();
+			if (instant != null) {
+				date = Timestamp.from(instant).toLocalDateTime().toLocalDate();
+			} else {
+				date = new Timestamp(0L).toLocalDateTime().toLocalDate();
+			}
+
 		}
+
 		log.info("Importing from DWH records archived after: {}", Timestamp.valueOf(date.atStartOfDay()));
 
 		StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
 		                                             AR_CONTRAGENT, DWH, startTime, null, null);
-		Utils.sendRabbitMQMessage(loggerQueue, Utils.objectToJsonString(statusLogger));
+		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 
 		Pageable pageRequest = PageRequest.of(0, pageSize);
 		Page<ArContragent> onePage = acr.findByArcDateGreaterThanEqual(date, pageRequest);
@@ -155,7 +185,7 @@ public class DWHServiceImpl implements DWHService {
 
 			statusLogger = new StatusLogger(revision, counter[0], RECORDS,
 			                                AR_CONTRAGENT, DWH, startTime, null, null);
-			Utils.sendRabbitMQMessage(loggerQueue, Utils.objectToJsonString(statusLogger));
+			template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 		}
 
 		Instant newInstant = Timestamp.valueOf(startTime).toInstant();
@@ -172,9 +202,9 @@ public class DWHServiceImpl implements DWHService {
 		statusLogger = new StatusLogger(revision, 100L, "%",
 		                                AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
 		                                importedRecords(counter[0], date));
-		Utils.sendRabbitMQMessage(loggerQueue, Utils.objectToJsonString(statusLogger));
+		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 
 		EnricherMessage enricherMessage = new EnricherMessage(CONTRAGENT, revision);
-		Utils.sendRabbitMQMessage(enricherQueue, Utils.objectToJsonString(enricherMessage));
+		template.convertAndSend(enricherQueue, Utils.objectToJsonString(enricherMessage));
 	}
 }

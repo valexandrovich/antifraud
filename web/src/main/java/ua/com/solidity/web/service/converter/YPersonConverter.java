@@ -21,6 +21,7 @@ public class YPersonConverter {
 		entity.setTags(dto.getTags());
 		entity.setEmails(dto.getEmails());
 		entity.setPhones(dto.getPhones());
+		entity.setImportSources(dto.getSources());
 
 		return entity;
 	}
@@ -39,6 +40,7 @@ public class YPersonConverter {
 		dto.setTags(entity.getTags());
 		dto.setEmails(entity.getEmails());
 		dto.setPhones(entity.getPhones());
+		dto.setSources(entity.getImportSources());
 
 		return dto;
 	}

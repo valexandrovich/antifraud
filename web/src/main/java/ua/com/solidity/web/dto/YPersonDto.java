@@ -1,6 +1,7 @@
 package ua.com.solidity.web.dto;
 
 import lombok.Data;
+import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.YAddress;
 import ua.com.solidity.db.entities.YAltPerson;
 import ua.com.solidity.db.entities.YEmail;
@@ -27,5 +28,6 @@ public class YPersonDto {
 	private Set<YTag> tags;
 	private Set<YEmail> emails;
 	private Set<YPhone> phones;
+	private Set<ImportSource> sources;
 	private boolean subscribe;
 }

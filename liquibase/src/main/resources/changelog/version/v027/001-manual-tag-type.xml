@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v027-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v027-0"/>
+    </changeSet>
+
+    <changeSet id="v027-1" author="Kyrylo Chornobryvets">
+        <createTable tableName="tag_type">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_tag_type" unique="true"/>
+            </column>
+            <column name="code" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+        <insert tableName="tag_type">
+            <column name="code" value="RP"/>
+            <column name="description" value="Отношение к банку / Партнер"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="REP"/>
+            <column name="description" value="Отношение к банку / Сотрудник / Практикант"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="RES"/>
+            <column name="description" value="Отношение к банку / Сотрудник / Штатный"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="RER"/>
+            <column name="description" value="Отношение к банку / Сотрудник / Родственник"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="RED"/>
+            <column name="description" value="Отношение к банку / Сотрудник / Договор подряда"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="RC"/>
+            <column name="description" value="Отношение к банку / Клиент / Договор подряда"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NAT"/>
+            <column name="description" value="Негатив / Блокировка / Террорист"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NAF"/>
+            <column name="description" value="Негатив / Блокировка / Мошенник"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NAL"/>
+            <column name="description" value="Негатив / Блокировка / Недействительный паспорт (книжка)"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBC1"/>
+            <column name="description" value="Негатив / Черный список / Криминал / Умышленные преступления"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBA1"/>
+            <column name="description" value="Негатив / Черный список / Административная ответственность / Уровень 1"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBA2"/>
+            <column name="description" value="Негатив / Черный список / Административная ответственность / Уровень 2"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBA3"/>
+            <column name="description" value="Негатив / Черный список / Административная ответственность / Уровень 3"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBDA"/>
+            <column name="description" value="Негатив / Черный список / Смерть / Подтвержденная документально"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBDN"/>
+            <column name="description" value="Негатив / Черный список / Смерть / Неподтвержденная документально"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBB1"/>
+            <column name="description" value="Негатив / Черный список / Банкротство / Возбуждено дело о банкротстве"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBB2"/>
+            <column name="description" value="Негатив / Черный список / Банкротство / Признан банкротом"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBB"/>
+            <column name="description" value="Негатив / Черный список / Предатели Родины"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NGC1"/>
+            <column name="description" value="Негатив / Серый список / Криминал / Неумышленые преступления"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NGC2"/>
+            <column name="description" value="Негатив / Серый список / Криминал / Налоговые преступления"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NF11"/>
+            <column name="description" value="Негатив / Черный список фин. Мониторинга / Рахунки 1 / Операціі 1"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NF21"/>
+            <column name="description" value="Негатив / Черный список фин. Мониторинга / Рахунки 2 / Операціі 1"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NF12"/>
+            <column name="description" value="Негатив / Черный список фин. Мониторинга / Рахунки 1 / Операціі 2"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NF22"/>
+            <column name="description" value="Негатив / Черный список фин. Мониторинга / Рахунки 2 / Операціі 2"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NF13"/>
+            <column name="description" value="Негатив / Черный список фин. Мониторинга / Рахунки 1 / Операціі 3"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NF23"/>
+            <column name="description" value="Негатив / Черный список фин. Мониторинга / Рахунки 2 / Операціі 3"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NGO"/>
+            <column name="description" value="Негатив / Серый список / Жалобы на Банк"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="SM"/>
+            <column name="description" value="Чуствительная информация / Мобилизован в ЗСУ"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="SI"/>
+            <column name="description" value="Чуствительная информация / Инсайдер банка"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="SP"/>
+            <column name="description" value="Чуствительная информация / PEP"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="ILC"/>
+            <column name="description" value="Справочная информация / Кредитный продукт / Кредитная карта"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="ILP"/>
+            <column name="description" value="Справочная информация / Кредитный продукт / POS Кредит"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="ILA"/>
+            <column name="description" value="Справочная информация / Кредитный продукт / Авто-кредит"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="ILM"/>
+            <column name="description" value="Справочная информация / Кредитный продукт / Ипотека"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="ID"/>
+            <column name="description" value="Справочная информация / Директор компании"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="IZ"/>
+            <column name="description" value="Справочная информация / Основатель  компаниии"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="IS"/>
+            <column name="description" value="Справочная информация / СПД"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="IOD"/>
+            <column name="description" value="Справочная информация / Другой продукт / Депозит"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="tag_type"/>
+            <dropTable tableName="tag_type"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

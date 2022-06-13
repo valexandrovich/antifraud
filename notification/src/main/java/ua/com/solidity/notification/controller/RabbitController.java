@@ -19,21 +19,21 @@ import ua.com.solidity.notification.model.SendEmailRequest;
 @RestController
 public class RabbitController {
 
-    @Value("${notification.rabbitmq.name}")
-    private String queueName;
-    private final AmqpTemplate template;
+	@Value("${notification.rabbitmq.name}")
+	private String queueName;
+	private final AmqpTemplate template;
 
-    @PostMapping("/emit")
-    public ResponseEntity<String> emit(@RequestBody SendEmailRequest request) {
-        String jo ;
-        try {
-            jo = new ObjectMapper().writeValueAsString(request);
-        } catch (JsonProcessingException e) {
-            log.error("Couldn't convert request fields.");
-            throw new JsonNotConvertedException();
-        }
-        log.info("Emit to otp-etl.notification");
-        template.convertAndSend(queueName, jo);
-        return ResponseEntity.ok("Success emit to queue");
-    }
+	@PostMapping("/emit")
+	public ResponseEntity<String> emit(@RequestBody SendEmailRequest request) {
+		String jo;
+		try {
+			jo = new ObjectMapper().writeValueAsString(request);
+		} catch (JsonProcessingException e) {
+			log.error("Couldn't convert request fields.");
+			throw new JsonNotConvertedException();
+		}
+		log.info("Sending task to {}", queueName);
+		template.convertAndSend(queueName, jo);
+		return ResponseEntity.ok("Success emit to queue");
+	}
 }

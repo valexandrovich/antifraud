@@ -86,11 +86,12 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 			person = new Person();
 			person.setDisplayName(superName);
 			person.setUsername(superName);
-			roleName = roleRepository.findById(1).orElseThrow(NoSuchRoleException::new).getName();
+			role = roleRepository.findById(1).orElseThrow(NoSuchRoleException::new);
+			roleName = role.getName();
 			if (userRepository.findByUsername(SUPER_USER).isEmpty()) {
 				User superUser = new User();
 				superUser.setUsername(SUPER_USER);
-				superUser.setRole(roleRepository.findById(1).get());
+				superUser.setRole(role);
 				superUser.setDisplayName(SUPER_USER);
 				superUser.setEmail(SUPER_USER + EMAIL_DOMAIN);
 				superUser.setPhoneNumber(PHONE_NUMBER_MOCK);
@@ -102,11 +103,12 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 			person = new Person();
 			person.setDisplayName(basicName);
 			person.setUsername(basicName);
-			roleName = roleRepository.findById(2).orElseThrow(NoSuchRoleException::new).getName();
+			role = roleRepository.findById(2).orElseThrow(NoSuchRoleException::new);
+			roleName = role.getName();
 			if (userRepository.findByUsername(BASIC_USER).isEmpty()) {
 				User basicUser = new User();
 				basicUser.setUsername(BASIC_USER);
-				basicUser.setRole(roleRepository.findById(2).get());
+				basicUser.setRole(role);
 				basicUser.setDisplayName(BASIC_USER);
 				basicUser.setEmail(BASIC_USER + EMAIL_DOMAIN);
 				basicUser.setPhoneNumber(PHONE_NUMBER_MOCK);

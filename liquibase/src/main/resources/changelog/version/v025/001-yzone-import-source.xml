@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v025-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v025-0"/>
+    </changeSet>
+
+    <changeSet id="v025-1" author="Kyrylo Chornobryvets">
+        <createTable tableName="yaddress_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaddress_import_source"/>
+            </column>
+            <column name="yaddress_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaddress_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-2" author="Kyrylo Chornobryvets">
+        <createTable tableName="yaltperson_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaltperson_import_source"/>
+            </column>
+            <column name="yaltperson_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaltperson_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-3" author="Kyrylo Chornobryvets">
+        <createTable tableName="yemail_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yemail_import_source"/>
+            </column>
+            <column name="yemail_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yemail_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-4" author="Kyrylo Chornobryvets">
+        <createTable tableName="yinn_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yinn_import_source"/>
+            </column>
+            <column name="yinn_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yinn_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-5" author="Kyrylo Chornobryvets">
+        <createTable tableName="ypassport_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ypassport_import_source"/>
+            </column>
+            <column name="ypassport_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ypassport_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-6" author="Kyrylo Chornobryvets">
+        <createTable tableName="yperson_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yperson_import_source"/>
+            </column>
+            <column name="yperson_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yperson_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-7" author="Kyrylo Chornobryvets">
+        <createTable tableName="yphone_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yphone_import_source"/>
+            </column>
+            <column name="yphone_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yphone_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-8" author="Kyrylo Chornobryvets">
+        <createTable tableName="ytag_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ytag_import_source"/>
+            </column>
+            <column name="ytag_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ytag_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v025-9" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yaddress_import_source"
+                                 constraintName="fk_yadimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-10" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yaddress_id" baseTableName="yaddress_import_source"
+                                 constraintName="fk_yadimpsou_on_y_address" referencedColumnNames="id"
+                                 referencedTableName="yaddress"/>
+    </changeSet>
+    <changeSet id="v025-11" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yaltperson_import_source"
+                                 constraintName="fk_yalimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-12" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yaltperson_id" baseTableName="yaltperson_import_source"
+                                 constraintName="fk_yalimpsou_on_y_alt_person" referencedColumnNames="id"
+                                 referencedTableName="yaltperson"/>
+    </changeSet>
+    <changeSet id="v025-13" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yemail_import_source"
+                                 constraintName="fk_yemimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-14" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yemail_id" baseTableName="yemail_import_source"
+                                 constraintName="fk_yemimpsou_on_y_email" referencedColumnNames="id"
+                                 referencedTableName="yemail"/>
+    </changeSet>
+    <changeSet id="v025-15" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yinn_import_source"
+                                 constraintName="fk_yinimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-16" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yinn_id" baseTableName="yinn_import_source"
+                                 constraintName="fk_yinimpsou_on_y_i_n_n" referencedColumnNames="id"
+                                 referencedTableName="yinn"/>
+    </changeSet>
+    <changeSet id="v025-17" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="ypassport_import_source"
+                                 constraintName="fk_ypaimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-18" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="ypassport_id" baseTableName="ypassport_import_source"
+                                 constraintName="fk_ypaimpsou_on_y_passport" referencedColumnNames="id"
+                                 referencedTableName="ypassport"/>
+    </changeSet>
+    <changeSet id="v025-19" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yperson_import_source"
+                                 constraintName="fk_ypeimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-20" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yperson_id" baseTableName="yperson_import_source"
+                                 constraintName="fk_ypeimpsou_on_y_person" referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+    <changeSet id="v025-21" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yphone_import_source"
+                                 constraintName="fk_yphimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-22" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yphone_id" baseTableName="yphone_import_source"
+                                 constraintName="fk_yphimpsou_on_y_phone" referencedColumnNames="id"
+                                 referencedTableName="yphone"/>
+    </changeSet>
+    <changeSet id="v025-23" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="ytag_import_source"
+                                 constraintName="fk_ytaimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v025-24" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="ytag_id" baseTableName="ytag_import_source"
+                                 constraintName="fk_ytaimpsou_on_y_tag" referencedColumnNames="id"
+                                 referencedTableName="ytag"/>
+    </changeSet>
+
+    <changeSet id="v025-25" author="Kyrylo Chornobryvets">
+        <sql>
+            insert into import_source(id,name)
+            values (10000,'manual');
+        </sql>
+        <rollback>
+            <delete tableName="import_source">
+                <where>id=10000</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v025-999" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v025-999"/>
+    </changeSet>
+
+</databaseChangeLog>

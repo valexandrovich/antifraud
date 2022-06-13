@@ -1,10 +1,9 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -13,15 +12,20 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import javax.persistence.Table;
+import javax.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Entity
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
+@Entity
+@Table(name = "yperson")
 public class YPerson {
 
 	public YPerson(UUID id) {
@@ -63,4 +67,12 @@ public class YPerson {
 			inverseJoinColumns = {@JoinColumn(name = "users_id")}
 	)
 	private Set<User> users = new HashSet<>();
+
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(
+			name = "yperson_import_source",
+			joinColumns = {@JoinColumn(name = "yperson_id")},
+			inverseJoinColumns = {@JoinColumn(name = "import_source_id")}
+	)
+	private Set<ImportSource> importSources =  new HashSet<>();
 }

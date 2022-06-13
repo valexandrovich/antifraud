@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>3.4.197</version>
+        <version>4.1.197-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>3.4.197</version>
+    <version>4.1.197-SNAPSHOT</version>
 
     <artifactId>importer</artifactId>
 
@@ -50,19 +50,19 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>common</artifactId>
-            <version>3.4.197</version>
+            <version>4.1.197-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>3.4.197</version>
+            <version>4.1.197-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>pipeline</artifactId>
-            <version>3.4.197</version>
+            <version>4.1.197-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

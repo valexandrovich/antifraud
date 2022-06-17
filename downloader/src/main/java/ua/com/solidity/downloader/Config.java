@@ -16,11 +16,18 @@ import java.time.LocalDateTime;
 @Setter
 @Component
 public class Config {
+
+    private static final String apiSuffix = "/api/3/action/package_show?id={0}";
+    private static final String resourceSuffix = "/api/3/action/resource_show?id={0}";
+
+    @Value("${data.gov.ua.domain}")
+    private String dataGovUaDomain;
+
     @Value("${data.gov.ua.api}")
-    private String dataGovUaApiUrl;
+    private String baseDataGovUaApiUrl;
 
     @Value("${data.gov.ua.resource}")
-    private String dataGovUaResourceUrl;
+    private String baseDataGovUaResourceUrl;
 
     @Value("${downloader.defaultEnvironmentVariableForOutputFolder}")
     private String defaultEnvironmentVariableForOutputFolder;
@@ -55,6 +62,14 @@ public class Config {
     private long defaultLogLimit = 0;
 
     private StatusChanger statusChanger;
+
+    public final String getDataGovUaApiUrl() {
+        return dataGovUaDomain + apiSuffix;
+    }
+
+    public final String getDataGovUaResourceUrl() {
+        return dataGovUaDomain + resourceSuffix;
+    }
 
     public final String getDownloaderOutputFolder() {
         if (downloaderOutputFolder == null) {

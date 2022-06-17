@@ -1,9 +1,11 @@
 import authService from "../../api/AuthApi";
+import jwt_decode from "jwt-decode";
 
 const CHANGE_FORM_VALUE = "CHANGE_FORM_VALUE";
 const SUBMIT_AUTH = "SUBMIT_AUTH";
 const LOGOUT = "LOGOUT";
 const SET_ALERT_MESSAGE = "SET_ALERT_MESSAGE";
+const SET_AUTH = "SET_AUTH";
 let initialState = {
   authForm: {
     login: "",
@@ -27,6 +29,12 @@ const AuthReducer = (state = initialState, action = {}) => {
       return {
         ...state,
         authForm: authForm,
+      };
+    case SET_AUTH:
+      return {
+        ...state,
+        isAuth: true,
+        role: action.role,
       };
     case SUBMIT_AUTH:
       return {
@@ -78,12 +86,18 @@ export const logoutUser = () => {
     type: LOGOUT,
   };
 };
+export const authenticate = () => {
+  let decoded = jwt_decode(localStorage.getItem("user"));
+  return {
+    type: SUBMIT_AUTH,
+    role: decoded.role,
+  };
+};
 
 export const submitUserAuthThunk = (authForm) => (dispatch) => {
   authService
     .auth(authForm)
     .then((res) => {
-      console.log(res);
       if (res.data.role === null) {
         dispatch(
           setAlertMessageThunk(

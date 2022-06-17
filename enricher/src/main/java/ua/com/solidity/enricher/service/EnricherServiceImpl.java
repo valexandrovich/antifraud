@@ -1,17 +1,5 @@
 package ua.com.solidity.enricher.service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,6 +53,19 @@ import ua.com.solidity.enricher.repository.BaseElectionsRepository;
 import ua.com.solidity.enricher.repository.BaseFodbRepository;
 import ua.com.solidity.enricher.repository.BasePassportsRepository;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -520,7 +521,7 @@ public class EnricherServiceImpl implements EnricherService {
                 Optional<YINN> yinnCachedOptional;
                 String identifyCode = r.getIdentifyCode();
 
-                if (StringUtils.isNotBlank(identifyCode) && identifyCode.matches(NUMBER_REGEX)) {// We skip person without inn
+                if (StringUtils.isNotBlank(identifyCode) && identifyCode.matches(INN_REGEX)) {// We skip person without inn
                     long inn = Long.parseLong(identifyCode);
                     yinnSavedOptional = yir.findByInn(inn);
                     yinnCachedOptional = yinnList.stream().filter(i -> i.getInn() == inn).findAny();
@@ -571,7 +572,7 @@ public class EnricherServiceImpl implements EnricherService {
                     String passportNo = r.getPassportNo();
                     String passportSerial = r.getPassportSerial();
                     Integer number;
-                    if (StringUtils.isNotBlank(passportNo) && passportNo.matches(NUMBER_REGEX)) {
+                    if (StringUtils.isNotBlank(passportNo) && passportNo.matches(PASS_NUMBER_REGEX)) {
                         number = Integer.parseInt(passportNo);
                         Optional<YPassport> passportOptional = person.getPassports()
                                 .stream()
@@ -627,6 +628,13 @@ public class EnricherServiceImpl implements EnricherService {
                             person.getTags().add(tag);
                         }
                     }
+
+                    YTag tag = new YTag();
+                    tag.setName("RC");
+                    tag.setSource(CONTRAGENT);
+                    tag.setPerson(person);
+                    addSource(tag.getImportSources(), source);
+                    person.getTags().add(tag);
 
                     YPerson finalPerson = person;
                     Stream.of(r.getPhones(), r.getMobilePhone(), r.getPhoneHome()).forEach(phone -> {
@@ -893,6 +901,7 @@ public class EnricherServiceImpl implements EnricherService {
                 String patName = UtilString.toUpperCase(r.getPnameUk());
                 LocalDate birthday = stringToDate(r.getBirthday());
 
+                YPerson person = null;
                 if (!StringUtils.isBlank(lastName)) {
                     Long inn = null;
                     if (!StringUtils.isBlank(r.getOkpo())) {
@@ -901,7 +910,7 @@ public class EnricherServiceImpl implements EnricherService {
                             inn = Long.parseLong(code);
                     }
 
-                    YPerson person = addPerson(yinnList, personList, inn,
+                    person = addPerson(yinnList, personList, inn,
                             lastName, firstName, patName, birthday, source);
 
                     Set<String> addresses = new HashSet<>();
@@ -909,40 +918,6 @@ public class EnricherServiceImpl implements EnricherService {
                         addresses.add(r.getAddress().toUpperCase());
 
                     addAddresses(person, addresses, source);
-
-                    String passportNo = r.getPassLocalNum();
-                    String passportSerial = r.getPassLocalSerial();
-                    int number;
-                    if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
-                        passportSerial = transliterationToCyrillicLetters(passportSerial);
-                        number = Integer.parseInt(passportNo);
-                        addPassport(person, passportSerial, number, r.getPassLocalIssuer(),
-                                stringToDate(r.getPassLocalIssueDate()), null, DOMESTIC_PASSPORT, personList,
-                                wrongCounter, counter, logger, source);
-                    }
-
-                    if (!StringUtils.isBlank(r.getPassIntNum())) {
-                        passportNo = r.getPassIntNum().substring(2);
-                        passportSerial = r.getPassIntNum().substring(0, 2);
-                    }
-                    String passportRecNo = r.getPassIntRecNum();
-                    if (isValidForeignPassport(passportNo, passportSerial, passportRecNo,
-                            wrongCounter, counter, logger)) {
-                        passportSerial = transliterationToLatinLetters(passportSerial);
-                        number = Integer.parseInt(passportNo);
-                        addPassport(person, passportSerial, number, r.getPassIntIssuer(),
-                                stringToDate(r.getPassIntIssueDate()), r.getPassIntRecNum(), FOREIGN_PASSPORT, personList,
-                                wrongCounter, counter, logger, source);
-                    }
-
-                    passportNo = r.getPassIdNum();
-                    passportRecNo = r.getPassIdRecNum();
-                    if (isValidIdPassport(passportNo, passportRecNo, wrongCounter, counter, logger)) {
-                        number = Integer.parseInt(passportNo);
-                        addPassport(person, null, number, r.getPassIdIssuer(),
-                                stringToDate(r.getPassIdIssueDate()), r.getPassIdRecNum(), IDCARD_PASSPORT, personList,
-                                wrongCounter, counter, logger, source);
-                    }
 
                     Set<String> phones = new HashSet<>();
                     if (!StringUtils.isBlank(r.getPhone()))
@@ -972,6 +947,40 @@ public class EnricherServiceImpl implements EnricherService {
                         personList.add(person);
                         counter[0]++;
                     }
+                }
+                String passportNo = r.getPassLocalNum();
+                String passportSerial = r.getPassLocalSerial();
+                int number;
+                if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                    passportSerial = transliterationToCyrillicLetters(passportSerial);
+                    number = Integer.parseInt(passportNo);
+                    addPassport(person, passportSerial, number, r.getPassLocalIssuer(),
+                            stringToDate(r.getPassLocalIssueDate()), null, DOMESTIC_PASSPORT, personList,
+                            wrongCounter, counter, logger, source);
+                }
+
+                String passportRecNo;
+                if (!StringUtils.isBlank(r.getPassIntNum())) {
+                    passportNo = r.getPassIntNum().substring(2);
+                    passportSerial = r.getPassIntNum().substring(0, 2);
+                    passportRecNo = r.getPassIntRecNum();
+                    if (isValidForeignPassport(passportNo, passportSerial, passportRecNo,
+                            wrongCounter, counter, logger)) {
+                        passportSerial = transliterationToLatinLetters(passportSerial);
+                        number = Integer.parseInt(passportNo);
+                        addPassport(person, passportSerial, number, r.getPassIntIssuer(),
+                                stringToDate(r.getPassIntIssueDate()), r.getPassIntRecNum(), FOREIGN_PASSPORT, personList,
+                                wrongCounter, counter, logger, source);
+                    }
+                }
+
+                passportNo = r.getPassIdNum();
+                passportRecNo = r.getPassIdRecNum();
+                if (isValidIdPassport(passportNo, passportRecNo, wrongCounter, counter, logger)) {
+                    number = Integer.parseInt(passportNo);
+                    addPassport(person, null, number, r.getPassIdIssuer(),
+                            stringToDate(r.getPassIdIssueDate()), r.getPassIdRecNum(), IDCARD_PASSPORT, personList,
+                            wrongCounter, counter, logger, source);
                 }
             });
 
@@ -1034,11 +1043,16 @@ public class EnricherServiceImpl implements EnricherService {
                              String passportType, List<YPerson> personList, long[] wrongCounter,
                              long[] counter, DefaultErrorLogger logger,
                              ImportSource source) {
+        YPassport passport;
         YPerson findPerson = null;
         Optional<YPassport> passportFindOptional = findPassportDuplicate(passportSeries, number, passportType, personList);
-        if (passportFindOptional.isPresent()) findPerson = passportFindOptional.get().getPerson();
-        YPassport passport;
-        if (findPerson != null && (!(Objects.equals(person.getLastName(), findPerson.getLastName())
+        if (passportFindOptional.isEmpty()) yPassportRepository.findByTypeAndNumberAndSeries(passportType, number, passportSeries);
+        if (passportFindOptional.isPresent()) {
+            passport = passportFindOptional.get();
+            findPerson = passport.getPerson();
+        }
+
+        if (findPerson != null && person != null && (!(Objects.equals(person.getLastName(), findPerson.getLastName())
                 && Objects.equals(person.getFirstName(), findPerson.getFirstName())
                 && Objects.equals(person.getPatName(), findPerson.getPatName()))
                 || (person.getBirthdate() != null && findPerson.getBirthdate() != null
@@ -1049,11 +1063,7 @@ public class EnricherServiceImpl implements EnricherService {
             wrongCounter[0]++;
             addSource(passportFindOptional.get().getImportSources(), source);
         } else {
-            Optional<YPassport> passportOptional = person.getPassports()
-                    .parallelStream()
-                    .filter(p -> Objects.equals(p.getType(), passportType)
-                            && Objects.equals(p.getNumber(), number) && Objects.equals(p.getSeries(), passportSeries)).findAny();
-            passport = passportOptional.orElseGet(YPassport::new);
+            passport = passportFindOptional.orElseGet(YPassport::new);
             addSource(passport.getImportSources(), source);
 
             passport.setSeries(chooseNotBlank(passport.getSeries(), passportSeries));
@@ -1064,11 +1074,11 @@ public class EnricherServiceImpl implements EnricherService {
             passport.setRecordNumber(chooseNotBlank(passport.getRecordNumber(), recordNumber));
             passport.setType(passportType);
             passport.setValidity(true);
+            passport.setPerson(chooseNotNull(passport.getPerson(), person));
 
-            if (passportOptional.isEmpty()) {
-                passport.setPerson(person);
+            if (person != null)
                 person.getPassports().add(passport);
-            }
+            else yPassportRepository.save(passport);
         }
     }
 

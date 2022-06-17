@@ -5,12 +5,12 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>4.1.197-SNAPSHOT</version>
+        <version>4.1.209</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>liquibase</artifactId>
-    <version>4.1.197-SNAPSHOT</version>
+    <version>4.1.209</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { logoutUserThunk } from "../store/reducers/AuthReducer";
+import { authenticate, logoutUserThunk } from "../store/reducers/AuthReducer";
 import jwt_decode from "jwt-decode";
 
 const auth = async (authData) => {
@@ -22,19 +22,22 @@ const authService = {
   logout,
   getCurrentUser,
 };
-// autoLogin
+
 const runLogoutTimer = (dispatch, timer) => {
   setTimeout(() => {
     dispatch(logoutUserThunk());
   }, timer);
 };
 
-export const checkAutoLogin = (dispatch) => {
+export const checkAutoLogin = (dispatch, history) => {
   const tokenDetailsString = localStorage.getItem("user");
   let decoded = tokenDetailsString && jwt_decode(tokenDetailsString);
-  if (!tokenDetailsString) {
+  if (!tokenDetailsString || decoded.role === null) {
     dispatch(logoutUserThunk());
     return;
+  } else {
+    dispatch(authenticate());
+    history.push("/search");
   }
   let expireDate = decoded.exp * 1000;
   let iatDate = decoded.iat * 1000;

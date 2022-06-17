@@ -1,11 +1,15 @@
 package ua.com.solidity.dwh.entities;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.Hibernate;
 
 import javax.persistence.Column;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
 import javax.persistence.Table;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -18,13 +22,12 @@ import java.util.Objects;
 @ToString
 @NoArgsConstructor
 public class ArContragent {
-    @Id
+    @EmbeddedId
+    private ArContragentID arContragentID;
     @Column(name = "SESSIONID")
     private Long sessionId;
-    @Column(name = "ARCDATE", columnDefinition = "DATE")
-    private LocalDate arcDate;
-    @Column(name = "ID", nullable = false)
-    private Long id; // Код контрагента
+    @Column(name = "ID")
+    private Long id;// Код контрагента
     @Column(name = "NAME", nullable = false)
     private String name; // Полное наименование
     @Column(name = "CLIENTNAME")
@@ -32,9 +35,7 @@ public class ArContragent {
     @Column(name = "CLIENTPATRONYMICNAME")
     private String clientPatronymicName; // Отчество
     @Column(name = "CLIENTLASTNAME")
-    private String clientLastName; // Фамилия
-    @Column(name = "IDENTIFYCODE")
-    private String identifyCode; // Идентификационный код(ОКПО)
+    private String clientLastName; // Фамилия// Идентификационный код(ОКПО)
     @Column(name = "ADDR_COUNTRYID")
     private Long addrCountryId; // Адрес:Код страны
     @Column(name = "ADDR_POSTCODE")
@@ -153,11 +154,11 @@ public class ArContragent {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
         ArContragent that = (ArContragent) o;
-        return id != null && Objects.equals(id, that.id);
+        return arContragentID != null && Objects.equals(arContragentID, that.arContragentID);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(arContragentID);
     }
 }

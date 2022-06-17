@@ -92,6 +92,9 @@ const Sheduler = () => {
       }).then((res) => {
         if (res.status === 200) {
           fetchSchedule();
+          dispatch(
+            setAlertMessageThunk("Сервіс розкладів перезавантажено", "success")
+          );
         }
       });
     } catch (error) {
@@ -231,10 +234,12 @@ const Sheduler = () => {
               <th className="table-header">Назва черги сповіщень</th>
               <th className="table-header">Сповіщення</th>
               <th className="table-header">Розклад завдань</th>
-              <th className="table-header">
+              <th id="visible" className="table-header">
                 Тимчасово заборонити виконання завдання
               </th>
-              <th className="table-header">Виконати примусово</th>
+              <th id="visible" className="table-header">
+                Виконати примусово
+              </th>
             </tr>
           </thead>
           <tbody>

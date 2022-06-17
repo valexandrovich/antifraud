@@ -65,6 +65,7 @@ public class DWHServiceImpl implements DWHService {
 		LocalDateTime startTime = LocalDateTime.now();
 		LocalDate date;
 		UUID revision = UUID.randomUUID();
+		UUID id = UUID.randomUUID();
 
 		Timestamp lastModified = updateDWHRequest != null
 				? Optional.of(updateDWHRequest.getLastModified()).orElseGet(() -> null)
@@ -96,12 +97,12 @@ public class DWHServiceImpl implements DWHService {
 
 		log.info("Importing from DWH records archived after: {}", Timestamp.valueOf(date.atStartOfDay()));
 
-		StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+		StatusLogger statusLogger = new StatusLogger(id, 0L, "%",
 		                                             AR_CONTRAGENT, DWH, startTime, null, null);
 		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 
 		Pageable pageRequest = PageRequest.of(0, pageSize);
-		Page<ArContragent> onePage = acr.findByArcDateGreaterThanEqual(date, pageRequest);
+		Page<ArContragent> onePage = acr.findByArContragentIDArcDateGreaterThanEqual(date, pageRequest);
 
 
 		while (!onePage.isEmpty()) {
@@ -119,7 +120,7 @@ public class DWHServiceImpl implements DWHService {
 				c.setInsiderId(r.getInsiderId());
 				c.setCountryId(r.getCountryId());
 				c.setOwnershipTypeId(r.getOwnershipTypeId());
-				c.setIdentifyCode(r.getIdentifyCode());
+				c.setIdentifyCode(r.getArContragentID().getIdentifyCode());
 				c.setAddress(r.getAddress());
 				c.setBusinessType1(r.getBusinessType1());
 				c.setBusinessType2(r.getBusinessType2());
@@ -174,16 +175,16 @@ public class DWHServiceImpl implements DWHService {
 				c.setWorkPosition(r.getWorkPosition());
 				c.setPassportEndDate(r.getPassportEndDate());
 				c.setFop(r.getFop());
-				c.setArcDate(r.getArcDate());
+				c.setArcDate(r.getArContragentID().getArcDate());
 				c.setUuid(UUID.randomUUID());
 				c.setRevision(revision);
 				contragentEntityList.add(c);
 				counter[0]++;
 			});
 			cr.saveAll(contragentEntityList);
-			onePage = acr.findByArcDateAfter(date, pageRequest);
+			onePage = acr.findByArContragentIDArcDateGreaterThanEqual(date, pageRequest);
 
-			statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+			statusLogger = new StatusLogger(id, counter[0], RECORDS,
 			                                AR_CONTRAGENT, DWH, startTime, null, null);
 			template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 		}
@@ -199,7 +200,7 @@ public class DWHServiceImpl implements DWHService {
 		log.info("Imported {} records from DWH", counter[0]);
 		log.info("Sending task to otp-etl.enricher");
 
-		statusLogger = new StatusLogger(revision, 100L, "%",
+		statusLogger = new StatusLogger(id, 100L, "%",
 		                                AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
 		                                importedRecords(counter[0], date));
 		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));

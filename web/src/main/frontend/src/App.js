@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.css";
 import "./styles/Style.css";
 import { useDispatch, useSelector } from "react-redux";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Switch, Route, Redirect, useHistory } from "react-router-dom";
 import UploadFile from "./pages/upload/UploadFile";
 
 import ErrorPage from "./pages/ErrorPage";
@@ -23,10 +23,11 @@ const App = () => {
   const dispatch = useDispatch();
   const token = localStorage.getItem("user");
   const role = useSelector((state) => state.auth.role);
+  const history = useHistory();
 
   useEffect(() => {
-    checkAutoLogin(dispatch);
-  }, [dispatch, token]);
+    checkAutoLogin(dispatch, history);
+  }, [dispatch, history, token]);
   return (
     <>
       {alertMsg.message && (

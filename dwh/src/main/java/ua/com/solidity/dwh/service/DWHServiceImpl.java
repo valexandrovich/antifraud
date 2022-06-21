@@ -114,13 +114,13 @@ public class DWHServiceImpl implements DWHService {
 
 				Contragent c = new Contragent();
 
-				c.setId(r.getId());
+				c.setId(r.getArContragentID().getId());
 				c.setName(r.getName());
 				c.setContragentTypeId(r.getContragentTypeId());
 				c.setInsiderId(r.getInsiderId());
 				c.setCountryId(r.getCountryId());
 				c.setOwnershipTypeId(r.getOwnershipTypeId());
-				c.setIdentifyCode(r.getArContragentID().getIdentifyCode());
+				c.setIdentifyCode(r.getIdentifyCode());
 				c.setAddress(r.getAddress());
 				c.setBusinessType1(r.getBusinessType1());
 				c.setBusinessType2(r.getBusinessType2());

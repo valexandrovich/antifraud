@@ -112,24 +112,18 @@ public class DWHServiceImpl implements DWHService {
 			pageRequest = pageRequest.next();
 			List<Contragent> contragentEntityList = new ArrayList<>();
 
-			
-
 			onePage.forEach(r -> {
-
-				// log.info("r is null : {}", r == null );
-				String x = r == null ? " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>  NULL!!! ACHTUNG!!!" : r.getId().toString();
-				log.info("{}", x);
 				log.debug(r.toString());
 
 				Contragent c = new Contragent();
 
-				c.setId(r.getId());
+				c.setId(r.getArContragentID().getId());
 				c.setName(r.getName());
 				c.setContragentTypeId(r.getContragentTypeId());
 				c.setInsiderId(r.getInsiderId());
 				c.setCountryId(r.getCountryId());
 				c.setOwnershipTypeId(r.getOwnershipTypeId());
-				c.setIdentifyCode(r.getArContragentID().getIdentifyCode());
+				c.setIdentifyCode(r.getIdentifyCode());
 				c.setAddress(r.getAddress());
 				c.setBusinessType1(r.getBusinessType1());
 				c.setBusinessType2(r.getBusinessType2());

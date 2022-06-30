@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import org.hibernate.Hibernate;
 
 import javax.persistence.Column;
@@ -14,7 +13,6 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @Getter
-@ToString
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,9 +23,8 @@ public class ArContragentID  implements Serializable {
 	private Long siteId;
 	@Column(name = "ARCDATE",nullable = false , columnDefinition = "DATE")
 	private LocalDate arcDate;
-	@Column(name = "IDENTIFYCODE", nullable = false)
-	private String identifyCode;
-
+	@Column(name = "ID", nullable = false)
+	private Long id;// Код контрагента
 
 	@Override
 	public boolean equals(Object o) {
@@ -36,11 +33,11 @@ public class ArContragentID  implements Serializable {
 		ArContragentID that = (ArContragentID) o;
 		return siteId != null && Objects.equals(siteId, that.siteId)
 				&& arcDate != null && Objects.equals(arcDate, that.arcDate)
-				&& identifyCode != null && Objects.equals(identifyCode, that.identifyCode);
+				&& id != null && Objects.equals(id, that.id);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(siteId, arcDate, identifyCode);
+		return Objects.hash(siteId, arcDate, id);
 	}
 }

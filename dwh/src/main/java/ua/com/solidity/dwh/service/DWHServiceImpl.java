@@ -117,7 +117,8 @@ public class DWHServiceImpl implements DWHService {
 			onePage.forEach(r -> {
 
 				// log.info("r is null : {}", r == null );
-				log.info(r == null ? " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>  NULL!!! ACHTUNG!!!" : r.getId());
+				String x = r == null ? " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>  NULL!!! ACHTUNG!!!" : r.getId();
+				log.info(x);
 				log.debug(r.toString());
 
 				Contragent c = new Contragent();

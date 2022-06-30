@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @Getter
+@ToString
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor

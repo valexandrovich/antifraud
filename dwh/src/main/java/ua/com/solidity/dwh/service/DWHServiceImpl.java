@@ -112,7 +112,12 @@ public class DWHServiceImpl implements DWHService {
 			pageRequest = pageRequest.next();
 			List<Contragent> contragentEntityList = new ArrayList<>();
 
+			
+
 			onePage.forEach(r -> {
+
+				// log.info("r is null : {}", r == null );
+				log.info(r == null ? ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>  NULL!!! ACHTUNG!!!' : r.getId());
 				log.debug(r.toString());
 
 				Contragent c = new Contragent();

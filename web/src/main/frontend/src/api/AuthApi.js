@@ -23,30 +23,35 @@ const authService = {
   getCurrentUser,
 };
 
-const runLogoutTimer = (dispatch, timer) => {
-  setTimeout(() => {
+const runLogoutTimer = (dispatch, timer, logOutTimeout) => {
+  logOutTimeout.timeout = setTimeout(() => {
+    logOutTimeout.timeout = null;
     dispatch(logoutUserThunk());
   }, timer);
 };
 
-export const checkAutoLogin = (dispatch, history) => {
+export const checkAutoLogin = (dispatch, history, logOutTimeout, location) => {
+  if (logOutTimeout.timeout != null) {
+    clearTimeout(logOutTimeout.timeout);
+    logOutTimeout.timeout = null;
+  }
   const tokenDetailsString = localStorage.getItem("user");
   let decoded = tokenDetailsString && jwt_decode(tokenDetailsString);
-  if (!tokenDetailsString || decoded.role === null) {
-    dispatch(logoutUserThunk());
-    return;
-  } else {
-    dispatch(authenticate());
-    history.push("/search");
-  }
-  let expireDate = decoded.exp * 1000;
-  let iatDate = decoded.iat * 1000;
-  if (iatDate > expireDate) {
+  if (!tokenDetailsString || decoded.role == null) {
     dispatch(logoutUserThunk());
     return;
   }
+  dispatch(authenticate());
+  history.replace(location);
+  let expireDate = decoded.exp * 1000 - 5000;
+  let iatDate = Date.now();
+  if (iatDate >= expireDate) {
+    dispatch(logoutUserThunk());
+    return;
+  }
+
   const timer = expireDate - iatDate;
-  runLogoutTimer(dispatch, timer);
+  runLogoutTimer(dispatch, timer, logOutTimeout);
 };
 
 export default authService;

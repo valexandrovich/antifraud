@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PageTitle from "../../components/PageTitle";
 import TableItem from "../../components/ProgressBar/TableItem";
 import ShedulerEditModal from "../../components/Modal/ShedulerEditModal";
@@ -34,7 +34,7 @@ const Sheduler = () => {
       forceDisabled: !result[0].forceDisabled,
       groupName: result[0].groupName,
       name: result[0].name,
-      schedule: result[0].schedule,
+      schedule: result[0].schedule !== null ? result[0].schedule : undefined,
     };
   };
 
@@ -45,14 +45,17 @@ const Sheduler = () => {
   const unique = () => [...new Set(uniqueGroupNames)];
 
   const [editRow, setEditRow] = useState(null);
-  const fetchSchedule = () => {
+
+  const fetchSchedule = useCallback(() => {
     fetch("/api/schedule/find", { headers: authHeader() })
       .then((response) => response.json())
-      .then((res) => setData(res));
-  };
+      .then((res) => {
+        setData(res);
+      });
+  }, []);
   useEffect(() => {
     fetchSchedule();
-  }, [editRow]);
+  }, [editRow, fetchSchedule]);
   const [search, setSearch] = useState("all");
   const exchangeSwitch = async (group) => {
     try {
@@ -105,9 +108,9 @@ const Sheduler = () => {
     if (rows.forceDisabled && !rows.enabled) {
       return "table-header opasity-30";
     } else if (rows.enabled && rows.forceDisabled) {
-      return "table-header activated";
-    } else if (rows.enabled && !rows.forceDisabled) {
       return "table-header opasity-30 activated";
+    } else if (rows.enabled && !rows.forceDisabled) {
+      return "table-header  activated";
     }
   };
   const queue = (id) => {
@@ -158,6 +161,7 @@ const Sheduler = () => {
         Authorization:
           "Bearer " + localStorage.getItem("user").replace(/"/g, ""),
       },
+
       body: JSON.stringify(changedRow(e.target.id)),
     };
     fetch("/api/schedule/update", requestOptions).then((res) => {

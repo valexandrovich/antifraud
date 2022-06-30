@@ -1,21 +1,5 @@
 package ua.com.solidity.web.service;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import javax.servlet.http.HttpServletRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -36,7 +20,7 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ua.com.solidity.common.model.EnricherMessage;
+import ua.com.solidity.common.model.EnricherPortionMessage;
 import ua.com.solidity.db.entities.FileDescription;
 import ua.com.solidity.db.entities.ManualPerson;
 import ua.com.solidity.db.entities.ManualTag;
@@ -55,6 +39,23 @@ import ua.com.solidity.web.service.dynamicfile.ColumnName;
 import ua.com.solidity.web.service.validator.ManualPersonValidator;
 import ua.com.solidity.web.service.validator.ManualTagValidator;
 import ua.com.solidity.web.utils.UtilString;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -78,12 +79,14 @@ public class ManualFileService {
 		FileDescription fileDescription = fileDescriptionRepository.findById(uuid)
 				.orElseThrow(() -> new EntityNotFoundException(FileDescription.class, uuid));
         fileDescription.setDescription(description);
-        if (description == null || StringUtils.isBlank(description)) fileDescription.setValidated(false);
         fileDescriptionRepository.save(fileDescription);
-	}
+    }
 
 	public List<FileDescription> getUploaded() {
-		return fileDescriptionRepository.findByValidated(true);
+		return fileDescriptionRepository.findByValidated(true).stream()
+                .filter(f -> f.getDescription() != null
+                        && !f.getDescription().isBlank())
+                .collect(Collectors.toList());
 	}
 
 	public UUID uploadDynamicFile(MultipartFile multipartFile, String delimiter, String code, HttpServletRequest request) {
@@ -374,7 +377,7 @@ public class ManualFileService {
         if (!description.isValidated()) throw new IllegalApiArgumentException("Файл містить помилки");
 		String jo;
 		try {
-			jo = new ObjectMapper().writeValueAsString(new EnricherMessage(MANUAL_PERSON, id));
+			jo = new ObjectMapper().writeValueAsString(new EnricherPortionMessage(MANUAL_PERSON, id));
 			log.info("Sending task to {}", enricherQueue);
 			template.convertAndSend(enricherQueue, jo);
 		} catch (JsonProcessingException e) {

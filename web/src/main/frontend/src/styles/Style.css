@@ -436,7 +436,9 @@ a {
     margin-top: 4rem;
     padding: 1.2rem 3rem;
     color: #fff;
-    background-color: #04cba0;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--green);
 }
 
 .button :hover {
@@ -519,6 +521,7 @@ datalist {
 
 .mr-10 {
     margin-right: 10px;
+
 }
 
 .mr-14 {
@@ -527,6 +530,7 @@ datalist {
 
 .ml-10 {
     margin-left: 10px;
+    white-space: nowrap
 }
 
 .custom-btn {
@@ -632,3 +636,8 @@ datalist {
     width: 400px;
     background-color: var(--green) !important;
 }
+
+.card_m {
+    margin: 0 0 10px 10px;
+}
+

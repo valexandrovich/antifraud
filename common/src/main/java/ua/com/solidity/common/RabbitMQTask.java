@@ -4,7 +4,6 @@ import com.rabbitmq.client.Delivery;
 import lombok.CustomLog;
 import lombok.Getter;
 
-
 @CustomLog
 @Getter
 public abstract class RabbitMQTask extends DeferredTask {
@@ -22,28 +21,32 @@ public abstract class RabbitMQTask extends DeferredTask {
         this.message = message;
         this.acknowledgeSent = acknowledgeSent;
     }
-
-    private synchronized void internalExecute() {
-        try {
-            execute();
-        } catch (Exception e) {
-            log.error("RabbitMQTask execution error.", e);
-        } finally {
-            if (!acknowledgeSent) acknowledge(true);
-            listener = null;
-            message = null;
-        }
-    }
-
+    
     @Override
-    public void run() {
+    protected final void execute() {
         if (autoAck) {
             acknowledge(true);
         }
 
         if (listener != null) {
-            internalExecute();
+            try {
+                rmqExecute();
+            } catch (Exception e) {
+                log.error("RabbitMQTask execution error for {}.", description(), e);
+            } finally {
+                if (!acknowledgeSent) acknowledge(true);
+                listener = null;
+                message = null;
+            }
         }
+    }
+    @SuppressWarnings("SameParameterValue")
+    protected void setAcknowledgeSent(boolean value) {
+        acknowledgeSent = value;
+    }
+
+    protected void rmqExecute() {
+        // nothing yet
     }
 
     protected final void acknowledge(boolean ack) {

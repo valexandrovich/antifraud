@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import PageTitle from "../../components/PageTitle";
 import Table from "../../components/Table";
 import Pagination from "../../components/Pagination";
@@ -19,11 +19,15 @@ const UploadedFiles = () => {
   const currentFile = resp.slice(indexOfFirstFile, indexOfLastFile);
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const dispatch = useDispatch();
-  const getFiles = () => {
+  const mountedRef = useRef(true);
+  const getFiles = useCallback(() => {
     fetch("/api/uniPF/getUploaded", { headers: authHeader() })
       .then((response) => response.json())
-      .then((data) => setResp(data));
-  };
+      .then((data) => {
+        if (!mountedRef.current) return null;
+        setResp(data);
+      });
+  }, []);
 
   const deleteAction = (id) => {
     const requestOptions = {
@@ -56,7 +60,10 @@ const UploadedFiles = () => {
 
   useEffect(() => {
     getFiles();
-  }, []);
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [getFiles]);
   const getInfo = (target) => {
     fetch(`/api/uniPF/getUploaded/${target}`, { headers: authHeader() })
       .then((response) => response.json())

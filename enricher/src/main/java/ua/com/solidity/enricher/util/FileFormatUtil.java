@@ -7,12 +7,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.Utils;
 
 @Getter
 @Setter
 @Component
+@PropertySource({"classpath:enricher.properties", "classpath:application.properties"})
 public class FileFormatUtil {
 
     @Value("${enricher.defaultEnvironmentVariableForOutputFolder}")

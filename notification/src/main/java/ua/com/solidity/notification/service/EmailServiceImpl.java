@@ -3,6 +3,7 @@ package ua.com.solidity.notification.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -18,6 +19,7 @@ import java.util.Objects;
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@PropertySource({"classpath:notification.properties", "classpath:application.properties"})
 public class EmailServiceImpl implements EmailService {
 
     @Value("${noreply.address}")

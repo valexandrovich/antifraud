@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import * as IoIcons from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import authHeader from "../../api/AuthHeader";
 import { DateObject } from "react-multi-date-picker";
 import { setAlertMessageThunk } from "../../store/reducers/AuthReducer";
+import userService from "../../api/UserApi";
 
 export function pad(num, size) {
   const numLength = num.toString().length;
@@ -57,44 +57,37 @@ const Card = ({ data }) => {
   const [sub, setSub] = useState(subscribe);
   const role = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
-  const subscribeAction = (i) => {
-    const requestOptions = {
-      method: "PUT",
-      headers: authHeader(),
-    };
-    fetch(`/api/user/unsubscribe/${i}`, requestOptions).then((res) => {
-      if (res.status === 200) {
-        setSub(!sub);
-        dispatch(
-          setAlertMessageThunk(
-            `Користувач ${firstName ? firstName : ""} ${
-              lastName ? lastName : ""
-            } видалений зі спостереження`,
-            "success"
-          )
-        );
-      }
-    });
+  const subscribeAction = (id) => {
+    try {
+      userService.subscribe(id);
+      setSub(!sub);
+      dispatch(
+        setAlertMessageThunk(
+          `Користувач ${firstName ? firstName : ""} ${
+            lastName ? lastName : ""
+          } доданий до спостереження`,
+          "success"
+        )
+      );
+    } catch (e) {
+      dispatch(setAlertMessageThunk("Виникла проблема"));
+    }
   };
-
-  const unsubscribeAction = (i) => {
-    const requestOptions = {
-      method: "PUT",
-      headers: authHeader(),
-    };
-    fetch(`/api/user/subscribe/${i}`, requestOptions).then((res) => {
-      if (res.status === 200) {
-        setSub(!sub);
-        dispatch(
-          setAlertMessageThunk(
-            `Користувач ${firstName ? firstName : ""} ${
-              lastName ? lastName : ""
-            } доданий до спостереження`,
-            "success"
-          )
-        );
-      }
-    });
+  const unsubscribeAction = (id) => {
+    try {
+      userService.unsubscribe(id);
+      setSub(!sub);
+      dispatch(
+        setAlertMessageThunk(
+          `Користувач ${firstName ? firstName : ""} ${
+            lastName ? lastName : ""
+          } видалений зі спостереження`,
+          "success"
+        )
+      );
+    } catch (e) {
+      dispatch(setAlertMessageThunk("Виникла проблема"));
+    }
   };
 
   return (
@@ -112,7 +105,7 @@ const Card = ({ data }) => {
             {role === "ADVANCED" ? (
               sub ? (
                 <IoIcons.IoMdStar
-                  onClick={() => subscribeAction(id)}
+                  onClick={() => unsubscribeAction(id)}
                   style={{
                     width: 40,
                     height: 40,
@@ -122,7 +115,7 @@ const Card = ({ data }) => {
                 />
               ) : (
                 <IoIcons.IoMdStarOutline
-                  onClick={() => unsubscribeAction(id)}
+                  onClick={() => subscribeAction(id)}
                   style={{
                     width: 40,
                     height: 40,

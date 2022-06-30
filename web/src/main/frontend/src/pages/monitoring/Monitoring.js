@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Card from "../../components/Card/Card";
 import PageTitle from "../../components/PageTitle";
 import Pagination from "../../components/Pagination";
 import PerPage from "../../components/PerPage";
 import Spinner from "../../components/Loader";
+import userApi from "../../api/UserApi";
+import { useDispatch } from "react-redux";
 
 const Monitoring = () => {
   const [subscribed, setSubscribed] = useState([]);
@@ -12,38 +14,25 @@ const Monitoring = () => {
   const [pageNo, setPageNo] = useState(0);
   const [totalFiles, setTotalFiles] = useState();
   const [loader, setLoader] = useState(false);
+  const dispatch = useDispatch();
   const paginate = (pageNumber) => setPageNo(pageNumber - 1);
-
+  const mountedRef = useRef(true);
   useEffect(() => {
     setLoader(true);
-    const getSubscribed = async () => {
+    userApi.getSubscribed(pageNo, pageSize, dispatch).then((res) => {
       try {
-        const response = await fetch("/api/user/subscriptions", {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization:
-              "Bearer " + localStorage.getItem("user").replace(/"/g, ""),
-          },
-          body: JSON.stringify({
-            direction: "ASC",
-            page: pageNo,
-            properties: ["id"],
-            size: pageSize,
-          }),
-        });
-        const res = await response.json();
         setTotalFiles(res.totalElements);
         setSubscribed(res.content);
         setLoader(false);
-      } catch (error) {
-        console.log(error);
+        if (!mountedRef.current) return null;
+      } catch (e) {
         setLoader(false);
       }
+    });
+    return () => {
+      mountedRef.current = false;
     };
-    getSubscribed(pageNo, pageSize);
-  }, [pageSize, pageNo]);
+  }, [pageSize, pageNo, dispatch]);
 
   return (
     <div className="wrapped">

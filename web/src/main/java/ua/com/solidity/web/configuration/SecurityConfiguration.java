@@ -40,106 +40,94 @@ import java.util.List;
 @Slf4j
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-	private static final String LOGIN_ENTRY_POINT = "/authenticate";
+    private static final String LOGIN_ENTRY_POINT = "/authenticate";
 
-	private static final String TOKEN_AUTH_ENTRY_POINT = "/api/**";
+    private static final String TOKEN_AUTH_ENTRY_POINT = "/api/**";
 
-	@Qualifier("authSkipList")
-	private final String[] authSkipList;
+    @Qualifier("authSkipList")
+    private final String[] authSkipList;
 
-	private final LoginAuthenticationProvider loginAuthenticationProvider;
+    private final LoginAuthenticationProvider loginAuthenticationProvider;
 
-	private final JwtAuthenticationProvider jwtAuthenticationProvider;
+    private final JwtAuthenticationProvider jwtAuthenticationProvider;
 
-//    private final LdapContextSource ldapContextSource;
-//    private final LdapUserDetailsMapper ldapUserDetailsMapper;
+    private final AuthenticationSuccessHandler successHandler;
 
-	private final AuthenticationSuccessHandler successHandler;
+    private final AuthenticationFailureHandler failureHandler;
 
-	private final AuthenticationFailureHandler failureHandler;
+    private final Extractor extractor;
 
-	private final Extractor extractor;
+    private final BeanFactory context;
 
-	private final BeanFactory context;
+    private final ObjectMapper objectMapper;
 
-	private final ObjectMapper objectMapper;
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) {
+        log.debug("Enabling Login Authentication Provider");
+        auth.authenticationProvider(loginAuthenticationProvider);
 
-	@Override
-	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        auth
-//                .ldapAuthentication()
-//                .userSearchFilter("(sAMAccountName={0})")
-//                .userSearchBase("dc=raiffeisenbank,dc=com,dc=ua")
-//                .groupSearchBase("dc=raiffeisenbank,dc=com,dc=ua")
-//                .userDetailsContextMapper(ldapUserDetailsMapper)
-//                .contextSource(ldapContextSource)
-//        ;
-		log.debug("Enabling Login Authentication Provider");
-		auth.authenticationProvider(loginAuthenticationProvider);
+        log.debug("Enabling JWT Authentication Provider");
+        auth.authenticationProvider(jwtAuthenticationProvider);
+    }
 
-		log.debug("Enabling JWT Authentication Provider");
-		auth.authenticationProvider(jwtAuthenticationProvider);
-	}
+    @Bean(name = "authenticationManager")
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
 
-	@Bean(name = "authenticationManager")
-	@Override
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
-	}
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        configuration.addAllowedHeader("*");
+        configuration.addAllowedMethod("*");
+        configuration.addExposedHeader("Location");
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
-	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Collections.singletonList("*"));
-		configuration.addAllowedHeader("*");
-		configuration.addAllowedMethod("*");
-		configuration.addExposedHeader("Location");
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
-		return source;
-	}
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        log.info("Configuring security for web applications.");
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		log.info("Configuring security for web applications.");
+        http
+                .cors()
+                .and()
+                .csrf()
+                .disable() // We don't need CSRF for JWT based authentication
+                .exceptionHandling()
+                .and()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authorizeRequests()
+                .antMatchers(authSkipList).permitAll()
+                .and()
+                .authorizeRequests()
+                .antMatchers(TOKEN_AUTH_ENTRY_POINT).authenticated() // Protected API End-points
+                .and()
+                .addFilterBefore(getLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(buildJwtRequestFilter(), UsernamePasswordAuthenticationFilter.class);
+    }
 
-		http
-				.cors()
-				.and()
-				.csrf()
-				.disable() // We don't need CSRF for JWT based authentication
-				.exceptionHandling()
-				.and()
-				.sessionManagement()
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-				.and()
-				.authorizeRequests()
-				.antMatchers(authSkipList).permitAll()
-				.and()
-				.authorizeRequests()
-				.antMatchers(TOKEN_AUTH_ENTRY_POINT).authenticated() // Protected API End-points
-				.and()
-				.addFilterBefore(getLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
-				.addFilterBefore(buildJwtRequestFilter(), UsernamePasswordAuthenticationFilter.class);
-	}
+    private JwtRequestFilter buildJwtRequestFilter() {
+        List<String> pathsToSkip = Arrays.asList(authSkipList);
+        SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_AUTH_ENTRY_POINT);
 
-	private JwtRequestFilter buildJwtRequestFilter() {
-		List<String> pathsToSkip = Arrays.asList(authSkipList);
-		SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_AUTH_ENTRY_POINT);
+        JwtRequestFilter filter = new JwtRequestFilter(
+                failureHandler,
+                extractor,
+                matcher
+        );
+        filter.setAuthenticationManager((AuthenticationManager) context.getBean("authenticationManager"));
+        return filter;
+    }
 
-		JwtRequestFilter filter = new JwtRequestFilter(
-				failureHandler,
-				extractor,
-				matcher
-		);
-		filter.setAuthenticationManager((AuthenticationManager) context.getBean("authenticationManager"));
-		return filter;
-	}
-
-	private LoginRequestFilter getLoginProcessingFilter() {
-		LoginRequestFilter loginRequestFilter = new LoginRequestFilter(LOGIN_ENTRY_POINT, successHandler, failureHandler, objectMapper);
-		loginRequestFilter.setAuthenticationManager((AuthenticationManager) context.getBean("authenticationManager"));
-		return loginRequestFilter;
-	}
-
+    private LoginRequestFilter getLoginProcessingFilter() {
+        LoginRequestFilter loginRequestFilter = new LoginRequestFilter(LOGIN_ENTRY_POINT, successHandler, failureHandler, objectMapper);
+        loginRequestFilter.setAuthenticationManager((AuthenticationManager) context.getBean("authenticationManager"));
+        return loginRequestFilter;
+    }
 }

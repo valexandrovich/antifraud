@@ -11,9 +11,14 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 @Slf4j
 @Configuration
+@PropertySource({
+        "classpath:web.properties",
+        "classpath:application.properties"
+})
 @RequiredArgsConstructor
 public class RabbitConfiguration {
 
@@ -42,26 +47,32 @@ public class RabbitConfiguration {
     public Queue schedulerQueue() {
         return new Queue(schedulerQueue);
     }
+
     @Bean(name = "downloaderQueue")
     public Queue downloaderQueue() {
         return new Queue(downloaderQueue);
     }
+
     @Bean(name = "dwhQueue")
     public Queue dwhQueue() {
         return new Queue(dwhQueue);
     }
+
     @Bean(name = "reportQueue")
     public Queue reportQueue() {
         return new Queue(reportQueue);
     }
+
     @Bean(name = "importerQueue")
     public Queue importerQueue() {
         return new Queue(importerQueue);
     }
+
     @Bean(name = "notificationQueue")
     public Queue notificationQueue() {
         return new Queue(notificationQueue);
     }
+
     @Bean(name = "statusloggerQueue")
     public Queue statusloggerQueue() {
         return new Queue(statusloggerQueue);

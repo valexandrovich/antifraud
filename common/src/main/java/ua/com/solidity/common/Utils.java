@@ -449,6 +449,8 @@ public class Utils {
             factory.setPort(Integer.parseInt(context.getEnvironment().getProperty("spring.rabbitmq.port", "5672")));
             factory.setUsername(context.getEnvironment().getProperty("spring.rabbitmq.username", "guest"));
             factory.setPassword(context.getEnvironment().getProperty("spring.rabbitmq.password", "guest"));
+            factory.setAutomaticRecoveryEnabled(true);
+            factory.setNetworkRecoveryInterval(3000);
         }
     }
 
@@ -544,6 +546,7 @@ public class Utils {
         }
     }
 
+    @SuppressWarnings("all")
     public static synchronized TimerTask deferredExecute(long milliseconds, Runnable runnable) {
         TimerTask timerTask = new DeferredExecutionTimerTask(runnable);
         timer.schedule(timerTask, milliseconds);

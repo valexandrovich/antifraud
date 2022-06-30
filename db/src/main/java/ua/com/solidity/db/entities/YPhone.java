@@ -1,12 +1,9 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-
-import javax.persistence.CascadeType;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -15,9 +12,9 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -28,11 +25,11 @@ public class YPhone {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private String phone;
-	@ManyToOne(cascade = CascadeType.MERGE)
+	@ManyToOne
 	@JsonBackReference
 	@JoinColumn(name = "person_id")
 	private YPerson person;
-	@ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany
 	@JoinTable(
 			name = "yphone_import_source",
 			joinColumns = {@JoinColumn(name = "yphone_id")},
@@ -45,11 +42,11 @@ public class YPhone {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YPhone yPhone = (YPhone) o;
-		return Objects.equals(phone, yPhone.phone) && Objects.equals(person, yPhone.person);
+		return Objects.equals(phone, yPhone.phone);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(phone, person);
+		return Objects.hash(phone);
 	}
 }

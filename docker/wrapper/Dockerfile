@@ -3,7 +3,7 @@ ARG SETTINGS=""
 ENV ARG_SETTINGS=$SETTINGS
 WORKDIR /usr/src/wrapper
 VOLUME /usr/src/wrapper/files
-ADD config.ini .
-ADD wrapper.py .
-EXPOSE 8000:8000
+COPY docker-config.ini ./config.ini
+COPY wrapper.py .
+EXPOSE 9559:9559
 ENTRYPOINT ["python3",  "wrapper.py", "server.domain=wrapper", "${ARG_SETTINGS}"]

@@ -23,37 +23,33 @@ public class DeferredTasks {
             this.tasks = tasks;
         }
 
-        private void execute(boolean terminated) {
-            boolean loopIsActive = true;
-            boolean firstExecuted = false;
-            DeferredTask task;
-
-            tasks.beforeExecutionLoop(terminated);
-
-            if (terminated) return;
-
-            while (loopIsActive) {
-                synchronized(tasks) {
-                    task = tasks.tasks.isEmpty() ? null : tasks.tasks.get(0);
-                }
-                if (task != null) {
-                    try {
-                         tasks.doExecuteTask(task);
-                    } catch (Exception e) {
-                        log.error("Deferred Task Execution error.", e);
-                    }
-                    firstExecuted = true;
-                }
-                else loopIsActive = false;
+        private boolean execute(boolean terminated) {
+            List<DeferredTask> taskList;
+            synchronized(tasks) {
+                tasks.beforeExecutionLoop(terminated);
+                if (terminated) return false;
+                taskList = new ArrayList<>(tasks.tasks);
+                tasks.tasks.clear();
+                tasks.waitingFor = 0;
             }
-            synchronized (tasks) {
+
+            boolean firstExecuted = false;
+
+            for (var task : taskList) {
+                tasks.executeTask(task);
+                firstExecuted = true;
+                if (isInterrupted()) break;
+            }
+
+            taskList.clear();
+
+            synchronized(tasks) {
                 tasks.firstLoopExecuted = firstExecuted;
-                tasks.thread = null;
+                return !tasks.tasks.isEmpty();
             }
         }
 
-        @Override
-        public void run() {
+        private void loopBody() {
             boolean continueLoop = true;
 
             while (continueLoop) {
@@ -62,16 +58,33 @@ public class DeferredTasks {
                 synchronized (tasks) {
                     sleepTime = tasks.waitingFor - Instant.now().toEpochMilli();
                 }
+
                 if (sleepTime > 0) {
                     try {
+                        log.info("$deferredTasks$---- before sleep {}", sleepTime);
                         sleep(sleepTime);
+                        log.info("$deferredTasks$---- after sleep {}", sleepTime);
                         continueLoop = true;
                     } catch (InterruptedException e) {
+                        log.info("$deferredTasks$---- sleep interruption {}", sleepTime);
                         Thread.currentThread().interrupt();
+                        break;
+                    } catch (Exception e) {
+                        // nothing
                     }
                 }
             }
-            execute(isInterrupted());
+        }
+
+        @Override
+        public void run() {
+            do {
+                loopBody();
+            } while (execute(isInterrupted()));
+
+            synchronized(tasks) {
+                tasks.thread = null;
+            }
         }
     }
 
@@ -88,62 +101,67 @@ public class DeferredTasks {
 
     private synchronized void resetTimer() {
         waitingFor = Instant.now().toEpochMilli() + milliSeconds;
-        if (thread == null) {
+        if (thread == null || !thread.isAlive()) {
             thread = new WaitingThread(this);
             thread.start();
         }
     }
 
     public final void waitForExecution() {
-        if (thread == null || !thread.isAlive()) return;
+        Thread executionThread;
+        synchronized(this) {
+            executionThread = thread;
+        }
+        if (executionThread == null || !executionThread.isAlive()) return;
         try {
-            thread.join();
+            log.info("$deferredTasks$>>> wait for execution...");
+            executionThread.join();
+            log.info("$deferredTasks$<<< completed...");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            // nothing
         }
     }
 
     public synchronized void clear() {
         tasks.clear();
-        if (thread != null) {
+        if (thread != null && thread.isAlive()) {
             thread.interrupt();
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
         }
+        thread = null;
     }
 
     public synchronized boolean collectionMode() {
         return !(firstLoopExecuted && firstLoopCollectionOnly);
     }
 
-    protected synchronized void beforeExecutionLoop(boolean terminated) {
+    protected void beforeExecutionLoop(boolean terminated) {
         // Nothing yet
     }
 
-    protected synchronized void markTaskCompletion(DeferredTask task) {
+    protected void markTaskCompletion(DeferredTask task) {
         // Nothing yet
     }
 
     private void doCompletedTask(DeferredTask task) {
+        tasks.remove(task);
         markTaskCompletion(task);
-        tasks.remove(task);
     }
 
-    private synchronized void doExecuteTask(DeferredTask task) {
-        tasks.remove(task);
-        executeTask(task);
-    }
-
-    protected void executeTask(DeferredTask task) {
-        task.run();
+    protected void executeTask(DeferredTask task) { // overridden in RabbitMQListener.InternalDeferredTasks
+        try {
+            task.execute();
+        } catch (Exception e) {
+            log.error("Deferred Task {} execution error.", task.description(), e);
+        }
     }
 
     public final synchronized void append(DeferredTask task) {
+        if (task == null) return;
+
         if (!collectionMode()) {
-            doExecuteTask(task);
+            executeTask(task);
             return;
         }
         try {

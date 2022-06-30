@@ -23,8 +23,8 @@ public class ArContragentID  implements Serializable {
 	private Long siteId;
 	@Column(name = "ARCDATE",nullable = false , columnDefinition = "DATE")
 	private LocalDate arcDate;
-	@Column(name = "ID", nullable = false)
-	private Long id;// Код контрагента
+	@Column(name = "IDENTIFYCODE", nullable = false)
+	private String identifyCode;
 
 
 	@Override
@@ -34,11 +34,11 @@ public class ArContragentID  implements Serializable {
 		ArContragentID that = (ArContragentID) o;
 		return siteId != null && Objects.equals(siteId, that.siteId)
 				&& arcDate != null && Objects.equals(arcDate, that.arcDate)
-				&& id != null && Objects.equals(id, that.id);
+				&& identifyCode != null && Objects.equals(identifyCode, that.identifyCode);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(siteId, arcDate, id);
+		return Objects.hash(siteId, arcDate, identifyCode);
 	}
 }

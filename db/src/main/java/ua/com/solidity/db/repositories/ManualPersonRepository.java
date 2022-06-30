@@ -12,4 +12,6 @@ public interface ManualPersonRepository extends JpaRepository<ManualPerson, Long
     List<ManualPerson> findByUuid(FileDescription uuid);
 
     Page<ManualPerson> findAllByUuid(FileDescription uuid, Pageable pageRequest);
+
+    Long countAllByUuid(FileDescription uuid);
 }

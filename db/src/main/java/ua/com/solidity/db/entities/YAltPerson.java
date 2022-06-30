@@ -1,13 +1,9 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-import ua.com.solidity.db.abstraction.Identifiable;
-
-import javax.persistence.CascadeType;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -16,9 +12,10 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
 
 @Getter
 @Setter
@@ -32,11 +29,11 @@ public class YAltPerson implements Identifiable {
 	private String firstName;
 	private String patName;
 	private String language;
-	@ManyToOne(cascade = CascadeType.MERGE)
+	@ManyToOne
 	@JsonBackReference
 	@JoinColumn(name = "person_id")
 	private YPerson person;
-	@ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany
 	@JoinTable(
 			name = "yaltperson_import_source",
 			joinColumns = {@JoinColumn(name = "yaltperson_id")},
@@ -49,12 +46,12 @@ public class YAltPerson implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YAltPerson that = (YAltPerson) o;
-		return Objects.equals(lastName, that.lastName) && Objects.equals(firstName, that.firstName) && Objects.equals(patName, that.patName) && Objects.equals(language, that.language) && Objects.equals(person, that.person);
+		return Objects.equals(lastName, that.lastName) && Objects.equals(firstName, that.firstName) && Objects.equals(patName, that.patName) && Objects.equals(language, that.language);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastName, firstName, patName, language, person);
+		return Objects.hash(lastName, firstName, patName, language);
 	}
 
 	@Override

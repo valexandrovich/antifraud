@@ -1,10 +1,24 @@
 package ua.com.solidity.enricher.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,16 +36,18 @@ import ua.com.solidity.db.entities.BaseFodb;
 import ua.com.solidity.db.entities.BasePassports;
 import ua.com.solidity.db.entities.Contragent;
 import ua.com.solidity.db.entities.FileDescription;
+import ua.com.solidity.db.entities.Govua10;
 import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.ManualPerson;
 import ua.com.solidity.db.entities.ManualTag;
 import ua.com.solidity.db.entities.StatusLogger;
 import ua.com.solidity.db.entities.YAddress;
 import ua.com.solidity.db.entities.YAltPerson;
+import ua.com.solidity.db.entities.YCompany;
+import ua.com.solidity.db.entities.YCompanyRelation;
+import ua.com.solidity.db.entities.YCompanyRole;
 import ua.com.solidity.db.entities.YEmail;
 import ua.com.solidity.db.entities.YINN;
-import ua.com.solidity.db.entities.YManager;
-import ua.com.solidity.db.entities.YManagerType;
 import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.entities.YPhone;
@@ -40,18 +56,25 @@ import ua.com.solidity.db.repositories.ContragentRepository;
 import ua.com.solidity.db.repositories.FileDescriptionRepository;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.ManualPersonRepository;
+import ua.com.solidity.db.repositories.YAddressRepository;
+import ua.com.solidity.db.repositories.YAltPersonRepository;
+import ua.com.solidity.db.repositories.YCompanyRelationRepository;
+import ua.com.solidity.db.repositories.YCompanyRepository;
+import ua.com.solidity.db.repositories.YCompanyRoleRepository;
+import ua.com.solidity.db.repositories.YEmailRepository;
 import ua.com.solidity.db.repositories.YINNRepository;
-import ua.com.solidity.db.repositories.YManagerRepository;
-import ua.com.solidity.db.repositories.YManagerTypeRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.model.EnricherRequest;
+import ua.com.solidity.db.repositories.YPhoneRepository;
+import ua.com.solidity.db.repositories.YTagRepository;
+import ua.com.solidity.enricher.model.EnricherPortionRequest;
 import ua.com.solidity.enricher.repository.BaseCreatorRepository;
 import ua.com.solidity.enricher.repository.BaseDirectorRepository;
 import ua.com.solidity.enricher.repository.BaseDrfoRepository;
 import ua.com.solidity.enricher.repository.BaseElectionsRepository;
 import ua.com.solidity.enricher.repository.BaseFodbRepository;
 import ua.com.solidity.enricher.repository.BasePassportsRepository;
+import ua.com.solidity.enricher.repository.Govua10Repository;
 import ua.com.solidity.enricher.util.FileFormatUtil;
 
 import java.time.LocalDate;
@@ -67,11 +90,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Slf4j
+@CustomLog
 @RequiredArgsConstructor
 @Service
 @EntityScan(basePackages = {"ua.com.solidity.db.entities"})
 @EnableJpaRepositories(basePackages = {"ua.com.solidity.db.repositories", "ua.com.solidity.enricher.repository"})
+@PropertySource({"classpath:enricher.properties", "classpath:application.properties"})
 public class EnricherServiceImpl implements EnricherService {
     private final BaseDrfoRepository bdr;
     private final BaseElectionsRepository ber;
@@ -87,9 +111,16 @@ public class EnricherServiceImpl implements EnricherService {
     private final ImportSourceRepository isr;
     private final YPassportRepository yPassportRepository;
     private final FileFormatUtil fileFormatUtil;
-    private final YManagerRepository yManagerRepository;
-    private final YManagerTypeRepository yManagerTypeRepository;
     private final BaseCreatorRepository baseCreatorRepository;
+    private final Govua10Repository govua10Repository;
+    private final YAltPersonRepository yAltPersonRepository;
+    private final YAddressRepository yAddressRepository;
+    private final YPhoneRepository yPhoneRepository;
+    private final YEmailRepository yEmailRepository;
+    private final YTagRepository yTagRepository;
+    private final YCompanyRepository yCompanyRepository;
+    private final YCompanyRoleRepository yCompanyRoleRepository;
+    private final YCompanyRelationRepository yCompanyRelationRepository;
 
     private static final String BASE_DRFO = "base_drfo";
     private static final String BASE_ELECTIONS = "base_elections";
@@ -100,15 +131,15 @@ public class EnricherServiceImpl implements EnricherService {
     private static final String BASE_DIRECTOR = "base_director";
     private static final String BASE_CREATOR = "base_creator";
     private static final String ENRICHER = "ENRICHER";
-    private static final String RECORDS = "records";
+    private static final String PERCENT = "%";
     private static final String DOMESTIC_PASSPORT = "UA_DOMESTIC";
     private static final String IDCARD_PASSPORT = "UA_IDCARD";
     private static final String FOREIGN_PASSPORT = "UA_FOREIGN";
     private static final String DIRECTOR = "DIRECTOR";
+    private static final String GOVUA10 = "govua_10";
     public static final LocalDate START_DATE = LocalDate.of(1900, 1, 1);
     private static final String CREATOR = "CREATOR";
 
-    private static final String NUMBER_REGEX = "^[0-9]+$";
     private static final String ALL_NOT_NUMBER = "[^0-9]";
     private static final String INN_REGEX = "^[\\d]{10}$";
     private static final String OKPO_REGEX = "^[\\d]{8,9}$";
@@ -126,7 +157,7 @@ public class EnricherServiceImpl implements EnricherService {
     private Integer pageSize;
     @Value("${statuslogger.rabbitmq.name}")
     private String queueName;
-    private boolean cachedCopy;
+    private boolean findCopy;
 
     private String importedRecords(long num) {
         return String.format("Imported %d records", num);
@@ -141,43 +172,46 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     @Override
-    public void enrich(EnricherRequest er) {
-        log.info("Received request to enrich {} revision {}", er.getTable(), er.getRevision());
+    public void enrich(EnricherPortionRequest er) {
+        log.info("Received request to enrich {} revision {}", er.getTable(), er.getPortion());
         switch (er.getTable()) {
             case BASE_DRFO:
-                baseDrfoEnrich(er.getRevision());
+                baseDrfoEnrich(er.getPortion());
                 break;
             case BASE_ELECTIONS:
-                baseElectionsEnrich(er.getRevision());
+                baseElectionsEnrich(er.getPortion());
                 break;
             case BASE_FODB:
-                baseFodbEnrich(er.getRevision());
+                baseFodbEnrich(er.getPortion());
                 break;
             case BASE_PASSPORTS:
-                basePassportsEnrich(er.getRevision());
+                basePassportsEnrich(er.getPortion());
                 break;
             case CONTRAGENT:
-                contragentEnrich(er.getRevision());
+                contragentEnrich(er.getPortion());
                 break;
             case MANUAL_PERSON:
-                manualPersonEnrich(er.getRevision());
+                manualPersonEnrich(er.getPortion());
                 break;
             case BASE_DIRECTOR:
-                baseDirectorEnricher(er.getRevision());
+                baseDirectorEnricher(er.getPortion());
                 break;
             case BASE_CREATOR:
-                baseCreatorEnricher(er.getRevision());
+                baseCreatorEnricher(er.getPortion());
+                break;
+            case GOVUA10:
+                govua10Enricher(er.getPortion());
                 break;
             default:
                 log.warn("Ignoring unsupported {} enrichment", er.getTable());
         }
     }
 
-    public void baseDrfoEnrich(UUID revision) {
+    public void baseDrfoEnrich(UUID portion) {
         logStart(BASE_DRFO);
 
         LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
                 BASE_DRFO, ENRICHER, startTime, null, null);
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
@@ -185,32 +219,39 @@ public class EnricherServiceImpl implements EnricherService {
         long[] wrongCounter = new long[1];
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<BaseDrfo> onePage = bdr.findAllByRevision(revision, pageRequest);
-        String fileName = fileFormatUtil.getLogFileName(revision.toString());
+        Page<BaseDrfo> onePage = bdr.findAllByPortionId(portion, pageRequest);
+        long count = bdr.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DRFO, revision));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DRFO, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_DRFO);
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             List<YPerson> personList = new ArrayList<>();
-            Set<YINN> yinnList = new HashSet<>();
 
             onePage.forEach(r -> {
+                findCopy = false;
                 String lastName = UtilString.toUpperCase(r.getLastName());
                 String firstName = UtilString.toUpperCase(r.getFirstName());
                 String patName = UtilString.toUpperCase(r.getPatName());
 
-                Long yinn = null;
+                YPerson person = new YPerson();
+                person.setLastName(lastName);
+                person.setFirstName(firstName);
+                person.setPatName(patName);
+                person.setBirthdate(r.getBirthdate());
+
                 if (r.getInn() != null) {
-                    String inn = String.format(INN_FORMAT_REGEX, r.getInn());
-                    if (isValidInn(inn, r.getBirthdate(), logger, wrongCounter, counter))
-                        yinn = Long.parseLong(inn);
+                    String code = String.format(INN_FORMAT_REGEX, r.getInn());
+                    if (isValidInn(code, r.getBirthdate(), logger, wrongCounter, counter)) {
+                        long inn = Long.parseLong(code);
+                        person = addInn(inn, personList, source, person);
+                    }
                 }
 
-                YPerson person = addPerson(yinnList, personList, yinn,
-                        lastName, firstName, patName, r.getBirthdate(), source);
+                person = addPerson(personList, person, source);
 
                 Set<String> addresses = new HashSet<>();
                 if (StringUtils.isBlank(r.getAllAddresses()))
@@ -223,47 +264,44 @@ public class EnricherServiceImpl implements EnricherService {
 
                 addAddresses(person, addresses, source);
 
-                addAltPerson(person, lastName, firstName, patName, "UK", source);
-
-                if (!cachedCopy) {
-                    personList.add(person);
-                    counter[0]++;
-                }
+                personList.add(person);
+                counter[0]++;
             });
 
             ypr.saveAll(personList);
             emnService.enrichMonitoringNotification(personList);
 
-            onePage = bdr.findAllByRevision(revision, pageRequest);
+            onePage = bdr.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
                     BASE_DRFO, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
 
         logFinish(BASE_DRFO, counter[0]);
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
+        statusLogger = new StatusLogger(portion, 100L, "%",
                 BASE_DRFO, ENRICHER, startTime, LocalDateTime.now(),
                 importedRecords(counter[0]));
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
     }
 
-    public void baseElectionsEnrich(UUID revision) {
+    public void baseElectionsEnrich(UUID portion) {
         logStart(BASE_ELECTIONS);
 
         LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
                 BASE_ELECTIONS, ENRICHER, startTime, null, null);
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
         long[] counter = new long[1];
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<BaseElections> onePage = ber.findAllByRevision(revision, pageRequest);
-        String fileName = fileFormatUtil.getLogFileName(revision.toString());
+        Page<BaseElections> onePage = ber.findAllByPortionId(portion, pageRequest);
+        long count = ber.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_ELECTIONS, revision));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_ELECTIONS, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_ELECTIONS);
 
@@ -272,48 +310,50 @@ public class EnricherServiceImpl implements EnricherService {
             List<YPerson> personList = new ArrayList<>();
 
             onePage.forEach(r -> {
+                findCopy = false;
                 String[] fio = null;
-                String fistName = "";
+                String firstName = "";
                 String lastName = "";
                 String patName = "";
                 if (!StringUtils.isBlank(r.getFio())) fio = r.getFio().split(" ");
                 if (fio != null && fio.length >= 1) lastName = UtilString.toUpperCase(fio[0]);
-                if (fio != null && fio.length >= 2) fistName = UtilString.toUpperCase(fio[1]);
+                if (fio != null && fio.length >= 2) firstName = UtilString.toUpperCase(fio[1]);
                 if (fio != null && fio.length >= 3) patName = UtilString.toUpperCase(fio[2]);
 
                 if (StringUtils.isBlank(lastName))
                     logError(logger, (counter[0] + 1L), "LastName: " + lastName, "Empty last name");
-                else {
-                    YPerson person = addPerson(new HashSet<>(), personList, null,
-                            lastName, fistName, patName, r.getBirthdate(), source);
 
-                    if (!StringUtils.isBlank(r.getAddress())) {
-                        String[] partAddress = r.getAddress().split(", ");
-                        StringBuilder sbAddress = new StringBuilder();
-                        for (int i = partAddress.length - 1; i > 0; i--) {
-                            sbAddress.append(partAddress[i].toUpperCase()).append(", ");
-                        }
-                        sbAddress.append(partAddress[0].toUpperCase());
+                YPerson person = new YPerson();
+                person.setLastName(lastName);
+                person.setFirstName(firstName);
+                person.setPatName(patName);
+                person.setBirthdate(r.getBirthdate());
 
-                        Set<String> addresses = new HashSet<>();
-                        addresses.add(sbAddress.toString());
+                person = addPerson(personList, person, source);
 
-                        addAddresses(person, addresses, source);
+                if (!StringUtils.isBlank(r.getAddress())) {
+                    String[] partAddress = r.getAddress().split(", ");
+                    StringBuilder sbAddress = new StringBuilder();
+                    for (int i = partAddress.length - 1; i > 0; i--) {
+                        sbAddress.append(partAddress[i].toUpperCase()).append(", ");
                     }
+                    sbAddress.append(partAddress[0].toUpperCase());
 
-                    if (!cachedCopy) {
-                        personList.add(person);
-                        counter[0]++;
-                    }
+                    Set<String> addresses = new HashSet<>();
+                    addresses.add(sbAddress.toString());
+
+                    addAddresses(person, addresses, source);
                 }
+                personList.add(person);
+                counter[0]++;
             });
 
             ypr.saveAll(personList);
             emnService.enrichMonitoringNotification(personList);
 
-            onePage = ber.findAllByRevision(revision, pageRequest);
+            onePage = ber.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
                     BASE_ELECTIONS, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
@@ -321,18 +361,18 @@ public class EnricherServiceImpl implements EnricherService {
         logFinish(BASE_ELECTIONS, counter[0]);
         logger.finish();
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
+        statusLogger = new StatusLogger(portion, 100L, "%",
                 BASE_ELECTIONS, ENRICHER, startTime,
                 LocalDateTime.now(),
                 importedRecords(counter[0]));
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
     }
 
-    public void baseFodbEnrich(UUID revision) {
+    public void baseFodbEnrich(UUID portion) {
         logStart(BASE_FODB);
 
         LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
                 BASE_FODB, ENRICHER, startTime, null, null);
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
@@ -340,33 +380,39 @@ public class EnricherServiceImpl implements EnricherService {
         long[] wrongCounter = new long[1];
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<BaseFodb> onePage = bfr.findAllByRevision(revision, pageRequest);
-        String fileName = fileFormatUtil.getLogFileName(revision.toString());
+        Page<BaseFodb> onePage = bfr.findAllByPortionId(portion, pageRequest);
+        long count = bfr.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_FODB, revision));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_FODB, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_FODB);
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             List<YPerson> personList = new ArrayList<>();
-            Set<YINN> yinnList = new HashSet<>();
 
             onePage.forEach(r -> {
-
+                findCopy = false;
                 String lastName = UtilString.toUpperCase(r.getLastNameUa());
                 String firstName = UtilString.toUpperCase(r.getFirstNameUa());
                 String patName = UtilString.toUpperCase(r.getMiddleNameUa());
 
-                Long inn = null;
+                YPerson person = new YPerson();
+                person.setLastName(lastName);
+                person.setFirstName(firstName);
+                person.setPatName(patName);
+                person.setBirthdate(r.getBirthdate());
+
                 if (!StringUtils.isBlank(r.getInn())) {
                     String code = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getInn().replaceAll(ALL_NOT_NUMBER, "")));
-                    if (isValidInn(code, r.getBirthdate(), logger, wrongCounter, counter))
-                        inn = Long.parseLong(code);
+                    if (isValidInn(code, r.getBirthdate(), logger, wrongCounter, counter)) {
+                        long inn = Long.parseLong(code);
+                        person = addInn(inn, personList, source, person);
+                    }
                 }
 
-                YPerson person = addPerson(yinnList, personList, inn,
-                        lastName, firstName, patName, r.getBirthdate(), source);
+                person = addPerson(personList, person, source);
 
                 Set<String> addresses = new HashSet<>();
                 StringBuilder laString = new StringBuilder();
@@ -390,20 +436,18 @@ public class EnricherServiceImpl implements EnricherService {
 
                 addAddresses(person, addresses, source);
 
-                addAltPerson(person, lastName, firstName, patName, "UK", source);
+                addAltPerson(person, r.getLastNameRu(), r.getFirstNameRu(), r.getMiddleNameRu(), "RU", source);
 
-                if (!cachedCopy) {
-                    personList.add(person);
-                    counter[0]++;
-                }
+                personList.add(person);
+                counter[0]++;
             });
 
             ypr.saveAll(personList);
             emnService.enrichMonitoringNotification(personList);
 
-            onePage = bfr.findAllByRevision(revision, pageRequest);
+            onePage = bfr.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
                     BASE_FODB, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
@@ -411,17 +455,17 @@ public class EnricherServiceImpl implements EnricherService {
         logFinish(BASE_FODB, counter[0]);
         logger.finish();
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
+        statusLogger = new StatusLogger(portion, 100L, "%",
                 BASE_FODB, ENRICHER, startTime, LocalDateTime.now(),
                 importedRecords(counter[0]));
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
     }
 
-    public void basePassportsEnrich(UUID revision) {
+    public void basePassportsEnrich(UUID portion) {
         logStart(BASE_PASSPORTS);
 
         LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
                 BASE_PASSPORTS, ENRICHER, startTime, null, null);
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
@@ -429,60 +473,66 @@ public class EnricherServiceImpl implements EnricherService {
         long[] wrongCounter = new long[1];
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<BasePassports> onePage = bpr.findAllByRevision(revision, pageRequest);
-        String fileName = fileFormatUtil.getLogFileName(revision.toString());
+        Page<BasePassports> onePage = bpr.findAllByPortionId(portion, pageRequest);
+        long count = bpr.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_PASSPORTS, revision));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_PASSPORTS, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_PASSPORTS);
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             List<YPerson> personList = new ArrayList<>();
-            Set<YINN> yinnList = new HashSet<>();
 
             onePage.forEach(r -> {
+                findCopy = false;
                 String lastName = UtilString.toUpperCase(r.getLastName());
                 String firstName = UtilString.toUpperCase(r.getFirstName());
                 String patName = UtilString.toUpperCase(r.getMiddleName());
 
-                if (!StringUtils.isBlank(lastName)) {                          //skip person without lastName
-                    Long inn = null;
-                    if (!StringUtils.isBlank(r.getInn())) {
-                        String code = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getInn().replaceAll(ALL_NOT_NUMBER, "")));
-                        if (isValidInn(code, r.getBirthdate(), logger, wrongCounter, counter))
-                            inn = Long.parseLong(code);
-                    }
+                YPerson person = new YPerson();
+                person.setLastName(lastName);
+                person.setFirstName(firstName);
+                person.setPatName(patName);
+                person.setBirthdate(r.getBirthdate());
 
-                    YPerson person = addPerson(yinnList, personList, inn,
-                            lastName, firstName, patName, r.getBirthdate(), source);
-
-                    String passportNo = r.getPassId();
-                    String passportSerial = r.getSerial();
-                    int number;
-                    if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
-                        passportSerial = transliterationToCyrillicLetters(passportSerial);
-                        number = Integer.parseInt(passportNo);
-                        addPassport(person, passportSerial, number, null,
-                                null, null, DOMESTIC_PASSPORT, personList,
-                                wrongCounter, counter, logger, source);
-                    }
-
-                    addAltPerson(person, lastName, firstName, patName, "UK", source);
-
-                    if (!cachedCopy) {
-                        personList.add(person);
-                        counter[0]++;
+                if (!StringUtils.isBlank(r.getInn())) {
+                    String code = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getInn().replaceAll(ALL_NOT_NUMBER, "")));
+                    if (isValidInn(code, r.getBirthdate(), logger, wrongCounter, counter)) {
+                        long inn = Long.parseLong(code);
+                        person = addInn(inn, personList, source, person);
                     }
                 }
+
+                String passportNo = r.getPassId();
+                String passportSerial = r.getSerial();
+                if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                    passportSerial = transliterationToCyrillicLetters(passportSerial);
+                    int number = Integer.parseInt(passportNo);
+                    YPassport passport = new YPassport();
+                    passport.setSeries(passportSerial);
+                    passport.setNumber(number);
+                    passport.setAuthority(null);
+                    passport.setIssued(null);
+                    passport.setEndDate(null);
+                    passport.setRecordNumber(null);
+                    passport.setValidity(true);
+                    passport.setType(DOMESTIC_PASSPORT);
+                    person = addPassport(passport, personList, source, person);
+                }
+                person = addPerson(personList, person, source);
+                personList.add(person);
+                counter[0]++;
+
             });
 
             ypr.saveAll(personList);
             emnService.enrichMonitoringNotification(personList);
 
-            onePage = bpr.findAllByRevision(revision, pageRequest);
+            onePage = bpr.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
                     BASE_PASSPORTS, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
@@ -490,274 +540,316 @@ public class EnricherServiceImpl implements EnricherService {
         logFinish(BASE_PASSPORTS, counter[0]);
         logger.finish();
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
+        statusLogger = new StatusLogger(portion, 100L, "%",
                 BASE_PASSPORTS, ENRICHER, startTime, LocalDateTime.now(),
                 importedRecords(counter[0]));
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
     }
 
-    public void contragentEnrich(UUID revision) {
-        logStart(CONTRAGENT);
+	public void contragentEnrich(UUID portion) {
+		logStart(CONTRAGENT);
 
-        LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
-                CONTRAGENT, ENRICHER, startTime, null, null);
-        Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
+		LocalDateTime startTime = LocalDateTime.now();
+		StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
+		                                             CONTRAGENT, ENRICHER, startTime, null, null);
+		Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
-        long[] counter = new long[1];
+		long[] counter = new long[1];
 
-        Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<Contragent> onePage = cr.findAllByRevision(revision, pageRequest);
+		Pageable pageRequest = PageRequest.of(0, pageSize);
+		Page<Contragent> onePage = cr.findAllByPortionId(portion, pageRequest);
+		long count = cr.countAllByPortionId(portion);
+		ImportSource source = isr.findImportSourceByName("dwh");
 
-        ImportSource source = isr.findImportSourceByName("dwh");
+		while (!onePage.isEmpty()) {
+			pageRequest = pageRequest.next();
+			List<YPerson> personList = new ArrayList<>();
+			Set<YINN> yinnList = new HashSet<>();
 
-        while (!onePage.isEmpty()) {
-            pageRequest = pageRequest.next();
-            List<YPerson> personList = new ArrayList<>();
-            Set<YINN> yinnList = new HashSet<>();
+			onePage.forEach(r -> {
+				Optional<YINN> yinnSavedOptional;
+				Optional<YINN> yinnCachedOptional;
+				String identifyCode = r.getIdentifyCode();
 
-            onePage.forEach(r -> {
-                Optional<YINN> yinnSavedOptional;
-                Optional<YINN> yinnCachedOptional;
-                String identifyCode = r.getIdentifyCode();
+				if (StringUtils.isNotBlank(identifyCode) && identifyCode.matches(INN_REGEX)) {// We skip person without inn
+					long inn = Long.parseLong(identifyCode);
+					yinnSavedOptional = yir.findByInn(inn);
+					yinnCachedOptional = yinnList.stream().filter(i -> i.getInn() == inn).findAny();
+					boolean cached = false;
+					boolean saved = false;
 
-                if (StringUtils.isNotBlank(identifyCode) && identifyCode.matches(INN_REGEX)) {// We skip person without inn
-                    long inn = Long.parseLong(identifyCode);
-                    yinnSavedOptional = yir.findByInn(inn);
-                    yinnCachedOptional = yinnList.stream().filter(i -> i.getInn() == inn).findAny();
-                    boolean cached = false;
-                    boolean saved = false;
+					YPerson person = null;
+					if (yinnSavedOptional.isPresent()) {
+						UUID personId = yinnSavedOptional.get().getPerson().getId();
+						Optional<YPerson> ypersonOptional = ypr.findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(personId);
+						person = ypersonOptional.orElseGet(() -> null);
+						saved = true;
+					}
+					if (yinnCachedOptional.isPresent()) {
+						if (saved) {
+							UUID personId = yinnSavedOptional.get().getPerson().getId();
+							Optional<YPerson> ypersonOptional = ypr.findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(personId);
+							person = ypersonOptional.orElseGet(() -> null);
+						} else {
+							person = yinnCachedOptional.get().getPerson();
+						}
+						cached = true;
+					}
+					if (person == null) person = new YPerson(UUID.randomUUID());
+					addSource(person.getImportSources(), source);
 
-                    YPerson person = null;
-                    if (yinnSavedOptional.isPresent()) {
-                        person = yinnSavedOptional.get().getPerson();
-                        saved = true;
-                    }
-                    if (yinnCachedOptional.isPresent()) {
-                        person = yinnCachedOptional.get().getPerson();
-                        cached = true;
-                    }
-                    if (person == null) person = new YPerson(UUID.randomUUID());
-                    addSource(person.getImportSources(), source);
+					List<String> splitPersonNames = Arrays.asList(r.getName().split("[ ]+"));
+					String splitPatronymic = splitPersonNames.size() == 3 ? splitPersonNames.get(2) : null;
 
-                    List<String> splitPersonNames = Arrays.asList(r.getName().split("[ ]+"));
-                    String splitPatronymic = splitPersonNames.size() == 3 ? splitPersonNames.get(2) : null;
+					if (!StringUtils.isBlank(r.getClientPatronymicName()))
+						person.setPatName(UtilString.toUpperCase(chooseNotBlank(person.getPatName(), r.getClientPatronymicName())));
+					else
+						person.setPatName(UtilString.toUpperCase(chooseNotBlank(person.getPatName(), splitPatronymic)));
+					person.setLastName(UtilString.toUpperCase(chooseNotBlank(person.getLastName(), r.getClientLastName())));
 
-                    if (!StringUtils.isBlank(r.getClientPatronymicName()))
-                        person.setPatName(UtilString.toUpperCase(chooseNotBlank(person.getPatName(), r.getClientPatronymicName())));
-                    else
-                        person.setPatName(UtilString.toUpperCase(chooseNotBlank(person.getPatName(), splitPatronymic)));
-                    person.setLastName(UtilString.toUpperCase(chooseNotBlank(person.getLastName(), r.getClientLastName())));
+					if (!StringUtils.isBlank(r.getClientName()))
+						person.setFirstName(UtilString.toUpperCase(r.getClientName()));
+					else if (splitPersonNames.size() == 3) {
+						String firstName = splitPersonNames.get(1).equalsIgnoreCase(r.getClientLastName()) ? splitPersonNames.get(0) : splitPersonNames.get(1);
+						person.setFirstName(UtilString.toUpperCase(firstName));
+					}
 
-                    if (!StringUtils.isBlank(r.getClientName()))
-                        person.setFirstName(UtilString.toUpperCase(r.getClientName()));
-                    else if (splitPersonNames.size() == 3) {
-                        String firstName = splitPersonNames.get(1).equalsIgnoreCase(r.getClientLastName()) ? splitPersonNames.get(0) : splitPersonNames.get(1);
-                        person.setFirstName(UtilString.toUpperCase(firstName));
-                    }
+					person.setBirthdate(chooseNotNull(person.getBirthdate(), r.getClientBirthday()));
 
-                    person.setBirthdate(chooseNotNull(person.getBirthdate(), r.getClientBirthday()));
+					YINN yinn = null;
+					if (yinnSavedOptional.isPresent()) yinn = yinnSavedOptional.get();
+					if (yinnCachedOptional.isPresent()) yinn = yinnCachedOptional.get();
+					if (yinn == null) yinn = new YINN();
+					addSource(yinn.getImportSources(), source);
+					if (!cached && !saved) {
+						yinn.setInn(Long.parseLong(identifyCode));
+						yinn.setPerson(person);
+						yinn.getPerson().getInns().add(yinn);
+					}
 
-                    YINN yinn = null;
-                    if (yinnSavedOptional.isPresent()) yinn = yinnSavedOptional.get();
-                    if (yinnCachedOptional.isPresent()) yinn = yinnCachedOptional.get();
-                    if (yinn == null) yinn = new YINN();
-                    addSource(yinn.getImportSources(), source);
-                    if (!cached && !saved) {
-                        yinn.setInn(Long.parseLong(identifyCode));
-                        yinn.setPerson(person);
-                        yinn.getPerson().getInns().add(yinn);
-                    }
+					String passportNo = r.getPassportNo();
+					String passportSerial = UtilString.toUpperCase(r.getPassportSerial());
+					Integer number;
+					if (StringUtils.isNotBlank(passportNo) && passportNo.matches(PASS_NUMBER_REGEX)) {
+						number = Integer.parseInt(passportNo);
+						List<YPerson> personListWithSamePassport = personList.stream()
+								.filter(yperson -> {
+									return yperson.getPassports()
+											.stream()
+											.anyMatch(passport -> {
+												return Objects.equals(passport.getNumber(), number) &&
+														Objects.equals(passport.getSeries(), passportSerial) &&
+														Objects.equals(passport.getType(), DOMESTIC_PASSPORT);
+											});
+								})
+								.collect(Collectors.toList());
 
-                    String passportNo = r.getPassportNo();
-                    String passportSerial = r.getPassportSerial();
-                    Integer number;
-                    if (StringUtils.isNotBlank(passportNo) && passportNo.matches(PASS_NUMBER_REGEX)) {
-                        number = Integer.parseInt(passportNo);
-                        Optional<YPassport> passportOptional = person.getPassports()
-                                .stream()
-                                .filter(p -> Objects.equals(p.getNumber(), number) && UtilString.equalsIgnoreCase(p.getSeries(), passportSerial))
-                                .findAny();
-                        YPassport passport = passportOptional.orElseGet(YPassport::new);
-                        addSource(passport.getImportSources(), source);
-                        passport.setSeries(UtilString.toUpperCase(passportSerial));
-                        passport.setNumber(number);
-                        passport.setAuthority(UtilString.toUpperCase(chooseNotBlank(passport.getAuthority(), r.getPassportIssuePlace())));
-                        passport.setIssued(chooseNotNull(passport.getIssued(), r.getPassportIssueDate()));
-                        passport.setEndDate(chooseNotNull(passport.getEndDate(), r.getPassportEndDate()));
-                        passport.setRecordNumber(null);
-                        passport.setValidity(true);
-                        passport.setType(DOMESTIC_PASSPORT);
+						Optional<YPassport> passportOptional = yPassportRepository.findByTypeAndNumberAndSeries(DOMESTIC_PASSPORT, number, passportSerial);
+						passportOptional.ifPresent(passport -> personListWithSamePassport.addAll(ypr.findByPassportsContains(passport)));
 
-                        if (passportOptional.isEmpty()) {
-                            passport.setPerson(person);
-                            person.getPassports().add(passport);
+                        if (passportOptional.isEmpty() && !personListWithSamePassport.isEmpty())
+                            passportOptional = personListWithSamePassport.get(0).getPassports().parallelStream().filter(pas -> Objects.equals(pas.getType(), DOMESTIC_PASSPORT)
+                                    && Objects.equals(pas.getSeries(), passportSerial)
+                                    && Objects.equals(pas.getNumber(), number)).findAny();
+
+						YPassport passport = passportOptional.orElseGet(YPassport::new);
+						addSource(passport.getImportSources(), source);
+						passport.setSeries(UtilString.toUpperCase(passportSerial));
+						passport.setNumber(number);
+						passport.setAuthority(UtilString.toUpperCase(chooseNotBlank(passport.getAuthority(), r.getPassportIssuePlace())));
+						passport.setIssued(chooseNotNull(passport.getIssued(), r.getPassportIssueDate()));
+						passport.setEndDate(chooseNotNull(passport.getEndDate(), r.getPassportEndDate()));
+						passport.setRecordNumber(null);
+						passport.setValidity(true);
+						passport.setType(DOMESTIC_PASSPORT);
+
+						Optional<YPerson> optionalYPerson = Optional.empty();
+						if (!personListWithSamePassport.isEmpty()) {
+							YPerson finalPerson = person;
+							optionalYPerson = personListWithSamePassport.parallelStream().filter(p -> isEqualsPerson(p, finalPerson)).findAny();
+						}
+
+						if (optionalYPerson.isPresent()) {
+							YPerson findPerson = optionalYPerson.get();
+							findPerson.setLastName(chooseNotNull(findPerson.getLastName(), person.getLastName()));
+							findPerson.setFirstName(chooseNotNull(findPerson.getFirstName(), person.getFirstName()));
+							findPerson.setPatName(chooseNotNull(findPerson.getPatName(), person.getPatName()));
+							findPerson.setBirthdate(chooseNotNull(findPerson.getBirthdate(), person.getBirthdate()));
+
+							person = findPerson;
+							findCopy = true;
+						} else if (passportOptional.isPresent() && passport.getId() == null) yPassportRepository.save(passport);
+						person.getPassports().add(passport);
+						addSource(passport.getImportSources(), source);
+
+                        if (person.getId() != null) {
+                            person = ypr.findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(person.getId()).orElse(person);
                         }
-                    }
 
-                    Optional<YTag> tagPlaceOptional = person.getTags()
-                            .stream()
-                            .filter(t -> UtilString.equalsIgnoreCase(t.getName(), r.getWorkplace()))
-                            .findAny();
-                    if (StringUtils.isNotBlank(r.getWorkplace())) {
-                        YTag tag = tagPlaceOptional.orElseGet(YTag::new);
-                        addSource(tag.getImportSources(), source);
-                        tag.setName(UtilString.toUpperCase(r.getWorkplace()));
-                        if (tag.getAsOf() == null) tag.setAsOf(LocalDate.now());
-                        tag.setSource(CONTRAGENT);
+					}
 
-                        if (tagPlaceOptional.isEmpty()) {
-                            tag.setPerson(person);
-                            person.getTags().add(tag);
-                        }
-                    }
+					Optional<YTag> tagPlaceOptional = person.getTags()
+							.parallelStream()
+							.filter(t -> UtilString.equalsIgnoreCase(t.getName(), r.getWorkplace()))
+							.findAny();
+					if (StringUtils.isNotBlank(r.getWorkplace())) {
+						YTag tag = tagPlaceOptional.orElseGet(YTag::new);
+						addSource(tag.getImportSources(), source);
+						tag.setName(UtilString.toUpperCase(r.getWorkplace()));
+						if (tag.getAsOf() == null) tag.setAsOf(LocalDate.now());
+						tag.setSource(CONTRAGENT);
 
-                    Optional<YTag> tagPositionOptional = person.getTags()
-                            .stream()
-                            .filter(t -> UtilString.equalsIgnoreCase(t.getName(), r.getWorkPosition()))
-                            .findAny();
-                    if (StringUtils.isNotBlank(r.getWorkPosition())) {
-                        YTag tag = tagPositionOptional.orElseGet(YTag::new);
-                        addSource(tag.getImportSources(), source);
-                        tag.setName(UtilString.toUpperCase(r.getWorkPosition()));
-                        if (tag.getAsOf() == null) tag.setAsOf(LocalDate.now());
-                        tag.setSource(CONTRAGENT);
+						if (tagPlaceOptional.isEmpty()) {
+							tag.setPerson(person);
+							person.getTags().add(tag);
+						}
+					}
 
-                        if (tagPositionOptional.isEmpty()) {
-                            tag.setPerson(person);
-                            person.getTags().add(tag);
-                        }
-                    }
+					Optional<YTag> tagPositionOptional = person.getTags()
+							.parallelStream()
+							.filter(t -> UtilString.equalsIgnoreCase(t.getName(), r.getWorkPosition()))
+							.findAny();
+					if (StringUtils.isNotBlank(r.getWorkPosition())) {
+						YTag tag = tagPositionOptional.orElseGet(YTag::new);
+						addSource(tag.getImportSources(), source);
+						tag.setName(UtilString.toUpperCase(r.getWorkPosition()));
+						if (tag.getAsOf() == null) tag.setAsOf(LocalDate.now());
+						tag.setSource(CONTRAGENT);
 
-                    YTag tag = new YTag();
-                    tag.setName("RC");
-                    tag.setSource(CONTRAGENT);
-                    tag.setPerson(person);
-                    addSource(tag.getImportSources(), source);
-                    person.getTags().add(tag);
+						if (tagPositionOptional.isEmpty()) {
+							tag.setPerson(person);
+							person.getTags().add(tag);
+						}
+					}
 
-                    YPerson finalPerson = person;
-                    Stream.of(r.getPhones(), r.getMobilePhone(), r.getPhoneHome()).forEach(phone -> {
-                        if (phone != null) {
-                            String phoneCleaned = phone.replaceAll("[^0-9]+", "");
-                            if (StringUtils.isNotBlank(phoneCleaned)) {
-                                Optional<YPhone> yphoneOptional = finalPerson.getPhones()
-                                        .stream()
-                                        .filter(yphone -> yphone.getPhone().equals(phoneCleaned))
-                                        .findFirst();
+					YTag tag = new YTag();
+					tag.setName("RC");
+					tag.setSource(CONTRAGENT);
+					tag.setPerson(person);
+					addSource(tag.getImportSources(), source);
+					person.getTags().add(tag);
 
-                                YPhone yPhone = yphoneOptional.orElseGet(YPhone::new);
-                                addSource(yPhone.getImportSources(), source);
-                                yPhone.setPhone(phoneCleaned);
+					YPerson finalPerson = person;
+					Stream.of(r.getPhones(), r.getMobilePhone(), r.getPhoneHome()).forEach(phone -> {
+						if (phone != null) {
+							String phoneCleaned = phone.replaceAll("[^0-9]+", "");
+							if (StringUtils.isNotBlank(phoneCleaned)) {
+								Optional<YPhone> yphoneOptional = finalPerson.getPhones()
+										.parallelStream()
+										.filter(yphone -> yphone.getPhone().equals(phoneCleaned))
+										.findFirst();
 
-                                if (yphoneOptional.isEmpty()) {
-                                    yPhone.setPerson(finalPerson);
-                                    finalPerson.getPhones().add(yPhone);
-                                }
-                            }
-                        }
-                    });
+								YPhone yPhone = yphoneOptional.orElseGet(YPhone::new);
+								addSource(yPhone.getImportSources(), source);
+								yPhone.setPhone(phoneCleaned);
 
-                    YPerson finalPerson1 = person;
-                    Stream.of(r.getAddress(), r.getBirthplace()).forEach(address -> {
-                        if (StringUtils.isNotBlank(address)) {
-                            Optional<YAddress> yAddressOptional = finalPerson1.getAddresses()
-                                    .stream()
-                                    .filter(yAddress -> yAddress.getAddress().equalsIgnoreCase(address))
-                                    .findAny();
+								if (yphoneOptional.isEmpty()) {
+									yPhone.setPerson(finalPerson);
+									finalPerson.getPhones().add(yPhone);
+								}
+							}
+						}
+					});
 
-                            YAddress yAddress = yAddressOptional.orElseGet(YAddress::new);
-                            addSource(yAddress.getImportSources(), source);
-                            yAddress.setAddress(UtilString.toUpperCase(address.toUpperCase()));
+					YPerson finalPerson1 = person;
+					Stream.of(r.getAddress(), r.getBirthplace()).forEach(address -> {
+						if (StringUtils.isNotBlank(address)) {
+							Optional<YAddress> yAddressOptional = finalPerson1.getAddresses()
+									.parallelStream()
+									.filter(yAddress -> yAddress.getAddress().equalsIgnoreCase(address))
+									.findAny();
 
-                            if (yAddressOptional.isEmpty()) {
-                                yAddress.setPerson(finalPerson1);
-                                finalPerson1.getAddresses().add(yAddress);
-                            }
-                        }
-                    });
+							YAddress yAddress = yAddressOptional.orElseGet(YAddress::new);
+							addSource(yAddress.getImportSources(), source);
+							yAddress.setAddress(UtilString.toUpperCase(address.toUpperCase()));
 
-                    if (!StringUtils.isBlank(r.getAlternateName())) {
-                        List<String> splitAltPersonNames = Arrays.asList(r.getAlternateName().split("[ ]+"));
+							if (yAddressOptional.isEmpty()) {
+								yAddress.setPerson(finalPerson1);
+								finalPerson1.getAddresses().add(yAddress);
+							}
+						}
+					});
 
-                        String[] names = new String[3];
-                        for (int i = 0; i < splitAltPersonNames.size(); i++) {
-                            if (i == 2) {
-                                StringBuilder sb = new StringBuilder(splitAltPersonNames.get(2));
-                                for (int j = 3; j < splitAltPersonNames.size(); j++) {
-                                    sb.append(' ').append(splitAltPersonNames.get(j));
-                                }
-                                names[2] = sb.toString();
-                                break;
-                            }
-                            names[i] = splitAltPersonNames.get(i);
-                        }
-                        Optional<YAltPerson> altPersonOptional = person.getAltPeople().stream()
-                                .filter(yAltPerson -> StringUtils.equalsIgnoreCase(yAltPerson.getFirstName(), names[0]) &&
-                                        StringUtils.equalsIgnoreCase(yAltPerson.getLastName(), names[1]) &&
-                                        StringUtils.equalsIgnoreCase(yAltPerson.getPatName(), names[2]))
-                                .findFirst();
+					if (!StringUtils.isBlank(r.getAlternateName())) {
+						List<String> splitAltPersonNames = Arrays.asList(r.getAlternateName().split("[ ]+"));
 
-                        YAltPerson newAltPerson = altPersonOptional.orElseGet(YAltPerson::new);
-                        addSource(newAltPerson.getImportSources(), source);
-                        newAltPerson.setFirstName(UtilString.toUpperCase(names[0]));
-                        newAltPerson.setLastName(UtilString.toUpperCase(names[1]));
-                        newAltPerson.setPatName(UtilString.toUpperCase(names[2]));
-                        newAltPerson.setLanguage("EN");
+						String[] names = new String[3];
+						for (int i = 0; i < splitAltPersonNames.size(); i++) {
+							if (i == 2) {
+								StringBuilder sb = new StringBuilder(splitAltPersonNames.get(2));
+								for (int j = 3; j < splitAltPersonNames.size(); j++) {
+									sb.append(' ').append(splitAltPersonNames.get(j));
+								}
+								names[2] = sb.toString();
+								break;
+							}
+							names[i] = splitAltPersonNames.get(i);
+						}
+						Optional<YAltPerson> altPersonOptional = person.getAltPeople().parallelStream()
+								.filter(yAltPerson -> StringUtils.equalsIgnoreCase(yAltPerson.getFirstName(), names[0]) &&
+										StringUtils.equalsIgnoreCase(yAltPerson.getLastName(), names[1]) &&
+										StringUtils.equalsIgnoreCase(yAltPerson.getPatName(), names[2]))
+								.findFirst();
 
-                        if (altPersonOptional.isEmpty()) {
-                            newAltPerson.setPerson(person);
-                            person.getAltPeople().add(newAltPerson);
-                        }
-                    }
+						YAltPerson newAltPerson = altPersonOptional.orElseGet(YAltPerson::new);
+						addSource(newAltPerson.getImportSources(), source);
+						newAltPerson.setFirstName(UtilString.toUpperCase(names[0]));
+						newAltPerson.setLastName(UtilString.toUpperCase(names[1]));
+						newAltPerson.setPatName(UtilString.toUpperCase(names[2]));
+						newAltPerson.setLanguage("EN");
 
-                    if (!StringUtils.isBlank(r.getEmail())) {
-                        Optional<YEmail> emailOptional = person.getEmails()
-                                .stream()
-                                .filter(e -> StringUtils.equalsIgnoreCase(r.getEmail(), e.getEmail()))
-                                .findAny();
-                        YEmail email = emailOptional.orElseGet(YEmail::new);
-                        addSource(email.getImportSources(), source);
-                        email.setEmail(UtilString.toLowerCase(r.getEmail()));
+						if (altPersonOptional.isEmpty()) {
+							newAltPerson.setPerson(person);
+							person.getAltPeople().add(newAltPerson);
+						}
+					}
 
-                        if (emailOptional.isEmpty()) {
-                            email.setPerson(person);
-                            person.getEmails().add(email);
-                        }
-                    }
-                    if (!cached) {
-                        personList.add(person);
-                        yinnList.add(yinn);
-                        counter[0]++;
-                    }
-                }
+					if (!StringUtils.isBlank(r.getEmail())) {
+						Optional<YEmail> emailOptional = person.getEmails()
+								.parallelStream()
+								.filter(e -> StringUtils.equalsIgnoreCase(r.getEmail(), e.getEmail()))
+								.findAny();
+						YEmail email = emailOptional.orElseGet(YEmail::new);
+						addSource(email.getImportSources(), source);
+						email.setEmail(UtilString.toLowerCase(r.getEmail()));
 
-            });
+						if (emailOptional.isEmpty()) {
+							email.setPerson(person);
+							person.getEmails().add(email);
+						}
+					}
+					if (!cached) {
+						personList.add(person);
+						yinnList.add(yinn);
+						counter[0]++;
+					}
+				}
+			});
 
-            ypr.saveAll(personList);
-            emnService.enrichMonitoringNotification(personList);
+			ypr.saveAll(personList);
+			emnService.enrichMonitoringNotification(personList);
 
 
-            onePage = cr.findAllByRevision(revision, pageRequest);
+			onePage = cr.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
-                    CONTRAGENT, ENRICHER, startTime, null, null);
-            Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
-        }
+			statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
+			                                CONTRAGENT, ENRICHER, startTime, null, null);
+			Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
+		}
 
-        logFinish(CONTRAGENT, counter[0]);
+		logFinish(CONTRAGENT, counter[0]);
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
-                CONTRAGENT, ENRICHER, startTime, LocalDateTime.now(),
-                importedRecords(counter[0]));
-        Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
-    }
+		statusLogger = new StatusLogger(portion, 100L, "%",
+		                                CONTRAGENT, ENRICHER, startTime, LocalDateTime.now(),
+		                                importedRecords(counter[0]));
+		Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
+	}
 
-    private void baseDirectorEnricher(UUID revision) {
+    private void baseDirectorEnricher(UUID portion) {
         logStart(BASE_DIRECTOR);
 
         LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
                 BASE_DIRECTOR, ENRICHER, startTime, null, null);
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
@@ -765,26 +857,27 @@ public class EnricherServiceImpl implements EnricherService {
         long[] wrongCounter = new long[1];
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<BaseDirector> onePage = baseDirectorRepository.findAllByRevision(revision, pageRequest);
-        String fileName = fileFormatUtil.getLogFileName(revision.toString());
+        Page<BaseDirector> onePage = baseDirectorRepository.findAllByPortionId(portion, pageRequest);
+        long count = baseDirectorRepository.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DIRECTOR, revision));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DIRECTOR, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_DIRECTOR);
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            Set<YManager> managerList = new HashSet<>();
+            Set<YCompanyRelation> companyRelationSet = new HashSet<>();
 
             onePage.forEach(r -> {
                 if (!StringUtils.isBlank(r.getInn()) && !StringUtils.isBlank(r.getOkpo())) {
                     String okpo = String.format("%08d", Long.parseLong(r.getOkpo().replaceAll(ALL_NOT_NUMBER, "")));
                     String inn = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getInn().replaceAll(ALL_NOT_NUMBER, "")));
-                    YManager manager;
+                    YCompanyRelation yCompanyRelation;
                     if (isValidInn(inn, null, logger, wrongCounter, counter)
                             && isValidOkpo(okpo, logger, wrongCounter, counter)) {
-                        manager = addManager(okpo, inn, DIRECTOR, source, managerList);
-                        managerList.add(manager);
+                        yCompanyRelation = addCompanyRelation(okpo, inn, DIRECTOR, source, companyRelationSet);
+                        companyRelationSet.add(yCompanyRelation);
                     }
                 } else {
                     logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {} and OKPO: {}", r.getInn(), r.getOkpo()), "Empty INN or OKPO");
@@ -793,11 +886,11 @@ public class EnricherServiceImpl implements EnricherService {
                 counter[0]++;
             });
 
-            yManagerRepository.saveAll(managerList);
+            yCompanyRelationRepository.saveAll(companyRelationSet);
 
-            onePage = baseDirectorRepository.findAllByRevision(revision, pageRequest);
+            onePage = baseDirectorRepository.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
                     BASE_DIRECTOR, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
@@ -805,18 +898,18 @@ public class EnricherServiceImpl implements EnricherService {
         logFinish(BASE_DIRECTOR, counter[0]);
         logger.finish();
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
+        statusLogger = new StatusLogger(portion, 100L, "%",
                 BASE_DIRECTOR, ENRICHER, startTime,
                 LocalDateTime.now(),
                 importedRecords(counter[0]));
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
     }
 
-    private void baseCreatorEnricher(UUID revision) {
+    private void baseCreatorEnricher(UUID portion) {
         logStart(BASE_CREATOR);
 
         LocalDateTime startTime = LocalDateTime.now();
-        StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
                 BASE_CREATOR, ENRICHER, startTime, null, null);
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
 
@@ -824,26 +917,27 @@ public class EnricherServiceImpl implements EnricherService {
         long[] wrongCounter = new long[1];
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<BaseCreator> onePage = baseCreatorRepository.findAllByRevision(revision, pageRequest);
-        String fileName = fileFormatUtil.getLogFileName(revision.toString());
+        Page<BaseCreator> onePage = baseCreatorRepository.findAllByPortionId(portion, pageRequest);
+        long count = baseCreatorRepository.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_CREATOR, revision));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_CREATOR, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_CREATOR);
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            Set<YManager> managerList = new HashSet<>();
+            Set<YCompanyRelation> yCompanyRelationSet = new HashSet<>();
 
             onePage.forEach(r -> {
                 if (!StringUtils.isBlank(r.getInn()) && !StringUtils.isBlank(r.getOkpo())) {
                     String okpo = String.format("%08d", Long.parseLong(r.getOkpo().replaceAll(ALL_NOT_NUMBER, "")));
                     String inn = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getInn().replaceAll(ALL_NOT_NUMBER, "")));
-                    YManager manager;
+                    YCompanyRelation yCompanyRelation;
                     if (isValidInn(inn, null, logger, wrongCounter, counter)
                             && isValidOkpo(okpo, logger, wrongCounter, counter)) {
-                        manager = addManager(okpo, inn, CREATOR, source, managerList);
-                        managerList.add(manager);
+                        yCompanyRelation = addCompanyRelation(okpo, inn, CREATOR, source, yCompanyRelationSet);
+                        yCompanyRelationSet.add(yCompanyRelation);
                     }
                 } else {
                     logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {} and OKPO: {}", r.getInn(), r.getOkpo()), "Empty INN or OKPO");
@@ -852,11 +946,11 @@ public class EnricherServiceImpl implements EnricherService {
                 counter[0]++;
             });
 
-            yManagerRepository.saveAll(managerList);
+            yCompanyRelationRepository.saveAll(yCompanyRelationSet);
 
-            onePage = baseCreatorRepository.findAllByRevision(revision, pageRequest);
+            onePage = baseCreatorRepository.findAllByPortionId(portion, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
                     BASE_CREATOR, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
@@ -864,9 +958,98 @@ public class EnricherServiceImpl implements EnricherService {
         logFinish(BASE_CREATOR, counter[0]);
         logger.finish();
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
+        statusLogger = new StatusLogger(portion, 100L, "%",
                 BASE_CREATOR, ENRICHER, startTime,
                 LocalDateTime.now(),
+                importedRecords(counter[0]));
+        Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
+    }
+
+    public void govua10Enricher(UUID portion) {
+        logStart(GOVUA10);
+
+        LocalDateTime startTime = LocalDateTime.now();
+        StatusLogger statusLogger = new StatusLogger(portion, 0L, "%",
+                GOVUA10, ENRICHER, startTime, null, null);
+        Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
+
+        long[] counter = new long[1];
+        long[] wrongCounter = new long[1];
+
+        Pageable pageRequest = PageRequest.of(0, pageSize);
+        log.info("before PageRequest.");
+        Page<Govua10> onePage = govua10Repository.findAllByPortionId(portion, pageRequest);
+        log.info("after pageReqest : {}", !onePage.isEmpty());
+        long count = govua10Repository.countAllByPortionId(portion);
+        String fileName = fileFormatUtil.getLogFileName(portion.toString());
+        DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA10, portion));
+
+        ImportSource source = isr.findImportSourceByName("govua10_t");
+
+        while (!onePage.isEmpty()) {
+            pageRequest = pageRequest.next();
+            List<YPerson> personList = new ArrayList<>();
+
+            onePage.forEach(r -> {
+                findCopy = false;
+                YPerson person = new YPerson();
+
+                if (r.getNumber().length() <= 6) {
+                    String passportNo = r.getNumber();
+                    String passportSerial = r.getSeries();
+                    if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                        passportSerial = transliterationToCyrillicLetters(passportSerial);
+                        int number = Integer.parseInt(passportNo);
+                        YPassport passport = new YPassport();
+                        passport.setSeries(passportSerial);
+                        passport.setNumber(number);
+                        passport.setAuthority(null);
+                        passport.setIssued(null);
+                        passport.setEndDate(r.getModified());
+                        passport.setRecordNumber(null);
+                        passport.setType(DOMESTIC_PASSPORT);
+                        passport.setValidity(false);
+                        person = addPassport(passport, personList, source, person);
+                    }
+                } else if (r.getNumber().length() > 6) {
+                    String passportNo = r.getNumber();
+                    if (isValidIdPassport(passportNo, null, wrongCounter, counter, logger)) {
+                        int number = Integer.parseInt(passportNo);
+                        YPassport passport = new YPassport();
+                        passport.setSeries(null);
+                        passport.setNumber(number);
+                        passport.setAuthority(null);
+                        passport.setIssued(null);
+                        passport.setEndDate(r.getModified());
+                        passport.setRecordNumber(null);
+                        passport.setType(IDCARD_PASSPORT);
+                        passport.setValidity(false);
+                        person = addPassport(passport, personList, source, person);
+                    }
+                }
+                person = addPerson(personList, person, source);
+                personList.add(person);
+                counter[0]++;
+            });
+            log.info("before save.");
+            ypr.saveAll(personList);
+            log.info("after save.");
+            emnService.enrichMonitoringNotification(personList);
+            log.info("before pageReqest.");
+            onePage = govua10Repository.findAllByPortionId(portion, pageRequest);
+            log.info("after pageReqest : {}", !onePage.isEmpty());
+
+            statusLogger = new StatusLogger(portion, counter[0] * 100L / count, PERCENT,
+                    GOVUA10, ENRICHER, startTime, null, null);
+            Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
+        }
+
+        logFinish(GOVUA10, counter[0]);
+        logger.finish();
+
+        statusLogger = new StatusLogger(portion, 100L, "%",
+                GOVUA10, ENRICHER, startTime, LocalDateTime.now(),
                 importedRecords(counter[0]));
         Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
     }
@@ -884,6 +1067,7 @@ public class EnricherServiceImpl implements EnricherService {
         FileDescription file = fileDescriptionRepository.findByUuid(revision).orElseThrow(() ->
                 new RuntimeException("Can't find file with id = " + revision));
         Page<ManualPerson> onePage = manualPersonRepository.findAllByUuid(file, pageRequest);
+        long count = manualPersonRepository.countAllByUuid(file);
         String fileName = fileFormatUtil.getLogFileName(revision.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
                 Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, MANUAL_PERSON, revision));
@@ -893,70 +1077,43 @@ public class EnricherServiceImpl implements EnricherService {
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             List<YPerson> personList = new ArrayList<>();
-            Set<YINN> yinnList = new HashSet<>();
 
             onePage.forEach(r -> {
+                findCopy = false;
                 String lastName = UtilString.toUpperCase(r.getLnameUk());
                 String firstName = UtilString.toUpperCase(r.getFnameUk());
                 String patName = UtilString.toUpperCase(r.getPnameUk());
                 LocalDate birthday = stringToDate(r.getBirthday());
 
-                YPerson person = null;
-                if (!StringUtils.isBlank(lastName)) {
-                    Long inn = null;
-                    if (!StringUtils.isBlank(r.getOkpo())) {
-                        String code = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getOkpo().replaceAll(ALL_NOT_NUMBER, "")));
-                        if (isValidInn(code, stringToDate(r.getBirthday()), logger, wrongCounter, counter))
-                            inn = Long.parseLong(code);
-                    }
+                YPerson person = new YPerson();
+                person.setLastName(lastName);
+                person.setFirstName(firstName);
+                person.setPatName(patName);
+                person.setBirthdate(birthday);
 
-                    person = addPerson(yinnList, personList, inn,
-                            lastName, firstName, patName, birthday, source);
-
-                    Set<String> addresses = new HashSet<>();
-                    if (!StringUtils.isBlank(r.getAddress()))
-                        addresses.add(r.getAddress().toUpperCase());
-
-                    addAddresses(person, addresses, source);
-
-                    Set<String> phones = new HashSet<>();
-                    if (!StringUtils.isBlank(r.getPhone()))
-                        phones.add(r.getPhone().toUpperCase());
-
-                    addPhones(person, phones, source);
-
-                    Set<String> emails = new HashSet<>();
-                    if (!StringUtils.isBlank(r.getEmail()))
-                        emails.add(r.getEmail().toUpperCase());
-
-                    addEmails(person, emails, source);
-
-                    addTags(person, r.getTags(), source);
-
-                    addAltPerson(person, lastName, firstName, patName, "UK", source);
-                    if (!StringUtils.isBlank(r.getLnameRu()))
-                        addAltPerson(person, UtilString.toUpperCase(r.getLnameRu()),
-                                UtilString.toUpperCase(r.getFnameRu()),
-                                UtilString.toUpperCase(r.getPnameRu()), "RU", source);
-                    if (!StringUtils.isBlank(r.getLnameEn()))
-                        addAltPerson(person, UtilString.toUpperCase(r.getLnameEn()),
-                                UtilString.toUpperCase(r.getFnameEn()),
-                                UtilString.toUpperCase(r.getPnameEn()), "EN", source);
-
-                    if (!cachedCopy) {
-                        personList.add(person);
-                        counter[0]++;
+                if (!StringUtils.isBlank(r.getOkpo())) {
+                    String code = String.format(INN_FORMAT_REGEX, Long.parseLong(r.getOkpo().replaceAll(ALL_NOT_NUMBER, "")));
+                    if (isValidInn(code, stringToDate(r.getBirthday()), logger, wrongCounter, counter)) {
+                        long inn = Long.parseLong(code);
+                        person = addInn(inn, personList, source, person);
                     }
                 }
+
                 String passportNo = r.getPassLocalNum();
                 String passportSerial = r.getPassLocalSerial();
-                int number;
                 if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
                     passportSerial = transliterationToCyrillicLetters(passportSerial);
-                    number = Integer.parseInt(passportNo);
-                    addPassport(person, passportSerial, number, r.getPassLocalIssuer(),
-                            stringToDate(r.getPassLocalIssueDate()), null, DOMESTIC_PASSPORT, personList,
-                            wrongCounter, counter, logger, source);
+                    int number = Integer.parseInt(passportNo);
+                    YPassport passport = new YPassport();
+                    passport.setSeries(passportSerial);
+                    passport.setNumber(number);
+                    passport.setAuthority(null);
+                    passport.setIssued(null);
+                    passport.setEndDate(null);
+                    passport.setRecordNumber(null);
+                    passport.setType(DOMESTIC_PASSPORT);
+                    passport.setValidity(true);
+                    person = addPassport(passport, personList, source, person);
                 }
 
                 String passportRecNo;
@@ -967,21 +1124,69 @@ public class EnricherServiceImpl implements EnricherService {
                     if (isValidForeignPassport(passportNo, passportSerial, passportRecNo,
                             wrongCounter, counter, logger)) {
                         passportSerial = transliterationToLatinLetters(passportSerial);
-                        number = Integer.parseInt(passportNo);
-                        addPassport(person, passportSerial, number, r.getPassIntIssuer(),
-                                stringToDate(r.getPassIntIssueDate()), r.getPassIntRecNum(), FOREIGN_PASSPORT, personList,
-                                wrongCounter, counter, logger, source);
+                        int number = Integer.parseInt(passportNo);
+                        YPassport passport = new YPassport();
+                        passport.setSeries(passportSerial);
+                        passport.setNumber(number);
+                        passport.setAuthority(r.getPassIntIssuer());
+                        passport.setIssued(stringToDate(r.getPassIntIssueDate()));
+                        passport.setEndDate(null);
+                        passport.setRecordNumber(r.getPassIntRecNum());
+                        passport.setType(FOREIGN_PASSPORT);
+                        passport.setValidity(true);
+                        person = addPassport(passport, personList, source, person);
                     }
                 }
 
                 passportNo = r.getPassIdNum();
                 passportRecNo = r.getPassIdRecNum();
                 if (isValidIdPassport(passportNo, passportRecNo, wrongCounter, counter, logger)) {
-                    number = Integer.parseInt(passportNo);
-                    addPassport(person, null, number, r.getPassIdIssuer(),
-                            stringToDate(r.getPassIdIssueDate()), r.getPassIdRecNum(), IDCARD_PASSPORT, personList,
-                            wrongCounter, counter, logger, source);
+                    int number = Integer.parseInt(passportNo);
+                    YPassport passport = new YPassport();
+                    passport.setSeries(null);
+                    passport.setNumber(number);
+                    passport.setAuthority(r.getPassIdIssuer());
+                    passport.setIssued(stringToDate(r.getPassIdIssueDate()));
+                    passport.setEndDate(null);
+                    passport.setRecordNumber(r.getPassIdRecNum());
+                    passport.setType(IDCARD_PASSPORT);
+                    passport.setValidity(true);
+                    person = addPassport(passport, personList, source, person);
                 }
+
+                person = addPerson(personList, person, source);
+
+                Set<String> addresses = new HashSet<>();
+                if (!StringUtils.isBlank(r.getAddress()))
+                    addresses.add(r.getAddress().toUpperCase());
+
+                addAddresses(person, addresses, source);
+
+                Set<String> phones = new HashSet<>();
+                if (!StringUtils.isBlank(r.getPhone()))
+                    phones.add(r.getPhone().toUpperCase());
+
+                addPhones(person, phones, source);
+
+                Set<String> emails = new HashSet<>();
+                if (!StringUtils.isBlank(r.getEmail()))
+                    emails.add(r.getEmail().toUpperCase());
+
+                addEmails(person, emails, source);
+
+                addTags(person, r.getTags(), source);
+
+                if (!StringUtils.isBlank(r.getLnameRu()))
+                    addAltPerson(person, UtilString.toUpperCase(r.getLnameRu()),
+                            UtilString.toUpperCase(r.getFnameRu()),
+                            UtilString.toUpperCase(r.getPnameRu()), "RU", source);
+                if (!StringUtils.isBlank(r.getLnameEn()))
+                    addAltPerson(person, UtilString.toUpperCase(r.getLnameEn()),
+                            UtilString.toUpperCase(r.getFnameEn()),
+                            UtilString.toUpperCase(r.getPnameEn()), "EN", source);
+
+                personList.add(person);
+                counter[0]++;
             });
 
             ypr.saveAll(personList);
@@ -989,7 +1194,7 @@ public class EnricherServiceImpl implements EnricherService {
 
             onePage = manualPersonRepository.findAllByUuid(file, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+            statusLogger = new StatusLogger(revision, counter[0] * 100L / count, PERCENT,
                     MANUAL_PERSON, ENRICHER, startTime, null, null);
             Utils.sendRabbitMQMessage(queueName, Utils.objectToJsonString(statusLogger));
         }
@@ -1014,142 +1219,180 @@ public class EnricherServiceImpl implements EnricherService {
     private void addAltPerson(YPerson person, String lastName, String firstName,
                               String patName, String language,
                               ImportSource source) {
-        if (!(Objects.equals(person.getLastName(), lastName)
-                && Objects.equals(person.getFirstName(), firstName)
-                && Objects.equals(person.getPatName(), patName))) {
-            Optional<YAltPerson> altPersonOptional = person.getAltPeople()
-                    .parallelStream()
-                    .filter(p -> Objects.equals(p.getPerson().getLastName(), lastName)
-                            && Objects.equals(p.getPerson().getFirstName(), firstName)
-                            && Objects.equals(p.getPerson().getPatName(), patName))
-                    .findAny();
-            YAltPerson altPerson = altPersonOptional.orElseGet(YAltPerson::new);
-            addSource(altPerson.getImportSources(), source);
-            altPerson.setFirstName(firstName);
-            altPerson.setLastName(lastName);
-            altPerson.setPatName(patName);
-            altPerson.setLanguage(language);
+        Optional<YAltPerson> altPersonOptional;
+        if (person.getId() != null)
+            person = ypr.findWithAltPeopleById(person.getId()).orElse(person);
 
-            if (altPersonOptional.isEmpty()) {
-                altPerson.setPerson(person);
-                person.getAltPeople().add(altPerson);
-            }
+        altPersonOptional = person.getAltPeople()
+                .parallelStream()
+                .filter(p -> (Objects.equals(p.getLastName(), lastName)
+                        && Objects.equals(p.getFirstName(), firstName)
+                        && Objects.equals(p.getPatName(), patName)))
+                .findAny();
+        YAltPerson altPerson = altPersonOptional.orElseGet(YAltPerson::new);
+        addSource(altPerson.getImportSources(), source);
+
+        altPerson.setFirstName(chooseNotNull(altPerson.getFirstName(), firstName));
+        altPerson.setLastName(chooseNotNull(altPerson.getLastName(), lastName));
+        altPerson.setPatName(chooseNotNull(altPerson.getPatName(), patName));
+        altPerson.setLanguage(chooseNotNull(altPerson.getLanguage(), language));
+
+        if (altPersonOptional.isEmpty()) {
+            altPerson.setPerson(person);
+            person.getAltPeople().add(altPerson);
         }
     }
 
-    private void addPassport(YPerson person, String passportSeries,
-                             Integer number, String authority,
-                             LocalDate issued, String recordNumber,
-                             String passportType, List<YPerson> personList, long[] wrongCounter,
-                             long[] counter, DefaultErrorLogger logger,
-                             ImportSource source) {
+    private YPerson addPassport(YPassport ypassport, List<YPerson> personList,
+                                ImportSource source, YPerson person) {
         YPassport passport;
-        YPerson findPerson = null;
-        Optional<YPassport> passportFindOptional = findPassportDuplicate(passportSeries, number, passportType, personList);
-        if (passportFindOptional.isEmpty()) yPassportRepository.findByTypeAndNumberAndSeries(passportType, number, passportSeries);
-        if (passportFindOptional.isPresent()) {
-            passport = passportFindOptional.get();
-            findPerson = passport.getPerson();
+        if (person.getId() != null)
+            person = ypr.findWithPassportsById(person.getId()).orElse(person);
+
+        List<YPerson> yPersonList = personList.parallelStream()
+                .filter(p -> p.getPassports().contains(ypassport))
+                .collect(Collectors.toList());
+
+        Optional<YPassport> optionalYPassport = yPassportRepository.findByTypeAndNumberAndSeries(ypassport.getType(), ypassport.getNumber(), ypassport.getSeries());
+        optionalYPassport.ifPresent(pass -> yPersonList.addAll(ypr.findByPassportsContains(pass)));
+
+        if (optionalYPassport.isEmpty() && !yPersonList.isEmpty())
+            optionalYPassport = yPersonList.get(0).getPassports().parallelStream().filter(pas -> Objects.equals(pas.getType(), ypassport.getType())
+                    && Objects.equals(pas.getSeries(), ypassport.getSeries())
+                    && Objects.equals(pas.getNumber(), ypassport.getNumber())).findAny();
+        passport = optionalYPassport.orElseGet(YPassport::new);
+        if (passport.getId() != null)
+            passport = yPassportRepository.findById(passport.getId()).orElseGet(YPassport::new);
+
+        passport.setSeries(chooseNotBlank(passport.getSeries(), ypassport.getSeries()));
+        passport.setNumber(ypassport.getNumber());
+        passport.setAuthority(chooseNotBlank(passport.getAuthority(), ypassport.getAuthority()));
+        passport.setIssued(chooseNotNull(passport.getIssued(), ypassport.getIssued()));
+        passport.setEndDate(chooseNotNull(passport.getEndDate(), ypassport.getEndDate()));
+        passport.setRecordNumber(chooseNotBlank(passport.getRecordNumber(), ypassport.getRecordNumber()));
+        passport.setType(ypassport.getType());
+        passport.setValidity(ypassport.getValidity());
+
+        Optional<YPerson> optionalYPerson = Optional.empty();
+        if (!yPersonList.isEmpty()) {
+            YPerson finalPerson = person;
+            optionalYPerson = yPersonList.parallelStream().filter(p -> isEqualsPerson(p, finalPerson)).findAny();
         }
 
-        if (findPerson != null && person != null && (!(Objects.equals(person.getLastName(), findPerson.getLastName())
-                && Objects.equals(person.getFirstName(), findPerson.getFirstName())
-                && Objects.equals(person.getPatName(), findPerson.getPatName()))
-                || (person.getBirthdate() != null && findPerson.getBirthdate() != null
-                && !person.getBirthdate().equals(findPerson.getBirthdate())))) {
-            logError(logger, (counter[0] + 1L), "First Person: " + person
-                            + System.lineSeparator() + "Second Person: " + findPerson,
-                    "Duplicate passport with different owners");
-            wrongCounter[0]++;
-            addSource(passportFindOptional.get().getImportSources(), source);
-        } else {
-            passport = passportFindOptional.orElseGet(YPassport::new);
-            addSource(passport.getImportSources(), source);
+        if (optionalYPerson.isPresent()) {
+            YPerson findPerson = optionalYPerson.get();
+            findPerson.setLastName(chooseNotNull(findPerson.getLastName(), person.getLastName()));
+            findPerson.setFirstName(chooseNotNull(findPerson.getFirstName(), person.getFirstName()));
+            findPerson.setPatName(chooseNotNull(findPerson.getPatName(), person.getPatName()));
+            findPerson.setBirthdate(chooseNotNull(findPerson.getBirthdate(), person.getBirthdate()));
 
-            passport.setSeries(chooseNotBlank(passport.getSeries(), passportSeries));
-            passport.setNumber(number);
-            passport.setAuthority(chooseNotBlank(passport.getAuthority(), authority));
-            passport.setIssued(chooseNotNull(passport.getIssued(), issued));
-            passport.setEndDate(null);
-            passport.setRecordNumber(chooseNotBlank(passport.getRecordNumber(), recordNumber));
-            passport.setType(passportType);
-            passport.setValidity(true);
-            passport.setPerson(chooseNotNull(passport.getPerson(), person));
-
-            if (person != null)
-                person.getPassports().add(passport);
-            else yPassportRepository.save(passport);
-        }
+            person = findPerson;
+            findCopy = true;
+            personList.remove(findPerson);
+        } else if (optionalYPassport.isPresent() && passport.getId() == null) yPassportRepository.save(passport);
+        person.getPassports().add(passport);
+        addSource(passport.getImportSources(), source);
+        return person;
     }
 
-    private Optional<YPassport> findPassportDuplicate(String passportSeries,
-                                                      Integer number,
-                                                      String passportType, List<YPerson> personList) {
-        Optional<YPassport> optionalYPassport = personList.stream()
-                .flatMap(p -> p.getPassports().stream())
-                .filter(p -> Objects.equals(p.getType(), passportType)
-                        && Objects.equals(p.getSeries(), passportSeries)
-                        && Objects.equals(p.getNumber(), number)).findAny();
-        if (optionalYPassport.isEmpty())
-            optionalYPassport = yPassportRepository.findByTypeAndNumberAndSeries(passportType, number, passportSeries);
-        return optionalYPassport;
+    private YPerson addInn(Long inn, List<YPerson> personList,
+                           ImportSource source, YPerson person) {
+        YINN yinn;
+        Optional<YINN> optionalYINN = personList.parallelStream()
+                .flatMap(p -> p.getInns().parallelStream())
+                .filter(p -> Objects.equals(p.getInn(), inn)).findAny();
+        if (optionalYINN.isEmpty())
+            optionalYINN = yir.findByInn(inn);
+
+        yinn = optionalYINN.orElseGet(YINN::new);
+        if (yinn.getId() != null) yinn = yir.findById(yinn.getId()).orElse(yinn);
+
+        addSource(yinn.getImportSources(), source);
+
+        yinn.setInn(chooseNotNull(yinn.getInn(), inn));
+
+        if (yinn.getPerson() != null && isEqualsPerson(yinn.getPerson(), person)) {
+            YPerson oldPerson = yinn.getPerson();
+            oldPerson.setLastName(chooseNotNull(oldPerson.getLastName(), person.getLastName()));
+            oldPerson.setFirstName(chooseNotNull(oldPerson.getFirstName(), person.getFirstName()));
+            oldPerson.setPatName(chooseNotNull(oldPerson.getPatName(), person.getPatName()));
+            oldPerson.setBirthdate(chooseNotNull(oldPerson.getBirthdate(), person.getBirthdate()));
+
+            person = oldPerson;
+            findCopy = true;
+            personList.remove(oldPerson);
+        } else if (yinn.getPerson() != null) {
+            addAltPerson(yinn.getPerson(), person.getLastName(), person.getFirstName(), person.getPatName(), "UA", source);
+            person = yinn.getPerson();
+        }
+
+        if (optionalYINN.isEmpty()) {
+            person.getInns().add(yinn);
+            yinn.setPerson(person);
+        }
+        return person;
+    }
+
+    private boolean isEqualsPerson(YPerson person, YPerson newPerson) {
+        return !(newPerson != null && person != null
+                && ((person.getLastName() != null && newPerson.getLastName() != null
+                && !person.getLastName().isBlank() && !newPerson.getLastName().isBlank() && !person.getLastName().equals(newPerson.getLastName()))
+                || (person.getFirstName() != null && newPerson.getFirstName() != null
+                && !person.getFirstName().isBlank() && !newPerson.getFirstName().isBlank() && !person.getFirstName().equals(newPerson.getFirstName()))
+                || (person.getPatName() != null && newPerson.getPatName() != null
+                && !person.getPatName().isBlank() && !newPerson.getPatName().isBlank() && !person.getPatName().equals(newPerson.getPatName()))
+                || (person.getBirthdate() != null && newPerson.getBirthdate() != null && !person.getBirthdate().equals(newPerson.getBirthdate()))));
     }
 
     private void addAddresses(YPerson person, Set<String> addresses, ImportSource source) {
         addresses.forEach(a -> {
             Optional<YAddress> addressOptional = person.getAddresses()
-                    .stream()
+                    .parallelStream()
                     .filter(adr -> Objects.equals(adr.getAddress(), a))
                     .findAny();
             YAddress address = addressOptional.orElseGet(YAddress::new);
             addSource(address.getImportSources(), source);
             address.setAddress(chooseNotBlank(address.getAddress(), a));
 
-            if (addressOptional.isEmpty()) {
-                address.setPerson(person);
-                person.getAddresses().add(address);
-            }
+            address.setPerson(person);
+            person.getAddresses().add(address);
         });
     }
 
     private void addPhones(YPerson person, Set<String> phones, ImportSource source) {
         phones.forEach(p -> {
             Optional<YPhone> phonesOptional = person.getPhones()
-                    .stream()
+                    .parallelStream()
                     .filter(ph -> Objects.equals(ph.getPhone(), p))
                     .findAny();
             YPhone phone = phonesOptional.orElseGet(YPhone::new);
             addSource(phone.getImportSources(), source);
             phone.setPhone(chooseNotBlank(phone.getPhone(), p));
 
-            if (phonesOptional.isEmpty()) {
-                phone.setPerson(person);
-                person.getPhones().add(phone);
-            }
+            phone.setPerson(person);
+            person.getPhones().add(phone);
         });
     }
 
     private void addEmails(YPerson person, Set<String> emails, ImportSource source) {
         emails.forEach(e -> {
             Optional<YEmail> emailOptional = person.getEmails()
-                    .stream()
+                    .parallelStream()
                     .filter(em -> Objects.equals(em.getEmail(), e))
                     .findAny();
             YEmail email = emailOptional.orElseGet(YEmail::new);
             addSource(email.getImportSources(), source);
             email.setEmail(chooseNotBlank(email.getEmail(), e));
 
-            if (emailOptional.isEmpty()) {
-                email.setPerson(person);
-                person.getEmails().add(email);
-            }
+            email.setPerson(person);
+            person.getEmails().add(email);
         });
     }
 
     private void addTags(YPerson person, Set<ManualTag> tags, ImportSource source) {
         tags.forEach(t -> {
             Optional<YTag> tagOptional = person.getTags()
-                    .stream()
+                    .parallelStream()
                     .filter(tg -> Objects.equals(tg.getName(), UtilString.toUpperCase(t.getMkId()))
                             && Objects.equals(tg.getAsOf(), stringToDate(t.getMkStart()))
                             && Objects.equals(tg.getUntil(), stringToDate(t.getMkExpire()))).findAny();
@@ -1162,119 +1405,96 @@ public class EnricherServiceImpl implements EnricherService {
                 tag.setUntil(chooseNotNull(tag.getUntil(), stringToDate(t.getMkExpire())));
                 tag.setSource(chooseNotBlank(tag.getSource(), UtilString.toUpperCase(t.getMkSource())));
 
-
-                if (tagOptional.isEmpty()) {
-                    tag.setPerson(person);
-                    person.getTags().add(tag);
-                }
+                tag.setPerson(person);
+                person.getTags().add(tag);
             }
         });
     }
 
-    private YPerson addPerson(Set<YINN> yinnList, List<YPerson> personList, Long inn,
-                              String lastName, String firstName, String patName, LocalDate birthDate,
-                              ImportSource source) {
-
+    private YPerson addPerson(List<YPerson> personList, YPerson yperson, ImportSource source) {
         boolean find = false;
-        cachedCopy = false;
+        YPerson person = yperson;
 
-        YPerson person = null;
-        YINN yinn = null;
-
-        if (inn != null) {
-            Optional<YINN> yinnCachedOptional = yinnList.parallelStream()
-                    .filter(i -> Objects.equals(i.getInn(), inn)).findAny();
-            if (yinnCachedOptional.isPresent()) {
-                yinn = yinnCachedOptional.get();
-                addSource(yinn.getImportSources(), source);
-                cachedCopy = true;
-                if (yinnCachedOptional.get().getPerson() != null) {
-                    person = yinnCachedOptional.get().getPerson();
-                    find = true;
-                }
-            }
-
-            if (!find) {
-                Optional<YINN> yinnSavedOptional = yir.findByInn(inn);
-                if (yinnSavedOptional.isPresent()) {
-                    yinn = yinnSavedOptional.get();
-                    addSource(yinn.getImportSources(), source);
-                    if (yinnSavedOptional.get().getPerson() != null) {
-                        person = yinnSavedOptional.get().getPerson();
-                        find = true;
-                    }
-                }
-            }
-        }
-
-        if (!find) {
-            List<YPerson> yPersonCachedList = personList.parallelStream().filter(p -> Objects.equals(p.getLastName(), lastName)
-                            && Objects.equals(p.getFirstName(), firstName)
-                            && Objects.equals(p.getPatName(), patName)
-                            && Objects.equals(birthDate, p.getBirthdate()))
+        if (!findCopy && yperson.getFirstName() != null && yperson.getLastName() != null && yperson.getPatName() != null
+                && !yperson.getFirstName().isBlank() && !yperson.getLastName().isBlank() && !yperson.getPatName().isBlank()) {
+            List<YPerson> yPersonCachedList = personList.parallelStream().filter(p ->
+                            Objects.equals(p.getLastName(), yperson.getLastName())
+                                    && Objects.equals(p.getFirstName(), yperson.getFirstName())
+                                    && Objects.equals(p.getPatName(), yperson.getPatName())
+                                    && Objects.equals(yperson.getBirthdate(), p.getBirthdate()))
                     .collect(Collectors.toList());
             if (yPersonCachedList.size() == 1) {
                 person = yPersonCachedList.get(0);
-                cachedCopy = true;
+                findCopy = true;
                 find = true;
             }
 
-
             if (!find) {
-                List<YPerson> yPersonSavedList = ypr.findByLastNameAndFirstNameAndPatNameAndBirthdate(lastName,
-                        firstName, patName, birthDate);
-                if (yPersonSavedList.size() == 1) {
+                List<YPerson> yPersonSavedList = ypr.findByLastNameAndFirstNameAndPatNameAndBirthdate(yperson.getLastName(),
+                        yperson.getFirstName(), yperson.getPatName(), yperson.getBirthdate());
+                if (yPersonSavedList.size() == 1)
                     person = yPersonSavedList.get(0);
-                }
             }
-        }
 
-        if (person == null) {
-            person = new YPerson(UUID.randomUUID());
-            if (!StringUtils.isBlank(lastName)) person.setLastName(lastName.toUpperCase());
-            if (!StringUtils.isBlank(firstName)) person.setFirstName(firstName.toUpperCase());
-            if (!StringUtils.isBlank(patName)) person.setPatName(patName.toUpperCase());
+            if (!StringUtils.isBlank(yperson.getLastName()))
+                person.setLastName(chooseNotNull(person.getLastName(), yperson.getLastName().toUpperCase()));
+            if (!StringUtils.isBlank(yperson.getFirstName()))
+                person.setFirstName(chooseNotNull(person.getFirstName(), yperson.getFirstName().toUpperCase()));
+            if (!StringUtils.isBlank(yperson.getPatName()))
+                person.setPatName(chooseNotNull(person.getPatName(), yperson.getPatName().toUpperCase()));
+            person.setBirthdate(chooseNotNull(person.getBirthdate(), yperson.getBirthdate()));
         }
+        if (person.getId() == null) person.setId(UUID.randomUUID());
+        else person = ypr.findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(person.getId()).orElse(person);
 
-        if (yinn == null && inn != null) {
-            yinn = new YINN();
-            addSource(yinn.getImportSources(), source);
-            yinn.setInn(inn);
-            yinn.setPerson(person);
-            yinn.getPerson().getInns().add(yinn);
-            yinnList.add(yinn);
-        }
-
-        if (inn != null) yinn.setPerson(person);
-        person.setBirthdate(chooseNotNull(person.getBirthdate(), birthDate));
         addSource(person.getImportSources(), source);
+        personList.remove(person);
         return person;
     }
 
-    private YManager addManager(String okpo, String inn, String type, ImportSource source,
-                                Set<YManager> managersList) {
-        Optional<YINN> yinnSavedOptional = yir.findByInn(Long.parseLong(inn));
-        YINN yinn = yinnSavedOptional.orElseGet(YINN::new);
-        yinn.setInn(Long.parseLong(inn));
+    private YCompanyRelation addCompanyRelation(String edrpou, String inn, String role, ImportSource source,
+                                                Set<YCompanyRelation> companyRelationSet) {
+        Optional<YINN> innSavedOptional = yir.findByInn(Long.parseLong(inn));
+        YINN yinn = innSavedOptional.orElseGet(YINN::new);
+        if (yinn.getId() != null)
+            yinn = yir.findById(yinn.getId()).orElse(yinn);
         addSource(yinn.getImportSources(), source);
-        yir.save(yinn);
+        yinn.setInn(Long.parseLong(inn));
 
-        YManagerType managerType = yManagerTypeRepository.findByType(type);
+        Optional<YPerson> personSavedOptional = Optional.empty();
+        if (yinn.getId() != null) personSavedOptional = ypr.findByInnsContains(yinn);
+        YPerson yPerson = personSavedOptional.orElseGet(YPerson::new);
+        yPerson.setId(UUID.randomUUID());
+        yPerson.getInns().add(yinn);
+        if (yPerson.getId() != null) {
+            yPerson = ypr.findWithSourcesById(yPerson.getId()).orElse(yPerson);
+        }
+        addSource(yPerson.getImportSources(), source);
+        ypr.save(yPerson);
 
-        Optional<YManager> yManagerOptional = managersList.stream()
-                .filter(m -> Objects.equals(m.getOkpo(), okpo)
-                        && Objects.equals(m.getInn().getInn(), Long.parseLong(inn))
-                        && Objects.equals(m.getType().getType(), type)).findAny();
-        if (yManagerOptional.isEmpty())
-            yManagerOptional = yManagerRepository.findByOkpoAndInnAndType(okpo, yinn, managerType);
+        Optional<YCompany> companySavedOptional = yCompanyRepository.findByEdrpou(Long.parseLong(edrpou));
+        YCompany yCompany = companySavedOptional.orElseGet(YCompany::new);
+        if (yCompany.getId() == null) yCompany.setId(UUID.randomUUID());
+        yCompany.setEdrpou(Long.parseLong(edrpou));
+        addSource(yCompany.getImportSources(), source);
+        yCompanyRepository.save(yCompany);
 
-        YManager manager = yManagerOptional.orElseGet(YManager::new);
-        if (manager.getId() == null) manager.setId(UUID.randomUUID());
-        manager.setOkpo(okpo);
-        manager.setInn(yinn);
-        manager.setType(managerType);
-        addSource(manager.getImportSources(), source);
-        return manager;
+        YCompanyRole companyRole = yCompanyRoleRepository.findByRole(role);
+
+        YPerson finalYPerson = yPerson;
+        Optional<YCompanyRelation> yCompanyRelationOptional = companyRelationSet.parallelStream()
+                .filter(mr -> Objects.equals(mr.getCompany(), yCompany)
+                        && Objects.equals(mr.getPerson(), finalYPerson)
+                        && Objects.equals(mr.getRole().getRole(), role)).findAny();
+        if (yCompanyRelationOptional.isEmpty())
+            yCompanyRelationOptional = yCompanyRelationRepository.findByCompanyAndPersonAndRole(yCompany, yPerson, companyRole);
+
+        YCompanyRelation yCompanyRelation = yCompanyRelationOptional.orElseGet(YCompanyRelation::new);
+        yCompanyRelation.setCompany(yCompany);
+        yCompanyRelation.setPerson(yPerson);
+        yCompanyRelation.setRole(companyRole);
+
+        return yCompanyRelation;
     }
 
     private LocalDate stringToDate(String date) {
@@ -1288,14 +1508,14 @@ public class EnricherServiceImpl implements EnricherService {
     }
 
     private String transliterationToCyrillicLetters(String serial) {
-        StringBuilder kirillSerial = new StringBuilder();
+        StringBuilder cyrillicSerial = new StringBuilder();
         if (!StringUtils.isBlank(serial))
             for (int i = 0; i < serial.length(); i++) {
                 int index = LATIN_LETTERS.indexOf(serial.charAt(i));
-                if (index > -1) kirillSerial.append(CYRILLIC_LETTERS.charAt(index));
-                else kirillSerial.append(serial.charAt(i));
+                if (index > -1) cyrillicSerial.append(CYRILLIC_LETTERS.charAt(index));
+                else cyrillicSerial.append(serial.charAt(i));
             }
-        return kirillSerial.toString();
+        return cyrillicSerial.toString();
     }
 
     private String transliterationToLatinLetters(String serial) {
@@ -1308,24 +1528,24 @@ public class EnricherServiceImpl implements EnricherService {
         return latinSerial.toString();
     }
 
-    private boolean isValidInn(String id, LocalDate birthDay, DefaultErrorLogger logger,
+    private boolean isValidInn(String inn, LocalDate birthDay, DefaultErrorLogger logger,
                                long[] wrongCounter, long[] counter) {
-        if (id.matches(INN_REGEX)) {
+        if (inn.matches(INN_REGEX)) {
             boolean isValidBirthDateInn = birthDay == null || Objects.equals(String.valueOf(birthDay.toEpochDay()
-                    - START_DATE.toEpochDay() + 1), id.substring(0, 5));
-            int controlNumber = ((-1 * Integer.parseInt(String.valueOf(id.charAt(0)))
-                    + 5 * Integer.parseInt(String.valueOf(id.charAt(1)))
-                    + 7 * Integer.parseInt(String.valueOf(id.charAt(2)))
-                    + 9 * Integer.parseInt(String.valueOf(id.charAt(3)))
-                    + 4 * Integer.parseInt(String.valueOf(id.charAt(4)))
-                    + 6 * Integer.parseInt(String.valueOf(id.charAt(5)))
-                    + 10 * Integer.parseInt(String.valueOf(id.charAt(6)))
-                    + 5 * Integer.parseInt(String.valueOf(id.charAt(7)))
-                    + 7 * Integer.parseInt(String.valueOf(id.charAt(8)))) % 11) % 10;
-            return Objects.equals(Integer.parseInt(String.valueOf(id.charAt(9))), controlNumber)
+                    - START_DATE.toEpochDay() + 1), inn.substring(0, 5));
+            int controlNumber = ((-1 * Integer.parseInt(String.valueOf(inn.charAt(0)))
+                    + 5 * Integer.parseInt(String.valueOf(inn.charAt(1)))
+                    + 7 * Integer.parseInt(String.valueOf(inn.charAt(2)))
+                    + 9 * Integer.parseInt(String.valueOf(inn.charAt(3)))
+                    + 4 * Integer.parseInt(String.valueOf(inn.charAt(4)))
+                    + 6 * Integer.parseInt(String.valueOf(inn.charAt(5)))
+                    + 10 * Integer.parseInt(String.valueOf(inn.charAt(6)))
+                    + 5 * Integer.parseInt(String.valueOf(inn.charAt(7)))
+                    + 7 * Integer.parseInt(String.valueOf(inn.charAt(8)))) % 11) % 10;
+            return Objects.equals(Integer.parseInt(String.valueOf(inn.charAt(9))), controlNumber)
                     && isValidBirthDateInn;
         }
-        logError(logger, (counter[0] + 1L), "INN: " + id, "Wrong INN");
+        logError(logger, (counter[0] + 1L), "INN: " + inn, "Wrong INN");
         wrongCounter[0]++;
         return false;
     }
@@ -1377,43 +1597,25 @@ public class EnricherServiceImpl implements EnricherService {
     private boolean isValidOkpo(String okpo, DefaultErrorLogger logger,
                                 long[] wrongCounter, long[] counter) {
         if (!StringUtils.isBlank(okpo) && okpo.matches(OKPO_REGEX)) {
+            int lnCs;
             int idk = Integer.parseInt(okpo);
-            Integer lnCs;
-            if (idk < 30000000 || idk > 60000000) {
-                lnCs = (Integer.parseInt(String.valueOf(okpo.charAt(0)))
-                        + Integer.parseInt(String.valueOf(okpo.charAt(1))) * 2
-                        + Integer.parseInt(String.valueOf(okpo.charAt(2))) * 3
-                        + Integer.parseInt(String.valueOf(okpo.charAt(3))) * 4
-                        + Integer.parseInt(String.valueOf(okpo.charAt(4))) * 5
-                        + Integer.parseInt(String.valueOf(okpo.charAt(5))) * 6
-                        + Integer.parseInt(String.valueOf(okpo.charAt(6))) * 7) % 11;
-            } else {
-                lnCs = ((Integer.parseInt(String.valueOf(okpo.charAt(0))) * 7
-                        + Integer.parseInt(String.valueOf(okpo.charAt(1)))
-                        + Integer.parseInt(String.valueOf(okpo.charAt(2))) * 2
-                        + Integer.parseInt(String.valueOf(okpo.charAt(3))) * 3
-                        + Integer.parseInt(String.valueOf(okpo.charAt(4))) * 4
-                        + Integer.parseInt(String.valueOf(okpo.charAt(5))) * 5
-                        + Integer.parseInt(String.valueOf(okpo.charAt(6))) * 6) % 11);
-            }
+            int firstNum = Integer.parseInt(String.valueOf(okpo.charAt(0)));
+            int secondNum = Integer.parseInt(String.valueOf(okpo.charAt(1)));
+            int thirdNum = Integer.parseInt(String.valueOf(okpo.charAt(2)));
+            int fourthNum = Integer.parseInt(String.valueOf(okpo.charAt(3)));
+            int fifthNum = Integer.parseInt(String.valueOf(okpo.charAt(4)));
+            int sixthNum = Integer.parseInt(String.valueOf(okpo.charAt(5)));
+            int seventhNum = Integer.parseInt(String.valueOf(okpo.charAt(6)));
+            if (idk < 30000000 || idk > 60000000) lnCs = (firstNum + secondNum * 2 + thirdNum * 3 + fourthNum * 4
+                    + fifthNum * 5 + sixthNum * 6 + seventhNum * 7) % 11;
+            else lnCs = (firstNum * 7 + secondNum + thirdNum * 2 + fourthNum * 3
+                    + fifthNum * 4 + sixthNum * 5 + seventhNum * 6) % 11;
             if (lnCs == 10) {
-                if (idk < 30000000 || idk > 60000000) {
-                    lnCs = (Integer.parseInt(String.valueOf(okpo.charAt(0))) * 3
-                            + Integer.parseInt(String.valueOf(okpo.charAt(1))) * 4
-                            + Integer.parseInt(String.valueOf(okpo.charAt(2))) * 5
-                            + Integer.parseInt(String.valueOf(okpo.charAt(3))) * 6
-                            + Integer.parseInt(String.valueOf(okpo.charAt(4))) * 7
-                            + Integer.parseInt(String.valueOf(okpo.charAt(5))) * 8
-                            + Integer.parseInt(String.valueOf(okpo.charAt(6))) * 9) % 11;
-                } else {
-                    lnCs = (Integer.parseInt(String.valueOf(okpo.charAt(0))) * 9
-                            + Integer.parseInt(String.valueOf(okpo.charAt(1))) * 3
-                            + Integer.parseInt(String.valueOf(okpo.charAt(2))) * 4
-                            + Integer.parseInt(String.valueOf(okpo.charAt(3))) * 5
-                            + Integer.parseInt(String.valueOf(okpo.charAt(4))) * 6
-                            + Integer.parseInt(String.valueOf(okpo.charAt(5))) * 7
-                            + Integer.parseInt(String.valueOf(okpo.charAt(6))) * 8) % 11;
-                }
+                if (idk < 30000000 || idk > 60000000)
+                    lnCs = (firstNum * 3 + secondNum * 4 + thirdNum * 5 + fourthNum * 6
+                            + fifthNum * 7 + sixthNum * 8 + seventhNum * 9) % 11;
+                else lnCs = (firstNum * 9 + secondNum * 3 + thirdNum * 4 + fourthNum * 5
+                        + fifthNum * 6 + sixthNum * 7 + seventhNum * 8) % 11;
             }
             return (String.valueOf(okpo.charAt(7)).equals(String.valueOf(lnCs)));
         }

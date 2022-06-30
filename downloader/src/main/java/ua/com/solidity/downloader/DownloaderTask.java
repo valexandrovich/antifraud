@@ -25,6 +25,7 @@ public class DownloaderTask extends RabbitMQTask {
     private JsonNode pipelineInfo;
     private JsonNode sourceInfo;
     private ImportSource source;
+    private boolean importSourceChecked = false;
     private boolean isError = false;
     private final ImportRevisionRepository importRevisionRepository;
 
@@ -44,8 +45,10 @@ public class DownloaderTask extends RabbitMQTask {
         isError = true;
         if (msgData.decrementAttemptsLeft()) {
             if (msgData.getDelayMinutes() < 0) {
+                log.error("Error on resource handling, message resent for immediate attempt.");
                 Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(msgData));
             } else {
+                log.error("Error on resource handling, next try scheduled after {} minute(s).", msgData.getDelayMinutes());
                 ObjectNode node = Utils.getSortedMapper().createObjectNode();
                 node.set("action", JsonNodeFactory.instance.textNode("exec"));
                 node.set("exchange", JsonNodeFactory.instance.textNode(receiver.getConfig().getName()));
@@ -54,6 +57,7 @@ public class DownloaderTask extends RabbitMQTask {
                 Utils.sendRabbitMQMessage(receiver.getConfig().getSchedulerTopicExchangeName(), Utils.objectToJsonString(node));
             }
         } else {
+            log.error("Error on resource handling, no retries left.");
             String notificationExchangeName = receiver.getConfig().getNotificationExchangeName();
             String mailTo = receiver.getConfig().getDefaultMailTo();
             if (notificationExchangeName != null && !notificationExchangeName.isBlank() &&
@@ -64,7 +68,9 @@ public class DownloaderTask extends RabbitMQTask {
                                     Utils.messageFormat("Downloader error: Can't handle source {}",
                                         msgData.getIdent()),
                                 "", 3,null)));
+                log.warn("Notification about downloading error was sent.");
             }
+
         }
     }
 
@@ -120,10 +126,15 @@ public class DownloaderTask extends RabbitMQTask {
         doExecuteHandlerInfo(data, elapsedTime);
     }
 
-    @Override
-    protected void execute() {
-        log.info("Request received. Ident: \"{}\", attempts left: {}", msgData.getIdent(), msgData.getAttemptsLeft());
+    private void importSourceNeeded() {
+        if (importSourceChecked) return;
         source = ImportSource.findImportSourceByName(msgData.getIdent());
+    }
+
+    @Override
+    protected void rmqExecute() {
+        log.info("Request received. Ident: \"{}\", attempts left: {}", msgData.getIdent(), msgData.getAttemptsLeft());
+        importSourceNeeded();
         if (source == null) {
             log.error("Source {} not found.", msgData.getIdent());
         } else {
@@ -145,5 +156,11 @@ public class DownloaderTask extends RabbitMQTask {
                 }
             }
         }
+    }
+
+    @Override
+    protected String description() {
+        importSourceNeeded();
+        return Utils.messageFormat("(source: {}, revision: {})", source == null ? "<undefined>" : source.getName(), msgData.getIdent());
     }
 }

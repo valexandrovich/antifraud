@@ -12,6 +12,7 @@ import authHeader from "../../api/AuthHeader";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import AltPerson from "../../components/Card/AltPerson";
+import ToggleCard from "../../components/Card/ToggleCard";
 import { DateObject } from "react-multi-date-picker";
 import {
   formatInn,
@@ -19,29 +20,9 @@ import {
   sourceName,
 } from "../../components/Card/Card";
 
-// function pad(num, size) {
-//   const numLength = num.toString().length;
-//   let zeroCount = size - numLength;
-//   while (zeroCount > 0) {
-//     num = "0" + num;
-//     zeroCount--;
-//   }
-//   return num;
-// }
-//
-// function formatPassport(passports) {
-//   if (passports.length > 0) {
-//     if (passports[0].type === "UA_IDCARD") {
-//       return pad(passports[0].number, 9);
-//     } else {
-//       return `${passports[0].series}${pad(passports[0].number, 6)}`;
-//     }
-//   }
-//   return "";
-// }
-
 const SingleCard = () => {
   let { id } = useParams();
+
   const [personDetails, setPersonDetails] = useState(null);
   const [components, setComponents] = useState({
     passports: false,
@@ -52,7 +33,22 @@ const SingleCard = () => {
     phone: false,
     alt: false,
   });
-
+  const handleChange = (e, type) => {
+    const { name, value, checked, id } = e.target;
+    setPersonDetails((prevState) => ({
+      ...prevState,
+      [type]: prevState[type].map((el) => {
+        if (el.id === Number(id)) {
+          if (name === "validity") {
+            return { ...el, [name]: checked };
+          }
+          return { ...el, [name]: value };
+        } else {
+          return el;
+        }
+      }),
+    }));
+  };
   useEffect(() => {
     const getPersonDetails = async () => {
       try {
@@ -115,12 +111,7 @@ const SingleCard = () => {
               </div>
               <div className="d-flex">
                 <b className="mr-10">ІПН:</b>
-                <p>
-                  {formatInn(personDetails.inns)}
-                  {/*{personDetails.inns.length > 0*/}
-                  {/*  ? personDetails.inns[0].inn*/}
-                  {/*  : ""}*/}
-                </p>
+                <p>{formatInn(personDetails.inns)}</p>
                 <span className="ml-10">
                   {personDetails.inns.length > 0
                     ? `(${
@@ -164,153 +155,101 @@ const SingleCard = () => {
           </div>
 
           <div className="card-body">
-            {personDetails.passports && personDetails.passports.length > 0 && (
-              <div
-                className={
-                  components.passports
-                    ? "form-control mb-3"
-                    : "form-select mb-3"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    passports: !prevState.passports,
-                  }));
-                }}
-              >
-                Паспорти
-                {components.passports &&
-                  personDetails.passports.map((pasport) => (
-                    <Passports key={pasport.id} data={pasport} />
-                  ))}
-              </div>
-            )}
-            {personDetails.inns && personDetails.inns.length > 0 && (
-              <div
-                className={
-                  components.inn ? "form-control mb-3" : "form-select mb-3"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    inn: !prevState.inn,
-                  }));
-                }}
-              >
-                ІПН
-                {components.inn &&
-                  personDetails.inns.map((inn) => (
-                    <Inn key={inn.id} data={inn} />
-                  ))}
-              </div>
-            )}
-            {personDetails.addresses && personDetails.addresses.length > 0 && (
-              <div
-                className={
-                  components.address
-                    ? "form-control mb-3 pointer"
-                    : "form-select mb-3 pointer"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    address: !prevState.address,
-                  }));
-                }}
-              >
-                Адреси
-                {components.address &&
-                  personDetails.addresses.map((address) => (
-                    <Addresses key={address.id} data={address} />
-                  ))}
-              </div>
-            )}
-            {personDetails.emails && personDetails.emails.length > 0 && (
-              <div
-                className={
-                  components.email
-                    ? "form-control mb-3 pointer"
-                    : "form-select mb-3 pointer"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    email: !prevState.email,
-                  }));
-                }}
-              >
-                Email
-                {components.email &&
-                  personDetails.emails.map((email) => (
-                    <Email key={email.id} data={email} />
-                  ))}
-              </div>
-            )}
-            {personDetails.tags && personDetails.tags.length > 0 && (
-              <div
-                className={
-                  components.tag
-                    ? "form-control mb-3 pointer"
-                    : "form-select mb-3 pointer"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    tag: !prevState.tag,
-                  }));
-                }}
-              >
-                Теги
-                {components.tag &&
-                  personDetails.tags.map((tag) => (
-                    <Tags key={tag.id} data={tag} />
-                  ))}
-              </div>
-            )}
-            {personDetails.phones && personDetails.phones.length > 0 && (
-              <div
-                className={
-                  components.phone
-                    ? "form-control mb-3 pointer"
-                    : "form-select mb-3 pointer"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    phone: !prevState.phone,
-                  }));
-                }}
-              >
-                Телефони
-                {components.phone &&
-                  personDetails &&
-                  personDetails.phones.map((phone) => (
-                    <Phone key={phone.id} data={phone} />
-                  ))}
-              </div>
-            )}
-            {personDetails.altPeople && personDetails.altPeople.length > 0 && (
-              <div
-                className={
-                  components.alt
-                    ? "form-control mb-3 pointer"
-                    : "form-select mb-3 pointer"
-                }
-                onClick={() => {
-                  setComponents((prevState) => ({
-                    ...prevState,
-                    alt: !prevState.alt,
-                  }));
-                }}
-              >
-                Альтернативні імена
-                {components.alt &&
-                  personDetails &&
-                  personDetails.altPeople.map((alt) => (
-                    <AltPerson key={alt.id} data={alt} />
-                  ))}
-              </div>
-            )}
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.passports}
+              name={"Паспорти"}
+              type={"passports"}
+              element={personDetails.passports}
+              children={personDetails.passports.map((passport) => (
+                <Passports
+                  onChange={(e) => handleChange(e, "passports")}
+                  key={passport.id}
+                  data={passport}
+                />
+              ))}
+            />
+
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.inn}
+              name={"ІПН"}
+              type={"inn"}
+              element={personDetails.inns}
+              children={personDetails.inns.map((inn) => (
+                <Inn
+                  onChange={(e) => handleChange(e, "inns")}
+                  key={inn.id}
+                  data={inn}
+                />
+              ))}
+            />
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.address}
+              name={"Адреси"}
+              type={"address"}
+              element={personDetails.addresses}
+              children={personDetails.addresses.map((address) => (
+                <Addresses
+                  onChange={(e) => handleChange(e, "addresses")}
+                  key={address.id}
+                  data={address}
+                />
+              ))}
+            />
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.email}
+              name={"Emails"}
+              type={"email"}
+              element={personDetails.emails}
+              children={personDetails.emails.map((email) => (
+                <Email
+                  onChange={(e) => handleChange(e, "emails")}
+                  key={email.id}
+                  data={email}
+                />
+              ))}
+            />
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.tag}
+              name={"Теги"}
+              type={"tag"}
+              element={personDetails.tags}
+              children={personDetails.tags.map((tag) => (
+                <Tags key={tag.id} data={tag} />
+              ))}
+            />
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.phone}
+              name={"Телефони"}
+              type={"phone"}
+              element={personDetails.phones}
+              children={personDetails.phones.map((phone) => (
+                <Phone
+                  onChange={(e) => handleChange(e, "phones")}
+                  key={phone.id}
+                  data={phone}
+                />
+              ))}
+            />
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.alt}
+              name={"Альтернативні імена"}
+              type={"alt"}
+              element={personDetails.altPeople}
+              children={personDetails.altPeople.map((alt) => (
+                <AltPerson
+                  onChange={(e) => handleChange(e, "altPeople")}
+                  key={alt.id}
+                  data={alt}
+                />
+              ))}
+            />
           </div>
         </div>
       )}

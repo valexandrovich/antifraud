@@ -12,9 +12,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import springfox.documentation.RequestHandler;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.PathSelectors;
+
 import static springfox.documentation.builders.PathSelectors.regex;
 import static springfox.documentation.builders.RequestHandlerSelectors.basePackage;
 import static springfox.documentation.builders.RequestHandlerSelectors.withClassAnnotation;
+
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.ApiKey;
 import springfox.documentation.service.SecurityScheme;
@@ -29,49 +31,43 @@ import java.util.Collections;
 @EnableSwagger2
 public class SwaggerConfiguration implements WebMvcConfigurer {
 
-	private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
-	@Bean
-	public Docket api(ServletContext servletContext, Environment env) {
-		return new Docket(DocumentationType.SWAGGER_2)
-				.select()
-				.apis(apis())
-//                .apis(withClassAnnotation(Api.class))
-//                .paths(paths())
-				.paths(PathSelectors.any())
-				.build().pathMapping("/")
-//                .host(env.getProperty("HOST"))
-				.securitySchemes(Collections.singletonList(bearerToken()))
-				.apiInfo(apiInfo())
-				.useDefaultResponseMessages(false);
-	}
+    @Bean
+    public Docket api(ServletContext servletContext, Environment env) {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .apis(apis())
+                .paths(PathSelectors.any())
+                .build().pathMapping("/")
+                .securitySchemes(Collections.singletonList(bearerToken()))
+                .apiInfo(apiInfo())
+                .useDefaultResponseMessages(false);
+    }
 
+    private Predicate<String> paths() {
+        return Predicates.or(
+                regex(".*")
+        );
+    }
 
-	private Predicate<String> paths() {
-		return Predicates.or(
-				regex(".*")
-		);
-	}
+    private Predicate<RequestHandler> apis() {
+        return Predicates.and(
+                basePackage("ua.com.solidity.web"),
+                withClassAnnotation(Api.class)
+        );
+    }
 
+    private ApiInfo apiInfo() {
+        return new ApiInfoBuilder()
+                .title("OTP")
+                .description("")
+                .version("1.0")
+                .build();
+    }
 
-	private Predicate<RequestHandler> apis() {
-		return Predicates.and(
-				basePackage("ua.com.solidity.web"),
-				withClassAnnotation(Api.class)
-		);
-	}
-
-	private ApiInfo apiInfo() {
-		return new ApiInfoBuilder()
-				.title("OTP")
-				.description("")
-				.version("1.0")
-				.build();
-	}
-
-	@Bean
-	public SecurityScheme bearerToken() {
-		return new ApiKey(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER, In.HEADER.name());
-	}
-
+    @Bean
+    public SecurityScheme bearerToken() {
+        return new ApiKey(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER, In.HEADER.name());
+    }
 }

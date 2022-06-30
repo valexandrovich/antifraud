@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v032-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v032-0"/>
+    </changeSet>
+    
+    <changeSet id="v032-1" author="Kyrylo Chornobryvets">
+        <createTable tableName="yaltcompany">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaltcompany"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="language" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="v032-2" author="Kyrylo Chornobryvets">
+        <createTable tableName="yaltcompany_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaltcompany_import_source"/>
+            </column>
+            <column name="yaltcompany_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yaltcompany_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v032-3" author="Kyrylo Chornobryvets">
+        <createTable tableName="ycompany">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ycompany"/>
+            </column>
+            <column name="edrpou" type="BIGINT"/>
+            <column name="name" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="v032-4" author="Kyrylo Chornobryvets">
+        <createTable tableName="ycompany_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ycompany_import_source"/>
+            </column>
+            <column name="ycompany_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ycompany_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v032-5" author="Kyrylo Chornobryvets">
+        <createTable tableName="ycompany_relation">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ycompany_relation"/>
+            </column>
+            <column name="company_id" type="UUID"/>
+            <column name="role_id" type="INT"/>
+            <column name="person_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="v032-6" author="Kyrylo Chornobryvets">
+        <createTable tableName="ycompany_role">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ycompany_role"/>
+            </column>
+            <column name="role" type="VARCHAR(255)"/>
+        </createTable>
+        <insert tableName="ycompany_role">
+            <column name="role" value="DIRECTOR"/>
+        </insert>
+        <insert tableName="ycompany_role">
+            <column name="role" value="CREATOR"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="ycompany_role"/>
+            <dropTable tableName="ycompany_role"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v032-7" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="company_id" baseTableName="ycompany_relation"
+                                 constraintName="FK_YCOMPANY_RELATION_ON_COMPANY" referencedColumnNames="id"
+                                 referencedTableName="ycompany"/>
+    </changeSet>
+    <changeSet id="v032-8" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="person_id" baseTableName="ycompany_relation"
+                                 constraintName="FK_YCOMPANY_RELATION_ON_PERSON" referencedColumnNames="id"
+                                 referencedTableName="yperson"/>
+    </changeSet>
+    <changeSet id="v032-9" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="role_id" baseTableName="ycompany_relation"
+                                 constraintName="FK_YCOMPANY_RELATION_ON_ROLE" referencedColumnNames="id"
+                                 referencedTableName="ycompany_role"/>
+    </changeSet>
+    <changeSet id="v032-10" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yaltcompany_import_source"
+                                 constraintName="fk_yalimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v032-11" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yaltcompany_id" baseTableName="yaltcompany_import_source"
+                                 constraintName="fk_yalimpsou_on_y_alt_company" referencedColumnNames="id"
+                                 referencedTableName="yaltcompany"/>
+    </changeSet>
+    <changeSet id="v032-12" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="ycompany_import_source"
+                                 constraintName="fk_ycoimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v032-13" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="ycompany_id" baseTableName="ycompany_import_source"
+                                 constraintName="fk_ycoimpsou_on_y_company" referencedColumnNames="id"
+                                 referencedTableName="ycompany"/>
+    </changeSet>
+    <changeSet id="v032-14" author="Kyrylo Chornobryvets">
+        <modifyDataType columnName="source"
+                        newDataType="VARCHAR(1100)"
+                        tableName="ytag"/>
+        <rollback>
+            <modifyDataType columnName="source"
+                            newDataType="VARCHAR(255)"
+                            tableName="ytag"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v032-15" author="Kyrylo Chornobryvets">
+        <dropNotNullConstraint tableName="yperson" columnName="last_name"/>
+        <rollback>
+            <addNotNullConstraint tableName="yperson" columnName="last_name" validate="true"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

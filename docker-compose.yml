@@ -33,7 +33,7 @@ services:
       args:
         - JAR_FILE=downloader/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=downloader.otp-etl -Ddata.gov.ua.domain=http://wrapper:8000
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=downloader.otp-etl -Ddata.gov.ua.domain=http://wrapper:9559
       - OTP_TEMP=/tmp
     image: otp-downloader:latest
     depends_on:
@@ -183,7 +183,7 @@ services:
     volumes:
       - "govua-files:/usr/src/wrapper/files"
     ports:
-      - "8000:8000"
+      - "9559:9559"
     build:
       dockerfile: Dockerfile
       context: docker/wrapper
@@ -455,8 +455,8 @@ volumes:
   psql-storage:
   tmp-storage:
   govua-files:
-      external: true
-      name: govua-files
+#      external: true
+#      name: govua-files
 #  elastic-data:
 #  elastic-data01:
 #    driver: local

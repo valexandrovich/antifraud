@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.ManualTag;
 import ua.com.solidity.db.repositories.TagTypeRepository;
 import ua.com.solidity.web.response.secondary.ManualTagStatus;
+import ua.com.solidity.web.utils.UtilString;
 
 @Component
 @RequiredArgsConstructor
@@ -18,7 +19,7 @@ public class ManualTagValidator {
         List<ManualTagStatus> statusList = new ArrayList<>();
 
         for (ManualTag tag : tags) {
-            if (tagTypeRepository.findByCode(tag.getMkId()).isEmpty()
+            if (tagTypeRepository.findByCode(UtilString.toUpperCase(tag.getMkId())).isEmpty()
             && !StringUtils.isBlank(tag.getMkId()))
                 statusList.add(new ManualTagStatus(tag.getId(), 0, "невідома мітка"));
             if (StringUtils.isBlank(tag.getMkId()))

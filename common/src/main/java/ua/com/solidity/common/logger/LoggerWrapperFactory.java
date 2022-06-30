@@ -11,6 +11,8 @@ public class LoggerWrapperFactory {
     static final Map<String, FlexibleLoggerWrapper> loggers = new HashMap<>();
     static final Set<Class<? extends FlexibleLoggerWrapper>> registered = new HashSet<>();
     static List<Class<? extends FlexibleLoggerWrapper>> wrappers = new ArrayList<>();
+    static final Set<String> options = new HashSet<>();
+    static boolean optionsAll = false;
 
     static {
         registerWrappers();
@@ -18,6 +20,28 @@ public class LoggerWrapperFactory {
 
     private LoggerWrapperFactory() {
         // nothing
+    }
+
+    public static void includeOptionsByString(String str) {
+        includeOptions(str.split(","));
+    }
+
+    public static void includeOptions(String ... opts) {
+        if (optionsAll) return;
+        for (var opt : opts) {
+            opt = opt.trim();
+            if (opt.equals("*")) {
+                optionsAll = true;
+                options.clear();
+                break;
+            } else if (!optionsAll) {
+                options.add(opt);
+            }
+        }
+    }
+
+    public static boolean isOptionIncluded(String option) {
+        return optionsAll || options.contains(option.trim());
     }
 
     private static void registerWrappers() {
@@ -72,7 +96,7 @@ public class LoggerWrapperFactory {
     }
 
     public static List<Class<? extends FlexibleLoggerWrapper>> rebuildWrappers(
-            Map<Class<? extends FlexibleLoggerWrapper>, Set<Class<? extends FlexibleLoggerWrapper>>> rules) {
+        Map<Class<? extends FlexibleLoggerWrapper>, Set<Class<? extends FlexibleLoggerWrapper>>> rules) {
         List<Class<? extends FlexibleLoggerWrapper>> res = new ArrayList<>();
         Set<Class<? extends FlexibleLoggerWrapper>> handled = new HashSet<>();
         for (var item: rules.entrySet()) {

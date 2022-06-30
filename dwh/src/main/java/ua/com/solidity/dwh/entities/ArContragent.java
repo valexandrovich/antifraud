@@ -26,8 +26,8 @@ public class ArContragent {
     private ArContragentID arContragentID;
     @Column(name = "SESSIONID")
     private Long sessionId;
-    @Column(name = "IDENTIFYCODE")
-    private String identifyCode;
+    @Column(name = "ID")
+    private Long id;// Код контрагента
     @Column(name = "NAME", nullable = false)
     private String name; // Полное наименование
     @Column(name = "CLIENTNAME")

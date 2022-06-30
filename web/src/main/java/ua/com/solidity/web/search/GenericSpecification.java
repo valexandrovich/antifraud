@@ -1,19 +1,18 @@
 package ua.com.solidity.web.search;
 
-import lombok.AllArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.data.jpa.domain.Specification;
-
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.jpa.domain.Specification;
 
 @AllArgsConstructor
 public class GenericSpecification<T> implements Specification<T> {
@@ -77,5 +76,9 @@ public class GenericSpecification<T> implements Specification<T> {
 
     public void add(SearchCriteria criteria) {
         list.add(criteria);
+    }
+
+    public void clear() {
+        list.clear();
     }
 }

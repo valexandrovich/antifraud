@@ -34,6 +34,7 @@ public class Receiver extends RabbitMQReceiver {
 
     @Override
     public Object handleMessage(String queue, String message) {
+        log.info("$downloader$:::: message received: {}", message);
         DownloaderMessageData data = null;
         try {
             JsonNode node = Utils.getJsonNode(message);

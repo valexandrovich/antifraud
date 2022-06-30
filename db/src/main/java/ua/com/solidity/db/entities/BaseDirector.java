@@ -1,6 +1,7 @@
 package ua.com.solidity.db.entities;
 
 import java.util.UUID;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.Getter;
@@ -15,4 +16,6 @@ public class BaseDirector {
     private UUID revision;
     private String okpo;
     private String inn;
+    @Column(name="portion_id")
+    private UUID portionId;
 }

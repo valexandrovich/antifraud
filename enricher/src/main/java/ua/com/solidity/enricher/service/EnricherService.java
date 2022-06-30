@@ -1,9 +1,9 @@
 package ua.com.solidity.enricher.service;
 
-import ua.com.solidity.enricher.model.EnricherRequest;
+import ua.com.solidity.enricher.model.EnricherPortionRequest;
 
 public interface EnricherService {
 
-    void enrich(EnricherRequest enricherRequest);
+    void enrich(EnricherPortionRequest enricherRequest);
 
 }

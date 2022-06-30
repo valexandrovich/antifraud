@@ -13,8 +13,9 @@ public class ImporterTask extends RabbitMQTask {
     private static final String REMOVE_FILES = "removeFiles";
     private final Importer importer;
     private final ImporterMessageData data;
+    private String importSourceName;
     protected ImporterTask(Importer importer, ImporterMessageData data) {
-        super(false);
+        super(true);
         this.importer = importer;
         this.data = data;
     }
@@ -25,7 +26,7 @@ public class ImporterTask extends RabbitMQTask {
     }
 
     @Override
-    protected void execute() {
+    protected void rmqExecute() {
         ImportSource importSource = ImportSource.findImportSourceById(data.getImportSourceId());
 
         if (importSource == null) {
@@ -33,6 +34,8 @@ public class ImporterTask extends RabbitMQTask {
             acknowledge(true);
             return;
         }
+
+        importSourceName = importSource.getName();
 
         if (!ImportSource.sourceLocker(data.getImportSourceId(), true)) {
             log.info("Import source (id: {}) already locked in another session.", data.getImportSourceId());
@@ -51,11 +54,16 @@ public class ImporterTask extends RabbitMQTask {
                 data.getData().removeAllFiles();
                 log.info("--- all files removed ---");
             }
-            EnricherMessage enricherMessage = new EnricherMessage(importSource.getName(), data.getImportRevisionId());
-            Utils.sendRabbitMQMessage(importer.getConfig().getEnricherQueueName(), Utils.objectToJsonString(enricherMessage));
+            //EnricherMessage enricherMessage = new EnricherMessage(importSource.getName(), data.getImportRevisionId());
+            //Utils.sendRabbitMQMessage(importer.getConfig().getEnricherQueueName(), Utils.objectToJsonString(enricherMessage));
         } finally {
             ImportSource.sourceLocker(data.getImportSourceId(), false);
         }
         log.info("=== Import source (id: {}, \"{}\") unlocked === ", data.getImportSourceId(), importSource.getName());
+    }
+
+    @Override
+    protected String description() {
+        return Utils.messageFormat("(source: {}, revision: {})", importSourceName == null ? "<undefined>" : importSourceName, data.getImportRevisionId());
     }
 }

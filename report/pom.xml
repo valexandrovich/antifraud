@@ -5,7 +5,7 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>4.1.209</version>
+        <version>4.2.214</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,12 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <java.version>11</java.version>
+        <!-- JaCoCo Properties -->
         <jacoco.version>0.8.6</jacoco.version>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+        <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
     </properties>
 
     <dependencies>
@@ -47,7 +52,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>4.1.209</version>
+            <version>4.2.214</version>
         </dependency>
     </dependencies>
 

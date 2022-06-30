@@ -1,15 +1,14 @@
 package ua.com.solidity.enricher.listener;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.RabbitMQReceiver;
-import ua.com.solidity.enricher.model.EnricherRequest;
+import ua.com.solidity.common.Utils;
+import ua.com.solidity.enricher.model.EnricherPortionRequest;
 import ua.com.solidity.enricher.service.EnricherService;
 
-@Slf4j
+@CustomLog
 @Component
 @RequiredArgsConstructor
 public class Receiver extends RabbitMQReceiver {
@@ -18,19 +17,12 @@ public class Receiver extends RabbitMQReceiver {
 
     @Override
     public Object handleMessage(String queue, String message) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        EnricherRequest enricherRequest;
-        try {
-            enricherRequest = objectMapper.readValue(message, EnricherRequest.class);
-        } catch (JsonProcessingException e) {
-            log.error("Can't understand object from queue!", e);
-            log.debug("The message was: {}", message);
-            return true;
+        acknowledge(true); // no deferred tasks, no unacknowledged situations
+        EnricherPortionRequest request = Utils.jsonToValue(message, EnricherPortionRequest.class);
+        if (request != null) {
+            log.info("$debug$Received message from {}: {}", queue, message);
+            enricherService.enrich(request);
         }
-
-        log.debug("Received message from {}: {}", queue, message);
-        enricherService.enrich(enricherRequest);
-
         return true;
     }
 }

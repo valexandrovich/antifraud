@@ -11,11 +11,13 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import ua.com.solidity.common.RabbitMQListener;
 import ua.com.solidity.notification.listener.Receiver;
 
 @Slf4j
 @Configuration
+@PropertySource({"classpath:notification.properties", "classpath:application.properties"})
 @RequiredArgsConstructor
 public class RabbitConfiguration {
 

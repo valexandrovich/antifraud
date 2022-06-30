@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="v033-1-0" author="Alexey Sidnenkov">
+        <tagDatabase tag="v033-1"/>
+    </changeSet>
+
+    <changeSet id="v033-1-1" author="Alexey Sidnenkov">
+        <createIndex tableName="base_creator" indexName="base_creator_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-2" author="Alexey Sidnenkov">
+        <createIndex tableName="base_creator" indexName="base_creator_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-3" author="Alexey Sidnenkov">
+        <createIndex tableName="base_director" indexName="base_director_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-4" author="Alexey Sidnenkov">
+        <createIndex tableName="base_director" indexName="base_director_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-5" author="Alexey Sidnenkov">
+        <createIndex tableName="base_drfo" indexName="base_drfo_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-6" author="Alexey Sidnenkov">
+        <createIndex tableName="base_drfo" indexName="base_drfo_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-7" author="Alexey Sidnenkov">
+        <createIndex tableName="base_elections" indexName="base_elections_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-8" author="Alexey Sidnenkov">
+        <createIndex tableName="base_elections" indexName="base_elections_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-9" author="Alexey Sidnenkov">
+        <createIndex tableName="base_fodb" indexName="base_fodb_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-10" author="Alexey Sidnenkov">
+        <createIndex tableName="base_fodb" indexName="base_fodb_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-11" author="Alexey Sidnenkov">
+        <createIndex tableName="base_passports" indexName="base_passports_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-12" author="Alexey Sidnenkov">
+        <createIndex tableName="base_passports" indexName="base_passports_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-13" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_1" indexName="govua_1_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-14" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_1" indexName="govua_1_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-15" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_2" indexName="govua_2_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-16" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_2" indexName="govua_2_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-17" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_4" indexName="govua_4_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-18" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_4" indexName="govua_4_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-19" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_5" indexName="govua_5_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-20" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_5" indexName="govua_5_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-21" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_6" indexName="govua_6_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-22" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_6" indexName="govua_6_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-23" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_7" indexName="govua_7_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-24" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_7" indexName="govua_7_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-25" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_10" indexName="govua_10_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-26" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_10" indexName="govua_10_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-27" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_11" indexName="govua_11_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-28" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_11" indexName="govua_11_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-29" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_14" indexName="govua_14_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-30" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_14" indexName="govua_14_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-31" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_18" indexName="govua_18_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-32" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_18" indexName="govua_18_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-33" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_19" indexName="govua_19_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-34" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_19" indexName="govua_19_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-35" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_20" indexName="govua_20_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-1-36" author="Alexey Sidnenkov">
+        <createIndex tableName="govua_20" indexName="govua_20_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

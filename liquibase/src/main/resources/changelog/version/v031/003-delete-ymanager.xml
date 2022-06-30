@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v031-033" author="Olha Tankevych">
+        <tagDatabase tag="v031-033"/>
+    </changeSet>
+    <changeSet id="v031-034" author="Olha Tankevych">
+        <dropForeignKeyConstraint baseTableName="ymanager_import_source"
+                                  constraintName="fk_ymaimpsou_on_import_source"/>
+    </changeSet>
+    <changeSet id="v031-035" author="Olha Tankevych">
+        <dropForeignKeyConstraint baseTableName="ymanager_import_source" constraintName="fk_ymaimpsou_on_y_manager"/>
+    </changeSet>
+    <changeSet id="v031-036" author="Olha Tankevych">
+        <dropForeignKeyConstraint baseTableName="ymanager" constraintName="fk_ymanager_on_inn"/>
+    </changeSet>
+    <changeSet id="v031-037" author="Olha Tankevych">
+        <dropForeignKeyConstraint baseTableName="ymanager" constraintName="fk_ymanager_on_type"/>
+    </changeSet>
+    <changeSet id="v031-038" author="Olha Tankevych">
+        <dropTable cascadeConstraints="true" tableName="ymanager"/>
+    </changeSet>
+    <changeSet id="v031-039" author="Olha Tankevych">
+        <dropTable cascadeConstraints="true" tableName="ymanager_import_source"/>
+    </changeSet>
+    <changeSet id="v031-040" author="Olha Tankevych">
+        <dropTable cascadeConstraints="true" tableName="ymanager_type"/>
+    </changeSet>
+
+</databaseChangeLog>

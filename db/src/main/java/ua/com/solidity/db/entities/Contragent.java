@@ -27,6 +27,8 @@ public class Contragent {
     private UUID uuid;
     @Column(name = "revision", nullable = false)
     private UUID revision;
+    @Column(name = "portion_id", nullable = false)
+    private UUID portionId;
     @Column(nullable = false)
     private Long id; // Код контрагента
     @Column(length = 254, nullable = false)

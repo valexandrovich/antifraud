@@ -22,6 +22,26 @@ public class FlexibleLoggerWrapper implements Logger {
         void log(Marker marker, String msg, Throwable t);
     }
 
+    private static class ParsedMessage {
+        final String msg;
+        String option = null;
+        boolean isEnabled = true;
+
+        public ParsedMessage(String msg, boolean isDebugEnabled) {
+            if (msg.startsWith("$")) {
+                int index = msg.indexOf("$", 1);
+                if (index > 2) {
+                    option = msg.substring(1, index).trim();
+                    msg = msg.substring(index + 1);
+                    if (!option.isBlank()) {
+                        this.isEnabled = isDebugEnabled || LoggerWrapperFactory.isOptionIncluded(option);
+                    }
+                }
+            }
+            this.msg = msg;
+        }
+    }
+
     @Getter
     private static class LoggerInfo {
         private final ILogThrowable logThrowable;
@@ -98,15 +118,18 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public boolean isTraceEnabled() {
-        return this.logger.isTraceEnabled();
+        return logger.isTraceEnabled();
     }
 
     public boolean isTraceEnabled(Marker marker) {
-        return this.logger.isTraceEnabled(marker);
+        return logger.isTraceEnabled(marker);
     }
 
     public void trace(String msg) {
-        if (this.logger.isTraceEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isTraceEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, msg, null, null);
             } else {
@@ -116,7 +139,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(String format, Object arg) {
-        if (this.logger.isTraceEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isTraceEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::trace, this::trace, null, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -129,7 +155,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(String format, Object arg1, Object arg2) {
-        if (this.logger.isTraceEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isTraceEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::trace, this::trace, null, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -142,7 +171,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(String format, Object...args) {
-        if (this.logger.isTraceEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isTraceEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::trace, this::trace, null,  format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -155,7 +187,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(String msg, Throwable t) {
-        if (this.logger.isTraceEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isTraceEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 0, msg, null, t);
             } else {
@@ -165,7 +200,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(Marker marker, String msg) {
-        if (this.logger.isTraceEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isTraceEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 0, msg, null, null);
             } else {
@@ -175,7 +213,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(Marker marker, String format, Object arg) {
-        if (this.logger.isTraceEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isTraceEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::trace, this::trace, marker, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -188,7 +229,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(Marker marker, String format, Object arg1, Object arg2) {
-        if (this.logger.isTraceEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isTraceEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::trace, this::trace, marker, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -201,7 +245,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(Marker marker, String format, Object... args) {
-        if (this.logger.isTraceEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isTraceEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::trace, this::trace, marker, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -214,7 +261,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void trace(Marker marker, String msg, Throwable t) {
-        if (this.logger.isTraceEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.isTraceEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 0, msg, null, t);
             } else {
@@ -232,7 +282,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(String msg) {
-        if (this.logger.isDebugEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.isDebugEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 10, msg, null, null);
             } else {
@@ -242,7 +295,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(String format, Object arg) {
-        if (this.logger.isDebugEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isDebugEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::debug, this::debug, null, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -255,7 +311,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(String format, Object arg1, Object arg2) {
-        if (this.logger.isDebugEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isDebugEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::debug, this::debug, null, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -268,7 +327,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(String format, Object... args) {
-        if (this.logger.isDebugEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isDebugEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::debug, this::debug, null, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -281,7 +343,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(String msg, Throwable t) {
-        if (this.logger.isDebugEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isDebugEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 10, msg, null, t);
             } else {
@@ -291,7 +356,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(Marker marker, String msg) {
-        if (this.logger.isDebugEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isDebugEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 10, msg, null, null);
             } else {
@@ -301,7 +369,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(Marker marker, String format, Object arg) {
-        if (this.logger.isDebugEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isDebugEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::debug, this::debug, marker, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -314,7 +385,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(Marker marker, String format, Object arg1, Object arg2) {
-        if (this.logger.isDebugEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isDebugEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::debug, this::debug, marker, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -327,7 +401,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(Marker marker, String format, Object... args) {
-        if (this.logger.isDebugEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isDebugEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::debug, this::debug, marker, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -340,7 +417,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void debug(Marker marker, String msg, Throwable t) {
-        if (this.logger.isDebugEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isDebugEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 10, msg, null, t);
             } else {
@@ -358,7 +438,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(String msg) {
-        if (this.logger.isInfoEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isInfoEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 20, msg, null, null);
             } else {
@@ -368,7 +451,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(String format, Object arg) {
-        if (this.logger.isInfoEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isInfoEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::info, this::info, null, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -381,7 +467,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(String format, Object arg1, Object arg2) {
-        if (this.logger.isInfoEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isInfoEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::info, this::info, null, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -394,7 +483,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(String format, Object... args) {
-        if (this.logger.isInfoEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.isInfoEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::info, this::info, null, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -407,7 +499,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(String msg, Throwable t) {
-        if (this.logger.isInfoEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.isInfoEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 20, msg, null, t);
             } else {
@@ -417,7 +512,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(Marker marker, String msg) {
-        if (this.logger.isInfoEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isInfoEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, msg, null, null);
             } else {
@@ -427,7 +525,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(Marker marker, String format, Object arg) {
-        if (this.logger.isInfoEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isInfoEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::info, this::info, marker, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -440,7 +541,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(Marker marker, String format, Object arg1, Object arg2) {
-        if (this.logger.isInfoEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isInfoEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::info, this::info, marker, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -453,7 +557,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(Marker marker, String format, Object... args) {
-        if (this.logger.isInfoEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (isInfoEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::info, this::info, marker, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -466,7 +573,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void info(Marker marker, String msg, Throwable t) {
-        if (this.logger.isInfoEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isInfoEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 20, msg, null, t);
             } else {
@@ -484,7 +594,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(String msg) {
-        if (this.logger.isWarnEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (isWarnEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 30, msg, null, null);
             } else {
@@ -494,7 +607,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(String format, Object arg) {
-        if (this.logger.isWarnEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::warn, this::warn, null, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -507,7 +623,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(String format, Object arg1, Object arg2) {
-        if (this.logger.isWarnEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::warn, this::warn, null, format, arg1, 2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -520,7 +639,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(String format, Object... args) {
-        if (this.logger.isWarnEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::warn, this::warn, null, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -533,7 +655,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(String msg, Throwable t) {
-        if (this.logger.isWarnEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 30, msg, null, t);
             } else {
@@ -543,7 +668,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(Marker marker, String msg) {
-        if (this.logger.isWarnEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 30, msg, null, null);
             } else {
@@ -553,7 +681,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(Marker marker, String format, Object arg) {
-        if (this.logger.isWarnEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::warn, this::warn, marker, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -566,7 +697,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(Marker marker, String format, Object arg1, Object arg2) {
-        if (this.logger.isWarnEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::warn, this::warn, marker, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -579,7 +713,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(Marker marker, String format, Object... args) {
-        if (this.logger.isWarnEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::warn, this::warn, marker, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -592,7 +729,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void warn(Marker marker, String msg, Throwable t) {
-        if (this.logger.isWarnEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isWarnEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 30, msg, null, t);
             } else {
@@ -610,7 +750,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(String msg) {
-        if (this.logger.isErrorEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 40, msg, null, null);
             } else {
@@ -620,7 +763,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(String format, Object arg) {
-        if (this.logger.isErrorEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::error, this::error, null, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -633,7 +779,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(String format, Object arg1, Object arg2) {
-        if (this.logger.isErrorEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::error, this::error, null, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -646,7 +795,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(String format, Object... args) {
-        if (this.logger.isErrorEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled() && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::error, this::error, null, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -659,7 +811,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(String msg, Throwable t) {
-        if (this.logger.isErrorEnabled()) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled() && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(null, this.fqcn, 40, msg, null, t);
             } else {
@@ -669,7 +824,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(Marker marker, String msg) {
-        if (this.logger.isErrorEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 40, msg, null, null);
             } else {
@@ -679,7 +837,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(Marker marker, String format, Object arg) {
-        if (this.logger.isErrorEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::error, this::error, marker, format, arg);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -692,7 +853,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(Marker marker, String format, Object arg1, Object arg2) {
-        if (this.logger.isErrorEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.create(this::error, this::error, marker, format, arg1, arg2);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -705,7 +869,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(Marker marker, String format, Object... args) {
-        if (this.logger.isErrorEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(format, isDebugEnabled());
+        format = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled(marker) && parsedMessage.isEnabled) {
             LoggerInfo info = LoggerInfo.createByArray(this::error, this::error, marker, format, args);
             if (!info.redirected) {
                 if (this.instanceofLAL) {
@@ -718,7 +885,10 @@ public class FlexibleLoggerWrapper implements Logger {
     }
 
     public void error(Marker marker, String msg, Throwable t) {
-        if (this.logger.isErrorEnabled(marker)) {
+        ParsedMessage parsedMessage = new ParsedMessage(msg, isDebugEnabled());
+        msg = parsedMessage.msg;
+
+        if (this.logger.isErrorEnabled(marker) && parsedMessage.isEnabled) {
             if (this.instanceofLAL) {
                 ((LocationAwareLogger)this.logger).log(marker, this.fqcn, 40, msg, null, t);
             } else {

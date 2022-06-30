@@ -8,7 +8,7 @@ const ProtectedRoute = ({ component: Component, ...restOfProps }) => {
     <Route
       {...restOfProps}
       render={(props) =>
-        role === "ADVANCED" || role === null ? (
+        role === "ADVANCED" || role == null ? (
           <Component {...props} />
         ) : (
           <Redirect to="/error" />

@@ -9,18 +9,13 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @Configuration
 public class BeanConfiguration {
 
-	@Bean
-	public MethodValidationPostProcessor methodValidationPostProcessor() {
-		return new MethodValidationPostProcessor();
-	}
+    @Bean
+    public MethodValidationPostProcessor methodValidationPostProcessor() {
+        return new MethodValidationPostProcessor();
+    }
 
-//    @Bean
-//    public javax.validation.Validator localValidatorFactoryBean() {
-//        return new LocalValidatorFactoryBean();
-//    }
-
-	@Bean
-	public PasswordEncoder buildPasswordEncoder() {
-		return new BCryptPasswordEncoder(10);
-	}
+    @Bean
+    public PasswordEncoder buildPasswordEncoder() {
+        return new BCryptPasswordEncoder(10);
+    }
 }

@@ -33,6 +33,8 @@ public class YPersonConverter {
 		dto.setFirstName(entity.getFirstName());
 		dto.setPatName(entity.getPatName());
 		dto.setBirthdate(entity.getBirthdate());
+		dto.setRelatedPeople(entity.getRelatedPeople());
+		dto.setCompanyRelations(entity.getCompanyRelations());
 		dto.setInns(entity.getInns());
 		dto.setAddresses(entity.getAddresses());
 		dto.setAltPeople(entity.getAltPeople());

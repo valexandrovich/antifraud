@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.dwh.model.UpdateDWHRequest;
 import ua.com.solidity.dwh.service.DWHService;
@@ -15,6 +16,7 @@ import ua.com.solidity.dwh.service.DWHService;
 @EnableRabbit
 @RequiredArgsConstructor
 @Component
+@PropertySource({"classpath:dwh.properties", "classpath:application.properties"})
 public class RabbitMqListener {
 
 	@Value("${dwh.rabbitmq.name}")

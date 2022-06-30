@@ -5,7 +5,6 @@ import org.slf4j.Marker;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-
 public class NoTraceExceptionLoggerWrapper extends FlexibleLoggerWrapper {
     private static final String EXCEPTION_FORMAT = "{} ({}: {}).";
 
@@ -14,6 +13,7 @@ public class NoTraceExceptionLoggerWrapper extends FlexibleLoggerWrapper {
     }
 
     private String getExceptionMessage(String msg, Throwable t) {
+        t = t.getCause() != null ? t.getCause() : t;
         FormattingTuple tuple = MessageFormatter.arrayFormat(EXCEPTION_FORMAT, new Object[] {msg, t.getClass().getName(), t.getMessage()});
         return tuple.getMessage();
     }

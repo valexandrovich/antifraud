@@ -7,6 +7,8 @@ import org.postgresql.core.BaseConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ua.com.solidity.common.*;
 import ua.com.solidity.common.data.*;
+import ua.com.solidity.common.model.EnricherMessage;
+import ua.com.solidity.common.model.EnricherPortionMessage;
 
 import java.nio.CharBuffer;
 import java.sql.Connection;
@@ -36,6 +38,8 @@ public class SQLTable {
     private final CacheSize size;
     private boolean prepared = false;
     private long insertErrorCount;
+
+    private UUID portion = null;
 
     private interface ArgumentSetter {
         ErrorResult setArguments(DataObject obj, DataExtensionFactory factory);
@@ -201,6 +205,7 @@ public class SQLTable {
         ErrorResult res = new ErrorResult();
         StringBuilder errorBuilder = new StringBuilder();
         int paramIndex = 0;
+        obj.getExtension().setPortion(portion);
         if (factory != null && (paramIndex = factory.assignStatementArgs(obj, statement)) < 0) {
             return res;
         }
@@ -300,6 +305,11 @@ public class SQLTable {
         if (mode == SQLFlushMode.PREPARED_STATEMENT_BATCH) {
             count = afterPreparedStatementExec();
         }
+        if (count > 0) {
+            EnricherPortionMessage enricherPortionMessage = new EnricherPortionMessage(tableName, portion);
+            Utils.sendRabbitMQMessage("otp-etl.enricher", Utils.objectToJsonString(enricherPortionMessage));
+        }
+        portion = UUID.randomUUID();
         return count;
     }
 
@@ -456,6 +466,7 @@ public class SQLTable {
         secondaryInitMapping();
         initQuery();
         initObjects(size);
+        portion = UUID.randomUUID();
         prepared = true;
         return true;
     }

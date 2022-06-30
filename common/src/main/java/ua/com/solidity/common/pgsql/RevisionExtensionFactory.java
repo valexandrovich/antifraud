@@ -30,6 +30,7 @@ public class RevisionExtensionFactory extends DataExtensionFactory {
                 addition.add("extra_id/varchar");
             }
         }
+        addition.add("portion_id/uuid");
         if (!combine(base, getFieldDescriptions(addition))) base = null;
         return base;
     }
@@ -59,6 +60,7 @@ public class RevisionExtensionFactory extends DataExtensionFactory {
                     statement.setString(++paramIndex, obj.getExtension().getExtraId());
                 }
             }
+            statement.setObject(++paramIndex, obj.getExtension().getPortion());
             return paramIndex;
         } catch (Exception e) {
             return -1;
@@ -80,6 +82,7 @@ public class RevisionExtensionFactory extends DataExtensionFactory {
                 batch.putString(obj.getExtension().getExtraId());
             }
         }
+        batch.putUUID(obj.getExtension().getPortion());
         return true;
     }
 }

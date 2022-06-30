@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import java.util.Map;
 @Getter
 @Setter
 @Component
+@PropertySource({"classpath:importer.properties", "classpath:application.properties"})
 public class Config {
     @Value("${importer.rabbitmq.queue}")
     private String queueName;

@@ -3,6 +3,7 @@ package ua.com.solidity.db.entities;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.time.LocalDate;
@@ -45,4 +46,7 @@ public class BaseFodb {
     private String liveCityForeign;
     private String livePhone;
     private LocalDate liveCodeRegisterDate;
+    @Column(name="portion_id")
+    private UUID portionId;
+
 }

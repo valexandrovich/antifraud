@@ -2,9 +2,14 @@ import React, { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.css";
 import "./styles/Style.css";
 import { useDispatch, useSelector } from "react-redux";
-import { Switch, Route, Redirect, useHistory } from "react-router-dom";
+import {
+  Switch,
+  Route,
+  Redirect,
+  useHistory,
+  useLocation,
+} from "react-router-dom";
 import UploadFile from "./pages/upload/UploadFile";
-
 import ErrorPage from "./pages/ErrorPage";
 import Search from "./pages/search/Search";
 import Aside from "./pages/aside/Aside";
@@ -16,18 +21,22 @@ import Sheduler from "./pages/sheduler/Sheduler";
 import SingleCard from "./pages/card/SingleCard";
 import Monitoring from "./pages/monitoring/Monitoring";
 import { checkAutoLogin } from "./api/AuthApi";
+import NonFound from "./pages/NonFound";
+
+const logOutTimeout = { timeout: null };
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
   const alertMsg = useSelector((state) => state.auth.alert);
   const dispatch = useDispatch();
-  const token = localStorage.getItem("user");
   const role = useSelector((state) => state.auth.role);
   const history = useHistory();
-
+  let location = useLocation();
   useEffect(() => {
-    checkAutoLogin(dispatch, history);
-  }, [dispatch, history, token]);
+    checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
+    return () =>
+      checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
+  }, [dispatch, history, location.pathname]);
   return (
     <>
       {alertMsg.message && (
@@ -54,8 +63,10 @@ const App = () => {
             <Route exact path="/card/:id" component={SingleCard} />
             <ProtectedRoute exact path="/progress" component={Progress} />
             <ProtectedRoute exact path="/sheduler" component={Sheduler} />
-            <Route exact path="/subscription" component={Monitoring} />
+            <ProtectedRoute exact path="/subscription" component={Monitoring} />
             <Route path="/error" component={ErrorPage} />
+            <Route path="*" component={NonFound} />
+            <Route component={NonFound} />
           </Switch>
         </>
       ) : (

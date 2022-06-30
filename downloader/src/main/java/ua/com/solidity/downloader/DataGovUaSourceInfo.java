@@ -169,6 +169,9 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     private boolean loadApiInfo() {
         String url = MessageFormat.format(config.getDataGovUaApiUrl(), apiKey);
         apiDataNode = Utils.getJsonNode(url, "UTF-8");
+        if (apiDataNode == null) {
+            log.warn("No data received from {}", url);
+        }
         return apiDataNode != null && handleApiInfo(apiDataNode);
     }
 
@@ -192,7 +195,12 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
             if (resourcesNode != null && resourcesNode.isArray()) {
                 handleApiInfoResources(resourcesNode);
             }
-            return prepareMainFileAndDictionaries();
+            boolean prepared = prepareMainFileAndDictionaries();
+            if (!prepared) {
+                log.warn("Main file not detected.");
+            }
+
+            return prepared;
         }
         return false;
     }

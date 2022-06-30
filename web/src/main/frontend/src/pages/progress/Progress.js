@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import PageTitle from "../../components/PageTitle";
 import TableItem from "../../components/ProgressBar/TableItem";
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
@@ -6,24 +6,32 @@ import authHeader from "../../api/AuthHeader";
 
 const Progress = () => {
   const [progress, setProgress] = useState([]);
-
-  const setCheck = async () => {
+  const mountedRef = useRef(true);
+  const setCheck = useCallback(() => {
     try {
-      const response = await fetch("/api/statuslogger/find", {
+      fetch("/api/statuslogger/find", {
         headers: authHeader(),
-      });
-      const res = await response.json();
-      setProgress(res);
+      })
+        .then((response) => response.json())
+        .then((res) => {
+          if (!mountedRef.current) return null;
+          if (res.status === 200) {
+            setProgress(res);
+          }
+        });
     } catch (error) {
       console.log(error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     setCheck();
     const interval = setInterval(setCheck, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(interval);
+      mountedRef.current = false;
+    };
+  }, [setCheck]);
 
   return (
     <div className="wrapped">
@@ -43,7 +51,7 @@ const Progress = () => {
             </tr>
           </thead>
           <tbody>
-            {[...progress]
+            {progress
               .sort((a, b) => {
                 if ((a.finished === null) !== (b.finished == null))
                   return a.finished === null ? -1 : 1;

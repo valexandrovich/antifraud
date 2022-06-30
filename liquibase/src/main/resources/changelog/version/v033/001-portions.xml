@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="v033-0" author="Alexey Sidnenkov">
+        <tagDatabase tag="v033-0"/>
+    </changeSet>
+
+    <changeSet id="v033-1" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="base_creator" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-2" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="base_director" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-4" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="base_drfo" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-5" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="base_elections" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-6" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="base_fodb" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-7" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="base_passports" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-8" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_1" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-9" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_2">
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-10" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_4" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-11" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_5" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-12" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_6" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-13" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_7" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-14" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_10" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-15" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_11" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-16" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_14" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-17" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_18" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-18" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_19" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-19" author="Alexey Sidnenkov">
+        <addColumn catalogName="otp"
+                   schemaName= "public"
+                   tableName="govua_20" >
+            <column afterColumn="revision"
+                    name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

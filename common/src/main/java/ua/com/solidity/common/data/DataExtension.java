@@ -1,9 +1,15 @@
 package ua.com.solidity.common.data;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.UUID;
 
 public class DataExtension {
     public final UUID id;
+    @Getter
+    @Setter
+    private UUID portion;
     String extraId = null;
 
     protected DataExtension() {

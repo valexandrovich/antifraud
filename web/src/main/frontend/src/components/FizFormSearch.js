@@ -10,7 +10,7 @@ import Pagination from "./Pagination";
 import PerPage from "./PerPage";
 import Spinner from "./Loader";
 
-const registerMask = [
+export const registerMask = [
   /\d/,
   /\d/,
   /\d/,

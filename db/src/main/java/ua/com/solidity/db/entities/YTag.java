@@ -1,13 +1,11 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-import ua.com.solidity.db.abstraction.Identifiable;
-
-import javax.persistence.CascadeType;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -16,10 +14,10 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
 
 @Getter
 @Setter
@@ -28,16 +26,21 @@ import java.util.Set;
 public class YTag implements Identifiable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id")
 	private Long id;
+	@Column(name = "name")
 	private String name;
+	@Column(name = "as_Of")
 	private LocalDate asOf;
+	@Column(name = "until")
 	private LocalDate until;
+	@Column(name = "source", length = 1100)
 	private String source;
-	@ManyToOne(cascade = CascadeType.MERGE)
+	@ManyToOne
 	@JsonBackReference
 	@JoinColumn(name = "person_id")
 	private YPerson person;
-	@ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany
 	@JoinTable(
 			name = "ytag_import_source",
 			joinColumns = {@JoinColumn(name = "ytag_id")},

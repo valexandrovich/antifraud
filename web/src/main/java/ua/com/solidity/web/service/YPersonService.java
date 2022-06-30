@@ -1,5 +1,10 @@
 package ua.com.solidity.web.service;
 
+import java.time.LocalDate;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,12 +25,6 @@ import ua.com.solidity.web.security.service.Extractor;
 import ua.com.solidity.web.service.converter.YPersonConverter;
 import ua.com.solidity.web.service.factory.PageRequestFactory;
 import ua.com.solidity.web.utils.UtilString;
-
-import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDate;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -62,7 +61,7 @@ public class YPersonService {
 		GenericSpecification<YPerson> gs = new GenericSpecification<>();
 		criteriaFound = false;
 
-		searchByName(searchRequest, gs);
+		searchByName(searchRequest, gs, paginationRequest);
 
 		String year = Objects.toString(searchRequest.getYear(), "");
 		String month = Objects.toString(searchRequest.getMonth(), "");
@@ -121,36 +120,45 @@ public class YPersonService {
 		}
 	}
 
-	private void searchByName(SearchRequest searchRequest, GenericSpecification<YPerson> gs) {
+	private void searchByName(SearchRequest searchRequest,
+                              GenericSpecification<YPerson> gs,
+                              PaginationRequest paginationRequest) {
 		String firstName = Objects.toString(searchRequest.getName().toUpperCase().trim(), ""); // Protection from null
-		if (!firstName.equals("")) {
-			criteriaFound = true;
-			if (ypr.findByFirstName(firstName).isEmpty()) {
-				gs.add(new SearchCriteria(FIRST_NAME, firstName, ALT_PEOPLE, SearchOperation.EQUALS));
-			} else {
-				gs.add(new SearchCriteria(FIRST_NAME, firstName, null, SearchOperation.EQUALS));
-			}
-		}
+        if (!firstName.equals("")) {
+            criteriaFound = true;
+            gs.add(new SearchCriteria(FIRST_NAME, firstName, null, SearchOperation.EQUALS));
+        }
 
-		String surName = Objects.toString(searchRequest.getSurname().toUpperCase().trim(), "");
-		if (!surName.equals("")) {
-			criteriaFound = true;
-			if (ypr.findByLastName(surName).isEmpty()) {
-				gs.add(new SearchCriteria(LAST_NAME, surName, ALT_PEOPLE, SearchOperation.EQUALS));
-			} else {
-				gs.add(new SearchCriteria(LAST_NAME, surName, null, SearchOperation.EQUALS));
-			}
-		}
+        String surName = Objects.toString(searchRequest.getSurname().toUpperCase().trim(), "");
+        if (!surName.equals("")) {
+            criteriaFound = true;
+            gs.add(new SearchCriteria(LAST_NAME, surName, null, SearchOperation.EQUALS));
+        }
 
-		String patName = Objects.toString(searchRequest.getPatronymic().toUpperCase().trim(), "");
-		if (!patName.equals("")) {
-			criteriaFound = true;
-			if (ypr.findByPatName(patName).isEmpty()) {
-				gs.add(new SearchCriteria(PAT_NAME, patName, ALT_PEOPLE, SearchOperation.EQUALS));
-			} else {
-				gs.add(new SearchCriteria(PAT_NAME, patName, null, SearchOperation.EQUALS));
-			}
-		}
+        String patName = Objects.toString(searchRequest.getPatronymic().toUpperCase().trim(), "");
+        if (!patName.equals("")) {
+            criteriaFound = true;
+            gs.add(new SearchCriteria(PAT_NAME, patName, null, SearchOperation.EQUALS));
+        }
+
+        PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
+        if (ypr.findAll(gs, pageRequest).isEmpty()) {
+            gs.clear();
+            if (!firstName.equals("")) {
+                criteriaFound = true;
+                gs.add(new SearchCriteria(FIRST_NAME, firstName, ALT_PEOPLE, SearchOperation.EQUALS));
+            }
+
+            if (!surName.equals("")) {
+                criteriaFound = true;
+                gs.add(new SearchCriteria(LAST_NAME, surName, ALT_PEOPLE, SearchOperation.EQUALS));
+            }
+
+            if (!patName.equals("")) {
+                criteriaFound = true;
+                gs.add(new SearchCriteria(PAT_NAME, patName, ALT_PEOPLE, SearchOperation.EQUALS));
+            }
+        }
 	}
 
 	private void searchByPassport(SearchRequest searchRequest, GenericSpecification<YPerson> gs) {

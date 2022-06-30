@@ -39,6 +39,11 @@ class DeferredTasksTest {
         protected void execute() {
             target.add(this.data);
         }
+
+        @Override
+        protected String description() {
+            return "Test task.";
+        }
     }
 
     @Test

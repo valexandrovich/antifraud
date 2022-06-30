@@ -19,6 +19,7 @@ let initialState = {
     message: "",
     type_message: "",
   },
+  canEdit: false,
 };
 
 const AuthReducer = (state = initialState, action = {}) => {
@@ -98,7 +99,7 @@ export const submitUserAuthThunk = (authForm) => (dispatch) => {
   authService
     .auth(authForm)
     .then((res) => {
-      if (res.data.role === null) {
+      if (res.data.role == null) {
         dispatch(
           setAlertMessageThunk(
             "Недостатньо прав зверніться до адміністратора",

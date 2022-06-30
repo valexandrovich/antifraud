@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+
+    <changeSet id="v033-49" author="Alexey Sidnenkov">
+        <addColumn tableName="contragent" >
+            <column name="portion_id"
+                    type="UUID" >
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v033-50" author="Dmitry Rumyantsev">
+        <createIndex tableName="contragent" indexName="contragent_revision_idx" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v033-51" author="Dmitry Rumyantsev">
+        <createIndex tableName="contragent" indexName="contragent_portion_id_idx" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

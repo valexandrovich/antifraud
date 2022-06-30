@@ -1,29 +1,28 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-import ua.com.solidity.db.abstraction.Identifiable;
-
-import javax.persistence.CascadeType;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
 import javax.persistence.Table;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
 
 @Getter
 @Setter
 @Entity
+@NamedEntityGraph(name="ypassport.sources", attributeNodes= @NamedAttributeNode("importSources"))
 @Table(name = "ypassport")
 public class YPassport implements Identifiable {
 	@Id
@@ -37,11 +36,10 @@ public class YPassport implements Identifiable {
 	private String recordNumber;
 	private String type;
 	private Boolean validity; // true - for valid passport
-	@ManyToOne(cascade = CascadeType.MERGE)
+	@ManyToMany(mappedBy = "passports")
 	@JsonBackReference
-	@JoinColumn(name = "person_id")
-	private YPerson person;
-	@ManyToMany(fetch = FetchType.EAGER)
+	private Set<YPerson> people = new HashSet<>();
+	@ManyToMany
 	@JoinTable(
 			name = "ypassport_import_source",
 			joinColumns = {@JoinColumn(name = "ypassport_id")},
@@ -54,12 +52,12 @@ public class YPassport implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YPassport yPassport = (YPassport) o;
-		return Objects.equals(series, yPassport.series) && Objects.equals(number, yPassport.number) && Objects.equals(authority, yPassport.authority) && Objects.equals(issued, yPassport.issued) && Objects.equals(endDate, yPassport.endDate) && Objects.equals(recordNumber, yPassport.recordNumber) && Objects.equals(type, yPassport.type) && Objects.equals(validity, yPassport.validity) && Objects.equals(person, yPassport.person);
+		return Objects.equals(series, yPassport.series) && Objects.equals(number, yPassport.number) && Objects.equals(type, yPassport.type);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(series, number, authority, issued, endDate, recordNumber, type, validity, person);
+		return Objects.hash(series, number, type);
 	}
 
 	@Override

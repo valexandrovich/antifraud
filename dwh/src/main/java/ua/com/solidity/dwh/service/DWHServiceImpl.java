@@ -1,16 +1,17 @@
 package ua.com.solidity.dwh.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.common.Utils;
-import ua.com.solidity.common.model.EnricherMessage;
+import ua.com.solidity.common.model.EnricherPortionMessage;
 import ua.com.solidity.db.entities.Contragent;
 import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.StatusLogger;
@@ -30,9 +31,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Slf4j
+@CustomLog
 @RequiredArgsConstructor
 @Service
+@PropertySource({"classpath:dwh.properties", "classpath:application.properties"})
 public class DWHServiceImpl implements DWHService {
 	private static final String CONTRAGENT = "contragent";
 	private final ArContragentRepository acr;
@@ -64,8 +66,8 @@ public class DWHServiceImpl implements DWHService {
 		long[] counter = new long[1];
 		LocalDateTime startTime = LocalDateTime.now();
 		LocalDate date;
+
 		UUID revision = UUID.randomUUID();
-		UUID id = UUID.randomUUID();
 
 		Timestamp lastModified = updateDWHRequest != null
 				? Optional.of(updateDWHRequest.getLastModified()).orElseGet(() -> null)
@@ -97,7 +99,7 @@ public class DWHServiceImpl implements DWHService {
 
 		log.info("Importing from DWH records archived after: {}", Timestamp.valueOf(date.atStartOfDay()));
 
-		StatusLogger statusLogger = new StatusLogger(id, 0L, "%",
+		StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
 		                                             AR_CONTRAGENT, DWH, startTime, null, null);
 		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 
@@ -106,6 +108,7 @@ public class DWHServiceImpl implements DWHService {
 
 
 		while (!onePage.isEmpty()) {
+			UUID portion = UUID.randomUUID(); // Portion
 			pageRequest = pageRequest.next();
 			List<Contragent> contragentEntityList = new ArrayList<>();
 
@@ -114,13 +117,13 @@ public class DWHServiceImpl implements DWHService {
 
 				Contragent c = new Contragent();
 
-				c.setId(r.getArContragentID().getId());
+				c.setId(r.getId());
 				c.setName(r.getName());
 				c.setContragentTypeId(r.getContragentTypeId());
 				c.setInsiderId(r.getInsiderId());
 				c.setCountryId(r.getCountryId());
 				c.setOwnershipTypeId(r.getOwnershipTypeId());
-				c.setIdentifyCode(r.getIdentifyCode());
+				c.setIdentifyCode(r.getArContragentID().getIdentifyCode());
 				c.setAddress(r.getAddress());
 				c.setBusinessType1(r.getBusinessType1());
 				c.setBusinessType2(r.getBusinessType2());
@@ -177,6 +180,7 @@ public class DWHServiceImpl implements DWHService {
 				c.setFop(r.getFop());
 				c.setArcDate(r.getArContragentID().getArcDate());
 				c.setUuid(UUID.randomUUID());
+				c.setPortionId(portion);
 				c.setRevision(revision);
 				contragentEntityList.add(c);
 				counter[0]++;
@@ -184,9 +188,14 @@ public class DWHServiceImpl implements DWHService {
 			cr.saveAll(contragentEntityList);
 			onePage = acr.findByArContragentIDArcDateGreaterThanEqual(date, pageRequest);
 
-			statusLogger = new StatusLogger(id, counter[0], RECORDS,
+			statusLogger = new StatusLogger(revision, counter[0], RECORDS,
 			                                AR_CONTRAGENT, DWH, startTime, null, null);
 			template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
+
+			log.debug("Sending task to otp-etl.enricher");
+
+			EnricherPortionMessage enricherMessage = new EnricherPortionMessage(CONTRAGENT, portion);
+			template.convertAndSend(enricherQueue, Utils.objectToJsonString(enricherMessage));
 		}
 
 		Instant newInstant = Timestamp.valueOf(startTime).toInstant();
@@ -198,14 +207,10 @@ public class DWHServiceImpl implements DWHService {
 		irr.save(newImportRevision);
 
 		log.info("Imported {} records from DWH", counter[0]);
-		log.info("Sending task to otp-etl.enricher");
 
-		statusLogger = new StatusLogger(id, 100L, "%",
+		statusLogger = new StatusLogger(revision, 100L, "%",
 		                                AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
 		                                importedRecords(counter[0], date));
 		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
-
-		EnricherMessage enricherMessage = new EnricherMessage(CONTRAGENT, revision);
-		template.convertAndSend(enricherQueue, Utils.objectToJsonString(enricherMessage));
 	}
 }

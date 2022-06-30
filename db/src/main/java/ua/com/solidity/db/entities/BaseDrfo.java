@@ -3,6 +3,7 @@ package ua.com.solidity.db.entities;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.time.LocalDate;
@@ -30,4 +31,6 @@ public class BaseDrfo {
     private String carKind;
     private String carsAll;
     private LocalDate birthdate2;
+    @Column(name="portion_id")
+    private UUID portionId;
 }

@@ -167,7 +167,11 @@ public class DWHServiceImpl implements DWHService {
 				c.setPhones(r.getPhones());
 				c.setMobilePhone(r.getMobilePhone());
 				// c.setEmail(r.getEmail());
-				c.setEmail(r.getEmail().replaceAll("[^\\w\\d\\-@_\\.]", ""));
+				if(r.getEmail() == null){
+					c.setEmail("");
+				} else {
+					c.setEmail(r.getEmail().replaceAll("[^\\w\\d\\-@_\\.]", ""));
+				}
 				c.setBadStatusFlag(r.getBadStatusFlag());
 				c.setPassportSerial(r.getPassportSerial());
 				c.setPassportNo(r.getPassportNo());

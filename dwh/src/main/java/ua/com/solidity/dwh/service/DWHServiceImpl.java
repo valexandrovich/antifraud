@@ -117,78 +117,75 @@ public class DWHServiceImpl implements DWHService {
 
 				Contragent c = new Contragent();
 
-				c.setId(r.getArContragentID().getId());
-				c.setName(r.getName());
-				c.setContragentTypeId(r.getContragentTypeId());
-				c.setInsiderId(r.getInsiderId());
-				c.setCountryId(r.getCountryId());
-				c.setOwnershipTypeId(r.getOwnershipTypeId());
-				c.setIdentifyCode(r.getIdentifyCode());
-				c.setAddress(r.getAddress());
-				c.setBusinessType1(r.getBusinessType1());
-				c.setBusinessType2(r.getBusinessType2());
-				c.setBusinessType3(r.getBusinessType3());
-				c.setBusinessType4(r.getBusinessType4());
-				c.setBusinessType5(r.getBusinessType5());
-				c.setContragentStateId(r.getContragentStateId());
-				c.setAlternateName(r.getAlternateName());
-				c.setRegisterDate(r.getRegisterDate());
-				c.setNalogRegisterDate(r.getNalogRegisterDate());
-				c.setJuridicalAddress(r.getJuridicalAddress());
-				c.setStateRegisterNo(r.getStateRegisterNo());
-				c.setStateRegisterDate(r.getStateRegisterDate());
-				c.setStateRegisterPlace(r.getStateRegisterPlace());
-				c.setAddrCountryId(r.getAddrCountryId());
-				c.setAddrPostCode(r.getAddrPostCode());
-				c.setAddrRegion(r.getAddrRegion());
-				c.setAddrDistrict(r.getAddrDistrict());
-				c.setAddrCity(r.getAddrCity());
-				c.setAddrStreet(r.getAddrStreet());
-				c.setAddrHouseNo(r.getAddrHouseNo());
-				c.setAddrFlat(r.getAddrFlat());
-				c.setJurAddrCountryId(r.getJurAddrCountryId());
-				c.setJurAddrRegion(r.getJurAddrRegion());
-				c.setJurAddrDistrict(r.getJurAddrDistrict());
-				c.setJurAddrCity(r.getJurAddrCity());
-				c.setJurAddrStreet(r.getJurAddrStreet());
-				c.setJurAddrHouseNo(r.getJurAddrHouseNo());
-				c.setJurAddrFlat(r.getJurAddrFlat());
-				c.setCloseDate(r.getCloseDate());
-				c.setLastModified(r.getLastModified());
-				c.setPassportType(r.getPassportType());
-				c.setPassportIssueDate(r.getPassportIssueDate());
-				c.setPassportIssuePlace(r.getPassportIssuePlace());
-				c.setClientName(r.getClientName());
-				c.setClientPatronymicName(r.getClientPatronymicName());
-				c.setClientLastName(r.getClientLastName());
-				c.setClientBirthday(r.getClientBirthday());
-				c.setBirthplace(r.getBirthplace());
-				c.setGender(r.getGender());
-				c.setPhones(r.getPhones());
-				c.setMobilePhone(r.getMobilePhone());
-				// c.setEmail(r.getEmail());
-				if(r.getEmail() == null){
-					c.setEmail("");
-				} else {
-					c.setEmail(r.getEmail().replaceAll("[^\\w\\d\\-@_\\.]", ""));
-				}
-				c.setBadStatusFlag(r.getBadStatusFlag());
-				c.setPassportSerial(r.getPassportSerial());
-				c.setPassportNo(r.getPassportNo());
-				c.setPhoneHome(r.getPhoneHome());
-				c.setFamilyStatusId(r.getFamilyStatusId());
-				c.setCitizenshipCountryId(r.getCitizenshipCountryId());
-				c.setWorkplace(r.getWorkplace());
-				c.setIsPublicPerson(r.getIsPublicPerson());
-				c.setWorkPosition(r.getWorkPosition());
-				c.setPassportEndDate(r.getPassportEndDate());
-				c.setFop(r.getFop());
-				c.setArcDate(r.getArContragentID().getArcDate());
-				c.setUuid(UUID.randomUUID());
-				c.setPortionId(portion);
-				c.setRevision(revision);
-				contragentEntityList.add(c);
-				counter[0]++;
+				
+c.setId(r.getArContragentID().getId());
+c.setName(handleString(r.getName()));
+c.setContragentTypeId(handleString(r.getContragentTypeId()));
+c.setInsiderId(r.getInsiderId());
+c.setCountryId(r.getCountryId());
+c.setOwnershipTypeId(r.getOwnershipTypeId());
+c.setIdentifyCode(handleString(r.getIdentifyCode()));
+c.setAddress(handleString(r.getAddress()));
+c.setBusinessType1(r.getBusinessType1());
+c.setBusinessType2(r.getBusinessType2());
+c.setBusinessType3(r.getBusinessType3());
+c.setBusinessType4(r.getBusinessType4());
+c.setBusinessType5(r.getBusinessType5());
+c.setContragentStateId(r.getContragentStateId());
+c.setAlternateName(handleString(r.getAlternateName()));
+c.setRegisterDate(r.getRegisterDate());
+c.setNalogRegisterDate(r.getNalogRegisterDate());
+c.setJuridicalAddress(handleString(r.getJuridicalAddress()));
+c.setStateRegisterNo(handleString(r.getStateRegisterNo()));
+c.setStateRegisterDate(r.getStateRegisterDate());
+c.setStateRegisterPlace(handleString(r.getStateRegisterPlace()));
+c.setAddrCountryId(r.getAddrCountryId());
+c.setAddrPostCode(handleString(r.getAddrPostCode()));
+c.setAddrRegion(handleString(r.getAddrRegion()));
+c.setAddrDistrict(handleString(r.getAddrDistrict()));
+c.setAddrCity(handleString(r.getAddrCity()));
+c.setAddrStreet(handleString(r.getAddrStreet()));
+c.setAddrHouseNo(handleString(r.getAddrHouseNo()));
+c.setAddrFlat(handleString(r.getAddrFlat()));
+c.setJurAddrCountryId(r.getJurAddrCountryId());
+c.setJurAddrRegion(handleString(r.getJurAddrRegion()));
+c.setJurAddrDistrict(handleString(r.getJurAddrDistrict()));
+c.setJurAddrCity(handleString(r.getJurAddrCity()));
+c.setJurAddrStreet(handleString(r.getJurAddrStreet()));
+c.setJurAddrHouseNo(handleString(r.getJurAddrHouseNo()));
+c.setJurAddrFlat(handleString(r.getJurAddrFlat()));
+c.setCloseDate(r.getCloseDate());
+c.setLastModified(r.getLastModified());
+c.setPassportType(r.getPassportType());
+c.setPassportIssueDate(r.getPassportIssueDate());
+c.setPassportIssuePlace(handleString(r.getPassportIssuePlace()));
+c.setClientName(handleString(r.getClientName()));
+c.setClientPatronymicName(handleString(r.getClientPatronymicName()));
+c.setClientLastName(handleString(r.getClientLastName()));
+c.setClientBirthday(r.getClientBirthday());
+c.setBirthplace(handleString(r.getBirthplace()));
+c.setGender(handleString(r.getGender()));
+c.setPhones(handleString(r.getPhones()));
+c.setMobilePhone(handleString(r.getMobilePhone()));
+c.setEmail(handleString(r.getEmail()));
+c.setBadStatusFlag(r.getBadStatusFlag());
+c.setPassportSerial(handleString(r.getPassportSerial()));
+c.setPassportNo(handleString(r.getPassportNo()));
+c.setPhoneHome(handleString(r.getPhoneHome()));
+c.setFamilyStatusId(r.getFamilyStatusId());
+c.setCitizenshipCountryId(r.getCitizenshipCountryId());
+c.setWorkplace(handleString(r.getWorkplace()));
+c.setIsPublicPerson(r.getIsPublicPerson());
+c.setWorkPosition(handleString(r.getWorkPosition()));
+c.setPassportEndDate(r.getPassportEndDate());
+c.setFop(r.getFop());
+c.setArcDate(r.getArContragentID().getArcDate());
+c.setUuid(UUID.randomUUID());
+c.setPortionId(portion);
+c.setRevision(revision);
+contragentEntityList.add(c);
+counter[0]++;
+
 			});
 			cr.saveAll(contragentEntityList);
 			onePage = acr.findByArContragentIDArcDateGreaterThanEqual(date, pageRequest);
@@ -218,4 +215,11 @@ public class DWHServiceImpl implements DWHService {
 		                                importedRecords(counter[0], date));
 		template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
 	}
+
+private String handleString(String string){
+   return string == null ? "" : string.replaceAll("\u0000", "");
+}
+
+
+	
 }

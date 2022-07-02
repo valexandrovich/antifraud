@@ -218,6 +218,7 @@ counter[0]++;
 
 private String handleString(String string){
 	// log.debug('')
+	// log.debug('')
    return string == null ? "" : string.replaceAll("\u0000", "");
 }
 

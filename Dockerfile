@@ -1,4 +1,4 @@
-FROM openjdk:11-jre
+FROM nexus.otpbank.com.ua:19443/repository/openjdk:11-jre
 
 ENV JAVA_OPTS="-Xms256m -Xmx2G -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080"
 ENV OTP_TEMP=/tmp

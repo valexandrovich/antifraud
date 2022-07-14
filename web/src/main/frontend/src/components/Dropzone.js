@@ -113,10 +113,11 @@ function Dropzone() {
 
   return (
     <>
-      <div className="col-sm-12 mt-2">
+      <div className="col-sm-6 mt-2">
         <label htmlFor="summary">Короткий опис файлу:</label>
         <input
           name="summary"
+          maxLength={255}
           className="form-control "
           type="text"
           value={description}

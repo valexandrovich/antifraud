@@ -26,7 +26,7 @@ public class RabbitController {
 	private final RabbitService rabbitService;
 
 	@PostMapping(path = "/send")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Sends message to specified queue",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))

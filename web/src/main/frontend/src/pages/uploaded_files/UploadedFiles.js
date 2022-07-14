@@ -5,8 +5,8 @@ import Pagination from "../../components/Pagination";
 import authHeader from "../../api/AuthHeader";
 import { useDispatch } from "react-redux";
 import { setAlertMessageThunk } from "../../store/reducers/AuthReducer";
-import * as IoIcons from "react-icons/io";
 import ConfirmDeletemodal from "../../components/Modal/ConfirmDeletemodal";
+import UploadFilesActions from "./UploadFilesActions";
 
 const UploadedFiles = () => {
   const [resp, setResp] = useState([]);
@@ -17,7 +17,7 @@ const UploadedFiles = () => {
   const indexOfLastFile = currentPage * filesPerPage;
   const indexOfFirstFile = indexOfLastFile - filesPerPage;
   const currentFile = resp.slice(indexOfFirstFile, indexOfLastFile);
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = useCallback((pageNumber) => setCurrentPage(pageNumber), []);
   const dispatch = useDispatch();
   const mountedRef = useRef(true);
   const getFiles = useCallback(() => {
@@ -28,7 +28,9 @@ const UploadedFiles = () => {
         setResp(data);
       });
   }, []);
-
+  useEffect(() => {
+    setSingleFile([]);
+  }, [currentPage]);
   const deleteAction = (id) => {
     const requestOptions = {
       method: "DELETE",
@@ -73,7 +75,7 @@ const UploadedFiles = () => {
     <div className="wrapped">
       <PageTitle title={"uploaded_files"} />
 
-      <div className="sroll-x">
+      <div className="scroll tableFixHead">
         <table className="table-bordered table w-90">
           <thead>
             <tr>
@@ -88,8 +90,9 @@ const UploadedFiles = () => {
           <tbody>
             {currentFile.map((el) => {
               return (
-                <tr key={el.uuid}>
+                <tr className={"align-middle action_btn"} key={el.uuid}>
                   <td
+                    className={"action_btn_clicked"}
                     id={el.uuid}
                     onClick={(e) => {
                       getInfo(e.target.id);
@@ -97,27 +100,18 @@ const UploadedFiles = () => {
                   >
                     {el.uuid}
                   </td>
-
-                  <td>{el.userName === "Incognito" ? "test" : el.userName}</td>
+                  <td>{el.userName}</td>
                   <td>{el.created}</td>
                   <td>{el.rowCount || "не вказано"}</td>
                   <td>{el.description}</td>
-                  <td>
-                    <div className="d-flex align-items-center">
-                      <button
-                        onClick={() => enrich(el.uuid)}
-                        className="btn custom-btn"
-                      >
-                        Імпортувати
-                      </button>
-                      <span
-                        onClick={() => setConfirmationRemove(el.uuid)}
-                        style={{ color: "red", fontSize: "30px" }}
-                      >
-                        <IoIcons.IoMdTrash className="mr-10" />
-                      </span>
-                    </div>
-                  </td>
+                  <UploadFilesActions
+                    enrich={enrich}
+                    el={el.uuid}
+                    remove={() => setConfirmationRemove(el.uuid)}
+                    info={(e) => {
+                      getInfo(e);
+                    }}
+                  />
                 </tr>
               );
             })}
@@ -134,6 +128,7 @@ const UploadedFiles = () => {
       </div>
       {resp.length > 5 && (
         <Pagination
+          margin={-65}
           filesPerPage={filesPerPage}
           totalFiles={resp.length}
           paginate={paginate}

@@ -17,7 +17,7 @@ export function pad(num, size) {
 }
 
 export function formatPassport(passports) {
-  if (passports.length > 0) {
+  if (passports && passports.length > 0) {
     if (passports[0].type === "UA_IDCARD") {
       return pad(passports[0].number, 9);
     } else {
@@ -27,12 +27,34 @@ export function formatPassport(passports) {
   return "";
 }
 
+function singlePassport(passport) {
+  if (passport) {
+    if (passport.type === "UA_IDCARD") {
+      return pad(passport.number, 9);
+    } else {
+      return `${passport.series}${pad(passport.number, 6)}`;
+    }
+  }
+  return "";
+}
+
 export function formatInn(inns) {
-  if (inns.length > 0) {
+  if (inns && inns.length > 0) {
     if (inns[0].inn.toString().length < 10) {
       return pad(inns[0].inn, 10);
     } else {
       return inns[0].inn;
+    }
+  }
+  return "";
+}
+
+export function singleInn(inn) {
+  if (inn) {
+    if (inn.inn.toString().length < 10) {
+      return pad(inn.inn, 10);
+    } else {
+      return inn.inn;
     }
   }
   return "";
@@ -48,14 +70,14 @@ const Card = ({ data }) => {
     lastName,
     firstName,
     patName,
-    inns,
-    passports,
+    inn,
+    passport,
     birthdate,
-    addresses,
+    address,
     subscribe,
   } = data;
   const [sub, setSub] = useState(subscribe);
-  const role = useSelector((state) => state.auth.role);
+  const userRole = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
   const subscribeAction = (id) => {
     try {
@@ -102,7 +124,7 @@ const Card = ({ data }) => {
               {lastName} {firstName} {patName}
             </h6>
 
-            {role === "ADVANCED" ? (
+            {userRole === "ADVANCED" || userRole === "ADMIN" ? (
               sub ? (
                 <IoIcons.IoMdStar
                   onClick={() => unsubscribeAction(id)}
@@ -136,34 +158,34 @@ const Card = ({ data }) => {
             </div>
             <div className="d-flex ">
               <b className="mr-10">Паспорт:</b>
-              <p>{formatPassport(passports)}</p>
+              <p>{singlePassport(passport)}</p>
 
               <span className="ml-10">
-                {passports.length > 0
-                  ? `(${passports[0]?.importSources.length} ${sourceName(
-                      passports[0]?.importSources
+                {passport
+                  ? `(${passport?.importSources.length} ${sourceName(
+                      passport?.importSources
                     )})`
                   : ""}
               </span>
             </div>
             <div className="d-flex">
               <b className="mr-10">ІПН:</b>
-              <p>{formatInn(inns)} </p>
+              <p>{singleInn(inn)} </p>
               <span className="ml-10">
-                {inns.length > 0
-                  ? `(${inns[0].importSources.length} ${sourceName(
-                      inns[0].importSources
+                {inn
+                  ? `(${inn.importSources.length} ${sourceName(
+                      inn.importSources
                     )})`
                   : ""}
               </span>
             </div>
             <div className="d-flex">
               <b className="mr-10">Адреса:</b>
-              <p>{addresses.length > 0 ? addresses[0].address : ""}</p>
+              <p>{address ? address.address : ""}</p>
               <span className="ml-10">
-                {addresses.length > 0
-                  ? `(${addresses[0].importSources.length} ${sourceName(
-                      addresses[0].importSources
+                {address
+                  ? `(${address.importSources.length} ${sourceName(
+                      address.importSources
                     )})`
                   : ""}
               </span>

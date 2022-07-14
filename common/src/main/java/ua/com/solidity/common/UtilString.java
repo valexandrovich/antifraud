@@ -15,4 +15,8 @@ public final class UtilString {
     public static boolean equalsIgnoreCase(String a, String b) {
         return a != null && a.equalsIgnoreCase(b);
     }
+
+    public static boolean matches(String value, String regex) {
+        return value != null && value.matches(regex);
+    }
 }

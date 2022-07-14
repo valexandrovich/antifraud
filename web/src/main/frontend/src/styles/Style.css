@@ -5,6 +5,7 @@
     --card: #fff2cd;
     --white: #f5f5f5;
     --main: #008800;
+
 }
 
 * {
@@ -165,11 +166,43 @@ body {
     margin-left: 300px;
     margin-right: 50px;
     margin-top: 60px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tableFixHead {
+    overflow-y: auto;
+    height: 106px;
+}
+
+.tableFixHead thead th {
+    position: sticky;
+    top: -2px;
+    background: var(--light-green);
+}
+
+th {
+    background: var(--card);
+    z-index: 5;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
 }
 
 .sroll-x {
-    overflow-x: scroll;
+    overflow: auto;
     max-width: 100vw;
+    height: 70vh;
+}
+
+.scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100vw;
+    height: 100%;
+    padding-bottom: 75px;
 }
 
 /* ASIDE */
@@ -177,7 +210,7 @@ body {
     background-color: var(--green);
     display: flex;
     align-items: center;
-    z-index: 4;
+    z-index: 6;
     position: fixed;
     top: 0;
     width: 100vw;
@@ -535,6 +568,11 @@ datalist {
 
 .custom-btn {
     color: var(--white);
+    background-color: var(--green);
+}
+
+.custom-btn-collapse {
+    color: var(--white);
     background-color: var(--main);
 }
 
@@ -640,4 +678,34 @@ datalist {
 .card_m {
     margin: 0 0 10px 10px;
 }
+
+.tag_name {
+    margin-left: 5px;
+    font-size: 10px;
+    font-style: italic;
+}
+
+.action_btn:hover {
+    background-color: var(--light-green);
+    cursor: pointer;
+}
+
+.action_btn_clicked:hover {
+    text-decoration: underline;
+    color: var(--main);
+}
+
+.dropdown-element {
+    z-index: 16;
+    position: absolute;
+    top: 37px;
+    left: 0;
+    width: 100%;
+}
+
+.dropdown-element button {
+    width: 100%;
+    z-index: 8;
+}
+
 

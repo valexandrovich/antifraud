@@ -25,7 +25,7 @@ public class StatusLoggerController {
 	private final StatusLoggerService statusLoggerService;
 
 	@GetMapping(path = "/find")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Shows all statusloggers.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))

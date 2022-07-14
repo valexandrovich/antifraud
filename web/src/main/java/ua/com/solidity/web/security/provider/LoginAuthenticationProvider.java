@@ -50,6 +50,10 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 	private final UserRepository userRepository;
 	private final UserFactory userFactory;
 
+	@Value("${user.admin.name}")
+	private String adminName;
+	@Value("${user.admin.password}")
+	private String adminPassword;
 	@Value("${user.super.name}")
 	private String superName;
 	@Value("${user.super.password}")
@@ -58,8 +62,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 	private String basicName;
 	@Value("${user.basic.password}")
 	private String basicPassword;
-	private static final String SUPER_USER = "superuser";
-	private static final String BASIC_USER = "basicuser";
+
 	private static final String EMAIL_DOMAIN = "@gmail.com";
 	private static final String PHONE_NUMBER_MOCK = "0500000000";
 
@@ -80,7 +83,24 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 		Role role;
 		String roleName;
 		UserDetailsImpl userDetails;
-		if (superName.equals(requestUserLogin)) {
+		if (adminName.equals(requestUserLogin)) {
+			if (!adminPassword.equals(requestPassword))
+				throw new AuthenticationServiceException(INCORRECT_PASSWORD_MESSAGE);
+			person = new Person();
+			person.setDisplayName(adminName);
+			person.setUsername(adminName);
+			role = roleRepository.findById(3).orElseThrow(NoSuchRoleException::new);
+			roleName = role.getName();
+			if (userRepository.findByUsername(adminName).isEmpty()) {
+				User adminUser = new User();
+				adminUser.setUsername(adminName);
+				adminUser.setRole(role);
+				adminUser.setDisplayName(adminName);
+				adminUser.setEmail(adminName + EMAIL_DOMAIN);
+				adminUser.setPhoneNumber(PHONE_NUMBER_MOCK);
+				userRepository.save(adminUser);
+			}
+		} else if (superName.equals(requestUserLogin)) {
 			if (!superPassword.equals(requestPassword))
 				throw new AuthenticationServiceException(INCORRECT_PASSWORD_MESSAGE);
 			person = new Person();
@@ -88,12 +108,12 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 			person.setUsername(superName);
 			role = roleRepository.findById(1).orElseThrow(NoSuchRoleException::new);
 			roleName = role.getName();
-			if (userRepository.findByUsername(SUPER_USER).isEmpty()) {
+			if (userRepository.findByUsername(superName).isEmpty()) {
 				User superUser = new User();
-				superUser.setUsername(SUPER_USER);
+				superUser.setUsername(superName);
 				superUser.setRole(role);
-				superUser.setDisplayName(SUPER_USER);
-				superUser.setEmail(SUPER_USER + EMAIL_DOMAIN);
+				superUser.setDisplayName(superName);
+				superUser.setEmail(superName + EMAIL_DOMAIN);
 				superUser.setPhoneNumber(PHONE_NUMBER_MOCK);
 				userRepository.save(superUser);
 			}
@@ -105,12 +125,12 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
 			person.setUsername(basicName);
 			role = roleRepository.findById(2).orElseThrow(NoSuchRoleException::new);
 			roleName = role.getName();
-			if (userRepository.findByUsername(BASIC_USER).isEmpty()) {
+			if (userRepository.findByUsername(basicName).isEmpty()) {
 				User basicUser = new User();
-				basicUser.setUsername(BASIC_USER);
+				basicUser.setUsername(basicName);
 				basicUser.setRole(role);
-				basicUser.setDisplayName(BASIC_USER);
-				basicUser.setEmail(BASIC_USER + EMAIL_DOMAIN);
+				basicUser.setDisplayName(basicName);
+				basicUser.setEmail(basicName + EMAIL_DOMAIN);
 				basicUser.setPhoneNumber(PHONE_NUMBER_MOCK);
 				userRepository.save(basicUser);
 			}

@@ -24,7 +24,7 @@ public class LdapController {
 	private final LdapPersonService ldapPersonService;
 
 	@GetMapping(path = "/find/{name}", produces = "application/json")
-	@PreAuthorize("hasAnyAuthority('ADVANCED')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Finds person in Active Directory.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))

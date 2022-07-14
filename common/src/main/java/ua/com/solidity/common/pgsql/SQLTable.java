@@ -7,14 +7,12 @@ import org.postgresql.core.BaseConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ua.com.solidity.common.*;
 import ua.com.solidity.common.data.*;
-import ua.com.solidity.common.model.EnricherMessage;
 import ua.com.solidity.common.model.EnricherPortionMessage;
 
 import java.nio.CharBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.*;
-
 
 @CustomLog
 public class SQLTable {
@@ -80,6 +78,7 @@ public class SQLTable {
         return null;
     }
 
+    @SuppressWarnings("unused")
     protected final DataExtensionFactory getExtensionFactory(DataBatch batch) {
         DataExtensionFactory batchExtensionFactory = batch.getExtensionFactory();
         if (extensionFactory == batchExtensionFactory) return extensionFactory;
@@ -140,7 +139,7 @@ public class SQLTable {
             count = rowCount;
         }
         printer.stop();
-        log.debug("Query execution time for {} rows: {}", rowCount, printer.getDurationString());
+        log.info("$table$Query execution time for {} rows: {}", rowCount, printer.getDurationString());
         return (int) count;
     }
 
@@ -186,15 +185,13 @@ public class SQLTable {
             if (error != null) {
                 ++insertErrorCount;
                 res.add(obj, error.getMessage());
-                if (log.isDebugEnabled()) {
-                    if (errorBuilder.length() == 0) {
-                        errorBuilder.append(error.getMessage());
-                    } else errorBuilder.append("; ").append(error.getMessage());
-                }
+                if (errorBuilder.length() == 0) {
+                    errorBuilder.append(error.getMessage());
+                } else errorBuilder.append("; ").append(error.getMessage());
             }
         }
         if (errorBuilder.length() > 0) {
-            log.debug("-Row content error: {}", errorBuilder);
+            log.info("$table$-Row content error: {}", errorBuilder);
             errorBuilder.setLength(0);
             return res;
         }
@@ -221,7 +218,7 @@ public class SQLTable {
                 }
             }
             if (errorBuilder.length() > 0) {
-                log.debug("Row content error. {}", errorBuilder);
+                log.info("$table$Row content error. {}", errorBuilder);
                 errorBuilder.setLength(0);
                 res.error();
             }
@@ -307,7 +304,7 @@ public class SQLTable {
         }
         if (count > 0) {
             EnricherPortionMessage enricherPortionMessage = new EnricherPortionMessage(tableName, portion);
-            Utils.sendRabbitMQMessage("otp-etl.enricher", Utils.objectToJsonString(enricherPortionMessage));
+            Utils.sendRabbitMQMessage(OtpExchange.ENRICHER, enricherPortionMessage);
         }
         portion = UUID.randomUUID();
         return count;
@@ -488,12 +485,12 @@ public class SQLTable {
 
     private void logErrors(StringBuilder builder, SQLAssignResult res) {
         if (builder.length() == 0) return;
-        log.debug("Errors with message \"{}\" found for fields: {}", res.getMessage(), builder);
+        log.info("$table$Errors with message \"{}\" found for fields: {}", res.getMessage(), builder);
     }
 
     public final void logInsertErrors() {
         if (insertErrorCount == 0) {
-            log.debug("Insert errors not found, OK.");
+            log.info("$table$Insert errors not found, OK.");
             return;
         }
         StringBuilder nullBuilder = new StringBuilder();
@@ -515,15 +512,13 @@ public class SQLTable {
             }
         }
 
-        if (log.isDebugEnabled()) {
-            logErrors(nullBuilder, SQLAssignResult.NULL_NOT_ALLOWED);
-            logErrors(exceptionBuilder, SQLAssignResult.EXCEPTION);
-        }
+        logErrors(nullBuilder, SQLAssignResult.NULL_NOT_ALLOWED);
+        logErrors(exceptionBuilder, SQLAssignResult.EXCEPTION);
 
         if (!lengthErrors.isEmpty()) {
-            log.debug("\"{}\" found for fields:", SQLAssignResult.LENGTH_ERROR.getMessage());
+            log.info("$table$\"{}\" found for fields:", SQLAssignResult.LENGTH_ERROR.getMessage());
             for (String error : lengthErrors) {
-                log.debug(error);
+                log.info("$table${}", error);
             }
         }
     }
@@ -554,8 +549,6 @@ public class SQLTable {
             }
         }
         prepared = false;
-        if (log.isDebugEnabled()) {
-            logInsertErrors();
-        }
+        logInsertErrors();
     }
 }

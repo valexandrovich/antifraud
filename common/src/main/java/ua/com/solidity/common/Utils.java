@@ -532,8 +532,9 @@ public class Utils {
         return false;
     }
 
-    public static synchronized void sendRabbitMQMessage(String queue, String message) {
+    public static synchronized void sendRabbitMQMessage(String queue, Object obj) {
         if (queue == null || queue.isBlank()) return;
+        String message = obj instanceof String ? (String) obj : objectToJsonString(obj);
         if (prepareRabbitMQQueue(queue)) {
             try {
                 channel.basicPublish(queue, queue, null, (message == null ? "" : message).getBytes(StandardCharsets.UTF_8));

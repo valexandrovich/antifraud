@@ -75,16 +75,17 @@ public class XLSParser extends CustomParser {
         }
     }
 
-    private void locateToNonEmptyRow() {
-        boolean exists = false;
+    private boolean locateToNonEmptyRow() {
         while (rowIndex <= lastRowNum) {
             XSSFRow row = sheet.getRow(rowIndex);
             for (int i = 0; i < columns.length; ++i) {
-                exists |= (data[i] = cellToObject(row.getCell(columns[i]))) != null;
+                if ((data[i] = cellToObject(row.getCell(columns[i]))) != null) {
+                    return true;
+                }
             }
-            if (exists) break;
             ++rowIndex;
         }
+        return false;
     }
 
     @Override
@@ -115,7 +116,6 @@ public class XLSParser extends CustomParser {
             }
             header = new DataHeader(cols);
             data = new Object[columns.length];
-            locateToNonEmptyRow();
             return true;
         } catch (Exception e) {
             log.error("Can't open workbook.", e);
@@ -162,11 +162,11 @@ public class XLSParser extends CustomParser {
 
     @Override
     protected boolean doNext() {
-        if (rowIndex < lastRowNum) {
-            rowObject = null;
+        rowObject = null;
+        boolean res = locateToNonEmptyRow();
+        if (res) {
             ++rowIndex;
-            locateToNonEmptyRow();
         }
-        return rowIndex <= lastRowNum;
+        return res;
     }
 }

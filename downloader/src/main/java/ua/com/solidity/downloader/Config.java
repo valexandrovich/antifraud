@@ -8,9 +8,6 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.StatusChanger;
 import ua.com.solidity.common.Utils;
-import ua.com.solidity.common.logger.LoggerWrapperFactory;
-
-import javax.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -22,9 +19,6 @@ import java.time.LocalDateTime;
 public class Config {
     private static final String apiSuffix = "/api/3/action/package_show?id={0}";
     private static final String resourceSuffix = "/api/3/action/resource_show?id={0}";
-
-    @Value("${otp-etl.logger.options}")
-    private String loggerOptions;
 
     @Value("${data.gov.ua.domain}")
     private String dataGovUaDomain;
@@ -69,11 +63,6 @@ public class Config {
 
     private StatusChanger statusChanger;
 
-    @PostConstruct
-    private void setupLoggerOptions() {
-        LoggerWrapperFactory.includeOptionsByString(loggerOptions);
-    }
-
     public final String getDataGovUaApiUrl() {
         return dataGovUaDomain + apiSuffix;
     }
@@ -90,8 +79,9 @@ public class Config {
     }
 
     public final String getLogFileName(String fileName) {
-        if (fileName == null || fileName.isBlank()) return null;
-        if (StringUtils.equals(fileName, "?")) return "?";
+        if (fileName == null || fileName.isBlank() || StringUtils.equals(fileName, "?")) {
+            return "?";
+        }
         String folder = getDownloaderOutputFolder() + "/logs";
         Path path = Path.of(folder);
         try {

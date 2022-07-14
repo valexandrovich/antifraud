@@ -2,17 +2,20 @@ package ua.com.solidity.common.logger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ua.com.solidity.common.Utils;
 
 import java.util.*;
 
 @SuppressWarnings("unused")
 public class LoggerWrapperFactory {
+    static final String LOGGER_OPTIONS_PROPERTY = "otp-etl.logger.options";
     static Map<Class<? extends FlexibleLoggerWrapper>, Set<Class<? extends FlexibleLoggerWrapper>>> rules = new HashMap<>();
     static final Map<String, FlexibleLoggerWrapper> loggers = new HashMap<>();
     static final Set<Class<? extends FlexibleLoggerWrapper>> registered = new HashSet<>();
     static List<Class<? extends FlexibleLoggerWrapper>> wrappers = new ArrayList<>();
     static final Set<String> options = new HashSet<>();
     static boolean optionsAll = false;
+    static boolean optionsInitialized = false;
 
     static {
         registerWrappers();
@@ -20,6 +23,15 @@ public class LoggerWrapperFactory {
 
     private LoggerWrapperFactory() {
         // nothing
+    }
+
+    private static boolean initOptionsByContext() {
+        if (optionsInitialized) return true;
+        if (Utils.checkApplicationContext()) {
+            includeOptionsByString(Utils.getContextProperty(LOGGER_OPTIONS_PROPERTY, ""));
+            return optionsInitialized = true;
+        }
+        return false;
     }
 
     public static void includeOptionsByString(String str) {
@@ -34,14 +46,14 @@ public class LoggerWrapperFactory {
                 optionsAll = true;
                 options.clear();
                 break;
-            } else if (!optionsAll) {
+            } else {
                 options.add(opt);
             }
         }
     }
 
     public static boolean isOptionIncluded(String option) {
-        return optionsAll || options.contains(option.trim());
+        return initOptionsByContext() && (optionsAll || options.contains(option.trim()));
     }
 
     private static void registerWrappers() {

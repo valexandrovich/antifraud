@@ -34,6 +34,8 @@ public class RabbitMqListener {
 		} catch (JsonProcessingException e) {
 			log.error("Can't understand object from queue!", e);
 			log.debug("The message was: {}", message);
+		} catch (Exception e) {
+			log.error("RabbitMQListener message handling error (routingKey: {}, message:{})", dwhQueue, message, e);
 		}
 	}
 }

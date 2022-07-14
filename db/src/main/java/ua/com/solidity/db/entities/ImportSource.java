@@ -8,6 +8,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 import lombok.AllArgsConstructor;
@@ -40,10 +41,12 @@ public class ImportSource extends CustomEntity {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @JsonIgnore
     @Type(type = "jsonb-node")
     @Column(name = "source_info", nullable = false)
     private JsonNode sourceInfo;
 
+    @JsonIgnore
     @Type(type = "jsonb-node")
     @Column(name = "pipeline_info", nullable = false)
     private JsonNode pipelineInfo;

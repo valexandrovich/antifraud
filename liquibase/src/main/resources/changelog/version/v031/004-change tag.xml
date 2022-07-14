@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v031-041" author="Olha Tankevych">
+        <tagDatabase tag="v031-041"/>
+    </changeSet>
+    <changeSet id="v031-042" author="Olha Tankevych">
+        <addColumn tableName="ytag">
+            <column name="tag_type_id" type="bigint"/>
+        </addColumn>
+        <rollback>
+            <dropColumn columnName="tag_type_id" tableName="ytag"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v031-043" author="Olha Tankevych">
+        <addForeignKeyConstraint baseTableName="ytag" referencedTableName="tag_type"
+                                 constraintName="tag_type_id" baseColumnNames="tag_type_id" referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="v031-044" author="Olha Tankevych">
+        <dropColumn columnName="name" tableName="ytag"/>
+        <rollback>
+            <addColumn tableName="ytag">
+                <column name="name" type="varchar(255)"/>
+            </addColumn>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v031-045" author="Olha Tankevych">
+        <createIndex tableName="ytag" indexName="ytag_tag_type">
+            <column name="tag_type_id"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="ytag" indexName="ytag_tag_type"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v031-046" author="Olha Tankevych">
+        <createIndex tableName="ytag" indexName="ytag_yperson">
+            <column name="person_id"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="ytag" indexName="ytag_yperson"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

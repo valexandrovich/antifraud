@@ -31,9 +31,21 @@
     </changeSet>
     <changeSet id="v031-4" author="Olha Tankevych">
         <dropForeignKeyConstraint baseTableName="ypassport" constraintName="fk_ypassport_on_yperson"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="person_id"
+                                     baseTableName="ypassport"
+                                     constraintName="FK_YPASSPORT_ON_YPERSON"
+                                     referencedColumnNames="id"
+                                     referencedTableName="yperson"/>
+        </rollback>
     </changeSet>
     <changeSet id="v031-5" author="Olha Tankevych">
         <dropColumn columnName="person_id" tableName="ypassport"/>
+        <rollback>
+            <addColumn tableName="ypassport">
+                <column name="person_id" type="UUID"/>
+            </addColumn>
+        </rollback>
     </changeSet>
 
 </databaseChangeLog>

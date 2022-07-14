@@ -29,7 +29,7 @@ const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
   const alertMsg = useSelector((state) => state.auth.alert);
   const dispatch = useDispatch();
-  const role = useSelector((state) => state.auth.role);
+  const userRole = useSelector((state) => state.auth.role);
   const history = useHistory();
   let location = useLocation();
   useEffect(() => {
@@ -46,26 +46,27 @@ const App = () => {
           </div>
         </div>
       )}
-      {isAuth && role !== null ? (
+      {isAuth && userRole !== null ? (
         <>
           <Aside />
           <Switch>
-            <ProtectedRoute exact path="/add-file" component={UploadFile} />
-            <Route exact path="/">
+            <Route path="/error" component={ErrorPage} />
+            <Route exact path="/ || /#/">
               <Redirect exact to="/search" component={Search} />
             </Route>
             <Route exact path="/search" component={Search} />
+            <Route exact path="/" component={Search} />
             <ProtectedRoute
               exact
               path="/uploaded_files"
               component={UploadedFiles}
             />
             <Route exact path="/card/:id" component={SingleCard} />
+            <ProtectedRoute exact path="/add-file" component={UploadFile} />
             <ProtectedRoute exact path="/progress" component={Progress} />
             <ProtectedRoute exact path="/sheduler" component={Sheduler} />
             <ProtectedRoute exact path="/subscription" component={Monitoring} />
-            <Route path="/error" component={ErrorPage} />
-            <Route path="*" component={NonFound} />
+
             <Route component={NonFound} />
           </Switch>
         </>

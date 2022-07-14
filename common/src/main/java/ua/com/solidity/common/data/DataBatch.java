@@ -1,6 +1,7 @@
 package ua.com.solidity.common.data;
 
 import ua.com.solidity.common.ErrorReport;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
 
 import java.util.ArrayList;
@@ -10,7 +11,9 @@ import java.util.List;
 public class DataBatch {
     public static final int DEFAULT_OBJECT_COUNT = 16384;
     public static final int DEFAULT_ERROR_COUNT = 1024;
-    public static final int DEFAULT_CAPACITY = 16394;
+    public static final int DEFAULT_CAPACITY = 16384;
+
+    private static int LOADED_DEFAULT_CAPACITY = -1;
 
     public interface FlushHandler {
         void flush(DataBatch obj);
@@ -42,16 +45,32 @@ public class DataBatch {
     private DataExtensionFactory extensionFactory = null;
 
     public DataBatch(int capacity, int objectCapacity, int errorCapacity, Item item, FlushHandler handler) {
+        int defCapacity = getDefaultCapacity();
+
         if (capacity < 1 && objectCapacity < 1 && errorCapacity < 1) {
-            capacity = DEFAULT_CAPACITY;
+            capacity = defCapacity + DEFAULT_ERROR_COUNT;
         }
 
-        this.objectCapacity = objectCapacity < 1 ? DEFAULT_OBJECT_COUNT : objectCapacity;
+        this.objectCapacity = objectCapacity < 1 ? defCapacity : objectCapacity;
         this.errorCapacity = errorCapacity < 1 ? DEFAULT_ERROR_COUNT : errorCapacity;
         this.capacity = capacity < 1 ? this.objectCapacity + this.errorCapacity : capacity;
         this.handler = handler;
         this.insertErrorCount = 0;
         this.item = item;
+    }
+
+    private static int getDefaultCapacity() {
+        if (LOADED_DEFAULT_CAPACITY < 1) {
+            int value = DEFAULT_CAPACITY;
+            try {
+                value = Integer.parseInt(Utils.getContextProperty("importer.batch.size",
+                        String.valueOf(DEFAULT_CAPACITY)));
+            } catch (Exception e) {
+                // nothing
+            }
+            LOADED_DEFAULT_CAPACITY = value;
+        }
+        return LOADED_DEFAULT_CAPACITY;
     }
 
     public final void setExtensionFactory(DataExtensionFactory factory) {

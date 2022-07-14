@@ -4,12 +4,13 @@ import lombok.CustomLog;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 
 @CustomLog
 public class DeferredTasks {
-    protected final List<DeferredTask> tasks = new ArrayList<>();
+    protected final List<DeferrableTask> tasks = new ArrayList<>();
     private final long milliSeconds;
     private long waitingFor;
     private final boolean firstLoopCollectionOnly;
@@ -24,8 +25,10 @@ public class DeferredTasks {
         }
 
         private boolean execute(boolean terminated) {
-            List<DeferredTask> taskList;
+            List<DeferrableTask> taskList;
+            log.info("$deferredTasks$>> wait-thread: before synchronized around tasks.");
             synchronized(tasks) {
+                log.info("$deferredTasks$<< wait-thread: inside synchronized around tasks block.");
                 tasks.beforeExecutionLoop(terminated);
                 if (terminated) return false;
                 taskList = new ArrayList<>(tasks.tasks);
@@ -33,17 +36,17 @@ public class DeferredTasks {
                 tasks.waitingFor = 0;
             }
 
-            boolean firstExecuted = false;
+            boolean firstExecuted = !taskList.isEmpty();
 
-            for (var task : taskList) {
-                tasks.executeTask(task);
-                firstExecuted = true;
-                if (isInterrupted()) break;
+            if (!taskList.isEmpty()) {
+                log.info("$deferredTasks$-- wait-thread: before execution tasks.");
+                tasks.executeTasks(taskList);
             }
 
             taskList.clear();
-
+            log.info("$deferredTasks$>>  wait-thread: before synchronized around tasks block 2.");
             synchronized(tasks) {
+                log.info("$deferredTasks$<< wait-thread: inside synchronized tasks block 2.");
                 tasks.firstLoopExecuted = firstExecuted;
                 return !tasks.tasks.isEmpty();
             }
@@ -125,6 +128,7 @@ public class DeferredTasks {
     }
 
     public synchronized void clear() {
+        tasks.forEach(this::markTaskDeclined);
         tasks.clear();
         if (thread != null && thread.isAlive()) {
             thread.interrupt();
@@ -140,46 +144,60 @@ public class DeferredTasks {
         // Nothing yet
     }
 
-    protected void markTaskCompletion(DeferredTask task) {
+    protected void markTaskDeclined(DeferrableTask task) {
+        // nothing yet
+    }
+
+    protected void markTaskCompleted(DeferrableTask task) {
         // Nothing yet
     }
 
-    private void doCompletedTask(DeferredTask task) {
+    private void doCompletedTask(DeferrableTask task) {
         tasks.remove(task);
-        markTaskCompletion(task);
+        markTaskCompleted(task);
     }
 
-    protected void executeTask(DeferredTask task) { // overridden in RabbitMQListener.InternalDeferredTasks
+    protected void executeTasks(Collection<? extends DeferrableTask> taskList) {
+        log.info("$deferredTasks$ -- inside execute Tasks method.");
+        if (taskList != null && !taskList.isEmpty()) {
+            taskList.forEach(this::executeTask);
+        }
+    }
+
+    protected void executeTask(DeferrableTask task) { // overridden in RabbitMQListener.InternalDeferredTasks
         try {
+            log.info("$deferredTasks$-- task before execute.");
             task.execute();
+            log.info("$deferredTasks$-- task executed.");
         } catch (Exception e) {
             log.error("Deferred Task {} execution error.", task.description(), e);
         }
     }
 
-    public final synchronized void append(DeferredTask task) {
-        if (task == null) return;
-
-        if (!collectionMode()) {
+    public final synchronized boolean append(DeferrableTask task) {
+        if (task == null) return false;
+        if (!collectionMode() || !task.isDeferred()) {
             executeTask(task);
-            return;
+            return true;
         }
+
+        log.info("$deferred$-- task appended.");
         try {
             for (int i = 0; i < tasks.size(); ++i) {
-                DeferredTask registeredTask = tasks.get(i);
+                DeferrableTask registeredTask = tasks.get(i);
                 DeferredAction action = registeredTask.compareWith(task);
                 switch (action) {
                     case IGNORE:
                         doCompletedTask(task);
-                        return;
+                        return true;
                     case REPLACE:
                         tasks.set(i, task);
                         doCompletedTask(registeredTask);
-                        return;
+                        return true;
                     case REMOVE_AND_APPEND:
                         doCompletedTask(registeredTask);
                         tasks.add(task);
-                        return;
+                        return true;
                     default:
                         break;
                 }
@@ -188,5 +206,6 @@ public class DeferredTasks {
         } finally {
             resetTimer();
         }
+        return true;
     }
 }

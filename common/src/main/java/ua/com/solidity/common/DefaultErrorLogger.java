@@ -6,19 +6,29 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 import ua.com.solidity.common.data.DataLocation;
 
 @CustomLog
 public class DefaultErrorLogger extends ErrorReportLogger {
+    public static final long MAX_ROW_COUNT_FOR_MEMORY_MODE = 10000;
     private final String fileName;
     private final String mailto;
     private OutputStream stream = null;
     private OutputStreamWriter writer = null;
-    private final long maxRowCount;
+    private long maxRowCount;
     private long rowCount = 0;
     private boolean error = false;
-    private String subject = "Importer error report";
+
+    @Getter
+    @Setter
+    private String service = "";
+
+    @Getter
+    @Setter
+    private String subject = "Error report";
 
     public DefaultErrorLogger(String fileName, String mailto, long maxRowCount) {
         this.fileName = fileName;
@@ -40,6 +50,8 @@ public class DefaultErrorLogger extends ErrorReportLogger {
         try {
             if (fileName == null || fileName.isBlank() || StringUtils.equals(fileName, "?")) {
                 stream = new ByteArrayOutputStream();
+                if (maxRowCount > MAX_ROW_COUNT_FOR_MEMORY_MODE || maxRowCount < 0)
+                    maxRowCount = MAX_ROW_COUNT_FOR_MEMORY_MODE;
             } else {
                 stream = new FileOutputStream(fileName);
             }
@@ -89,14 +101,15 @@ public class DefaultErrorLogger extends ErrorReportLogger {
                 // nothing
             }
             if (mailto != null && !mailto.isBlank()) {
+                String targetSubject = (service == null || service.isBlank() ? "" : service + ": ") + subject;
                 NotificationMessage msg;
                 if (stream instanceof ByteArrayOutputStream) {
-                    msg = new NotificationMessage(mailto, subject,
+                    msg = new NotificationMessage(mailto, targetSubject,
                             ((ByteArrayOutputStream) stream).toString(StandardCharsets.UTF_8), 3, null);
                 } else {
-                    msg = new NotificationMessage(mailto, subject, "", 3, fileName);
+                    msg = new NotificationMessage(mailto, targetSubject, "", 3, fileName);
                 }
-                Utils.sendRabbitMQMessage("otp-etl.notification", Utils.objectToJsonString(msg));
+                Utils.sendRabbitMQMessage(OtpExchange.NOTIFICATION, msg);
             }
         }
     }

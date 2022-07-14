@@ -16,12 +16,12 @@ const altSchema = Yup.object().shape({
 const AltPerson = ({ data, onChange }) => {
   const { id, lastName, firstName, patName, language, importSources } = data;
   const [edit, setEdit] = useState(true);
-  const canEdit = useSelector((state) => state.auth.canEdit);
+  const userRole = useSelector((state) => state.auth.role);
   return (
     <>
       {edit ? (
         <div className="card mb-3">
-          {canEdit && (
+          {userRole === "ADMIN" && (
             <div className="d-flex justify-content-end">
               <IoIcons.IoIosCreate
                 className="pointer"

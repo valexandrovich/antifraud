@@ -113,7 +113,7 @@ public class Receiver extends RabbitMQReceiver {
     }
 
     @Override
-    protected Object handleMessage(String queue, String message) {
+    protected void handleMessage(String queue, String message) {
         try {
             JsonNode node = new ObjectMapper().readTree(message);
 
@@ -127,6 +127,5 @@ public class Receiver extends RabbitMQReceiver {
         } catch (Exception e) {
             log.error("Receive message error.", e);
         }
-        return true;
     }
 }

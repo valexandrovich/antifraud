@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v037-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v037-0"/>
+    </changeSet>
+    
+    <changeSet id="v037-1" author="Kyrylo Chornobryvets">
+        <createTable tableName="yctag">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yctag"/>
+            </column>
+            <column name="tag_type_id" type="BIGINT"/>
+            <column name="as_of" type="DATE"/>
+            <column name="until" type="DATE"/>
+            <column name="source" type="VARCHAR(1100)"/>
+            <column name="company_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="v037-2" author="Kyrylo Chornobryvets">
+        <createTable tableName="yctag_import_source">
+            <column name="import_source_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yctag_import_source"/>
+            </column>
+            <column name="yctag_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_yctag_import_source"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v037-3" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="company_id" baseTableName="yctag" constraintName="FK_YCTAG_ON_COMPANY"
+                                 referencedColumnNames="id" referencedTableName="ycompany"/>
+    </changeSet>
+    <changeSet id="v037-4" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="tag_type_id" baseTableName="yctag"
+                                 constraintName="FK_YCTAG_ON_TAG_TYPE" referencedColumnNames="id"
+                                 referencedTableName="tag_type"/>
+    </changeSet>
+    <changeSet id="v037-5" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="yctag_import_source"
+                                 constraintName="fk_yctimpsou_on_import_source" referencedColumnNames="id"
+                                 referencedTableName="import_source"/>
+    </changeSet>
+    <changeSet id="v037-6" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="yctag_id" baseTableName="yctag_import_source"
+                                 constraintName="fk_yctimpsou_on_y_c_tag" referencedColumnNames="id"
+                                 referencedTableName="yctag"/>
+    </changeSet>
+
+
+    <changeSet id="v037-7" author="Kyrylo Chornobryvets">
+        <dropForeignKeyConstraint baseTableName="ytag" constraintName="FK_YTAG_ON_COMPANY"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="company_id" baseTableName="ytag" constraintName="FK_YTAG_ON_COMPANY"
+                                     referencedColumnNames="id" referencedTableName="ycompany"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v037-8" author="Kyrylo Chornobryvets">
+        <dropColumn tableName="ytag" columnName="company_id"/>
+        <rollback>
+            <addColumn tableName="ytag">
+                <column name="company_id" type="UUID"/>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="v037-9" author="Kyrylo Chornobryvets">
+        <modifyDataType columnName="source"
+                        newDataType="VARCHAR(255)"
+                        tableName="ytag"/>
+        <rollback>
+            <modifyDataType columnName="source"
+                            newDataType="VARCHAR(1100)"
+                            tableName="ytag"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

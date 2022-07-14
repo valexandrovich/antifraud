@@ -7,16 +7,14 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.common.ActionObject;
-import ua.com.solidity.common.DownloaderMessageData;
-import ua.com.solidity.common.RabbitMQReceiver;
-import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.*;
 
 @CustomLog
 @Getter
 @Setter
 @Component
 public class Receiver extends RabbitMQReceiver {
+
     private Downloader downloader;
     private Config config;
     private DataGovUaSourceInfo mainSourceInfo;
@@ -32,21 +30,25 @@ public class Receiver extends RabbitMQReceiver {
         this.downloaderHandlerFactory = downloaderHandlerFactory;
     }
 
+    private void handleAction(RabbitMQActionTask task) {
+        log.info("-- Action requested ({}).", task.getAction().getNode());
+        if (task.getAction().execute()) {
+            log.info("  *Action completed.*");
+        } else {
+            log.info("  -Action {} is invalid or some errors occurred due to execution.-", task.getAction().getNode());
+        }
+    }
+
     @Override
-    public Object handleMessage(String queue, String message) {
+    public RabbitMQTask createTask(String queue, String message) {
         log.info("$downloader$:::: message received: {}", message);
         DownloaderMessageData data = null;
         try {
             JsonNode node = Utils.getJsonNode(message);
             ActionObject action = ActionObject.getAction(node);
+
             if (action != null) {
-                log.info("-- Action requested ({}).", node);
-                if (action.execute()) {
-                    log.info("  *Action completed.*");
-                } else {
-                    log.info("  -Action {} is invalid or some errors occurred due to execution.-", action.getAction());
-                }
-                return true;
+                return createActionTask(action, this::handleAction);
             }
             data = Utils.jsonToValue(node, DownloaderMessageData.class);
         } catch (Exception e) {
@@ -55,6 +57,6 @@ public class Receiver extends RabbitMQReceiver {
         if (data != null) {
             return new DownloaderTask(this, data);
         }
-        return true;
+        return null;
     }
 }

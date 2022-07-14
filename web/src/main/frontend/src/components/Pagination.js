@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const Pagination = ({ filesPerPage, totalFiles, paginate }) => {
+const Pagination = ({ filesPerPage, totalFiles, paginate, reset, margin }) => {
   const pageNumbers = [];
   const [selected, setSelected] = useState(1);
-  if (totalFiles / filesPerPage <= 15) {
+  useEffect(() => {
+    setSelected(reset + 1 || selected);
+  }, [filesPerPage, pageNumbers, reset, selected, totalFiles]);
+  if (totalFiles / filesPerPage <= 4) {
     for (let i = 1; i <= Math.ceil(totalFiles / filesPerPage); i++) {
       pageNumbers.push(i);
     }
@@ -13,13 +16,16 @@ const Pagination = ({ filesPerPage, totalFiles, paginate }) => {
       2,
       3,
       "...",
-      totalFiles - 2,
-      totalFiles - 1,
-      totalFiles
+      Math.ceil(totalFiles / filesPerPage - 2),
+      Math.ceil(totalFiles / filesPerPage - 1),
+      Math.ceil(totalFiles / filesPerPage)
     );
   }
   return (
-    <nav className={"d-flex align-items-center justify-content-center"}>
+    <nav
+      style={{ marginTop: margin + "px" }}
+      className={"d-flex align-items-center justify-content-center"}
+    >
       <ul className="pagination flex-wrap align-items-center">
         {pageNumbers.map((number, idx) => {
           return (
@@ -49,14 +55,21 @@ const Pagination = ({ filesPerPage, totalFiles, paginate }) => {
                       className={"form-control"}
                       onChange={(e) => {
                         setSelected(
-                          e.target.value > totalFiles || e.target.value < 1
-                            ? totalFiles
+                          e.target.value > totalFiles / filesPerPage ||
+                            e.target.value < 1
+                            ? Math.ceil(totalFiles / filesPerPage)
                             : Number(e.target.value)
                         );
-                        paginate(selected);
+                        paginate(
+                          e.target.value > totalFiles / filesPerPage ||
+                            e.target.value < 1
+                            ? Math.ceil(totalFiles / filesPerPage)
+                            : Number(e.target.value)
+                        );
                       }}
                       type={"number"}
                       value={selected}
+                      max={Math.ceil(totalFiles / filesPerPage)}
                     />
                     ...
                   </label>

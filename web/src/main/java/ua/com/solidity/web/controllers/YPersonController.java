@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.dto.YPersonSearchDto;
 import ua.com.solidity.web.request.PaginationSearchRequest;
 import ua.com.solidity.web.service.YPersonService;
 
@@ -33,22 +34,22 @@ public class YPersonController {
     private final YPersonService yPersonService;
 
     @PostMapping(path = "/search")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED','BASIC')")
     @ApiOperation(value = "Multiple person field search",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
-    public ResponseEntity<Page<YPersonDto>> search(
+    public ResponseEntity<Page<YPersonSearchDto>> search(
             @ApiParam(value = "searchRequest",
                     required = true)
             @Valid @RequestBody PaginationSearchRequest paginationSearchRequest,
             HttpServletRequest httpServletRequest
     ) {
-        Page<YPersonDto> personList = yPersonService.search(paginationSearchRequest, httpServletRequest);
+        Page<YPersonSearchDto> personList = yPersonService.search(paginationSearchRequest, httpServletRequest);
         return ResponseEntity.ok(personList);
     }
 
     @GetMapping(path = "/find/{id}")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED','BASIC')")
     @ApiOperation(value = "Finds person by specified id",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))

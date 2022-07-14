@@ -8,7 +8,6 @@ import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
@@ -34,15 +33,21 @@ import lombok.Setter;
                                 attributeNodes = {
                                         @NamedAttributeNode("importSources")
                                 }
-                        )},
+                        ),
+                        @NamedSubgraph(name = "importSourcesAndTagType-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("importSources"),
+                                        @NamedAttributeNode("tagType")
+                                })},
                 attributeNodes = {
                         @NamedAttributeNode(value = "inns", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "passports", subgraph = "importSources-subgraph"),
-                        @NamedAttributeNode(value = "tags", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode(value = "tags", subgraph = "importSourcesAndTagType-subgraph"),
                         @NamedAttributeNode(value = "phones", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "altPeople", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "emails", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode(value = "companyRelations"),
                         @NamedAttributeNode("importSources")}),
         @NamedEntityGraph(name = "yperson.passports", subgraphs = {
                 @NamedSubgraph(name = "importSources-subgraph",
@@ -64,7 +69,27 @@ import lombok.Setter;
                         })},
                 attributeNodes = @NamedAttributeNode(value = "altPeople", subgraph = "importSources-subgraph")),
         @NamedEntityGraph(name = "yperson.sources", attributeNodes =
-        @NamedAttributeNode("importSources"))
+        @NamedAttributeNode("importSources")),
+        @NamedEntityGraph(name = "yperson.forBaseEnricher",
+                subgraphs = {
+                        @NamedSubgraph(name = "importSources-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("importSources")
+                                }),
+                        @NamedSubgraph(name = "importSourcesAndTagType-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("importSources"),
+                                        @NamedAttributeNode("tagType")
+                                })
+                },
+                attributeNodes = {
+                        @NamedAttributeNode(value = "inns", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode(value = "passports", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode(value = "altPeople", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode(value = "tags", subgraph = "importSourcesAndTagType-subgraph"),
+                        @NamedAttributeNode(value = "companyRelations"),
+                        @NamedAttributeNode("importSources")})
 })
 @Entity
 @Table(name = "yperson")
@@ -137,7 +162,7 @@ public class YPerson {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         YPerson person = (YPerson) o;
-        return Objects.equals(id, person.id);
+        return id != null && Objects.equals(id, person.id);
     }
 
     @Override

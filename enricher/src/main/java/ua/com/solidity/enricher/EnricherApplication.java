@@ -4,18 +4,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ApplicationContext;
-import ua.com.solidity.common.RabbitMQListener;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import ua.com.solidity.common.Utils;
 
 @Slf4j
 @SpringBootApplication
+@EntityScan(basePackages = {"ua.com.solidity.db.entities"})
+@EnableJpaRepositories(basePackages = {"ua.com.solidity.db.repositories", "ua.com.solidity.enricher.repository"})
+@PropertySource({"classpath:enricher.properties", "classpath:application.properties"})
 public class EnricherApplication {
-    private final RabbitMQListener listener;
 
     @Autowired
-    public EnricherApplication(RabbitMQListener listener, ApplicationContext context) {
-        this.listener = listener;
+    public EnricherApplication(ApplicationContext context) {
         Utils.setApplicationContext(context);
     }
 
@@ -24,7 +27,6 @@ public class EnricherApplication {
     }
 
     public final void run() {
-        this.listener.start();
         log.info("=== Enricher started and waits for messages ===");
     }
 

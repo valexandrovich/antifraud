@@ -65,11 +65,13 @@ const FizFormSearch = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [pageSize, setPageSize] = useState(6);
   const [pageNo, setPageNo] = useState(0);
+  const [selectedPage, setSelectedPage] = useState(null);
   const [totalFiles, setTotalFiles] = useState();
   const [loader, setLoader] = useState(false);
   const paginate = (pageNumber) => {
     setPageNo(pageNumber - 1);
   };
+
   const dispatch = useDispatch();
   const [searchFormFiz, setSearchFormFiz] = useState({
     name: "",
@@ -92,7 +94,7 @@ const FizFormSearch = () => {
   const handleInputChange = (e) => {
     setSearchFormFiz({ ...searchFormFiz, [e.target.name]: e.target.value });
   };
-  const FetchData = () => {
+  const FetchData = (page) => {
     setLoader(true);
     fetch("/api/yperson/search", {
       headers: {
@@ -105,7 +107,7 @@ const FizFormSearch = () => {
       body: JSON.stringify({
         paginationRequest: {
           direction: "asc",
-          page: pageNo,
+          page: page === 0 ? page : pageNo,
           properties: ["id"],
           size: pageSize,
         },
@@ -117,6 +119,7 @@ const FizFormSearch = () => {
       .then((res) => res.json())
       .then((file) => {
         if (file.status === 502) {
+          setLoader(false);
           dispatch(
             setAlertMessageThunk(
               "Помилка 502: Невірна відповідь від шлюзу. Зачекайте кілька хвилин та спробуйте запит знову, або зверніться до системного адміністратора",
@@ -124,6 +127,7 @@ const FizFormSearch = () => {
             )
           );
         } else if (file.status === 504) {
+          setLoader(false);
           dispatch(
             setAlertMessageThunk(
               "Помилка 504: Затрімка відповіді від шлюзу. Зачекайте кілька хвилин та спробуйте запит знову, або зверніться до системного адміністратора",
@@ -131,17 +135,18 @@ const FizFormSearch = () => {
             )
           );
         } else if (file.status === 500) {
+          setLoader(false);
           dispatch(
             setAlertMessageThunk(
               "Помилка 500: Помилка сервера.Зверніться до системного адміністратора",
               "danger"
             )
           );
-        }
-        if (file.content.length > 0) {
+        } else if (file.content.length > 0) {
           setLoader(false);
           setSearchResults(file.content);
           setTotalFiles(file.totalElements);
+          setSelectedPage(file.pageable.pageNumber);
         } else {
           setLoader(false);
           setSearchResults([]);
@@ -159,7 +164,9 @@ const FizFormSearch = () => {
       });
   };
   useEffect(() => {
-    if (searchResults.length !== 0) FetchData();
+    if (searchResults.length !== 0) {
+      FetchData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageNo, pageSize]);
 
@@ -687,7 +694,7 @@ const FizFormSearch = () => {
               <div className="row mt-3">
                 <div className="form-group col-md-3 mb-3">
                   <button
-                    onClick={() => FetchData()}
+                    onClick={() => FetchData(0)}
                     disabled={!isValid}
                     type="submit"
                     className="btn custom-btn w-100"
@@ -700,6 +707,24 @@ const FizFormSearch = () => {
                     onClick={() => {
                       resetForm();
                       setSearchResults([]);
+                      setSearchFormFiz({
+                        name: "",
+                        surname: "",
+                        patronymic: "",
+                        day: "",
+                        month: "",
+                        year: "",
+                        age: "",
+                        phone: "",
+                        address: "",
+                        passportNumber: "",
+                        passportSeria: "",
+                        id_documentNumber: "",
+                        id_registryNumber: "",
+                        foreignP_documentNumber: "",
+                        foreignP_registryNumber: "",
+                        inn: "",
+                      });
                     }}
                     type="button"
                     className="btn btn-danger w-100"
@@ -729,6 +754,7 @@ const FizFormSearch = () => {
           filesPerPage={pageSize}
           totalFiles={totalFiles}
           paginate={paginate}
+          reset={selectedPage}
         />
       )}
       <Spinner loader={loader} message={"Шукаю збіги"} />

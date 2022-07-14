@@ -1,9 +1,10 @@
 package ua.com.solidity.db.entities;
 
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -14,10 +15,10 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-import ua.com.solidity.db.abstraction.Identifiable;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -28,8 +29,9 @@ public class YTag implements Identifiable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
-	@Column(name = "name")
-	private String name;
+    @ManyToOne
+    @JoinColumn(name = "tag_type_id")
+    private TagType tagType;
 	@Column(name = "as_Of")
 	private LocalDate asOf;
 	@Column(name = "until")
@@ -40,6 +42,7 @@ public class YTag implements Identifiable {
 	@JsonBackReference
 	@JoinColumn(name = "person_id")
 	private YPerson person;
+
 	@ManyToMany
 	@JoinTable(
 			name = "ytag_import_source",
@@ -53,12 +56,12 @@ public class YTag implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YTag yTag = (YTag) o;
-		return Objects.equals(name, yTag.name) && Objects.equals(asOf, yTag.asOf) && Objects.equals(until, yTag.until) && Objects.equals(source, yTag.source) && Objects.equals(person, yTag.person);
+		return Objects.equals(tagType, yTag.tagType) && Objects.equals(asOf, yTag.asOf) && Objects.equals(until, yTag.until) && Objects.equals(source, yTag.source) && Objects.equals(person, yTag.person);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, asOf, until, source, person);
+		return Objects.hash(tagType, asOf, until, source, person);
 	}
 
 	@Override

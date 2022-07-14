@@ -4,59 +4,55 @@ import com.rabbitmq.client.Delivery;
 import lombok.CustomLog;
 import lombok.Getter;
 
+import java.nio.charset.StandardCharsets;
+
 @CustomLog
 @Getter
-public abstract class RabbitMQTask extends DeferredTask {
+public abstract class RabbitMQTask extends DeferrableTask {
     private RabbitMQListener listener;
     private Delivery message;
-    private final boolean autoAck;
-    private boolean acknowledgeSent = false;
+    private String messageBody;
 
-    protected RabbitMQTask(boolean autoAck) {
-        this.autoAck = autoAck;
-    }
-
-    final synchronized void setContext(RabbitMQListener listener, Delivery message, boolean acknowledgeSent) {
+    final synchronized void setContext(RabbitMQListener listener, Delivery message) {
         this.listener = listener;
         this.message = message;
-        this.acknowledgeSent = acknowledgeSent;
+        this.messageBody = new String(message.getBody(), StandardCharsets.UTF_8);
     }
-    
-    @Override
-    protected final void execute() {
-        if (autoAck) {
-            acknowledge(true);
-        }
 
+    public final String getExchange() {
+        return message.getEnvelope().getExchange();
+    }
+
+    @Override
+    protected final void execute() { // acknowledge in RabbitMQListener
         if (listener != null) {
             try {
                 rmqExecute();
             } catch (Exception e) {
                 log.error("RabbitMQTask execution error for {}.", description(), e);
             } finally {
-                if (!acknowledgeSent) acknowledge(true);
                 listener = null;
                 message = null;
             }
         }
-    }
-    @SuppressWarnings("SameParameterValue")
-    protected void setAcknowledgeSent(boolean value) {
-        acknowledgeSent = value;
     }
 
     protected void rmqExecute() {
         // nothing yet
     }
 
-    protected final void acknowledge(boolean ack) {
-        if (listener != null && !acknowledgeSent) {
+    protected void acknowledge(boolean ack) {
+        if (listener != null) {
             listener.doAcknowledge(message.getEnvelope().getDeliveryTag(), ack);
-            acknowledgeSent = true;
         }
     }
 
     protected final void send(String queue, String message) {
         Utils.sendRabbitMQMessage(queue, message);
+    }
+
+    @SuppressWarnings("unused")
+    protected final void enqueueBack() {
+        Utils.sendRabbitMQMessage(getExchange(), getMessageBody());
     }
 }

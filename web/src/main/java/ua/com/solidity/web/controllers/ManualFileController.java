@@ -37,7 +37,7 @@ public class ManualFileController {
     private final ManualFileService manualFileService;
 
     @PostMapping(path = "/upload")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Uploads dynamic file to the data base.",
             consumes = "multipart/form-data",
             response = ResponseEntity.class,
@@ -54,7 +54,7 @@ public class ManualFileController {
     }
 
     @PutMapping(path = "/upload")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Uploads description to file with specified uuid.",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
@@ -72,7 +72,7 @@ public class ManualFileController {
     }
 
     @GetMapping(path = "/getUploaded")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Shows all file descriptions.",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
@@ -82,7 +82,7 @@ public class ManualFileController {
     }
 
     @GetMapping(path = "/getUploaded/{uuid}")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Finds all physical persons in specified file.",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
@@ -96,7 +96,7 @@ public class ManualFileController {
     }
 
     @DeleteMapping(path = "/delete/{id}")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Delete FileDescription by specified id",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
@@ -109,7 +109,7 @@ public class ManualFileController {
     }
 
     @PostMapping(path = "/enricher/{uuid}")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Send file to Enricher",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))
@@ -123,7 +123,7 @@ public class ManualFileController {
     }
 
     @PutMapping(path = "/update")
-    @PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Update the manual data by id and index parameter",
             response = ResponseEntity.class,
             authorizations = @Authorization("Authorization"))

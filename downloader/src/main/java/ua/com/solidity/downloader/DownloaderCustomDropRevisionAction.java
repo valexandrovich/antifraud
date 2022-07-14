@@ -65,7 +65,7 @@ public abstract class DownloaderCustomDropRevisionAction extends ActionObject {
     }
 
     private void dropTableRows(String table) {
-        try (PreparedStatement statement = connection.prepareStatement(Utils.messageFormat("delete from {} where {} = ?;", table, revisionField))) {
+        try (PreparedStatement statement = connection.prepareStatement(Utils.messageFormat("delete from \"{}\" where \"{}\" = ?;", table, revisionField))) {
             statement.setObject(1, currentRevision);
             statement.execute();
         } catch (Exception e) {

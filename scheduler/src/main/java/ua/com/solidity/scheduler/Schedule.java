@@ -272,7 +272,7 @@ public class Schedule {
 
     public final boolean assignNode(JsonNode obj) {
         clear();
-        if (obj == null || obj.isEmpty() || !obj.isObject() || !obj.hasNonNull(FIELD_START)) return false;
+        if (obj == null || obj.isNull() || obj.isEmpty() || !obj.isObject() || !obj.hasNonNull(FIELD_START)) return false;
         try {
             assignStartIsInvalid(obj.get(FIELD_START).asText());
             assignFinish(obj.hasNonNull(FIELD_FINISH) ? obj.get(FIELD_FINISH).asText() : null);

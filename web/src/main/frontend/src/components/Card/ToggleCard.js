@@ -20,16 +20,16 @@ const ToggleCard = ({
                 [type]: !prevState[type],
               }));
             }}
-            className="d-flex justify-content-between pointer"
+            className="d-flex justify-content-start pointer"
           >
-            <span className={components ? "mb-2" : null}>{name}</span>
-            <span>
+            <span className={"mr-10"}>
               {components ? (
                 <IoIcons.IoIosArrowUp />
               ) : (
                 <IoIcons.IoIosArrowDown />
               )}
             </span>
+            <span className={components ? "mb-2" : null}>{name}</span>
           </div>
           <div>{components && children}</div>
           <hr />

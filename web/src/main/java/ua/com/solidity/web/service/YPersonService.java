@@ -1,10 +1,5 @@
 package ua.com.solidity.web.service;
 
-import java.time.LocalDate;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -14,6 +9,7 @@ import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.YPersonRepository;
 import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.dto.YPersonSearchDto;
 import ua.com.solidity.web.exception.EntityNotFoundException;
 import ua.com.solidity.web.request.PaginationRequest;
 import ua.com.solidity.web.request.PaginationSearchRequest;
@@ -25,6 +21,12 @@ import ua.com.solidity.web.security.service.Extractor;
 import ua.com.solidity.web.service.converter.YPersonConverter;
 import ua.com.solidity.web.service.factory.PageRequestFactory;
 import ua.com.solidity.web.utils.UtilString;
+
+import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDate;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -53,8 +55,8 @@ public class YPersonService {
 	boolean criteriaFound;
 
 
-	public Page<YPersonDto> search(PaginationSearchRequest paginationSearchRequest,
-	                               HttpServletRequest httpServletRequest) {
+	public Page<YPersonSearchDto> search(PaginationSearchRequest paginationSearchRequest,
+	                                         HttpServletRequest httpServletRequest) {
 		PaginationRequest paginationRequest = paginationSearchRequest.getPaginationRequest();
 		SearchRequest searchRequest = paginationSearchRequest.getSearchRequest();
 
@@ -109,7 +111,7 @@ public class YPersonService {
 			User user = extractor.extractUser(httpServletRequest);
 			return ypr.findAll(gs, pageRequest)
 					.map(entity -> {
-						YPersonDto dto = yPersonConverter.toDto(entity);
+						YPersonSearchDto dto = yPersonConverter.toSearchDto(entity);
 						user.getPeople().forEach(subscribedYPerson -> {
 							if (subscribedYPerson.getId() == dto.getId()) dto.setSubscribe(true);
 						});

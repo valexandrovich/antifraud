@@ -7,9 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.common.logger.LoggerWrapperFactory;
-
-import javax.annotation.PostConstruct;
 import java.util.Locale;
 
 @Getter
@@ -17,8 +14,6 @@ import java.util.Locale;
 @Component
 @CustomLog
 public class Config {
-    @Value("${otp-etl.logger.options}")
-    private String loggerOptions;
     @Value("${scheduler.rabbitmq.name}")
     private String name;
     @Value("${scheduler.rabbitmq.init}")
@@ -32,11 +27,6 @@ public class Config {
 
     @Getter(AccessLevel.NONE)
     private Locale locale;
-
-    @PostConstruct
-    private void setupLoggerOptions() {
-        LoggerWrapperFactory.includeOptionsByString(loggerOptions);
-    }
 
     @SuppressWarnings("unused")
     @JsonIgnore

@@ -281,8 +281,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
 
 def runApp():
     init()
-    print('Data.gov.ua wrapper v.1.0', flush=True)
-    print('Source folder:', path if path else '.', flush=True)
+    print('Data.gov.ua wrapper v.1.0', flush = True)
+    print('Source folder:', path if path else '.', flush = True)
 
     httpd = HTTPServer((address, port), GovUaProxyRequestHandler)
 
@@ -292,8 +292,8 @@ def runApp():
             keyfile = path + '/ssl/key.pem',
             certfile = path + '/ssl/cert.pem', server_side = True)
     try:
-        print('Downloading file URL prefix:', fullDomain, flush=True)
-        print('Server on port', port, 'started...', flush=True)
+        print('Downloading file URL prefix:', fullDomain, flush = True)
+        print('Server on port', port, 'started...', flush = True)
         httpd.serve_forever()
     except KeyboardInterrupt:
         httpd.server_close()

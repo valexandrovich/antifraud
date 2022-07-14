@@ -5,6 +5,7 @@ import ShedulerEditModal from "../../components/Modal/ShedulerEditModal";
 import authHeader from "../../api/AuthHeader";
 import { setAlertMessageThunk } from "../../store/reducers/AuthReducer";
 import { useDispatch } from "react-redux";
+import SchedulerActions from "../../components/Sheduler/SchedulerActions";
 
 const groupNames = [
   "otp-etl.scheduler",
@@ -19,6 +20,7 @@ const groupNames = [
 
 const Sheduler = () => {
   const [data, setData] = useState([]);
+
   const uniqueArrayGroupName = (obj) => [
     ...new Set(obj.map((o) => o.groupName)),
   ];
@@ -110,7 +112,7 @@ const Sheduler = () => {
     } else if (rows.enabled && rows.forceDisabled) {
       return "table-header opasity-30 activated";
     } else if (rows.enabled && !rows.forceDisabled) {
-      return "table-header  activated";
+      return "table-header activated";
     }
   };
   const queue = (id) => {
@@ -229,10 +231,11 @@ const Sheduler = () => {
           </div>
         </div>
       )}
-      <div className="sroll-x">
+
+      <div className="sroll-x tableFixHead">
         <table className="table table-bordered">
           <thead>
-            <tr>
+            <tr className={"align-middle text-center"}>
               <th className="table-header">Назва групи</th>
               <th className="table-header">Шифр завдання</th>
               <th className="table-header">Назва черги сповіщень</th>
@@ -242,7 +245,7 @@ const Sheduler = () => {
                 Тимчасово заборонити виконання завдання
               </th>
               <th id="visible" className="table-header">
-                Виконати примусово
+                Дії
               </th>
             </tr>
           </thead>
@@ -265,16 +268,7 @@ const Sheduler = () => {
               })
               .map((row, index) => {
                 return (
-                  <tr
-                    className={cName(row)}
-                    onClick={(e) => {
-                      const { name } = e.target;
-                      if (name !== "forceDisabled" && name !== "activate") {
-                        setEditRow(row);
-                      }
-                    }}
-                    key={index}
-                  >
+                  <tr className={cName(row)} key={index}>
                     <TableItem item={row.groupName} />
                     <TableItem item={row.name} />
                     <TableItem item={row.exchange} />
@@ -296,16 +290,12 @@ const Sheduler = () => {
                         onChange={(e) => update(e)}
                       />
                     </td>
-                    <td className="text-center align-middle">
-                      <button
-                        id={row.groupName + "/" + row.name}
-                        onClick={(e) => activateImmediately(e)}
-                        name="activate"
-                        className="btn custom-btn"
-                      >
-                        Виконати
-                      </button>
-                    </td>
+
+                    <SchedulerActions
+                      setEditRow={(e) => setEditRow(e)}
+                      row={row}
+                      activateImmediately={(e) => activateImmediately(e)}
+                    />
                   </tr>
                 );
               })}

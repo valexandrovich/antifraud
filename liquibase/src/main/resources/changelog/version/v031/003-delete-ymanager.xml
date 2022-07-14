@@ -11,24 +11,89 @@
     <changeSet id="v031-034" author="Olha Tankevych">
         <dropForeignKeyConstraint baseTableName="ymanager_import_source"
                                   constraintName="fk_ymaimpsou_on_import_source"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="import_source_id" baseTableName="ymanager_import_source"
+                                     constraintName="fk_ymaimpsou_on_import_source" referencedColumnNames="id"
+                                     referencedTableName="import_source"/>
+        </rollback>
     </changeSet>
     <changeSet id="v031-035" author="Olha Tankevych">
         <dropForeignKeyConstraint baseTableName="ymanager_import_source" constraintName="fk_ymaimpsou_on_y_manager"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="ymanager_id" baseTableName="ymanager_import_source"
+                                     constraintName="fk_ymaimpsou_on_y_manager" referencedColumnNames="id"
+                                     referencedTableName="ymanager"/>
+        </rollback>
     </changeSet>
     <changeSet id="v031-036" author="Olha Tankevych">
         <dropForeignKeyConstraint baseTableName="ymanager" constraintName="fk_ymanager_on_inn"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="inn_id" baseTableName="ymanager" constraintName="FK_YMANAGER_ON_INN"
+                                     referencedColumnNames="id" referencedTableName="yinn"/>
+        </rollback>
     </changeSet>
     <changeSet id="v031-037" author="Olha Tankevych">
         <dropForeignKeyConstraint baseTableName="ymanager" constraintName="fk_ymanager_on_type"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="type_id" baseTableName="ymanager"
+                                     constraintName="FK_YMANAGER_ON_TYPE" referencedColumnNames="id"
+                                     referencedTableName="ymanager_type"/>
+        </rollback>
     </changeSet>
     <changeSet id="v031-038" author="Olha Tankevych">
         <dropTable cascadeConstraints="true" tableName="ymanager"/>
+        <rollback>
+            <createTable tableName="ymanager">
+                <column name="id" type="UUID">
+                    <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager"/>
+                </column>
+                <column name="okpo" type="VARCHAR(255)"/>
+                <column name="inn_id" type="BIGINT"/>
+                <column name="type_id" type="BIGINT"/>
+            </createTable>
+            <createIndex tableName="ymanager" indexName="type_id">
+                <column name="type_id"/>
+            </createIndex>
+            <createIndex tableName="ymanager" indexName="okpo">
+                <column name="okpo"/>
+            </createIndex>
+
+            <createIndex tableName="ymanager" indexName="yinn_id">
+                <column name="inn_id"/>
+            </createIndex>
+        </rollback>
     </changeSet>
     <changeSet id="v031-039" author="Olha Tankevych">
         <dropTable cascadeConstraints="true" tableName="ymanager_import_source"/>
+        <rollback>
+            <createTable tableName="ymanager_import_source">
+                <column autoIncrement="true" name="import_source_id" type="BIGINT">
+                    <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager_import_source"/>
+                </column>
+                <column name="ymanager_id" type="UUID">
+                    <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager_import_source"/>
+                </column>
+            </createTable>
+
+            <createIndex tableName="ymanager_import_source" indexName="ymanager_source">
+                <column name="import_source_id"/>
+            </createIndex>
+
+            <createIndex tableName="ymanager_import_source" indexName="manager_id">
+                <column name="ymanager_id"/>
+            </createIndex>
+        </rollback>
     </changeSet>
     <changeSet id="v031-040" author="Olha Tankevych">
         <dropTable cascadeConstraints="true" tableName="ymanager_type"/>
+        <rollback>
+            <createTable tableName="ymanager_type">
+                <column autoIncrement="true" name="id" type="BIGINT">
+                    <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ymanager_type"/>
+                </column>
+                <column name="type" type="VARCHAR(255)"/>
+            </createTable>
+        </rollback>
     </changeSet>
 
 </databaseChangeLog>

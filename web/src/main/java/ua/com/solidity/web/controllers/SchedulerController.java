@@ -33,7 +33,7 @@ public class SchedulerController {
 	private final SchedulerService schedulerService;
 
 	@GetMapping(path = "/findById")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Shows all schedules.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -45,7 +45,7 @@ public class SchedulerController {
 	}
 
 	@GetMapping(path = "/find")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Shows all schedules.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -55,7 +55,7 @@ public class SchedulerController {
 	}
 
 	@PutMapping(path = "/update")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Updates schedule.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -65,7 +65,7 @@ public class SchedulerController {
 	}
 
 	@PostMapping(path = "/create")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Creates schedule.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -75,7 +75,7 @@ public class SchedulerController {
 	}
 
 	@PostMapping(path = "/exchangeSwitch/{group}")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Switch specified group.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -89,7 +89,7 @@ public class SchedulerController {
 	}
 
 	@PostMapping(path = "/exchangeRefresh")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Refresh.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -99,7 +99,7 @@ public class SchedulerController {
 	}
 
 	@PostMapping(path = "/exchangeActivate/{group}")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Activate schedule.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))

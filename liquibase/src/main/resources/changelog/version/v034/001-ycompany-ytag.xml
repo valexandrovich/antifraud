@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v034-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v034-0"/>
+    </changeSet>
+
+    <changeSet id="v034-1" author="Kyrylo Chornobryvets">
+        <addColumn tableName="ytag">
+            <column name="company_id" type="UUID"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="v034-2" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="company_id" baseTableName="ytag" constraintName="FK_YTAG_ON_COMPANY"
+                                 referencedColumnNames="id" referencedTableName="yperson"/>
+    </changeSet>
+    <changeSet id="v034-3" author="Kyrylo Chornobryvets">
+        <createIndex tableName="status_logger" indexName="started_id">
+            <column name="started"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="v034-4" author="Kyrylo Chornobryvets">
+        <insert tableName="role">
+            <column name="id" value="3"/>
+            <column name="name" value="ADMIN"/>
+        </insert>
+        <rollback>
+            <delete tableName="role">
+                <where>id=3</where>
+            </delete>
+        </rollback>
+    </changeSet>
+    <changeSet id="v034-5" author="Kyrylo Chornobryvets">
+        <insert tableName="role_map">
+            <column name="dn" value="Risk Stand Admin"/>
+            <column name="role_id" value="3"/>
+        </insert>
+        <rollback>
+            <delete tableName="role_map">
+                <where>role_id=3</where>
+            </delete>
+        </rollback>
+    </changeSet>
+    <changeSet id="v034-6" author="Kyrylo Chornobryvets">
+        <dropForeignKeyConstraint baseTableName="ytag" constraintName="FK_YTAG_ON_COMPANY"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="company_id" baseTableName="ytag" constraintName="FK_YTAG_ON_COMPANY"
+                                     referencedColumnNames="id" referencedTableName="yperson"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v034-7" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="company_id" baseTableName="ytag" constraintName="FK_YTAG_ON_COMPANY"
+                                 referencedColumnNames="id" referencedTableName="ycompany"/>
+    </changeSet>
+
+</databaseChangeLog>

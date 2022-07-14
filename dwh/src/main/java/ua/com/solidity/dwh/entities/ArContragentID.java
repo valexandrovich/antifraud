@@ -26,6 +26,7 @@ public class ArContragentID  implements Serializable {
 	@Column(name = "ID", nullable = false)
 	private Long id;// Код контрагента
 
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

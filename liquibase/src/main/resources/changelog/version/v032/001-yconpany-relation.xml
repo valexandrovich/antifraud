@@ -124,7 +124,7 @@
     <changeSet id="v032-15" author="Kyrylo Chornobryvets">
         <dropNotNullConstraint tableName="yperson" columnName="last_name"/>
         <rollback>
-            <addNotNullConstraint tableName="yperson" columnName="last_name" validate="true"/>
+            <addNotNullConstraint tableName="yperson" columnName="last_name" validate="true" defaultNullValue=""/>
         </rollback>
     </changeSet>
 

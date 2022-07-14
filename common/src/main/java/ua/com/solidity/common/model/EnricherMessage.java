@@ -12,6 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 
+@SuppressWarnings("unused")
 public class EnricherMessage {
     private String table;
     private UUID revision;

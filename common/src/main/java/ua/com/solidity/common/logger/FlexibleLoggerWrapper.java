@@ -32,7 +32,7 @@ public class FlexibleLoggerWrapper implements Logger {
                 int index = msg.indexOf("$", 1);
                 if (index > 2) {
                     option = msg.substring(1, index).trim();
-                    msg = msg.substring(index + 1);
+                    msg = option + ":: " + msg.substring(index + 1);
                     if (!option.isBlank()) {
                         this.isEnabled = isDebugEnabled || LoggerWrapperFactory.isOptionIncluded(option);
                     }

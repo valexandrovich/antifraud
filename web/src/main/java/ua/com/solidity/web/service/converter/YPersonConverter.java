@@ -3,6 +3,7 @@ package ua.com.solidity.web.service.converter;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.dto.YPersonSearchDto;
 
 @Component
 public class YPersonConverter {
@@ -43,6 +44,20 @@ public class YPersonConverter {
 		dto.setEmails(entity.getEmails());
 		dto.setPhones(entity.getPhones());
 		dto.setSources(entity.getImportSources());
+
+		return dto;
+	}
+
+	public YPersonSearchDto toSearchDto(YPerson entity) {
+		YPersonSearchDto dto = new YPersonSearchDto();
+		dto.setId(entity.getId());
+		dto.setLastName(entity.getLastName());
+		dto.setFirstName(entity.getFirstName());
+		dto.setPatName(entity.getPatName());
+		dto.setBirthdate(entity.getBirthdate());
+		if (!entity.getInns().isEmpty()) dto.setInn(entity.getInns().iterator().next());
+		if (!entity.getAddresses().isEmpty()) dto.setAddress(entity.getAddresses().iterator().next());
+		if (!entity.getPassports().isEmpty()) dto.setPassport(entity.getPassports().iterator().next());
 
 		return dto;
 	}

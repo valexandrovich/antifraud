@@ -9,10 +9,8 @@ import ua.com.solidity.db.entities.BaseDrfo;
 
 @Repository
 public interface BaseDrfoRepository extends PagingAndSortingRepository<BaseDrfo, UUID> {
-    //Page<BaseDrfo> findAllByRevision(UUID revision, Pageable pageRequest);
-    Page<BaseDrfo> findAllByPortionId(UUID portion, Pageable pageRequest);
 
-    Long countAllByRevision(UUID revision);
+    Page<BaseDrfo> findAllByPortionId(UUID portion, Pageable pageRequest);
 
     Long countAllByPortionId(UUID portion);
 }

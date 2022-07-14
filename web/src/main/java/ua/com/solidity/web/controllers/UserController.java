@@ -36,7 +36,7 @@ public class UserController {
 	private final UserService userService;
 
 	@PostMapping("/subscriptions")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Shows all subscriptions with paging.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -49,7 +49,7 @@ public class UserController {
 	}
 
 	@PutMapping(path = "/subscribe/{id}")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Subscribes the user to yperson by specified id",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
@@ -64,7 +64,7 @@ public class UserController {
 	}
 
 	@PutMapping(path = "/unsubscribe/{id}")
-	@PreAuthorize("hasAnyAuthority('ADVANCED','BASIC')")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Unsubscribes the user from yperson by specified id",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))

@@ -9,9 +9,10 @@ import { logoutUserThunk } from "../../store/reducers/AuthReducer";
 
 const Aside = () => {
   const userName = localStorage.getItem("userName");
-  const role = useSelector((state) => state.auth.role);
+  const userRole = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
   const history = useHistory();
+
   return (
     <>
       <IconContext.Provider value={{ color: "#60aa18" }}>
@@ -40,7 +41,7 @@ const Aside = () => {
               </NavLink>
             </li>
 
-            {role === "ADVANCED" ? (
+            {userRole === "ADVANCED" || userRole === "ADMIN" ? (
               <>
                 <li className={SidebarData.Monitoring.cName}>
                   <NavLink to={SidebarData.Monitoring.path}>

@@ -19,7 +19,6 @@ let initialState = {
     message: "",
     type_message: "",
   },
-  canEdit: false,
 };
 
 const AuthReducer = (state = initialState, action = {}) => {

@@ -3,6 +3,8 @@ package ua.com.solidity.common;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.helpers.MessageFormatter;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -11,11 +13,8 @@ public class StatusChanger {
     public static final String UNIT_BYTES = "bytes";
     private static final String PERIOD_PROPERTY = "statusChanger.defaultPeriodMSecs";
     private static final long DEFAULT_PERIOD_MS = 1000;
-    private static final String STATUS_LOGGER_RABBITMQ_QUEUE = "statuslogger.rabbitmq.queue";
-    private static final String DEFAULT_STATUS_LOGGER_QUEUE = "otp-etl.statuslogger";
     private static final Map<TimerTask, List<StatusChanger>> periodMap = new HashMap<>();
     private static boolean initialized = false;
-    private static String statusLoggerQueue;
     private static long defaultPeriod;
 
     @Getter
@@ -55,7 +54,6 @@ public class StatusChanger {
     private static void initializationNeeded() {
         if (initialized) return;
         try {
-            statusLoggerQueue = Utils.getContextProperty(STATUS_LOGGER_RABBITMQ_QUEUE, DEFAULT_STATUS_LOGGER_QUEUE);
             defaultPeriod = Integer.parseInt(Utils.getContextProperty(PERIOD_PROPERTY, String.valueOf(DEFAULT_PERIOD_MS)));
         } catch(Exception e) {
             defaultPeriod = DEFAULT_PERIOD_MS;
@@ -74,8 +72,8 @@ public class StatusChanger {
 
     private static synchronized void forceExecute(StatusChanger changer) {
         if (changer.changed) {
-            Utils.sendRabbitMQMessage(statusLoggerQueue, Utils.objectToJsonString(changer.statusObject));
-            changer.changed = true;
+            Utils.sendRabbitMQMessage(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(changer.statusObject));
+            changer.changed = false;
             if (changer.completed) {
                 remove(changer);
             }
@@ -173,6 +171,7 @@ public class StatusChanger {
             task = add(period, this);
         }
         changed = true;
+        update();
     }
 
     @SuppressWarnings("unused")
@@ -205,7 +204,13 @@ public class StatusChanger {
             doOnComplete();
             statusObject.status = status;
             changed = true;
+            update();
         }
+    }
+
+    @SuppressWarnings("unused")
+    public final void stageComplete(String statusPattern, Object ...args) {
+        stageComplete(MessageFormatter.arrayFormat(statusPattern, args).getMessage());
     }
 
     public final synchronized void setProcessedVolume(long volume) {
@@ -237,6 +242,7 @@ public class StatusChanger {
         statusObject.status = status;
         completed = true;
         changed = true;
+        update();
     }
 
     public final void error(String status) {

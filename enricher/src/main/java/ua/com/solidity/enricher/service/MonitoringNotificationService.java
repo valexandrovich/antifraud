@@ -1,5 +1,13 @@
 package ua.com.solidity.enricher.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.db.abstraction.Identifiable;
@@ -9,22 +17,14 @@ import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.MonitoringNotificationRepository;
 import ua.com.solidity.db.repositories.UserRepository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
 @Service
 @RequiredArgsConstructor
-public class EnricherMonitoringNotificationService {
+public class MonitoringNotificationService {
 
 	private final UserRepository ur;
 	private final MonitoringNotificationRepository mnr;
 
-	public void enrichMonitoringNotification(List<YPerson> people) {
+	public void enrichMonitoringNotification(Set<YPerson> people) {
 		Map<UUID, YPerson> personMap = new HashMap<>();
 		people.forEach(person -> personMap.put(person.getId(), person));
 		List<User> userList = ur.findAll();

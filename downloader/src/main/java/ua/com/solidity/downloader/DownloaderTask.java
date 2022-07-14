@@ -30,11 +30,15 @@ public class DownloaderTask extends RabbitMQTask {
     private final ImportRevisionRepository importRevisionRepository;
 
     protected DownloaderTask(Receiver receiver, DownloaderMessageData msgData) {
-        super(true);
         this.receiver = receiver;
         this.msgData = msgData;
         this.importRevisionRepository = Utils.checkApplicationContext() ?
                 Utils.getApplicationContext().getBean(ImportRevisionRepository.class) : null;
+    }
+
+    @Override
+    public boolean isDeferred() {
+        return true;
     }
 
     public final String getPrefix() {
@@ -94,7 +98,7 @@ public class DownloaderTask extends RabbitMQTask {
     }
 
     @Override
-    public DeferredAction compareWith(DeferredTask task) {
+    public DeferredAction compareWith(DeferrableTask task) {
         DownloaderTask otherTask = (DownloaderTask) task;
         return otherTask != null && otherTask.msgData.getIdent().equals(msgData.getIdent()) ? DeferredAction.IGNORE : DeferredAction.APPEND;
     }

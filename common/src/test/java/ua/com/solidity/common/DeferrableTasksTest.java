@@ -8,11 +8,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DeferredTasksTest {
+class DeferrableTasksTest {
     private static final List<String> WaitingResult = Arrays.asList("Hello", "World", "!");
     private final List<String> target = new ArrayList<>();
 
-    private static class TestTask extends DeferredTask {
+    private static class TestTask extends DeferrableTask {
         private final List<String> target;
         private final DeferredAction action;
         private final String ident;
@@ -26,13 +26,18 @@ class DeferredTasksTest {
         }
 
         @Override
-        public DeferredAction compareWith(DeferredTask task) {
+        public DeferredAction compareWith(DeferrableTask task) {
             TestTask testTask = getClass().cast(task);
             if (testTask == null) return DeferredAction.IGNORE;
             if (ident.equals(testTask.ident)) {
                 return testTask.action;
             }
             return DeferredAction.APPEND;
+        }
+
+        @Override
+        public boolean isDeferred() {
+            return true;
         }
 
         @Override

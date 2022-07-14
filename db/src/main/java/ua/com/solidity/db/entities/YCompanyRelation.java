@@ -1,10 +1,6 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -14,6 +10,10 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -39,4 +39,17 @@ public class YCompanyRelation {
 	@JsonBackReference
 	@JoinColumn(name = "person_id")
 	private YPerson person;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        YCompanyRelation that = (YCompanyRelation) o;
+        return Objects.equals(company, that.company) && Objects.equals(role, that.role) && Objects.equals(person, that.person);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(company, role, person);
+    }
 }

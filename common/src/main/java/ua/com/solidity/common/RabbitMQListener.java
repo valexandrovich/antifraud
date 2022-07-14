@@ -1,5 +1,6 @@
 package ua.com.solidity.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Delivery;
 import lombok.CustomLog;
@@ -10,80 +11,6 @@ import java.util.*;
 @CustomLog
 public class RabbitMQListener {
 
-    private static class RabbitMQTaskBlank extends RabbitMQTask {
-
-        protected RabbitMQTaskBlank(RabbitMQListener listener, Delivery message) {
-            super(false);
-            setContext(listener, message, false);
-        }
-
-        @Override
-        protected DeferredAction compareWith(DeferredTask task) {
-            return DeferredAction.APPEND;
-        }
-
-        @Override
-        protected String description() {
-            return "<blank>";
-        }
-
-        @Override
-        protected void rmqExecute() {
-            getListener().handleReceiverMessage(getMessage());
-            setAcknowledgeSent(true);
-        }
-    }
-
-    private static class RabbitMQListenerThread extends Thread {
-        final RabbitMQListener listener;
-        private boolean waiting = false;
-
-        public RabbitMQListenerThread(RabbitMQListener listener) {
-            this.listener = listener;
-        }
-
-        public synchronized boolean isBusy() {
-            return !waiting;
-        }
-
-        public synchronized void setWaiting(boolean value) {
-            if (waiting == value) return;
-            waiting = value;
-            if (value) {
-                listener.restoreChannel();
-            } else {
-                listener.cancelChannel();
-            }
-        }
-
-        @Override
-        public void run() {
-            synchronized(listener) {
-                while (!isInterrupted()) {
-                    DeferredTask task = listener.taskQueue.poll();
-                    if (task == null) {
-                        setWaiting(true);
-                        try {
-                            try {
-                                log.info("$rmq_listener$>>> before wait");
-                                listener.wait();
-                                log.info("$rmq_listener$<<< after wait");
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                            }
-                        } finally {
-                            setWaiting(false);
-                        }
-                    } else {
-                        log.info("$rmq_listener$=== before exec task");
-                        task.execute();
-                        log.info("$rmq_listener$=== after exec task");
-                    }
-                }
-            }
-        }
-    }
-
     private static class InternalDeferredTasks extends DeferredTasks {
         RabbitMQListener listener;
         public InternalDeferredTasks(RabbitMQListener listener, long milliSeconds) {
@@ -91,70 +18,60 @@ public class RabbitMQListener {
             this.listener = listener;
         }
 
-        public synchronized void clearNotAcknowledged() {
-            int index = 0;
-            while (index < tasks.size()) {
-                DeferredTask task = tasks.get(index);
-                if (task instanceof RabbitMQTask) {
-                    RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
-                    if (!rabbitMQTask.isAcknowledgeSent()) {
-                        tasks.remove(index);
-                        continue;
-                    }
-                }
-                ++index;
-            }
-        }
-
-        @Override
-        public synchronized void clear() {
+        private void clearAllNotEqual(RabbitMQTask ignoredTask) {
             tasks.forEach((task) -> {
-                if (task instanceof RabbitMQTask) {
+                if (ignoredTask != task) {
                     RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
                     rabbitMQTask.acknowledge(false);
                 }
             });
+
+            tasks.removeIf((task) -> task != ignoredTask);
+        }
+
+        @Override
+        public synchronized void clear() {
             super.clear();
         }
 
         @Override
         protected void beforeExecutionLoop(boolean terminated) {
-            DeferredTask task = tasks.isEmpty() || terminated ? null : tasks.get(0);
-            for (int i = terminated ? 0 : 1; i < tasks.size(); ++i) {
-                DeferredTask currentTask = tasks.get(i);
-                if (currentTask instanceof RabbitMQTask) {
-                    RabbitMQTask rabbitMQTask = (RabbitMQTask) currentTask;
-                    rabbitMQTask.acknowledge(false);
-                }
-            }
-            tasks.clear();
-            if (task != null) {
-                tasks.add(task);
-            }
+            clearAllNotEqual(tasks.isEmpty() || terminated ? null : (RabbitMQTask) tasks.get(0));
         }
 
         @Override
-        protected synchronized void markTaskCompletion(DeferredTask task) {
-            if (task instanceof RabbitMQTask) {
-                RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
-                rabbitMQTask.acknowledge(true);
-            }
+        protected void markTaskDeclined(DeferrableTask task) {
+            RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
+            rabbitMQTask.acknowledge(false);
         }
 
         @Override
-        protected void executeTask(DeferredTask task) {
-            listener.queueTask(task);
+        protected void markTaskCompleted(DeferrableTask task) {
+            RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
+            rabbitMQTask.acknowledge(true);
+        }
+
+        @Override
+        protected void executeTasks(Collection<? extends DeferrableTask> collection) {
+            if (collection == null || collection.isEmpty()) return;
+            List<RabbitMQTask> taskList = new ArrayList<>();
+            collection.forEach((task)-> taskList.add((RabbitMQTask) task)); // must be rabbitMQTask only
+            listener.queueTasks(taskList);
+        }
+
+        @Override
+        protected void executeTask(DeferrableTask task) {
+            listener.holdTask((RabbitMQTask) task);
         }
     }
 
     private boolean started = false;
-
+    private boolean waiting = false;
     private Channel channel = null;
     private final Map<String, String> queueTags = new HashMap<>();
     private final DeferredTasks tasks;
-    private final RabbitMQReceiver receiver;
-    private final Queue<DeferredTask> taskQueue = new LinkedList<>();
-    private RabbitMQListenerThread thread = null;
+    final RabbitMQReceiver receiver;
+    private RabbitMQTask holder = null;
 
     public RabbitMQListener(RabbitMQReceiver receiver, int deferredTimeoutMSecs, String ...queues) {
         this.receiver = receiver;
@@ -168,54 +85,89 @@ public class RabbitMQListener {
         this(receiver, 0, queues);
     }
 
-    final synchronized void queueTask(DeferredTask task) {
-        taskQueue.add(task);
-        notifyAll();
+    @JsonIgnore
+    private synchronized void waitForMessages() {
+        waiting = true;
+        restoreChannel();
     }
 
-    private void resetThread() {
-        RabbitMQListenerThread listenerThread;
-        synchronized (this) {
-            listenerThread = thread;
-            if (tasks != null) tasks.clear();
-            while (!taskQueue.isEmpty()) {
-                Object obj = taskQueue.remove();
-                if (obj instanceof RabbitMQTask) {
-                    RabbitMQTask rabbitMQTask = (RabbitMQTask) obj;
-                    rabbitMQTask.acknowledge(false);
-                }
-            }
-        }
-
-        if (listenerThread != null && listenerThread.isAlive()) {
-            listenerThread.interrupt();
-            try {
-                listenerThread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
+    private void handleHoldenTask() {
+        RabbitMQTask task;
+        log.info("$rmq$ -- before synchronized block on listener on handleHoldenTask.");
         synchronized(this) {
-            thread = null;
+            log.info("$rmq$ -- inside synchronized block on listener on handleHoldenTask.");
+            if (!waiting || holder == null) return;
+            task = holder;
+            waiting = false;
+            if (tasks != null) {
+                tasks.clear();
+            }
+            task.acknowledge(true);
+            cancelChannel();
         }
+        log.info("$rmq$ -- before task execution on handleHoldenTask.");
+        task.execute();
+        log.info("$rmq$ -- after task execution on handleHoldenTask.");
+        waitForMessages();
+        synchronized(this) {
+            holder = null;
+        }
+    }
+
+    final void holdTask(RabbitMQTask task) {
+        if (task == null) return;
+        log.info("$rmq$ -- before synchronized block on listener (holdTask).");
+        synchronized(this) {
+            log.info("$rmq$ -- inside synchronized block on listener (holdTask).");
+            if (holder != null) {
+                task.acknowledge(false); // ignore task
+                return;
+            } else {
+                holder = task;
+            }
+        }
+        log.info("$rmq$ -- before handleHoldenTask on listener (holdTask).");
+        handleHoldenTask();
+    }
+
+    final void queueTasks(Collection<? extends RabbitMQTask> collection) {
+        if (collection == null) return;
+        RabbitMQTask task = null;
+        for (var item : collection) { // remove all tasks excepts the first one
+            if (task == null) {
+                task = item;
+            } else {
+                item.acknowledge(false);
+            }
+        }
+
+        if (task == null) return;
+
+        synchronized (this) {
+            if (holder != null) {
+                task.acknowledge(false);
+                return;
+            }
+            holder = task;
+        }
+
+        handleHoldenTask();
     }
 
     public final synchronized boolean start() {
         if (started || receiver == null) return false;
-        started = true;
         if (channelNeeded()) {
             if (tasks != null) tasks.clear();
-            thread = new RabbitMQListenerThread(this);
-            thread.start();
+            waitForMessages();
+            started = true;
         } else started = false;
         return started;
     }
 
     @SuppressWarnings("unused")
-    public final void finish() {
+    public synchronized final void finish() {
         if (!started) return;
-        resetThread();
+        clear();
         if (channel != null && channel.isOpen()) {
             try {
                 channel.close();
@@ -230,18 +182,26 @@ public class RabbitMQListener {
     @SuppressWarnings("unused")
     public final void addQueue(String queue) {
         if (queueTags.putIfAbsent(queue, null) == null && started) {
-            channelNeeded();
+            synchronized(this) {
+                channelNeeded();                
+            }
         }
     }
 
-    private void clearNotAcknowledged() {
+    private void clear() {
         if (tasks != null) {
-            ((InternalDeferredTasks)tasks).clearNotAcknowledged();
+            tasks.clear();
         }
-        taskQueue.removeIf((task) -> (task instanceof RabbitMQTask) && !((RabbitMQTask) task).isAcknowledgeSent());
+        synchronized(this) {
+            if (holder != null) {
+                holder.acknowledge(false);
+                holder = null;
+            }
+            cancelChannel();
+        }
     }
 
-    protected final synchronized void cancelChannel() {
+    private void cancelChannel() {
         if (channel != null && channel.isOpen()) {
             queueTags.forEach((queue, tag) -> {
                 if (tag != null) {
@@ -254,10 +214,10 @@ public class RabbitMQListener {
             });
             queueTags.replaceAll((k, v) -> null);
         }
-        log.info("$rmq_listener$>>> channel cancelled.");
+        log.info("$rmq$>>> channel cancelled.");
     }
 
-    protected final synchronized void restoreChannel() {
+    private void restoreChannel() {
         if (channel != null && channel.isOpen()) {
             for (var entry : queueTags.entrySet()) {
                 String queue = entry.getKey();
@@ -272,14 +232,13 @@ public class RabbitMQListener {
                 }
             }
         } else channelNeeded();
-        log.info("$rmq_listener$>>> channel restored.");
+        log.info("$rmq$>>> channel restored.");
     }
 
-    private synchronized boolean channelNeeded() {
-        if (!started) return false;
+    private boolean channelNeeded() {
         boolean invalidateQueues = false;
         if (channel == null || !channel.isOpen()) {
-            clearNotAcknowledged();
+            clear();
             channel = Utils.createRabbitMQChannel();
             queueTags.replaceAll((k, v) -> null);
             invalidateQueues = channel != null;
@@ -288,6 +247,7 @@ public class RabbitMQListener {
         if (invalidateQueues) {
             restoreChannel();
         }
+        log.info("$rmq$>>> channel creation result: {}", channel != null);
         return channel != null;
     }
 
@@ -296,55 +256,39 @@ public class RabbitMQListener {
         try {
             if (ack) {
                 channel.basicAck(deliveryTag, false);
+                log.info("$rmq$ --- ack: {}", deliveryTag);
             } else {
                 channel.basicNack(deliveryTag, false, true);
+                log.info("$rmq$ --- nack: {}", deliveryTag);
             }
         } catch (Exception e) {
-            log.error("Can't acknowledge a message for rabbitMQ channel", e);
+            log.error("Can't acknowledge a message for rabbitMQ channel for {}: {}", deliveryTag, ack, e);
         }
     }
 
-    private void doReceiverAcknowledgeIfNotSent(long deliveryTag, boolean ack) {
-        if (!receiver.acknowledgeSent) {
-            doAcknowledge(deliveryTag, ack);
-        }
-    }
-
-    final synchronized void handleReceiverMessage(Delivery message) {
+    final void handleReceiverMessage(Delivery message) {
         long deliveryTag = message.getEnvelope().getDeliveryTag();
-        Object res = receiver.doHandleMessage(this, message);
-        if (res instanceof DeferredTask) {
-            DeferredTask task = (DeferredTask) res;
-            if (task instanceof RabbitMQTask) {
-                RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
-                rabbitMQTask.setContext(this, message, receiver.acknowledgeSent);
+        RabbitMQTask res = receiver.doHandleMessage(this, message);
+        if (res != null) {
+            res.setContext(this, message);
+            if (tasks == null || !res.isDeferred()) {
+                log.info("$rmq$::: before hold task.");
+                holdTask(res);
             } else {
-                doReceiverAcknowledgeIfNotSent(deliveryTag, true);
+                log.info("$rmq$::: before append task.");
+                tasks.append(res);
             }
-            if (tasks != null) {
-                tasks.append(task);
-            } else {
-                queueTask(task);
-            }
-        } else {
-            doReceiverAcknowledgeIfNotSent(deliveryTag, res == null || !res.equals(false));
+        } else { // erroneous situation, that can't be
+            log.info("RabbitMQListener ignores a message {}: {}", deliveryTag, new String(message.getBody(), StandardCharsets.UTF_8));
+            doAcknowledge(deliveryTag, true);
         }
     }
 
-    private synchronized void doHandleCancelCallback(String consumerTag) {
-
+    private void doHandleCancelCallback(String consumerTag) {
+        // nothing yet
     }
 
-    private synchronized void doHandleDeliverCallback(String consumerTag, Delivery message) {
-        if (thread == null) {
-            log.warn("RabbitMQ consumer thread is null");
-            return;
-        }
-        if (thread.isBusy()) {
-            log.info("$rmq_listener$^^^^ task unacked {}", new String(message.getBody(), StandardCharsets.UTF_8));
-            doAcknowledge(message.getEnvelope().getDeliveryTag(), false); // protection
-        } else {
-            queueTask(new RabbitMQTaskBlank(this, message));
-        }
+    private void doHandleDeliverCallback(String consumerTag, Delivery message) {
+        handleReceiverMessage(message);
     }
 }

@@ -20,6 +20,8 @@ import ua.com.solidity.web.service.RoleService;
 @Slf4j
 public class UserDetailServiceImpl implements UserDetailsService {
 
+	@Value("${user.admin.name}")
+	private String adminName;
 	@Value("${user.super.name}")
 	private String superName;
 	@Value("${user.basic.name}")
@@ -34,7 +36,11 @@ public class UserDetailServiceImpl implements UserDetailsService {
 		Person person;
 		String role;
 		UserDetailsImpl userDetails;
-		if (superName.equals(name)) {
+		if (adminName.equals(name)) {
+			person = new Person();
+			person.setDisplayName(adminName);
+			role = roleRepository.findById(3).orElseThrow(NoSuchRoleException::new).getName();
+		} else if (superName.equals(name)) {
 			person = new Person();
 			person.setDisplayName(superName);
 			role = roleRepository.findById(1).orElseThrow(NoSuchRoleException::new).getName();

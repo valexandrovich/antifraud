@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet id="v036-0" author="Alexey Sidnenkov">
+        <tagDatabase tag="v036-0"/>
+    </changeSet>
+
+    <changeSet id="v036-1" author="Alexey Sidnenkov">
+        <modifyDataType
+                columnName="offence_name"
+                newDataType="varchar(4096)"
+                tableName="govua_14"/>
+        <modifyDataType
+                columnName="codex_article_name"
+                newDataType="varchar(512)"
+                tableName="govua_14"/>
+        <modifyDataType
+                columnName="court_case_number"
+                newDataType="varchar(64)"
+                tableName="govua_14"/>
+        <modifyDataType
+                columnName="job"
+                newDataType="varchar(1024)"
+                tableName="govua_14"/>
+        <modifyDataType
+                columnName="job_position"
+                newDataType="varchar(1024)"
+                tableName="govua_14"/>
+        <modifyDataType
+                columnName="activity_sphere_name"
+                newDataType="varchar(512)"
+                tableName="govua_14"/>
+        <modifyDataType
+                columnName="sentence_number"
+                newDataType="varchar(128)"
+                tableName="govua_14"/>
+        <rollback />
+    </changeSet>
+
+</databaseChangeLog>

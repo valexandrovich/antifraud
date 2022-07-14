@@ -12,8 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-import ua.com.solidity.common.RabbitMQListener;
-import ua.com.solidity.enricher.listener.Receiver;
+import ua.com.solidity.common.OtpExchange;
 
 @Slf4j
 @Configuration
@@ -21,8 +20,6 @@ import ua.com.solidity.enricher.listener.Receiver;
 @RequiredArgsConstructor
 public class RabbitConfiguration {
 
-    @Value("${enricher.rabbitmq.name}")
-    private String queueName;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
     @Value("${spring.rabbitmq.username}")
@@ -50,11 +47,6 @@ public class RabbitConfiguration {
 
     @Bean
     public Queue myQueue() {
-        return new Queue(queueName);
-    }
-
-    @Bean
-    RabbitMQListener listener(Receiver receiver) {
-        return new RabbitMQListener(receiver, queueName);
+        return new Queue(OtpExchange.ENRICHER);
     }
 }

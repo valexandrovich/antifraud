@@ -2,7 +2,6 @@ package ua.com.solidity.importer;
 
 import lombok.CustomLog;
 import ua.com.solidity.common.*;
-import ua.com.solidity.common.model.EnricherMessage;
 import ua.com.solidity.db.entities.ImportRevision;
 import ua.com.solidity.db.entities.ImportSource;
 
@@ -15,14 +14,19 @@ public class ImporterTask extends RabbitMQTask {
     private final ImporterMessageData data;
     private String importSourceName;
     protected ImporterTask(Importer importer, ImporterMessageData data) {
-        super(true);
+        super();
         this.importer = importer;
         this.data = data;
     }
 
     @Override
-    protected DeferredAction compareWith(DeferredTask task) {
+    protected DeferredAction compareWith(DeferrableTask task) {
         return DeferredAction.APPEND;
+    }
+
+    @Override
+    public boolean isDeferred() {
+        return false;
     }
 
     @Override
@@ -31,22 +35,20 @@ public class ImporterTask extends RabbitMQTask {
 
         if (importSource == null) {
             log.error("Import source not found for id={}.", data.getImportSourceId());
-            acknowledge(true);
             return;
         }
 
         importSourceName = importSource.getName();
 
         if (!ImportSource.sourceLocker(data.getImportSourceId(), true)) {
-            log.info("Import source (id: {}) already locked in another session.", data.getImportSourceId());
-            acknowledge(false);
+            log.info("=== Import source (id: {}) already locked in another session. ===", data.getImportSourceId());
+            enqueueBack();
             return;
         }
         try {
-            acknowledge(true);
             log.info("File import requested: {}.", data.getData().getMainFile().getFileName());
             importer.doImport(data);
-            if (data.getExtraData(DROP_REVISION).asBoolean(false)) {
+            if (data.getExtraData(DROP_REVISION).asBoolean(false)) { // god mode
                 ImportRevision.removeRevision(data.getImportRevisionId());
                 log.info("--- revision and revision_group rows removed ---");
             }
@@ -54,8 +56,6 @@ public class ImporterTask extends RabbitMQTask {
                 data.getData().removeAllFiles();
                 log.info("--- all files removed ---");
             }
-            //EnricherMessage enricherMessage = new EnricherMessage(importSource.getName(), data.getImportRevisionId());
-            //Utils.sendRabbitMQMessage(importer.getConfig().getEnricherQueueName(), Utils.objectToJsonString(enricherMessage));
         } finally {
             ImportSource.sourceLocker(data.getImportSourceId(), false);
         }

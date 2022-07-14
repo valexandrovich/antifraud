@@ -1,17 +1,19 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { Redirect, Route } from "react-router-dom";
+import { Route } from "react-router-dom";
+import ErrorPage from "../pages/ErrorPage";
 
 const ProtectedRoute = ({ component: Component, ...restOfProps }) => {
-  const role = useSelector((state) => state.auth.role);
+  const userRole = useSelector((state) => state.auth.role);
+
   return (
     <Route
       {...restOfProps}
       render={(props) =>
-        role === "ADVANCED" || role == null ? (
+        userRole === "ADVANCED" || userRole === "ADMIN" || userRole == null ? (
           <Component {...props} />
         ) : (
-          <Redirect to="/error" />
+          <ErrorPage />
         )
       }
     />

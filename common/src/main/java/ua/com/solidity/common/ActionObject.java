@@ -1,6 +1,7 @@
 package ua.com.solidity.common;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,19 +13,21 @@ import java.util.Map;
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-
+@CustomLog
 public abstract class ActionObject {
     private static final String KEY_ACTION = "action";
     private static final Map<String, Class<? extends ActionObject>> registeredActions = new HashMap<>();
-
     protected String action;
+    protected JsonNode node;
 
     public static ActionObject getAction(JsonNode node) {
         Class<? extends ActionObject> clazz;
-        if (node == null || !node.isObject() || !node.hasNonNull(KEY_ACTION) ||
+        if (node == null || node.isNull() || !node.isObject() || !node.hasNonNull(KEY_ACTION) ||
                 (clazz = registeredActions.getOrDefault(node.get(KEY_ACTION).asText(""),
                         null)) == null) return null;
-        return Utils.jsonToValue(node, clazz);
+        ActionObject res = Utils.jsonToValue(node, clazz);
+        res.node = node;
+        return res;
     }
 
     @SuppressWarnings("unused")
@@ -44,6 +47,11 @@ public abstract class ActionObject {
     protected abstract boolean doExecute();
 
     public final boolean execute() {
-        return doValidate() && doExecute();
+        try {
+            return doValidate() && doExecute();
+        } catch (Exception e) {
+            log.error("Can't handle action {}.", node, e);
+        }
+        return false;
     }
 }

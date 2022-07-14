@@ -27,7 +27,7 @@ public class ImporterMessageData {
     public final JsonNode getExtraData(String name) {
         if (data != null) {
             JsonNode extra = data.getExtraData();
-            if (extra != null && extra.hasNonNull(name)) {
+            if (extra != null && !extra.isNull() && extra.hasNonNull(name)) {
                 return extra.get(name);
             }
         }

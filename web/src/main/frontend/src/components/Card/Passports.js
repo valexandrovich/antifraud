@@ -67,7 +67,7 @@ const Passports = ({ data, onChange }) => {
   } = data;
 
   const [edit, setEdit] = useState(true);
-  const canEdit = useSelector((state) => state.auth.canEdit);
+  const userRole = useSelector((state) => state.auth.role);
   const editpassportType = () => {
     if (type === "UA_IDCARD") {
       return (
@@ -691,7 +691,7 @@ const Passports = ({ data, onChange }) => {
       {edit ? (
         <div>
           <div className="card mb-3">
-            {canEdit && (
+            {userRole === "ADMIN" && (
               <div className="d-flex justify-content-end">
                 <IoIcons.IoIosCreate
                   className="pointer"

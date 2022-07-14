@@ -96,7 +96,7 @@
             <column name="inn_id"/>
         </createIndex>
         <rollback>
-            <dropIndex tableName="ymanager" indexName="inn_id"/>
+            <dropIndex tableName="ymanager" indexName="yinn_id"/>
         </rollback>
     </changeSet>
 

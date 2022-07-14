@@ -106,14 +106,18 @@ const SingleCard = () => {
                 <b className="mr-10">Дата народження:</b>
 
                 <p>
-                  {new DateObject(personDetails.birthdate).format("DD.MM.YYYY")}
+                  {personDetails.birthdate
+                    ? new DateObject(personDetails.birthdate).format(
+                        "DD.MM.YYYY"
+                      )
+                    : null}
                 </p>
               </div>
               <div className="d-flex">
                 <b className="mr-10">ІПН:</b>
                 <p>{formatInn(personDetails.inns)}</p>
                 <span className="ml-10">
-                  {personDetails.inns.length > 0
+                  {personDetails.inns && personDetails.inns.length > 0
                     ? `(${
                         personDetails.inns[0].importSources.length
                       } ${sourceName(personDetails.inns[0].importSources)})`
@@ -124,7 +128,7 @@ const SingleCard = () => {
                 <b className="mr-10">Паспорт:</b>
                 <p>{formatPassport(personDetails.passports)}</p>
                 <span className="ml-10">
-                  {personDetails.passports.length > 0
+                  {personDetails.passports && personDetails.passports.length > 0
                     ? `(${
                         personDetails.passports[0].importSources.length
                       } ${sourceName(
@@ -137,12 +141,12 @@ const SingleCard = () => {
               <div className="d-flex">
                 <b className="mr-10">Адреса:</b>
                 <p>
-                  {personDetails.addresses.length > 0
+                  {personDetails.addresses && personDetails.addresses.length > 0
                     ? personDetails.addresses[0].address
                     : ""}
                 </p>
                 <span className="ml-10">
-                  {personDetails.addresses.length > 0
+                  {personDetails.addresses && personDetails.addresses.length > 0
                     ? `(${
                         personDetails.addresses[0].importSources.length
                       } ${sourceName(
@@ -161,13 +165,16 @@ const SingleCard = () => {
               name={"Паспорти"}
               type={"passports"}
               element={personDetails.passports}
-              children={personDetails.passports.map((passport) => (
-                <Passports
-                  onChange={(e) => handleChange(e, "passports")}
-                  key={passport.id}
-                  data={passport}
-                />
-              ))}
+              children={
+                personDetails.passports &&
+                personDetails.passports.map((passport) => (
+                  <Passports
+                    onChange={(e) => handleChange(e, "passports")}
+                    key={passport.id}
+                    data={passport}
+                  />
+                ))
+              }
             />
 
             <ToggleCard
@@ -176,13 +183,16 @@ const SingleCard = () => {
               name={"ІПН"}
               type={"inn"}
               element={personDetails.inns}
-              children={personDetails.inns.map((inn) => (
-                <Inn
-                  onChange={(e) => handleChange(e, "inns")}
-                  key={inn.id}
-                  data={inn}
-                />
-              ))}
+              children={
+                personDetails.inns &&
+                personDetails.inns.map((inn) => (
+                  <Inn
+                    onChange={(e) => handleChange(e, "inns")}
+                    key={inn.id}
+                    data={inn}
+                  />
+                ))
+              }
             />
             <ToggleCard
               setComponents={setComponents}
@@ -190,13 +200,16 @@ const SingleCard = () => {
               name={"Адреси"}
               type={"address"}
               element={personDetails.addresses}
-              children={personDetails.addresses.map((address) => (
-                <Addresses
-                  onChange={(e) => handleChange(e, "addresses")}
-                  key={address.id}
-                  data={address}
-                />
-              ))}
+              children={
+                personDetails.addresses &&
+                personDetails.addresses.map((address) => (
+                  <Addresses
+                    onChange={(e) => handleChange(e, "addresses")}
+                    key={address.id}
+                    data={address}
+                  />
+                ))
+              }
             />
             <ToggleCard
               setComponents={setComponents}
@@ -204,13 +217,16 @@ const SingleCard = () => {
               name={"Emails"}
               type={"email"}
               element={personDetails.emails}
-              children={personDetails.emails.map((email) => (
-                <Email
-                  onChange={(e) => handleChange(e, "emails")}
-                  key={email.id}
-                  data={email}
-                />
-              ))}
+              children={
+                personDetails.emails &&
+                personDetails.emails.map((email) => (
+                  <Email
+                    onChange={(e) => handleChange(e, "emails")}
+                    key={email.id}
+                    data={email}
+                  />
+                ))
+              }
             />
             <ToggleCard
               setComponents={setComponents}
@@ -218,9 +234,16 @@ const SingleCard = () => {
               name={"Теги"}
               type={"tag"}
               element={personDetails.tags}
-              children={personDetails.tags.map((tag) => (
-                <Tags key={tag.id} data={tag} />
-              ))}
+              children={
+                personDetails.tags &&
+                personDetails.tags.map((tag) => (
+                  <Tags
+                    onChange={(e) => handleChange(e, "tags")}
+                    key={tag.id}
+                    data={tag}
+                  />
+                ))
+              }
             />
             <ToggleCard
               setComponents={setComponents}
@@ -228,13 +251,16 @@ const SingleCard = () => {
               name={"Телефони"}
               type={"phone"}
               element={personDetails.phones}
-              children={personDetails.phones.map((phone) => (
-                <Phone
-                  onChange={(e) => handleChange(e, "phones")}
-                  key={phone.id}
-                  data={phone}
-                />
-              ))}
+              children={
+                personDetails.phones &&
+                personDetails.phones.map((phone) => (
+                  <Phone
+                    onChange={(e) => handleChange(e, "phones")}
+                    key={phone.id}
+                    data={phone}
+                  />
+                ))
+              }
             />
             <ToggleCard
               setComponents={setComponents}
@@ -242,13 +268,16 @@ const SingleCard = () => {
               name={"Альтернативні імена"}
               type={"alt"}
               element={personDetails.altPeople}
-              children={personDetails.altPeople.map((alt) => (
-                <AltPerson
-                  onChange={(e) => handleChange(e, "altPeople")}
-                  key={alt.id}
-                  data={alt}
-                />
-              ))}
+              children={
+                personDetails.altPeople &&
+                personDetails.altPeople.map((alt) => (
+                  <AltPerson
+                    onChange={(e) => handleChange(e, "altPeople")}
+                    key={alt.id}
+                    data={alt}
+                  />
+                ))
+              }
             />
           </div>
         </div>

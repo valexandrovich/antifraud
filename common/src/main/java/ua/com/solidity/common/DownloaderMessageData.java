@@ -14,8 +14,7 @@ public class DownloaderMessageData {
     private String ident;
     private String localPath;
     private boolean reload = false;
-    private boolean makeLog = false;
-    private String logFile;
+    private String logFile = "?";
     private String logMailTo;
     private long logLimit = -1;
     private int attemptsLeft;

@@ -1,23 +1,21 @@
-vault: 
+vault:
   vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/web/" }}{{ .Data.data.properties }}{{ end }}'
   vaultRole: "antifraud-web"
   vaultAddress: "https://vaulttest.otpbank.com.ua:443"
   vaultMountPath: "auth/test-cluster/"
   appPropertiesPath: "/vault/secrets/application.properties"
 
-
-
 ingress:
   enabled: true
   className: ""
-  annotations: 
+  annotations:
     kubernetes.io/ingress.class: nginx
   hosts:
     - host: antifraud-dev3.otpbank.com.ua
       paths:
         - path: /
           pathType: ImplementationSpecific
-  tls: 
+  tls:
   - hosts:
     - antifraud-dev3.otpbank.com.ua
     secretName: antifraud-tls

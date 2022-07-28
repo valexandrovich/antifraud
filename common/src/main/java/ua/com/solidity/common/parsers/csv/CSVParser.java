@@ -131,6 +131,7 @@ public class CSVParser extends CustomParser {
     }
 
     public CSVParser(CSVParams params) {
+
         data = new ParseRowData(params == null ? new CSVParams() : params);
         forceColumnCount = data.params.getColumnCount();
         if (forceColumnCount > 0) {

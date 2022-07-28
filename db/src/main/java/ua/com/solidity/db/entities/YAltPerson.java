@@ -41,6 +41,11 @@ public class YAltPerson implements Identifiable {
 	)
 	private Set<ImportSource> importSources =  new HashSet<>();
 
+	public void cleanAssociations() {
+		this.person.getAltPeople().removeIf(altPerson -> id.equals(altPerson.getId()));
+		this.importSources = new HashSet<>();
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

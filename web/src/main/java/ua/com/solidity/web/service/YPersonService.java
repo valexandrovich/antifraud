@@ -1,5 +1,10 @@
 package ua.com.solidity.web.service;
 
+import java.time.LocalDate;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -8,8 +13,8 @@ import org.springframework.stereotype.Service;
 import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.web.dto.YPersonDto;
-import ua.com.solidity.web.dto.YPersonSearchDto;
+import ua.com.solidity.web.dto.olap.YPersonDto;
+import ua.com.solidity.web.dto.olap.YPersonSearchDto;
 import ua.com.solidity.web.exception.EntityNotFoundException;
 import ua.com.solidity.web.request.PaginationRequest;
 import ua.com.solidity.web.request.PaginationSearchRequest;
@@ -20,13 +25,7 @@ import ua.com.solidity.web.search.SearchOperation;
 import ua.com.solidity.web.security.service.Extractor;
 import ua.com.solidity.web.service.converter.YPersonConverter;
 import ua.com.solidity.web.service.factory.PageRequestFactory;
-import ua.com.solidity.web.utils.UtilString;
-
-import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDate;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import ua.com.solidity.common.UtilString;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -112,7 +111,7 @@ public class YPersonService {
 			return ypr.findAll(gs, pageRequest)
 					.map(entity -> {
 						YPersonSearchDto dto = yPersonConverter.toSearchDto(entity);
-						user.getPeople().forEach(subscribedYPerson -> {
+						user.getPersonSubscriptions().forEach(subscribedYPerson -> {
 							if (subscribedYPerson.getId() == dto.getId()) dto.setSubscribe(true);
 						});
 						return dto;
@@ -142,23 +141,24 @@ public class YPersonService {
             criteriaFound = true;
             gs.add(new SearchCriteria(PAT_NAME, patName, null, SearchOperation.EQUALS));
         }
+        if (criteriaFound) {
+            PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
+            if (ypr.findAll(gs, pageRequest).isEmpty()) {
+                gs.clear();
+                if (!firstName.equals("")) {
+                    criteriaFound = true;
+                    gs.add(new SearchCriteria(FIRST_NAME, firstName, ALT_PEOPLE, SearchOperation.EQUALS));
+                }
 
-        PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
-        if (ypr.findAll(gs, pageRequest).isEmpty()) {
-            gs.clear();
-            if (!firstName.equals("")) {
-                criteriaFound = true;
-                gs.add(new SearchCriteria(FIRST_NAME, firstName, ALT_PEOPLE, SearchOperation.EQUALS));
-            }
+                if (!surName.equals("")) {
+                    criteriaFound = true;
+                    gs.add(new SearchCriteria(LAST_NAME, surName, ALT_PEOPLE, SearchOperation.EQUALS));
+                }
 
-            if (!surName.equals("")) {
-                criteriaFound = true;
-                gs.add(new SearchCriteria(LAST_NAME, surName, ALT_PEOPLE, SearchOperation.EQUALS));
-            }
-
-            if (!patName.equals("")) {
-                criteriaFound = true;
-                gs.add(new SearchCriteria(PAT_NAME, patName, ALT_PEOPLE, SearchOperation.EQUALS));
+                if (!patName.equals("")) {
+                    criteriaFound = true;
+                    gs.add(new SearchCriteria(PAT_NAME, patName, ALT_PEOPLE, SearchOperation.EQUALS));
+                }
             }
         }
 	}
@@ -169,7 +169,7 @@ public class YPersonService {
 		if (!passportNumber.equals("") && !passportSeries.equals("")) {
 			criteriaFound = true;
 			gs.add(new SearchCriteria(NUMBER, passportNumber, PASSPORTS, SearchOperation.EQUALS));
-			gs.add(new SearchCriteria(SERIES, passportSeries, PASSPORTS, SearchOperation.EQUALS));
+			gs.add(new SearchCriteria(SERIES, passportSeries.toUpperCase(), PASSPORTS, SearchOperation.EQUALS));
 		}
 
 		String idPassportNumber = Objects.toString(searchRequest.getId_documentNumber(), "");
@@ -187,7 +187,7 @@ public class YPersonService {
 		String foreignPassportNumber = Objects.toString(searchRequest.getForeignP_documentNumber(), "");
 		if (!foreignPassportNumber.equals("")) {
 			criteriaFound = true;
-			gs.add(new SearchCriteria(SERIES, foreignPassportNumber.substring(0, 2), PASSPORTS, SearchOperation.EQUALS));
+			gs.add(new SearchCriteria(SERIES, foreignPassportNumber.substring(0, 2).toUpperCase(), PASSPORTS, SearchOperation.EQUALS));
 			gs.add(new SearchCriteria(NUMBER, foreignPassportNumber.substring(2), PASSPORTS, SearchOperation.EQUALS));
 		}
 
@@ -203,7 +203,7 @@ public class YPersonService {
 				.orElseThrow(() -> new EntityNotFoundException(YPerson.class, id));
 		YPersonDto dto = yPersonConverter.toDto(yPerson);
 		User user = extractor.extractUser(request);
-		Optional<YPerson> personOptional = user.getPeople()
+		Optional<YPerson> personOptional = user.getPersonSubscriptions()
 				.stream()
 				.filter(e -> e.getId() == id)
 				.findAny();

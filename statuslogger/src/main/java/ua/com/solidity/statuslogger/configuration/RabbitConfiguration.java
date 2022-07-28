@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import ua.com.solidity.common.OtpExchange;
 
 @Slf4j
 @Configuration
@@ -20,8 +21,6 @@ import org.springframework.context.annotation.PropertySource;
 })
 public class RabbitConfiguration {
 
-    @Value("${statuslogger.rabbitmq.name}")
-    private String loggerQueue;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
     @Value("${spring.rabbitmq.username}")
@@ -47,8 +46,8 @@ public class RabbitConfiguration {
         return new RabbitTemplate(connectionFactory());
     }
 
-    @Bean(name = "loggerQueue")
-    public Queue myQueue() {
-        return new Queue(loggerQueue);
+    @Bean(name = "statusLoggerQueue")
+    public Queue statusLoggerQueue() {
+        return new Queue(OtpExchange.STATUS_LOGGER);
     }
 }

@@ -10,7 +10,7 @@ import java.util.*;
 public class CSVDataObject extends DataObject {
 
     private static class CSVField extends DataField {
-        private final String data;
+        private String data;
 
         public CSVField(DataObject parent, String data) {
             super(parent);
@@ -25,6 +25,22 @@ public class CSVDataObject extends DataObject {
         @Override
         public String internalGetString() {
             return data == null ? "" : data;
+        }
+
+        @Override
+        protected void internalSetValue(DataFieldType type, Object value) {
+            switch (type) {
+                case NULL:
+                    data = null;
+                    break;
+                case STRING:
+                case NUMBER:
+                case BOOLEAN:
+                    data = value.toString();
+                    break;
+                default:
+                    super.internalSetValue(type, value);
+            }
         }
     }
 

@@ -22,6 +22,10 @@ public abstract class Prototype {
         // nothing
     }
 
+    protected void open(Item item) {
+        // nothing
+    }
+
     protected abstract Object execute(@NonNull Item item);
 
     protected abstract void close(Item item);

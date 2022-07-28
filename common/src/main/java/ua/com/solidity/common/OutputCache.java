@@ -20,16 +20,18 @@ public class OutputCache {
 
     public final void put(DataBatch batch) {
         if (batch == null) return;
-        group.incRowCount(batch.getObjectCount());
-        group.incParseErrorCount(batch.getErrorCount());
+        if (group != null) {
+            batch.setSource(group.name);
+        }
         this.batch = batch;
     }
 
-    public final void batchHandled(int committed) {
-        group.incInsertCount(committed);
-        long insertErrorCount = (long) (batch.getObjectCount()) - (long) (committed);
-        if (insertErrorCount > 0) {
-            group.incInsertErrorCount(insertErrorCount);
+    public final void batchHandled() {
+        if (batch != null) {
+            group.parseErrorCount += batch.getErrorCount();
+            group.totalRowCount += batch.getObjectCount() + batch.getErrorCount() + batch.getBadObjectCount();
+            group.badObjectCount += batch.getBadObjectCount();
+            group.objectErrorCount += batch.getObjectErrorsCount();
         }
     }
 }

@@ -1,6 +1,7 @@
 package ua.com.solidity.common.pgsql;
 
 import ua.com.solidity.common.data.DataExtension;
+
 import java.util.UUID;
 
 public class RevisionExtension extends DataExtension {

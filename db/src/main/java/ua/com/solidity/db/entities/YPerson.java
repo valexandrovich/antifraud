@@ -111,7 +111,7 @@ public class YPerson {
     private LocalDate birthdate;
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
-    private Set<YRelatedPerson> relatedPeople = new HashSet<>();
+    private Set<YPersonRelation> personRelations = new HashSet<>();
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YCompanyRelation> companyRelations = new HashSet<>();
@@ -141,13 +141,11 @@ public class YPerson {
     @JsonManagedReference
     private Set<YPhone> phones = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "users_yperson",
-            joinColumns = {@JoinColumn(name = "yperson_id")},
-            inverseJoinColumns = {@JoinColumn(name = "users_id")}
-    )
-    private Set<User> users = new HashSet<>();
+    @ManyToMany(mappedBy = "personSubscriptions")
+    private Set<User> subscribedUsers = new HashSet<>();
+
+    @ManyToMany(mappedBy = "personComparisons")
+    private Set<User> comparingUsers = new HashSet<>();
 
     @ManyToMany
     @JoinTable(

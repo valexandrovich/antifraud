@@ -2,12 +2,14 @@ package ua.com.solidity.common.data;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import lombok.CustomLog;
 import ua.com.solidity.common.ValueParser;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @SuppressWarnings("unused")
+@CustomLog
 public class DataField {
     DataObject parent;
     protected DataField(DataObject parent) {
@@ -17,6 +19,7 @@ public class DataField {
     protected DataFieldType internalGetType() {
         return DataFieldType.NULL;
     }
+
     protected String internalGetString() {
         return null;
     }
@@ -34,6 +37,34 @@ public class DataField {
 
     protected DataArray internalGetDataArray() {
         return null;
+    }
+
+    protected final void capabilityNotSupported(DataFieldType type) {
+        log.error("Data Field: (class:{}, type:{}) Set value with type {} is not supported.", getClass().getName(), internalGetType(), type);
+    }
+
+    protected void internalSetValue(DataFieldType type, Object value) {
+        capabilityNotSupported(type);
+    }
+
+    protected void internalSetString(String value) {
+        internalSetValue(value == null ? DataFieldType.NULL : DataFieldType.STRING, value);
+    }
+
+    protected void internalSetNumber(Number value) {
+        internalSetValue(value == null ? DataFieldType.NULL :DataFieldType.NUMBER, value);
+    }
+
+    protected void internalSetBoolean(Boolean value) {
+        internalSetValue(value == null ? DataFieldType.NULL :DataFieldType.BOOLEAN, value);
+    }
+
+    protected void internalSetDataObject(DataObject value) {
+        internalSetValue(value == null ? DataFieldType.NULL :DataFieldType.OBJECT, value);
+    }
+
+    protected void internalSetDataArray(DataArray value) {
+        internalSetValue(value == null ? DataFieldType.NULL :DataFieldType.ARRAY, value);
     }
 
     public static DataObject getParent(DataField field) {
@@ -62,6 +93,10 @@ public class DataField {
 
     public static boolean isArray(DataField field) {
         return getFieldType(field) == DataFieldType.ARRAY;
+    }
+
+    public static boolean isComplex(DataField field) {
+        return isObject(field) || isArray(field);
     }
 
     public static boolean isNull(DataField field) {
@@ -242,5 +277,40 @@ public class DataField {
             default:
                 return "<UNDEFINED>";
         }
+    }
+
+    public static void setString(DataField field, String value) {
+        if (field == null) return;
+        field.internalSetString(value);
+    }
+
+    public static void setInt(DataField field, long value) {
+        if (field == null) return;
+        field.internalSetNumber(value);
+    }
+
+    public static void setDouble(DataField field, double value) {
+        if (field == null) return;
+        field.internalSetNumber(value);
+    }
+
+    public static void setNumber(DataField field, Number value) {
+        if (field == null) return;
+        field.internalSetNumber(value);
+    }
+
+    public static void setBoolean(DataField field, Boolean value) {
+        if (field == null) return;
+        field.internalSetBoolean(value);
+    }
+
+    public static void setObject(DataField field, DataObject value) {
+        if (field == null) return;
+        field.internalSetDataObject(value);
+    }
+
+    public static void setArray(DataField field, DataArray value) {
+        if (field == null) return;
+        field.internalSetDataArray(value);
     }
 }

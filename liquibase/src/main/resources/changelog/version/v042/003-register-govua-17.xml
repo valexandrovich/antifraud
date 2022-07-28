@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="042-003-1" author="Beetone">
+        <sql>
+            insert into import_source(id, name, pipeline_info, source_info)
+            values(2017, 'govua17_t', '{
+              "pipeline": [
+                {
+                  "name": "extension",
+                  "prototype": "RevisionExtension"
+                },
+                {
+                  "name": "childExtension",
+                  "data": {
+                    "type": "child"
+                  },
+                  "prototype": "RevisionExtension"
+                },
+                {
+                  "name": "zip",
+                  "prototype": "ZipFile"
+                },
+                {
+                  "data": {
+                    "match": "^[^/]+/17\\.1\\-.*$"
+                  },
+                  "name": "le_stream",
+                  "inputs": {
+                    "zip": "zip"
+                  },
+                  "prototype": "ZipInflaterStream"
+                },
+                {
+                  "data": {
+                    "match": "^[^/]+/17\\.2\\-.*$"
+                  },
+                  "name": "ie_stream",
+                  "inputs": {
+                    "zip": "zip"
+                  },
+                  "prototype": "ZipInflaterStream"
+                },
+                {
+                  "data": {
+                    "format": {
+                      "path": [
+                        "DATA"
+                      ]
+                    }
+                  },
+                  "name": "le_parser",
+                  "inputs": {
+                    "ext": "extension",
+                    "stream": "le_stream"
+                  },
+                  "prototype": "XMLParser"
+                },
+                {
+                  "data": {
+                    "format": {
+                      "path": [
+                        "DATA"
+                      ]
+                    }
+                  },
+                  "name": "ie_parser",
+                  "inputs": {
+                    "ext": "extension",
+                    "stream": "ie_stream"
+                  },
+                  "prototype": "XMLParser"
+                },
+                {
+                  "data": {
+                    "mode": "statement",
+                    "table": "govua_17_le",
+                    "mapping": {
+                      "boss": "BOSS",
+                      "kved": "KVED",
+                      "name": "NAME",
+                      "edrpou": "EDRPOU",
+                      "status": "STAN",
+                      "address": "ADDRESS",
+                      "short_name": "SHORT_NAME",
+                      "founding_doc_num": "FOUNDING_DOCUMENT_NUM"
+                    }
+                  },
+                  "name": "le_writer",
+                  "inputs": {
+                    "ext": "extension",
+                    "input": "le_parser"
+                  },
+                  "prototype": "TableWriter"
+                },
+                {
+                  "data": {
+                    "path": "FOUNDERS.FOUNDER"
+                  },
+                  "name": "founders",
+                  "inputs": {
+                    "ext": "childExtension",
+                    "input": "le_writer"
+                  },
+                  "prototype": "ArrayExtractor"
+                },
+                {
+                  "data": {
+                    "path": "BENEFICIARIES.BENEFICIARY"
+                  },
+                  "name": "beneficiaries",
+                  "inputs": {
+                    "ext": "childExtension",
+                    "input": "le_writer"
+                  },
+                  "prototype": "ArrayExtractor"
+                },
+                {
+                  "data": {
+                    "mode": "statement",
+                    "table": "govua_17_le_founders",
+                    "mapping": {
+                      "founder": "@item"
+                    }
+                  },
+                  "name": "le_writer_founders",
+                  "inputs": {
+                    "ext": "childExtension",
+                    "input": "founders"
+                  },
+                  "prototype": "TableWriter"
+                },
+                {
+                  "data": {
+                    "mode": "statement",
+                    "table": "govua_17_le_beneficiaries",
+                    "mapping": {
+                      "beneficiary": "@item"
+                    }
+                  },
+                  "name": "le_writer_beneficiaries",
+                  "inputs": {
+                    "ext": "childExtension",
+                    "input": "beneficiaries"
+                  },
+                  "prototype": "TableWriter"
+                },
+                {
+                  "data": {
+                    "mode": "statement",
+                    "table": "govua_17_ie",
+                    "mapping": {
+                      "fio": "FIO",
+                      "kved": "KVED",
+                      "status": "STAN",
+                      "address": "ADDRESS"
+                    }
+                  },
+                  "name": "ie_writer",
+                  "inputs": {
+                    "ext": "extension",
+                    "input": "ie_parser"
+                  },
+                  "prototype": "TableWriter"
+                }
+              ]
+            }', '{
+                   "apiKey": "1c7f3815-3259-45e0-bdf1-64dca07ddc10",
+                   "handler": "dataGovUa"
+            }');
+        </sql>
+        <rollback>
+            <sql>
+                delete from import_source
+                where id = 2017;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="042-003-2" author="Beetone">
+        <sql>
+            insert into scheduler(group_name, name, exchange, data, enabled, force_disabled)
+            values('govua', '017.govua_17', 'otp-etl.downloader', '{"ident": "govua17_t", "attemptsLeft": 3}', false, false);
+        </sql>
+        <rollback>
+            <sql>
+                delete from scheduler
+                where name = '017.govua_17';
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -10,7 +10,6 @@ import java.util.*;
 
 @CustomLog
 public class RabbitMQListener {
-
     private static class InternalDeferredTasks extends DeferredTasks {
         RabbitMQListener listener;
         public InternalDeferredTasks(RabbitMQListener listener, long milliSeconds) {
@@ -98,17 +97,18 @@ public class RabbitMQListener {
             log.info("$rmq$ -- inside synchronized block on listener on handleHoldenTask.");
             if (!waiting || holder == null) return;
             task = holder;
-            waiting = false;
+
+            // use waiting = false; before to return to base mode
             if (tasks != null) {
                 tasks.clear();
             }
-            task.acknowledge(true);
-            cancelChannel();
+            // use task.acknowledge(true) to return to base mode;
+            // use cancelChannel() to return to base mode
         }
         log.info("$rmq$ -- before task execution on handleHoldenTask.");
         task.execute();
         log.info("$rmq$ -- after task execution on handleHoldenTask.");
-        waitForMessages();
+        // use waitForMessages() to return to base mode
         synchronized(this) {
             holder = null;
         }
@@ -240,6 +240,14 @@ public class RabbitMQListener {
         if (channel == null || !channel.isOpen()) {
             clear();
             channel = Utils.createRabbitMQChannel();
+            if (channel != null) {
+                try {
+                    channel.basicQos(1);
+                } catch (Exception e) {
+                    log.error("Can't set a prefetch count for channel.");
+                }
+            }
+
             queueTags.replaceAll((k, v) -> null);
             invalidateQueues = channel != null;
         }

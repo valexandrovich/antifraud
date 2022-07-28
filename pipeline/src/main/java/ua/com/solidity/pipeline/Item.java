@@ -19,11 +19,15 @@ public final class Item {
     Map<String, List<Input>> jointSet = new HashMap<>();
     Map<String, List<String>> inputJointsDesc;
     final List<Input> inputs = new ArrayList<>();
+    final Set<Item> ancestors = new HashSet<>();
+    final List<Item> depAncestors = new ArrayList<>();
     final Set<Item> dependencies = new HashSet<>();
+    final List<Item> directDependencies = new ArrayList<>();
     final Map<String, Object> localData = new HashMap<>();
     boolean visited = false;
     boolean completed = false;
     boolean closed = false;
+    boolean isOpen = false;
     int flags = 0;
     int index = -1;
     Object outputValue = null;
@@ -177,21 +181,37 @@ public final class Item {
         return terminated();
     }
 
+    @SuppressWarnings("unused")
     boolean tryToExecute() {
         if (completed || visited || terminated()) return false;
 
         for (Input input : inputs) {
             if (!input.isCompleted()) return false;
         }
+
+        if (!isOpen) {
+            prototype.open(this);
+            isOpen = true;
+            if (terminated()) return false;
+        }
+
+        //resetDependencies();
+
         completed = true;
-        outputValue = prototype.execute(this);
-        resetDependencies();
+        try {
+            outputValue = prototype.execute(this);
+        } catch (Exception e) {
+            log.error("Error due execution of pipeline prototype {}", prototype.getClass().getSimpleName(), e);
+            terminate();
+            return false;
+        }
         if (!completed) {
             visited = true;
-            return false;
         } else {
             if ((flags & FLAG_ITERATOR) != 0) {
                 flags |= FLAG_EOF;
+                resetDependencies();
+                pipeline.doExecute(this, false);
             }
         }
         return true;
@@ -204,7 +224,7 @@ public final class Item {
     }
 
     private void resetDependencies() {
-        for (Item item : dependencies) {
+        for (Item item : directDependencies) {
             item.completed = false;
             item.visited = false;
         }
@@ -215,7 +235,7 @@ public final class Item {
         if (error) flags |= FLAG_ERROR;
         outputValue = output;
         resetDependencies();
-        pipeline.doExecute(index + 1);
+        pipeline.doExecute(this, false);
         flags &= ~(FLAG_ERROR | FLAG_BOF);
     }
 

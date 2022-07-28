@@ -1,10 +1,5 @@
 package ua.com.solidity.db.entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -13,6 +8,11 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -26,7 +26,12 @@ public class YPersonRelation {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@ManyToOne
+	@JsonBackReference
+	@JoinColumn(name = "person_id", nullable = false)
+	private YPerson person;
+
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "type_id", referencedColumnName = "id", nullable = false)
-	private YPersonRelationType type;
+	@JoinColumn(name = "relation_group_id", referencedColumnName = "id", nullable = false)
+	private YPersonRelationGroup relationGroup;
 }

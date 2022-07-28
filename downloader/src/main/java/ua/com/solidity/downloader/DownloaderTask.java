@@ -50,22 +50,21 @@ public class DownloaderTask extends RabbitMQTask {
         if (msgData.decrementAttemptsLeft()) {
             if (msgData.getDelayMinutes() < 0) {
                 log.error("Error on resource handling, message resent for immediate attempt.");
-                Utils.sendRabbitMQMessage(receiver.getConfig().getName(), Utils.objectToJsonString(msgData));
+                Utils.sendRabbitMQMessage(OtpExchange.DOWNLOADER, Utils.objectToJsonString(msgData));
             } else {
                 log.error("Error on resource handling, next try scheduled after {} minute(s).", msgData.getDelayMinutes());
                 ObjectNode node = Utils.getSortedMapper().createObjectNode();
-                node.set("action", JsonNodeFactory.instance.textNode("exec"));
-                node.set("exchange", JsonNodeFactory.instance.textNode(receiver.getConfig().getName()));
+                node.put("action", "exec");
+                node.put("exchange", OtpExchange.DOWNLOADER);
                 node.set("sleep_ms", JsonNodeFactory.instance.numberNode(msgData.getDelayMinutes() * 60000));
                 node.set("data", Utils.getJsonNode(msgData));
-                Utils.sendRabbitMQMessage(receiver.getConfig().getSchedulerTopicExchangeName(), Utils.objectToJsonString(node));
+                Utils.sendRabbitMQMessage(OtpExchange.SCHEDULER, Utils.objectToJsonString(node));
             }
         } else {
             log.error("Error on resource handling, no retries left.");
-            String notificationExchangeName = receiver.getConfig().getNotificationExchangeName();
+            String notificationExchangeName = OtpExchange.NOTIFICATION;
             String mailTo = receiver.getConfig().getDefaultMailTo();
-            if (notificationExchangeName != null && !notificationExchangeName.isBlank() &&
-                    mailTo != null && !mailTo.isBlank()) {
+            if (mailTo != null && !mailTo.isBlank()) {
                 Utils.sendRabbitMQMessage(notificationExchangeName,
                         Utils.objectToJsonString(
                                 new NotificationMessage(receiver.getConfig().getDefaultMailTo(),
@@ -109,7 +108,7 @@ public class DownloaderTask extends RabbitMQTask {
         urlElapsedTime.stop();
         if (importerMessageData != null) {
             importerMessageData.setPipelineInfo(pipelineInfo);
-            send(receiver.getConfig().getImporterTopicExchangeName(), Utils.objectToJsonString(importerMessageData));
+            send(OtpExchange.IMPORTER, Utils.objectToJsonString(importerMessageData));
             log.info("{} files found/ downloaded, message sent to Importer ({}).", data.dictionaries.size() + 1, urlElapsedTime.getDurationString());
         } else {
             handleError();
@@ -136,12 +135,12 @@ public class DownloaderTask extends RabbitMQTask {
     }
 
     @Override
-    protected void rmqExecute() {
+    protected boolean rmqExecute() {
         log.info("Request received. Ident: \"{}\", attempts left: {}", msgData.getIdent(), msgData.getAttemptsLeft());
         importSourceNeeded();
         if (source == null) {
             log.error("Source {} not found.", msgData.getIdent());
-        } else {
+         } else {
             sourceInfo = source.getSourceInfo();
             pipelineInfo = source.getPipelineInfo();
             DownloaderTaskHandler handler;
@@ -160,6 +159,7 @@ public class DownloaderTask extends RabbitMQTask {
                 }
             }
         }
+        return true;
     }
 
     @Override

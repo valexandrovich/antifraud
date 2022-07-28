@@ -97,6 +97,7 @@ public class SQLField {
         typeChanged();
     }
 
+    @SuppressWarnings("unused")
     public final void setType2(String value) {
         type2 = value;
         typeChanged();
@@ -173,8 +174,7 @@ public class SQLField {
         return handleSQLError(SQLError.create(nullable ? SQLAssignResult.NORMAL : SQLAssignResult.NULL_NOT_ALLOWED, this, field, null));
     }
 
-    public final SQLError putArgument(PreparedStatement ps, int paramIndex, DataObject object) {
-        DataField field = object.getField(mapping.valuePath);
+    public final SQLError putArgument(PreparedStatement ps, int paramIndex, DataField field) {
         if (sqlType == null) {
             String value = DataField.getString(field);
             if (value != null) {
@@ -205,9 +205,14 @@ public class SQLField {
         return null;
     }
 
-    public final SQLError putArgument(InsertBatch batch, DataObject object) {
+    public final SQLError putArgument(PreparedStatement ps, int paramIndex, DataObject object) {
         DataField field = object.getField(mapping.valuePath);
+        return putArgument(ps, paramIndex, field);
+    }
+
+    public final SQLError putArgument(InsertBatch batch, DataField field) {
         SQLError err = null;
+
         if (sqlType != null) {
             err = handleSQLError(sqlType.putValue(batch, this, field));
         } else {
@@ -225,5 +230,10 @@ public class SQLField {
             }
         }
         return err;
+    }
+
+    public final SQLError putArgument(InsertBatch batch, DataObject object) {
+        DataField field = object.getField(mapping.valuePath);
+        return putArgument(batch, field);
     }
 }

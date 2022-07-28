@@ -1,5 +1,13 @@
 package ua.com.solidity.dwh.service;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ua.com.solidity.common.OtpExchange;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.model.EnricherPortionMessage;
 import ua.com.solidity.db.entities.Contragent;
@@ -21,15 +30,6 @@ import ua.com.solidity.db.repositories.SchedulerEntityRepository;
 import ua.com.solidity.dwh.entities.ArContragent;
 import ua.com.solidity.dwh.model.UpdateDWHRequest;
 import ua.com.solidity.dwh.repositorydwh.ArContragentRepository;
-
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -47,10 +47,6 @@ public class DWHServiceImpl implements DWHService {
     private static final String RECORDS = "records";
     private static final Long SOURCE = 9000L;
 
-    @Value("${enricher.rabbitmq.name}")
-    private String enricherQueue;
-    @Value("${statuslogger.rabbitmq.name}")
-    private String loggerQueue;
     @Value("${otp.dwh.page-size}")
     private Integer pageSize;
     private final AmqpTemplate template;
@@ -101,7 +97,7 @@ public class DWHServiceImpl implements DWHService {
 
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
                 AR_CONTRAGENT, DWH, startTime, null, null);
-        template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
+        template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
         Page<ArContragent> onePage = acr.findByArContragentIDArcDateGreaterThanEqual(date, pageRequest);
@@ -190,12 +186,12 @@ public class DWHServiceImpl implements DWHService {
 
             statusLogger = new StatusLogger(revision, counter[0], RECORDS,
                     AR_CONTRAGENT, DWH, startTime, null, null);
-            template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
+            template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
             log.debug("Sending task to otp-etl.enricher");
 
             EnricherPortionMessage enricherMessage = new EnricherPortionMessage(CONTRAGENT, portion);
-            template.convertAndSend(enricherQueue, Utils.objectToJsonString(enricherMessage));
+            template.convertAndSend(OtpExchange.ENRICHER, Utils.objectToJsonString(enricherMessage));
         }
 
         Instant newInstant = Timestamp.valueOf(startTime).toInstant();
@@ -211,7 +207,7 @@ public class DWHServiceImpl implements DWHService {
         statusLogger = new StatusLogger(revision, 100L, "%",
                 AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
                 importedRecords(counter[0], date));
-        template.convertAndSend(loggerQueue, Utils.objectToJsonString(statusLogger));
+        template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
     }
 
 	private String handleString(String string){

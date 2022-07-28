@@ -14,6 +14,8 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_
 import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,7 +37,10 @@ import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
+import ua.com.solidity.enricher.model.YPersonProcessing;
+import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.Govua10Repository;
+import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
 
@@ -51,11 +56,14 @@ public class Govua10Enricher implements Enricher {
     private final ImportSourceRepository isr;
     private final Govua10Repository govua10Repository;
     private final YPassportRepository passportRepository;
+    private final HttpClient httpClient;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${statuslogger.rabbitmq.name}")
-    private String queueName;
+    @Value("${dispatcher.url.person}")
+    private String urlPersonPost;
+    @Value("${dispatcher.url.person.delete}")
+    private String urlPersonDelete;
 
     @Override
     public void enrich(UUID portion) {
@@ -81,73 +89,103 @@ public class Govua10Enricher implements Enricher {
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             Set<YPerson> personSet = new HashSet<>();
-            Set<YPassport> passports = new HashSet<>();
-            Set<String> passportSeries = new HashSet<>();
-            Set<Integer> passportNumbers = new HashSet<>();
+            List<Govua10> page = onePage.toList();
 
-            onePage.forEach(r -> {
-                if (StringUtils.isNotBlank(r.getNumber()) && r.getNumber().matches(ALL_NUMBER_REGEX)) {
-                    passportSeries.add(r.getSeries());
-                    passportNumbers.add(Integer.parseInt(r.getNumber()));
-                }
-            });
+            while (!page.isEmpty()) {
+                List<YPersonProcessing> peopleProcessing = page.parallelStream().map(p -> {
+                    YPersonProcessing personProcessing = new YPersonProcessing();
+                    personProcessing.setUuid(p.getId());
+                    if (StringUtils.isNotBlank(p.getNumber()) && p.getNumber().matches(ALL_NUMBER_REGEX))
+                        personProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getSeries()), Integer.valueOf(p.getNumber())));
+                    return personProcessing;
+                }).collect(Collectors.toList());
 
-            if (!passportNumbers.isEmpty() && !passportSeries.isEmpty())
-                passports = passportRepository.findPassports(passportSeries, passportNumbers);
+                UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-            Set<YPerson> savedPersonSet = new HashSet<>();
-            if (!passports.isEmpty())
-                savedPersonSet = ypr.findPeoplePassportsForBaseEnricher(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList()));
-            Set<YPerson> savedPeople = savedPersonSet;
+                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                List<UUID> resp = response.getResp();
+                List<UUID> temp = response.getTemp();
 
-            Set<YPassport> finalPassports = passports;
-            onePage.forEach(r -> {
-                YPerson person = new YPerson();
+                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
+                        .collect(Collectors.toList());
 
-                if (!r.getSeries().isBlank()) {
-                    String passportNo = r.getNumber();
-                    String passportSerial = r.getSeries();
-                    if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
-                        passportSerial = transliterationToCyrillicLetters(passportSerial);
-                        int number = Integer.parseInt(passportNo);
-                        YPassport passport = new YPassport();
-                        passport.setSeries(passportSerial);
-                        passport.setNumber(number);
-                        passport.setAuthority(null);
-                        passport.setIssued(null);
-                        passport.setEndDate(r.getModified());
-                        passport.setRecordNumber(null);
-                        passport.setType(DOMESTIC_PASSPORT);
-                        passport.setValidity(false);
-                        person = extender.addPassport(passport, personSet, source, person, savedPeople, finalPassports);
+                Set<YPassport> passports = new HashSet<>();
+                Set<YPerson> people = new HashSet<>();
+                Set<String> passportSeries = new HashSet<>();
+                Set<Integer> passportNumbers = new HashSet<>();
+
+                page.forEach(r -> {
+                    if (StringUtils.isNotBlank(r.getNumber()) && r.getNumber().matches(ALL_NUMBER_REGEX)) {
+                        passportSeries.add(r.getSeries());
+                        passportNumbers.add(Integer.parseInt(r.getNumber()));
                     }
+                });
+
+                if (!passportNumbers.isEmpty() && !passportSeries.isEmpty())
+                    passports = passportRepository.findPassports(passportSeries, passportNumbers);
+
+                Set<YPerson> savedPersonSet = new HashSet<>();
+                if (!passports.isEmpty())
+                    savedPersonSet = ypr.findPeoplePassportsForBaseEnricher(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList()));
+                Set<YPerson> savedPeople = savedPersonSet;
+
+                Set<YPassport> finalPassports = passports;
+                page.forEach(r -> {
+                    YPerson person = new YPerson();
+
+                    if (StringUtils.isNotBlank(r.getSeries())) {
+                        String passportNo = r.getNumber();
+                        String passportSerial = r.getSeries();
+                        if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                            passportSerial = transliterationToCyrillicLetters(passportSerial);
+                            int number = Integer.parseInt(passportNo);
+                            YPassport passport = new YPassport();
+                            passport.setSeries(passportSerial);
+                            passport.setNumber(number);
+                            passport.setAuthority(null);
+                            passport.setIssued(null);
+                            passport.setEndDate(r.getModified());
+                            passport.setRecordNumber(null);
+                            passport.setType(DOMESTIC_PASSPORT);
+                            passport.setValidity(false);
+                            person = extender.addPassport(passport, people, source, person, savedPeople, finalPassports);
+                        }
+                    } else {
+                        String passportNo = r.getNumber();
+                        if (isValidIdPassport(passportNo, null, wrongCounter, counter, logger)) {
+                            int number = Integer.parseInt(passportNo);
+                            YPassport passport = new YPassport();
+                            passport.setSeries(null);
+                            passport.setNumber(number);
+                            passport.setAuthority(null);
+                            passport.setIssued(null);
+                            passport.setEndDate(r.getModified());
+                            passport.setRecordNumber(null);
+                            passport.setType(IDCARD_PASSPORT);
+                            passport.setValidity(false);
+                            person = extender.addPassport(passport, people, source, person, savedPeople, finalPassports);
+                        }
+                    }
+                    extender.addPerson(people, person, source, false);
+                    counter[0]++;
+                    statusChanger.addProcessedVolume(1);
+                });
+                UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
+                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+                    ypr.saveAll(people);
+                    personSet.addAll((people));
+
+                    httpClient.post(urlPersonDelete, Boolean.class, resp);
+
+                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                 } else {
-                    String passportNo = r.getNumber();
-                    if (isValidIdPassport(passportNo, null, wrongCounter, counter, logger)) {
-                        int number = Integer.parseInt(passportNo);
-                        YPassport passport = new YPassport();
-                        passport.setSeries(null);
-                        passport.setNumber(number);
-                        passport.setAuthority(null);
-                        passport.setIssued(null);
-                        passport.setEndDate(r.getModified());
-                        passport.setRecordNumber(null);
-                        passport.setType(IDCARD_PASSPORT);
-                        passport.setValidity(false);
-                        person = extender.addPassport(passport, personSet, source, person, savedPeople, finalPassports);
-                    }
+                    counter[0] -= resp.size();
+                    statusChanger.setProcessedVolume(counter[0]);
                 }
-                extender.addPerson(personSet, person, source, false);
-                counter[0]++;
-                statusChanger.addProcessedVolume(1);
-            });
-            log.info("before save.");
-            ypr.saveAll(personSet);
-            log.info("after save.");
-            emnService.enrichMonitoringNotification(personSet);
-            log.info("before pageReqest.");
+            }
+            emnService.enrichYPersonMonitoringNotification(personSet);
+
             onePage = govua10Repository.findAllByPortionId(portion, pageRequest);
-            log.info("after pageReqest : {}", !onePage.isEmpty());
         }
 
         logFinish(GOVUA10, counter[0]);

@@ -17,6 +17,6 @@ public final class UtilString {
     }
 
     public static boolean matches(String value, String regex) {
-        return value != null && value.matches(regex);
+        return value != null && regex != null && value.matches(regex);
     }
 }

@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>4.3.231</version>
+        <version>4.4.241</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>4.3.231</version>
+    <version>4.4.241</version>
     <artifactId>dwh</artifactId>
 
     <properties>
@@ -71,13 +71,13 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>common</artifactId>
-            <version>4.3.231</version>
+            <version>4.4.241</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>4.3.231</version>
+            <version>4.4.241</version>
         </dependency>
     </dependencies>
 

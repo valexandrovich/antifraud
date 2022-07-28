@@ -7,7 +7,6 @@ import org.postgresql.core.BaseConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ua.com.solidity.common.*;
 import ua.com.solidity.common.data.*;
-import ua.com.solidity.common.model.EnricherPortionMessage;
 
 import java.nio.CharBuffer;
 import java.sql.Connection;
@@ -23,7 +22,7 @@ public class SQLTable {
     private ArgumentSetter setter;
     private BatchAction reset;
     private BatchAction add;
-    private InsertBatch batch;
+    private InsertBatch insertBatch;
     private final SQLFlushMode mode;
     private String queryHeaderStr;
     private String statementStr;
@@ -35,9 +34,11 @@ public class SQLTable {
     PreparedStatement statement = null;
     private final CacheSize size;
     private boolean prepared = false;
-    private long insertErrorCount;
 
-    private UUID portion = null;
+    private boolean hasTotalErrors = false;
+
+    private OutputCache outputCache = null;
+    DataBatch.ErrorHandler errorHandler = null;
 
     private interface ArgumentSetter {
         ErrorResult setArguments(DataObject obj, DataExtensionFactory factory);
@@ -65,6 +66,10 @@ public class SQLTable {
         this.size = size;
         initMode();
         initMapping(mapping);
+    }
+
+    public final void setCache(OutputCache cache) {
+        outputCache = cache;
     }
 
     public static Connection connectionNeeded() {
@@ -99,13 +104,11 @@ public class SQLTable {
     }
 
     private void initObjects(CacheSize size) {
-        if (mode == SQLFlushMode.INSERT_BATCH_BUFFER || mode == SQLFlushMode.COPY_BUFFER) {
-            batch = InsertBatch.allocate(size.size, size.rowCacheSize, queryHeaderStr, this::handleInsertBatch);
+        if (mode == SQLFlushMode.COPY_BUFFER) {
+            insertBatch = InsertBatch.allocate(size.size, size.rowCacheSize, queryHeaderStr, this::handleInsertBatch);
         }
 
-        if (mode == SQLFlushMode.COPY_BUFFER || mode == SQLFlushMode.PREPARED_STATEMENT_BATCH) {
-            connection = connectionNeeded();
-        }
+        connection = connectionNeeded();
 
         if (connection != null) {
             prepareConnection();
@@ -174,25 +177,30 @@ public class SQLTable {
     private ErrorResult argumentsSetInBatchMode(DataObject obj, DataExtensionFactory factory) {
         ErrorResult res = new ErrorResult();
 
-        if (factory != null && !factory.assignInsertBatch(obj, batch)) {
+        if (factory != null && !factory.assignInsertBatch(obj, insertBatch)) {
             return res;
         }
+
+        boolean hasErrors = false;
 
         StringBuilder errorBuilder = new StringBuilder();
 
         for (SQLField field : mappedFields) {
-            SQLError error = field.putArgument(batch, obj);
+            SQLError error = field.putArgument(insertBatch, obj);
             if (error != null) {
-                ++insertErrorCount;
-                res.add(obj, error.getMessage());
-                if (errorBuilder.length() == 0) {
-                    errorBuilder.append(error.getMessage());
-                } else errorBuilder.append("; ").append(error.getMessage());
+                hasErrors = true;
+                res.add(obj, tableName, error.getMessage());
+                if (log.isDebugEnabled()) {
+                    if (errorBuilder.length() == 0) {
+                        errorBuilder.append(error.getMessage());
+                    } else errorBuilder.append("; ").append(error.getMessage());
+                }
             }
         }
-        if (errorBuilder.length() > 0) {
-            log.info("$table$-Row content error: {}", errorBuilder);
-            errorBuilder.setLength(0);
+
+        if (hasErrors) {
+            log.info("$table$Row content error: {}", errorBuilder);
+            this.hasTotalErrors = true;
             return res;
         }
         return null;
@@ -202,40 +210,39 @@ public class SQLTable {
         ErrorResult res = new ErrorResult();
         StringBuilder errorBuilder = new StringBuilder();
         int paramIndex = 0;
-        obj.getExtension().setPortion(portion);
         if (factory != null && (paramIndex = factory.assignStatementArgs(obj, statement)) < 0) {
             return res;
         }
         try {
+            boolean hasErrors = false;
             for (SQLField field : mappedFields) {
                 SQLError error = field.putArgument(statement, ++paramIndex, obj);
                 if (error != null) {
-                    ++insertErrorCount;
-                    res.add(obj, error.getMessage());
+                    hasErrors = true;
+                    res.add(obj, tableName, error.getMessage());
                     if (errorBuilder.length() == 0) {
                         errorBuilder.append(error.getMessage());
                     } else errorBuilder.append("; ").append(error.getMessage());
                 }
             }
-            if (errorBuilder.length() > 0) {
+            if (hasErrors) {
                 log.info("$table$Row content error. {}", errorBuilder);
-                errorBuilder.setLength(0);
-                res.error();
+                this.hasTotalErrors = true;
             }
         } catch (Exception e) {
-            log.error("Prepare statement error.", e);
+            log.error("Prepared statement field assign error.", e);
             res.error();
         }
         return res;
     }
 
     private boolean batchResetInBatchMode() {
-        batch.resetBatch();
+        insertBatch.resetBatch();
         return true;
     }
 
     private boolean batchAddInBatchMode() {
-        return batch.addBatch();
+        return insertBatch.addBatch();
     }
 
     private boolean batchAddInPreparedStatementMode() {
@@ -256,23 +263,21 @@ public class SQLTable {
         return true;
     }
 
-    public static int executeStatement(PreparedStatement statement) {
-        int count = 0;
+    public static void executeStatement(PreparedStatement statement, DataBatch batch, String sourceName) {
         try {
             int[] res = statement.executeBatch();
-            for (int r : res) {
-                if (r != 0) {
-                    ++count;
+            int index = 0;
+            for (DataObject obj : batch.validObjects()) {
+                long r = res[index++];
+                if (r != statement.SUCCESS_NO_INFO && r <= 0) {
+                    ErrorResult err = new ErrorResult();
+                    err.add(obj, sourceName, "Database insert error.");
+                    obj.setErrorResult(err);
                 }
             }
         } catch (Exception e) {
             log.error("Can't execute statement", e);
         }
-        return count;
-    }
-
-    private int afterPreparedStatementExec() {
-        return executeStatement(statement);
     }
 
     private ErrorResult handleObject(DataObject obj) {
@@ -282,70 +287,70 @@ public class SQLTable {
         }
 
         if (res.isErrorState()) {
+            obj.setErrorResult(res);
             reset.exec();
         }
 
         return res;
     }
 
-    private int assign(DataBatch batch, DataBatch.ErrorHandler errorHandler) {
+    private void processBatch() {
+        DataBatch batch = outputCache.getBatch();
+
         if (batch.getExtensionFactory() != extensionFactory) {
             if (extensionFactory == null) {
                 log.error("SQLTable extensionFactory not initialized.");
             } else {
-                log.error("SQLTable extensionFactory differs from assigned in dataBatch.");
+                log.error("SQLTable {} extensionFactory differs from assigned in dataBatch.", tableName);
             }
-            return 0;
+            return;
         }
+
         batch.handle(this::handleObject, errorHandler);
-        int count = batch.getCommittedCount();
+
         if (mode == SQLFlushMode.PREPARED_STATEMENT_BATCH) {
-            count = afterPreparedStatementExec();
+            executeStatement(statement, batch, tableName);
+        } else {
+            this.insertBatch.flush();
         }
-        if (count > 0) {
-            EnricherPortionMessage enricherPortionMessage = new EnricherPortionMessage(tableName, portion);
-            Utils.sendRabbitMQMessage(OtpExchange.ENRICHER, enricherPortionMessage);
-        }
-        portion = UUID.randomUUID();
-        return count;
     }
 
     public final boolean isValid() {
-        if (template == null || fields.isEmpty() || (batch == null && mode != SQLFlushMode.PREPARED_STATEMENT_BATCH)) return false;
+        if (template == null || fields.isEmpty() || (insertBatch == null && mode != SQLFlushMode.PREPARED_STATEMENT_BATCH)) return false;
         for (var entry : fields.entrySet()) {
             if (!entry.getValue().isValid()) return false;
         }
         return true;
     }
 
-    private boolean checkField(FieldDescription desc) {
+    private String checkField(FieldDescription desc) {
         SQLField field = fields.getOrDefault(desc.name, null);
         if (field == null) {
-            log.error("Extension field not found \"{}\" in table.", desc.name);
-            return false;
+            return Utils.messageFormat("Field not found \"{}\"", desc.name);
         }
 
         if (field.getMapping() != null) {
-            log.error("Extension field \"{}\" already mapped.", desc.name);
-            return false;
+            return Utils.messageFormat("Field \"{}\" already mapped.", desc.name);
         }
 
         if (!(field.getType().equals(desc.type) || field.getType2().equals(desc.type) || (field.getSqlType() == desc.sqlType && desc.sqlType != null))) {
-            log.error("Extension field \"{}\" type ({}) is incompatible with table field type ({}).", desc.name, desc.type, field.getFieldDescription());
-            return false;
+            return Utils.messageFormat("Field \"{}\" type ({}) is incompatible with table field type ({}).", desc.name, desc.type, field.getFieldDescription());
         }
 
-        return true;
+        return null;
     }
 
     private boolean extensionFactoryIsInvalid() {
         List<FieldDescription> extensionFactoryFields = extensionFactory.getFields();
+        boolean invalid = false;
         for (FieldDescription desc : extensionFactoryFields) {
-            if (!checkField(desc)) {
-                return true;
+            String errorMsg;
+            if ((errorMsg = checkField(desc)) != null) {
+                log.error("$table${}: {}", tableName, errorMsg);
+                invalid = true;
             }
         }
-        return false;
+        return invalid;
     }
 
     public final boolean isValidTargetTable() {
@@ -453,27 +458,28 @@ public class SQLTable {
         }
     }
 
-    public final boolean prepareTable(DataExtensionFactory factory) {
-        if (prepared || extensionFactory != null || factory == null) return false;
+    public final boolean prepareTable(DataExtensionFactory factory, OutputCache cache, DataBatch.ErrorHandler errorHandler) {
+        if (prepared || extensionFactory != null || factory == null || cache == null) return false;
         extensionFactory = factory;
         if (extensionFactoryIsInvalid()) {
             extensionFactory = null;
             return false;
         }
+        outputCache = cache;
+        this.errorHandler = errorHandler;
         secondaryInitMapping();
         initQuery();
         initObjects(size);
-        portion = UUID.randomUUID();
         prepared = true;
         return true;
     }
 
-    public final int doOutput(OutputCache cache, DataBatch.ErrorHandler errorHandler) {
+    public final void handleBatch() {
         if (!prepared) {
-            log.error("Table not prepared with extension factory.");
-            return 0;
+            log.error("Table not prepared with extension factory and output cache.");
+            return;
         }
-        return assign(cache.getBatch(), errorHandler);
+        processBatch();
     }
 
     private void addFieldToErrorBuilder(StringBuilder builder, String fieldName, long count) {
@@ -489,7 +495,7 @@ public class SQLTable {
     }
 
     public final void logInsertErrors() {
-        if (insertErrorCount == 0) {
+        if (!hasTotalErrors) {
             log.info("$table$Insert errors not found, OK.");
             return;
         }
@@ -512,11 +518,13 @@ public class SQLTable {
             }
         }
 
-        logErrors(nullBuilder, SQLAssignResult.NULL_NOT_ALLOWED);
-        logErrors(exceptionBuilder, SQLAssignResult.EXCEPTION);
+        if (log.isDebugEnabled()) {
+            logErrors(nullBuilder, SQLAssignResult.NULL_NOT_ALLOWED);
+            logErrors(exceptionBuilder, SQLAssignResult.EXCEPTION);
+        }
 
         if (!lengthErrors.isEmpty()) {
-            log.info("$table$\"{}\" found for fields:", SQLAssignResult.LENGTH_ERROR.getMessage());
+            log.info("\"{}\" found for fields:", SQLAssignResult.LENGTH_ERROR.getMessage());
             for (String error : lengthErrors) {
                 log.info("$table${}", error);
             }
@@ -524,11 +532,8 @@ public class SQLTable {
     }
 
     public void close() {
-        if (batch == null && statement == null && connection == null) return; // not prepared guarantee
-        if (batch != null) {
-            batch.flush();
-            batch = null;
-        }
+        if (insertBatch == null && statement == null && connection == null) return; // not prepared guarantee
+        insertBatch = null;
         if (statement != null) {
             try {
                 statement.close();
@@ -549,6 +554,8 @@ public class SQLTable {
             }
         }
         prepared = false;
-        logInsertErrors();
+        if (log.isDebugEnabled()) {
+            logInsertErrors();
+        }
     }
 }

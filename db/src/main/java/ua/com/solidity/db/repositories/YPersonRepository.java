@@ -14,7 +14,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YINN;
-import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.entities.YPerson;
 
 @Repository
@@ -27,13 +26,10 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
 
     List<YPerson> findByPatName(String patName);
 
-    Page<YPerson> findByUsers(User user, Pageable pageable);
+    Page<YPerson> findBySubscribedUsers(User user, Pageable pageable);
 
     @EntityGraph(value = "yperson.inns")
     Optional<YPerson> findByInnsContains(YINN inn);
-
-    @EntityGraph(value = "yperson.passports")
-    List<YPerson> findByPassportsContains(YPassport passport);
 
     @EntityGraph(value = "yperson.innsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSources")
     Optional<YPerson> findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(UUID id);

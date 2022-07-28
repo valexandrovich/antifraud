@@ -708,4 +708,10 @@ datalist {
     z-index: 8;
 }
 
+.over {
+    width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 

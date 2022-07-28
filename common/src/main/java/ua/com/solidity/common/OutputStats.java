@@ -13,14 +13,14 @@ public class OutputStats {
     @Setter
     @NoArgsConstructor
     public static class Group {
-        private static final long DELTA = 1000000;
         private static final DecimalFormat percentFormat = new DecimalFormat("0.000");
         String fullName;
         String name;
         long totalRowCount = 0;
         long parseErrorCount = 0;
-        long insertCount = 0;
-        long insertErrorCount = 0;
+        long badObjectCount = 0;
+        long objectErrorCount = 0;
+
         DurationPrinter printer = new DurationPrinter();
 
         public Group(String source, String name) {
@@ -29,29 +29,29 @@ public class OutputStats {
         }
 
         public void clear() {
-            totalRowCount = parseErrorCount = insertCount = 0;
+            totalRowCount = parseErrorCount = badObjectCount = objectErrorCount = 0;
         }
 
+        @SuppressWarnings("unused")
         public final void incParseErrorCount(long count) {
             totalRowCount += count;
             parseErrorCount += count;
         }
 
+        @SuppressWarnings("unused")
         public final void incRowCount(long count) {
             totalRowCount += count;
         }
 
-        public final void incInsertCount(long count) {
-            insertCount += count;
+        public final long getInsertCount() {
+            return totalRowCount - parseErrorCount - badObjectCount;
         }
-
-        public final void incInsertErrorCount(long count) { insertErrorCount += count; }
 
         public final String getStatsMessage() {
             return Utils.messageFormat("{}: [total: {}/parse errors: {}({})/insert errors: {}({})/inserted: {}({})] due {}",
                     fullName, totalRowCount, parseErrorCount, formatPercent(getParseErrorPercent()),
-                    insertErrorCount, formatPercent(getInsertErrorPercent()),
-                    insertCount, formatPercent(getInsertedPercent()), printer.getDurationString());
+                    badObjectCount, formatPercent(getInsertErrorPercent()),
+                    getInsertCount(), formatPercent(getInsertedPercent()), printer.getDurationString());
         }
 
         private String formatPercent(double percent) {
@@ -63,11 +63,11 @@ public class OutputStats {
         }
 
         public final double getInsertErrorPercent() {
-            return totalRowCount == 0 ? 0 : (double) insertErrorCount / totalRowCount * 100;
+            return totalRowCount == 0 ? 0 : (double) badObjectCount/ totalRowCount * 100;
         }
 
         public final double getInsertedPercent() {
-            return totalRowCount == 0 ? 0 : (double) insertCount / totalRowCount * 100;
+            return totalRowCount == 0 ? 0 : (double) (getInsertCount()) / totalRowCount * 100;
         }
     }
 

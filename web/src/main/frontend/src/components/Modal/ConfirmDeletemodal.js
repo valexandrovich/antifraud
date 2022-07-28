@@ -1,19 +1,25 @@
-import React from 'react';
-import Modal from './Modal';
+import React from "react";
+import Modal from "./Modal";
 
-const ConfirmDeletemodal = ({open, onClose, uuid, deleteAction}) => {
-
-    return (<Modal
-        title={`Видалити файл ${uuid}`}
-        open={open}
-        onClose={onClose}
+const ConfirmDeletemodal = ({ open, onClose, uuid, deleteAction }) => {
+  return (
+    <Modal
+      title={`Запис з id: ${uuid} буде видалено`}
+      open={open}
+      onClose={onClose}
     >
-        <div className="modal-content">
-            <div className="modal-body">
-                <button onClick={() => deleteAction(uuid)} className="btn btn-danger w-100">Видалити</button>
-            </div>
+      <div className="modal-content">
+        <div className="modal-body">
+          <button
+            onClick={() => deleteAction(uuid)}
+            className="btn btn-danger w-100"
+          >
+            Підтвердити
+          </button>
         </div>
-    </Modal>);
+      </div>
+    </Modal>
+  );
 };
 
 export default ConfirmDeletemodal;

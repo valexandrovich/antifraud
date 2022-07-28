@@ -16,7 +16,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.YAddress;
+import ua.com.solidity.db.entities.YAltCompany;
 import ua.com.solidity.db.entities.YAltPerson;
+import ua.com.solidity.db.entities.YCAddress;
 import ua.com.solidity.db.entities.YCTag;
 import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YCompanyRelation;
@@ -34,7 +36,7 @@ import ua.com.solidity.db.repositories.YPersonRepository;
 
 @Component
 @RequiredArgsConstructor
-public class Extender<T> {
+public class Extender {
 
     private final YPersonRepository ypr;
     private final YPassportRepository yPassportRepository;
@@ -64,13 +66,33 @@ public class Extender<T> {
         }
     }
 
+
+    public void addAltCompany(YCompany company, String name, String language,
+                              ImportSource source) {
+        Optional<YAltCompany> altCompanyOptional = company.getAltCompanies()
+                .parallelStream()
+                .filter(p -> (Objects.equals(p.getCompany().getName(), name)))
+                .findAny();
+        YAltCompany altCompany = altCompanyOptional.orElseGet(YAltCompany::new);
+        addSource(altCompany.getImportSources(), source);
+
+        altCompany.setName(chooseNotNull(altCompany.getName(), name));
+        altCompany.setLanguage(chooseNotNull(altCompany.getLanguage(), language));
+
+        if (altCompanyOptional.isEmpty()) {
+            altCompany.setCompany(company);
+            company.getAltCompanies().add(altCompany);
+        }
+    }
+
     public YPerson addPassport(YPassport ypassport, Set<YPerson> personSet,
                                ImportSource source, YPerson person, Set<YPerson> savedPeople,
                                Set<YPassport> passports) {
         YPassport passport;
-        Set<YINN> inns = person.getInns();
-        Set<YAltPerson> altPeople = person.getAltPeople();
-        Set<YCompanyRelation> companyRelations = person.getCompanyRelations();
+        Set<YINN> inns = person.getInns().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<YAltPerson> altPeople = person.getAltPeople().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<YCompanyRelation> companyRelations = person.getCompanyRelations().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<ImportSource> importSources = person.getImportSources().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
 
         List<YPerson> yPersonList = personSet.parallelStream()
                 .filter(p -> p.getPassports().contains(ypassport))
@@ -78,9 +100,16 @@ public class Extender<T> {
         yPersonList.addAll(savedPeople.parallelStream()
                 .filter(p -> p.getPassports()
                         .contains(ypassport))
-                .collect(Collectors.toSet()));
+                .collect(Collectors.toList()));
 
-        Optional<YPassport> optionalYPassport = passports.parallelStream().filter(p -> Objects.equals(p.getSeries(), ypassport.getSeries())
+        Optional<YPassport> optionalYPassport = yPersonList.parallelStream()
+                .flatMap(p -> p.getPassports().parallelStream())
+                .filter(p -> Objects.equals(p.getSeries(), ypassport.getSeries())
+                && Objects.equals(p.getNumber(), ypassport.getNumber())
+                && Objects.equals(p.getType(), ypassport.getType())).findAny();
+
+        if (optionalYPassport.isEmpty()) optionalYPassport = passports.parallelStream()
+                .filter(p -> Objects.equals(p.getSeries(), ypassport.getSeries())
                 && Objects.equals(p.getNumber(), ypassport.getNumber())
                 && Objects.equals(p.getType(), ypassport.getType())).findAny();
 
@@ -114,9 +143,10 @@ public class Extender<T> {
             altPeople.forEach(p -> p.setPerson(findPerson));
             inns.forEach(i -> i.setPerson(findPerson));
             companyRelations.forEach(c -> c.setPerson(findPerson));
-            findPerson.getCompanyRelations().addAll(companyRelations);
-            findPerson.getInns().addAll(inns);
             findPerson.getAltPeople().addAll(altPeople);
+            findPerson.getInns().addAll(inns);
+            findPerson.getImportSources().addAll(importSources);
+            findPerson.getCompanyRelations().addAll(companyRelations);
 
             person = findPerson;
         } else if (optionalYPassport.isPresent() && passport.getId() == null) {
@@ -193,7 +223,8 @@ public class Extender<T> {
                 && StringUtils.isBlank(newPerson.getLastName())
                 && StringUtils.isBlank(newPerson.getFirstName())
                 && StringUtils.isBlank(newPerson.getPatName())
-        ) return false;
+                && person.getInns().isEmpty())
+            return false;
         return !(newPerson != null
                 && ((StringUtils.isNotBlank(person.getLastName())
                 && StringUtils.isNotBlank(newPerson.getLastName())
@@ -233,6 +264,21 @@ public class Extender<T> {
 
             address.setPerson(person);
             person.getAddresses().add(address);
+        });
+    }
+
+    public void addCAddresses(YCompany company, Set<YCAddress> addresses, ImportSource source) {
+        addresses.forEach(a -> {
+            Optional<YCAddress> addressOptional = company.getAddresses()
+                    .parallelStream()
+                    .filter(adr -> Objects.equals(adr, a))
+                    .findAny();
+            YCAddress address = addressOptional.orElseGet(YCAddress::new);
+            addSource(address.getImportSources(), source);
+            address.setAddress(chooseNotBlank(address.getAddress(), a.getAddress()));
+
+            address.setCompany(company);
+            company.getAddresses().add(address);
         });
     }
 
@@ -312,10 +358,11 @@ public class Extender<T> {
 
     public YPerson addPerson(Set<YPerson> personSet, YPerson person, ImportSource source, boolean fullUnload) {
         boolean find = false;
-        Set<YINN> inns = person.getInns();
-        Set<YPassport> passports = person.getPassports();
-        Set<YAltPerson> altPeople = person.getAltPeople();
-        Set<YCompanyRelation> companyRelations = person.getCompanyRelations();
+        Set<YINN> inns = person.getInns().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<YPassport> passports = person.getPassports().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<YAltPerson> altPeople = person.getAltPeople().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<YCompanyRelation> companyRelations = person.getCompanyRelations().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<ImportSource> importSources = person.getImportSources().parallelStream().filter(Objects::nonNull).collect(Collectors.toSet());
 
         if (person.getId() == null) {
             YPerson yPerson = person;
@@ -354,10 +401,11 @@ public class Extender<T> {
         inns.forEach(i -> i.setPerson(finalPerson));
         altPeople.forEach(p -> p.setPerson(finalPerson));
         companyRelations.forEach(c -> c.setPerson(finalPerson));
-        person.getCompanyRelations().addAll(companyRelations);
         person.getInns().addAll(inns);
         person.getPassports().addAll(passports);
         person.getAltPeople().addAll(altPeople);
+        person.getCompanyRelations().addAll(companyRelations);
+        person.getImportSources().addAll(importSources);
 
         personSet.remove(person);
         if (StringUtils.isNotBlank(person.getLastName()) || StringUtils.isNotBlank(person.getFirstName())
@@ -367,13 +415,16 @@ public class Extender<T> {
     }
 
     public void addCompanyRelation(YPerson person, YCompany company, YCompanyRole role, ImportSource source,
-                                   Set<YCompanyRelation> companyRelationSet) {
+                                   Set<YCompanyRelation> companyRelationSet, Set<YCompanyRelation> companyRelationsSaved) {
         Optional<YCompanyRelation> yCompanyRelationOptional = companyRelationSet.parallelStream()
                 .filter(mr -> Objects.equals(mr.getCompany(), company)
                         && Objects.equals(mr.getPerson(), person)
                         && Objects.equals(mr.getRole(), role)).findAny();
         if (yCompanyRelationOptional.isEmpty())
-            yCompanyRelationOptional = yCompanyRelationRepository.findByCompanyAndPersonAndRole(company, person, role);
+            yCompanyRelationOptional = companyRelationsSaved.parallelStream()
+                    .filter(mr -> Objects.equals(mr.getCompany(), company)
+                            && Objects.equals(mr.getPerson(), person)
+                            && Objects.equals(mr.getRole(), role)).findAny();
 
         YCompanyRelation yCompanyRelation = yCompanyRelationOptional.orElseGet(YCompanyRelation::new);
         yCompanyRelation.setCompany(company);
@@ -394,20 +445,30 @@ public class Extender<T> {
     }
 
     public YCompany addCompany(Set<YCompany> companySet,
-                               ImportSource source, YCompany company) {
+                               ImportSource source,
+                               YCompany company,
+                               Set<YCompany> companies) {
         YCompany yCompany;
         Optional<YCompany> optionalYCompany = companySet.parallelStream()
-                .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())).findAny();
+                .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())
+                        && Objects.equals(c.getPdv(), company.getPdv())).findAny();
         if (optionalYCompany.isEmpty())
-            optionalYCompany = yCompanyRepository.findWithTagsAndSourcesByEdrpou(company.getEdrpou());
+            optionalYCompany = companies.parallelStream()
+                    .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())
+                            && Objects.equals(c.getPdv(), company.getPdv())).findAny();
 
         yCompany = optionalYCompany.orElseGet(YCompany::new);
         if (yCompany.getId() == null) yCompany.setId(UUID.randomUUID());
+        else if (StringUtils.isNotBlank(yCompany.getName()) && StringUtils.isNotBlank(company.getName())
+                && !yCompany.getName().equals(company.getName()))
+            addAltCompany(yCompany, company.getName(), "UA", source);
 
         addSource(yCompany.getImportSources(), source);
 
         yCompany.setEdrpou(chooseNotNull(yCompany.getEdrpou(), company.getEdrpou()));
-        yCompany.setName(chooseNotNull(yCompany.getName(), company.getName()));
+        yCompany.setPdv(chooseNotNull(yCompany.getPdv(), company.getPdv()));
+        yCompany.setName(chooseNotBlank(yCompany.getName(), company.getName()));
+        yCompany.setState(chooseNotNull(yCompany.getState(), company.getState()));
 
         return yCompany;
     }

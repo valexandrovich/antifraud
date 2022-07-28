@@ -65,8 +65,10 @@ public class DataExtensionFactory {
         return new DataExtension();
     }
 
-    public final void handle(DataObject obj) {
-        obj.setExtension(createExtension());
+    public final DataExtension handle(DataObject obj) {
+        DataExtension res = createExtension();
+        obj.setExtension(res);
+        return res;
     }
 
     public int assignStatementArgs(DataObject obj, PreparedStatement statement) {

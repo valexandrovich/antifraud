@@ -9,8 +9,8 @@ import java.util.stream.Stream;
 
 public class XLSDataObject extends DataObject {
     private static class XLSField extends DataField {
-        private final Object data;
-        private final DataFieldType dataFieldType;
+        private Object data;
+        private DataFieldType dataFieldType;
 
         public XLSField(DataObject parent, Object data) {
             super(parent);
@@ -44,6 +44,21 @@ public class XLSDataObject extends DataObject {
         @Override
         public Boolean internalGetBoolean() {
             return dataFieldType == DataFieldType.BOOLEAN ? (Boolean) data : null;
+        }
+
+        @Override
+        protected void internalSetValue(DataFieldType type, Object value) {
+            switch (type) {
+                case NULL:
+                case STRING:
+                case BOOLEAN:
+                case NUMBER:
+                    dataFieldType = type;
+                    data = value;
+                    break;
+                default:
+                    super.internalSetValue(type, value);
+            }
         }
     }
 

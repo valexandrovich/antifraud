@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import ua.com.solidity.common.OtpExchange;
 
 @Slf4j
 @Configuration
@@ -19,14 +20,14 @@ import org.springframework.context.annotation.PropertySource;
 @RequiredArgsConstructor
 public class RabbitConfiguration {
 
-    @Value("${dwh.rabbitmq.name}")
-    private String dwhQueue;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
     @Value("${spring.rabbitmq.username}")
     private String username;
     @Value("${spring.rabbitmq.password}")
     private String password;
+
+    private static final String MAX_PRIORITY = "x-max-priority";
 
     @Bean
     public ConnectionFactory connectionFactory() {
@@ -48,6 +49,6 @@ public class RabbitConfiguration {
 
     @Bean(name = "dwhQueue")
     public Queue dwhQueue() {
-        return new Queue(dwhQueue);
+        return new Queue(OtpExchange.DWH);
     }
 }

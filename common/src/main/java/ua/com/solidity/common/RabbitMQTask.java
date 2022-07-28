@@ -12,6 +12,7 @@ public abstract class RabbitMQTask extends DeferrableTask {
     private RabbitMQListener listener;
     private Delivery message;
     private String messageBody;
+    private boolean acknowledgeSent = false;
 
     final synchronized void setContext(RabbitMQListener listener, Delivery message) {
         this.listener = listener;
@@ -27,9 +28,10 @@ public abstract class RabbitMQTask extends DeferrableTask {
     protected final void execute() { // acknowledge in RabbitMQListener
         if (listener != null) {
             try {
-                rmqExecute();
+                acknowledge(rmqExecute());
             } catch (Exception e) {
                 log.error("RabbitMQTask execution error for {}.", description(), e);
+                acknowledge(false);
             } finally {
                 listener = null;
                 message = null;
@@ -37,13 +39,16 @@ public abstract class RabbitMQTask extends DeferrableTask {
         }
     }
 
-    protected void rmqExecute() {
-        // nothing yet
+    protected boolean rmqExecute() {
+        return false;
     }
 
     protected void acknowledge(boolean ack) {
-        if (listener != null) {
-            listener.doAcknowledge(message.getEnvelope().getDeliveryTag(), ack);
+        if (!acknowledgeSent) {
+            if (listener != null) {
+                listener.doAcknowledge(message.getEnvelope().getDeliveryTag(), ack);
+            }
+            acknowledgeSent = true;
         }
     }
 

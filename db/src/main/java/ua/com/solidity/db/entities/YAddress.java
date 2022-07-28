@@ -22,37 +22,42 @@ import ua.com.solidity.db.abstraction.Identifiable;
 @Entity
 @Table(name = "yaddress")
 public class YAddress implements Identifiable {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	private String address;
-	@ManyToOne
-	@JsonBackReference
-	@JoinColumn(name = "person_id")
-	private YPerson person;
-	@ManyToMany
-	@JoinTable(
-			name = "yaddress_import_source",
-			joinColumns = {@JoinColumn(name = "yaddress_id")},
-			inverseJoinColumns = {@JoinColumn(name = "import_source_id")}
-	)
-	private Set<ImportSource> importSources =  new HashSet<>();
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String address;
+    @ManyToOne
+    @JsonBackReference
+    @JoinColumn(name = "person_id")
+    private YPerson person;
+    @ManyToMany
+    @JoinTable(
+            name = "yaddress_import_source",
+            joinColumns = {@JoinColumn(name = "yaddress_id")},
+            inverseJoinColumns = {@JoinColumn(name = "import_source_id")}
+    )
+    private Set<ImportSource> importSources = new HashSet<>();
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		YAddress yAddress = (YAddress) o;
-		return Objects.equals(address, yAddress.address);
-	}
+    public void cleanAssociations() {
+        this.person.getAddresses().removeIf(address -> id.equals(address.getId()));
+        this.importSources = new HashSet<>();
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        YAddress yAddress = (YAddress) o;
+        return Objects.equals(address, yAddress.address);
+    }
 
-	@Override
-	public Long getIdentifier() {
-		return id;
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(address);
+    }
+
+    @Override
+    public Long getIdentifier() {
+        return id;
+    }
 }

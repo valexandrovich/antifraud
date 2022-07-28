@@ -75,8 +75,6 @@ public class ManualPersonEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${statuslogger.rabbitmq.name}")
-    private String queueName;
 
     @Override
     public void enrich(UUID revision) {
@@ -177,7 +175,7 @@ public class ManualPersonEnricher implements Enricher {
                 }
 
                 String passportRecNo;
-                if (!StringUtils.isBlank(r.getPassIntNum())) {
+                if (StringUtils.isNotBlank(r.getPassIntNum())) {
                     passportNo = r.getPassIntNum().substring(2);
                     passportSerial = r.getPassIntNum().substring(0, 2);
                     passportRecNo = r.getPassIntRecNum();
@@ -217,7 +215,7 @@ public class ManualPersonEnricher implements Enricher {
                 person = extender.addPerson(personSet, person, source, true);
 
                 Set<YAddress> addresses = new HashSet<>();
-                if (!StringUtils.isBlank(r.getAddress())) {
+                if (StringUtils.isNotBlank(r.getAddress())) {
                     YAddress address = new YAddress();
                     address.setAddress(r.getAddress().toUpperCase());
                     addresses.add(address);
@@ -226,7 +224,7 @@ public class ManualPersonEnricher implements Enricher {
                 extender.addAddresses(person, addresses, source);
 
                 Set<YPhone> phones = new HashSet<>();
-                if (!StringUtils.isBlank(r.getPhone())) {
+                if (StringUtils.isNotBlank(r.getPhone())) {
                     YPhone phone = new YPhone();
                     phone.setPhone(r.getPhone().toUpperCase());
                     phones.add(phone);
@@ -234,7 +232,7 @@ public class ManualPersonEnricher implements Enricher {
                 extender.addPhones(person, phones, source);
 
                 Set<YEmail> emails = new HashSet<>();
-                if (!StringUtils.isBlank(r.getEmail())) {
+                if (StringUtils.isNotBlank(r.getEmail())) {
                     YEmail email = new YEmail();
                     email.setEmail(r.getEmail().toUpperCase());
                     emails.add(email);
@@ -266,7 +264,7 @@ public class ManualPersonEnricher implements Enricher {
             });
 
             ypr.saveAll(personSet);
-            emnService.enrichMonitoringNotification(personSet);
+            emnService.enrichYPersonMonitoringNotification(personSet);
 
             onePage = manualPersonRepository.findAllByUuid(file, pageRequest);
         }

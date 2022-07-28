@@ -16,5 +16,7 @@ public class EntityNotFoundException extends RuntimeException {
         super("Could not find " + type.getSimpleName() + " with name " + name);
     }
 
-
+    public EntityNotFoundException(Class type, Long id) {
+        super("Could not find " + type.getSimpleName() + " with id " + id);
+    }
 }

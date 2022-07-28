@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet id="042-001-1" author="Beetone">
+        <createTable tableName="govua_17_ie">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_govua_17_ie"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="portion_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fio" type="VARCHAR(2048)"/>
+            <column name="address" type="VARCHAR(512)"/>
+            <column name="status" type="VARCHAR(64)"/>
+            <column name="kved" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="042-001-2" author="Beetone">
+        <createIndex tableName="govua_17_ie" indexName="idx_govua_17_ie_revision" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-3" author="Beetone">
+        <createIndex tableName="govua_17_ie" indexName="idx_govua17_ie_portion_id" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-4" author="Beetone">
+        <createTable tableName="govua_17_le">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_govua_17_le"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="portion_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(1024)"/>
+            <column name="short_name" type="VARCHAR(512)"/>
+            <column name="edrpou" type="VARCHAR(16)"/>
+            <column name="founding_doc_num" type="VARCHAR(256)"/>
+            <column name="boss" type="VARCHAR(1024)"/>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(64)"/>
+            <column name="kved" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="042-001-5" author="Beetone">
+        <createIndex tableName="govua_17_le" indexName="idx_govua_17_le_revision" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-6" author="Beetone">
+        <createIndex tableName="govua_17_le" indexName="idx_govua17_le_portion_id" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-7" author="Beetone">
+        <createTable tableName="govua_17_le_founders">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_govua_17_le_founders"/>
+            </column>
+            <column name="parent" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="portion_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="founder" type="VARCHAR(2048)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="042-001-8" author="Beetone">
+        <createIndex tableName="govua_17_le_founders" indexName="idx_govua_17_le_founders_parent" unique="false">
+            <column name="parent"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-9" author="Beetone">
+        <createIndex tableName="govua_17_le_founders" indexName="idx_govua17_le_founders_portion_id" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-10" author="Beetone">
+        <createIndex tableName="govua_17_le_founders" indexName="idx_govua17_le_founders_revision" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-11" author="Beetone">
+        <createTable tableName="govua_17_le_beneficiaries">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_govua_17_le_beneficiaries"/>
+            </column>
+            <column name="parent" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="portion_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="beneficiary" type="VARCHAR(2048)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="042-001-12" author="Beetone">
+        <createIndex tableName="govua_17_le_beneficiaries" indexName="idx_govua_17_le_beneficiaries_parent" unique="false">
+            <column name="parent"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-13" author="Beetone">
+        <createIndex tableName="govua_17_le_beneficiaries" indexName="idx_govua17_le_beneficiaries_portion_id" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="042-001-14" author="Beetone">
+        <createIndex tableName="govua_17_le_beneficiaries" indexName="idx_govua17_le_beneficiaries_revision" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

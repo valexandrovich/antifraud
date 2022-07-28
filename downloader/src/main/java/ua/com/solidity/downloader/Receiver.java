@@ -30,15 +30,6 @@ public class Receiver extends RabbitMQReceiver {
         this.downloaderHandlerFactory = downloaderHandlerFactory;
     }
 
-    private void handleAction(RabbitMQActionTask task) {
-        log.info("-- Action requested ({}).", task.getAction().getNode());
-        if (task.getAction().execute()) {
-            log.info("  *Action completed.*");
-        } else {
-            log.info("  -Action {} is invalid or some errors occurred due to execution.-", task.getAction().getNode());
-        }
-    }
-
     @Override
     public RabbitMQTask createTask(String queue, String message) {
         log.info("$downloader$:::: message received: {}", message);
@@ -48,7 +39,7 @@ public class Receiver extends RabbitMQReceiver {
             ActionObject action = ActionObject.getAction(node);
 
             if (action != null) {
-                return createActionTask(action, this::handleAction);
+                return createActionTask(action);
             }
             data = Utils.jsonToValue(node, DownloaderMessageData.class);
         } catch (Exception e) {

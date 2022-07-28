@@ -3,54 +3,40 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.CustomLog;
 import lombok.NonNull;
+import ua.com.solidity.common.ErrorReport;
 import ua.com.solidity.common.data.*;
 import ua.com.solidity.pipeline.Input;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
 
-
 @CustomLog
 public class PPArrayExtractor extends Prototype {
+    public static int DEFAULT_BATCH_SIZE = 16384;
     public static final String INPUT = "input";
     public static final String EXTENSION = "ext";
     public static final String PATH = "path";
-    public static final String BATCH_SIZE = "batch_object_count";
-    public static final String ARRAY_NODE = "isArray";
+    public static final String BATCH_SIZE = "batch_size";
 
     private static class Data {
         Input input;
         Input extension;
-        DataExtensionFactory ext;
-        boolean extAssigned = false;
-        boolean isArray;
-        String path;
+        DataPath path;
         DataBatch batch;
         DataBatch inputBatch;
 
-        public Data(String path, boolean isArray, int batchSize, Item item, DataBatch.FlushHandler handler) {
-            this.path = path;
-            this.isArray = isArray;
-            this.batch = new DataBatch(0, batchSize, 1, item, handler);
-        }
-
-        public final boolean setInputs(Input input, Input extension) {
-            if (input == null) return false;
+        public Data(JsonNode path, int batchSize, Item item, DataBatch.FlushHandler handler, Input input, Input extension) {
+            this.path = new DataPath(path);
+            this.batch = new DataBatch(batchSize, handler);
+            this.batch.setItem(item);
             this.input = input;
             this.extension = extension;
-            return true;
         }
 
         public final void updateBatch() {
             inputBatch = input.getValue(DataBatch.class);
-        }
-
-        public final void applyExtension(DataObject obj) {
-            if (!extAssigned && extension != null) {
-                ext = extension.getValue(DataExtensionFactory.class);
-                extAssigned = true;
-            }
-            if (ext != null) {
-                ext.handle(obj);
+            batch.setExtensionFactory(extension.getValue(DataExtensionFactory.class));
+            if (inputBatch != null) {
+                batch.setPortion(inputBatch.getPortion());
             }
         }
     }
@@ -62,62 +48,64 @@ public class PPArrayExtractor extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        int batchSize = 0;
-        String path = null;
+        int batchSize = DEFAULT_BATCH_SIZE;
+        JsonNode path;
 
         item.mapInputs(INPUT, DataBatch.class);
+        item.mapInputs(EXTENSION, DataExtensionFactory.class);
+
         if (node != null) {
-            if (node.hasNonNull(PATH)) {
-                path = node.get(PATH).asText();
-            }
+            path = node.get(PATH);
 
             if (node.hasNonNull(BATCH_SIZE)) {
                 batchSize = node.get(BATCH_SIZE).asInt(0);
             }
 
-            if (path == null) {
-                log.error("RevisionAssignerList path property is null.");
+            if (path == null || path.isNull()) {
+                log.error("ArrayExtractor path property is null.");
                 item.terminate();
             } else {
-                item.setInternalData(new Data(path, !node.hasNonNull(ARRAY_NODE) || node.asBoolean(true), batchSize, item, this::doFlush));
+                item.setInternalData(new Data(path, batchSize, item, this::doFlush,
+                        item.getInput(INPUT, 0), item.getInput(EXTENSION, 0)));
+
             }
         } else item.terminate();
     }
 
-    @Override
-    protected void beforePipelineExecution(Item item) {
-        Data data = item.getInternalData(Data.class);
-        if (data == null || !data.setInputs(item.getInput("INPUT", 0), item.getInput(EXTENSION, 0))) {
-            log.error("Input not assigned for ArrayExtractor.");
-            item.terminate();
-        }
-    }
-
     private void doFlush(DataBatch batch) {
         batch.getItem().yieldResult(batch, false);
+        batch.clear();
     }
 
     private void doHandleArrayItem(Data data, DataField field) {
-        DataObject obj = DataField.getObject(field);
-        if (obj != null) {
-            data.applyExtension(obj);
-            data.batch.put(obj);
-        }
+        DataObject obj = new ArrayItemObject(field);
+        data.batch.put(obj);
     }
 
-    private DataObject doHandleObject(Data data, DataObject obj) {
+    private ErrorResult doHandleObject(Data data, DataObject obj) {
         if (obj != null) {
-            DataArray dataArray = DataField.getArray(obj.getField(data.path));
-            if (dataArray != null) {
-                dataArray.enumerate((a, i, f) -> doHandleArrayItem(data, f));
+            DataField field = data.path.getField(obj);
+            if (field == null) return null;
+            if (DataField.isArray(field)) {
+                DataArray dataArray = DataField.getArray(field);
+                if (dataArray != null) {
+                    dataArray.enumerate((a, i, f) -> this.doHandleArrayItem(data, f));
+                }
+            } else {
+                doHandleArrayItem(data, field);
             }
         }
-        return obj;
+        return null;
+    }
+
+    private boolean doHandleError(ErrorReport report) {
+        return true;
     }
 
     private void handleBatch(Data data) {
-        if (data.inputBatch != null) {
-            data.inputBatch.modify(obj->doHandleObject(data, obj));
+        if (data.inputBatch != null && !data.inputBatch.isEmpty()) {
+            data.inputBatch.handle((obj)->doHandleObject(data, obj), this::doHandleError);
+            data.batch.flush();
         }
     }
 
@@ -125,27 +113,23 @@ public class PPArrayExtractor extends Prototype {
     protected Object execute(@NonNull Item item) {
         Data data = item.getInternalData(Data.class);
         data.updateBatch();
-        if (data.input.isIterator()) {
-            if (data.input.isBOF()) {
-                item.yieldBegin();
-            }
-            if (data.input.hasData()) {
+        Input input = data.input;
+
+        if (input.isBOF()) {
+            item.yieldBegin();
+        }
+
+        if (!item.terminated()) {
+            if (input.hasData()) {
                 handleBatch(data);
                 item.stayUncompleted();
             }
-        } else {
-            item.yieldBegin();
-            handleBatch(data);
         }
         return null;
     }
 
     @Override
     protected void close(Item item) {
-        Data data = item.getInternalData(Data.class);
-        if (data != null) {
-            data.batch.flush();
-        }
-        item.setInternalData(null);
+        // nothing yet
     }
 }

@@ -45,6 +45,11 @@ public class YINN implements Identifiable {
     )
     private Set<ImportSource> importSources = new HashSet<>();
 
+    public void cleanAssociations() {
+        this.person.getInns().removeIf(inn -> id.equals(inn.getId()));
+        this.importSources = new HashSet<>();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

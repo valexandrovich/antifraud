@@ -2,8 +2,8 @@ package ua.com.solidity.web.service.converter;
 
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.YPerson;
-import ua.com.solidity.web.dto.YPersonDto;
-import ua.com.solidity.web.dto.YPersonSearchDto;
+import ua.com.solidity.web.dto.olap.YPersonDto;
+import ua.com.solidity.web.dto.olap.YPersonSearchDto;
 
 @Component
 public class YPersonConverter {
@@ -34,7 +34,7 @@ public class YPersonConverter {
 		dto.setFirstName(entity.getFirstName());
 		dto.setPatName(entity.getPatName());
 		dto.setBirthdate(entity.getBirthdate());
-		dto.setRelatedPeople(entity.getRelatedPeople());
+		dto.setPersonRelations(entity.getPersonRelations());
 		dto.setCompanyRelations(entity.getCompanyRelations());
 		dto.setInns(entity.getInns());
 		dto.setAddresses(entity.getAddresses());

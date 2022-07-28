@@ -21,11 +21,10 @@ public class RabbitMQImmediateTask extends RabbitMQTask {
     }
 
     @Override
-    protected void rmqExecute() {
+    protected boolean rmqExecute() {
         RabbitMQListener listener;
         synchronized (listener = getListener()) {
-            listener.receiver.prepareInternalMessage(getListener(), getMessage());
-            listener.receiver.handleMessage(getExchange(), getMessageBody());
+            return listener.receiver.prepareAndHandleInternalMessage(this);
         }
     }
 }

@@ -13,6 +13,7 @@ public abstract class RabbitMQReceiver {
     Delivery message;
     @Getter
     RabbitMQListener listener;
+    RabbitMQTask currentTask;
 
     @SuppressWarnings("unused")
     protected void enqueueBack() {
@@ -33,8 +34,42 @@ public abstract class RabbitMQReceiver {
         this.extractedMessage = new String(message.getBody(), StandardCharsets.UTF_8);
     }
 
+    protected boolean prepareAndHandleInternalMessage(RabbitMQImmediateTask task) {
+        this.listener = task.getListener();
+        this.message = task.getMessage();
+        this.extractedMessage = task.getMessageBody();
+        this.currentTask = task;
+
+        try {
+            handleMessage(task.getExchange(), task.getMessageBody());
+            return true;
+        } catch (Exception e) {
+            log.error("RabbitMQReceiver handleMessage error.", e);
+            return false;
+        }
+    }
+
     protected RabbitMQTask createActionTask(ActionObject action, RabbitMQActionHandler handler) {
         return action != null && handler != null ? new RabbitMQActionTask(listener, message, action, handler) : null;
+    }
+
+    protected RabbitMQTask createActionTask(ActionObject action) {
+        return createActionTask(action, this::defaultHandleAction);
+    }
+
+    protected boolean handleAction(ActionObject action) {
+        log.info("-- Action requested ({}).", action.getNode());
+        boolean res = action.execute();
+        if (res) {
+            log.info("  *Action completed.*");
+        } else {
+            log.info("  -Action {} is invalid or some errors occurred due to execution.-", action.getNode());
+        }
+        return res;
+    }
+
+    private boolean defaultHandleAction(RabbitMQActionTask task) {
+        return handleAction(task.getAction());
     }
 
     @SuppressWarnings("unused")
@@ -59,5 +94,11 @@ public abstract class RabbitMQReceiver {
 
     protected final void send(String queue, Object obj) {
         Utils.sendRabbitMQMessage(queue, obj);
+    }
+
+    @SuppressWarnings("unused")
+    protected final void acknowledge(boolean value) {
+        if (currentTask == null) return;
+        currentTask.acknowledge(value);
     }
 }

@@ -28,12 +28,12 @@ public class Importer {
         return this.config;
     }
 
-    public void doImport(ImporterMessageData data) {
+    public boolean doImport(ImporterMessageData data) {
         DurationPrinter elapsedTime = new DurationPrinter();
         Pipeline pipeline = importerFactory.createPipelineByNode(data.getPipelineInfo());
         if (pipeline == null || !pipeline.isValid()) {
             log.error("Pipeline is invalid.");
-            return;
+            return false;
         }
         ImportSource source = ImportSource.findImportSourceById(data.getImportSourceId());
         pipeline.setParam("source", source != null ? source.getName() : "unknown");
@@ -42,15 +42,19 @@ public class Importer {
         pipeline.setParam("OutputFolder", config.getImporterOutputFolder());
         pipeline.setParam("logger", data.createLogger());
         log.info("Import started");
+        boolean res;
         try {
-            boolean res = pipeline.execute();
+            res = pipeline.execute();
             if (!res) {
                 log.error("Pipeline execution failed.");
+                return false;
             } else {
                 log.info("Pipeline execution completed.");
             }
         } catch (Exception e) {
+            // can re-raise exception???
             log.error("Error due pipeline execution.", e);
+            return false;
         }
 
         elapsedTime.stop();
@@ -65,5 +69,6 @@ public class Importer {
         } else {
             log.info("Import completed. {}", elapsedTime.getDurationString());
         }
+        return true;
     }
 }

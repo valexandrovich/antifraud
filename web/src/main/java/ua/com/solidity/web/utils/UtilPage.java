@@ -3,7 +3,7 @@ package ua.com.solidity.web.utils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.dto.olap.YPersonDto;
 
 import java.util.List;
 

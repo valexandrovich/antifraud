@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 class PipelineTest {
     private static final String LINK = "link";
     private static final String ARRAY = "array";

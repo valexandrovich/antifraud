@@ -19,6 +19,7 @@ public class InsertBatch {
     public static final String NULL_STR = "null";
 
     public interface Handler {
+        @SuppressWarnings("all")
         int handleBatch(InsertBatch batch, CharBuffer buffer, int count);
     }
 
@@ -126,6 +127,7 @@ public class InsertBatch {
         return doAllocate(cacheSize, rowCacheSize, header, handler, false);
     }
 
+    @SuppressWarnings("unused")
     public static InsertBatch allocate(int cacheSize, int rowCacheSize, Handler handler) {
         return doAllocate(cacheSize, rowCacheSize, null, handler, true);
     }
@@ -275,10 +277,12 @@ public class InsertBatch {
         putString(byteArrayToString(value), "::bytea");
     }
 
+    @SuppressWarnings("unused")
     public final void putByteaBase64(String base64encodedString) {
         putBytea(base64encodedString == null || base64encodedString.isBlank() ? null : Base64.decode(base64encodedString));
     }
 
+    @SuppressWarnings("unused")
     public final void putJsonNode(JsonNode node) {
         if (colCount > 0) {
             put(",");
@@ -291,6 +295,7 @@ public class InsertBatch {
         ++colCount;
     }
 
+    @SuppressWarnings("unused")
     public final void putJsonNodeBinary(JsonNode node) {
         if (colCount > 0) {
             put(",");
@@ -303,6 +308,7 @@ public class InsertBatch {
         ++colCount;
     }
 
+    @SuppressWarnings("unused")
     public final void putByteaHex(String hexString) {
         if (colCount > 0) {
             put(",");

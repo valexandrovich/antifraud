@@ -134,7 +134,9 @@ public class Pipeline {
         prepareItems();
         invalid = terminated;
         if (!invalid) invalid = !topologicalSort();
-        if (!invalid) prepareDependencies();
+        if (!invalid) {
+            prepareDependencies();
+        }
     }
 
     protected void addItem(Item node) {
@@ -143,15 +145,21 @@ public class Pipeline {
         itemByName.put(node.name, node);
     }
 
-    final void doExecute(int from) {
-        boolean handled = true;
-        while (handled && !terminated) {
-            handled = false;
-            for (int i = from; i < items.size(); ++i) {
-                Item item = items.get(i);
-                handled |= item.tryToExecute();
-            }
+    private boolean execList(Collection<? extends Item> items) {
+        for (var a : items) {
+            if (terminated) return false;
+            a.tryToExecute();
         }
+        return !terminated;
+    }
+
+    final boolean doExecute(Item item, boolean withItem) {
+        if (terminated || item == null) return false;
+        if (withItem) {
+            item.tryToExecute();
+            if (terminated) return false;
+        }
+        return execList(item.depAncestors) && execList(item.directDependencies);
     }
 
     public final boolean isValid() {
@@ -175,11 +183,16 @@ public class Pipeline {
             }
         }
 
-        doExecute(0);
+        for (var item : items) {
+            if (!doExecute(item, true)) {
+                break;
+            }
+        }
 
         for (int i = items.size() - 1; i >= 0; --i) {
             items.get(i).doClose();
         }
+
         executed = true;
         return !terminated;
     }
@@ -237,9 +250,39 @@ public class Pipeline {
         for (int i = items.size() - 1; i >= 0; --i) {
             Item item = items.get(i);
             for (Input input : item.inputs) {
-                input.inputItem.dependencies.add(item);
-                input.inputItem.dependencies.addAll(item.dependencies);
+                if (input.inputItem != null) {
+                    input.inputItem.directDependencies.add(item);
+                    input.inputItem.dependencies.add(item);
+                    input.inputItem.dependencies.addAll(item.dependencies);
+                }
             }
         }
+
+        for (Item item : items) {
+            item.directDependencies.sort(Comparator.comparingInt(i -> i.index));
+            for (var dependant : item.directDependencies) {
+                dependant.ancestors.add(item);
+                dependant.ancestors.addAll(item.ancestors);
+            }
+        }
+
+        Set<Item> deps = new HashSet<>();
+
+        for (var item : items) {
+            deps.clear();
+            for (var dependant : item.directDependencies) {
+                deps.addAll(dependant.ancestors);
+            }
+            item.dependencies.forEach(deps::remove);
+            deps.removeAll(item.ancestors);
+            deps.remove(item);
+            item.depAncestors.addAll(deps);
+            item.depAncestors.sort(Comparator.comparingInt(i -> i.index));
+        }
+        /*  uncomment this block for clear all ancestors
+        for (var item : items) {
+            item.ancestors.clear();
+        }
+        */
     }
 }

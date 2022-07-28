@@ -1,5 +1,9 @@
 package ua.com.solidity.web.exception;
 
+import java.util.ArrayList;
+import java.util.List;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
@@ -17,11 +21,6 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import ua.com.solidity.web.security.exception.JwtTokenExpiredException;
 import ua.com.solidity.web.security.exception.NoSuchRoleException;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import java.util.ArrayList;
-import java.util.List;
 
 @ControllerAdvice
 public class ExceptionAdvice extends ResponseEntityExceptionHandler {
@@ -89,7 +88,7 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	ExceptionResponse illegalApiArgumentHandler(IllegalApiArgumentException ex) {
 		return ExceptionResponse.builder()
-				.messages(List.of(ex.getMessage()))
+				.messages(!ex.getMessages().isEmpty() ? ex.getMessages() : List.of(ex.getMessage()))
 				.status(HttpStatus.BAD_REQUEST)
 				.statusCode(HttpStatus.BAD_REQUEST.value())
 				.build();

@@ -38,21 +38,6 @@ public class Config {
     @Value("${downloader.rabbitmq.collectMSecs}")
     private int collectMSecs;
 
-    @Value("${importer.rabbitmq.name}")
-    private String importerTopicExchangeName;
-
-    @Value("${downloader.rabbitmq.name}")
-    private String name;
-
-    @Value("${scheduler.rabbitmq.name}")
-    private String schedulerTopicExchangeName;
-
-    @Value("${log.rabbitmq.name}")
-    private String logExchangeName;
-
-    @Value("${notification.rabbitmq.name}")
-    private String notificationExchangeName;
-
     private String downloaderOutputFolder = null;
 
     @Value("${downloader.defaultMailTo}")
@@ -73,7 +58,8 @@ public class Config {
 
     public final String getDownloaderOutputFolder() {
         if (downloaderOutputFolder == null) {
-            downloaderOutputFolder = Utils.getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder);
+            Utils.bindNFSProperties(outputFolder, defaultEnvironmentVariableForOutputFolder);
+            downloaderOutputFolder = Utils.getNFSFolder();
         }
         return downloaderOutputFolder;
     }

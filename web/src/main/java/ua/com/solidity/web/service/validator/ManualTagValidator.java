@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.ManualTag;
 import ua.com.solidity.db.repositories.TagTypeRepository;
 import ua.com.solidity.web.response.secondary.ManualTagStatus;
-import ua.com.solidity.web.utils.UtilString;
+import ua.com.solidity.common.UtilString;
 
 @Component
 @RequiredArgsConstructor
@@ -24,14 +24,14 @@ public class ManualTagValidator {
                 statusList.add(new ManualTagStatus(tag.getId(), 0, "невідома мітка"));
             if (StringUtils.isBlank(tag.getMkId()))
                 statusList.add(new ManualTagStatus(tag.getId(), 0, "мітка не має бути пустою"));
-            if (!valid(tag.getMkEventDate(), ManualDataRegex.DATE.getRegex()))
-                statusList.add(new ManualTagStatus(tag.getId(),1, ManualDataRegex.DATE.getMessage()));
-            if (!valid(tag.getMkStart(), ManualDataRegex.DATE.getRegex()))
-                statusList.add(new ManualTagStatus(tag.getId(),2, ManualDataRegex.DATE.getMessage()));
-            if (!valid(tag.getMkExpire(), ManualDataRegex.DATE.getRegex()))
-                statusList.add(new ManualTagStatus(tag.getId(),3, ManualDataRegex.DATE.getMessage()));
-            if (!valid(tag.getMkNumberValue(), ManualDataRegex.NUMBER.getRegex()))
-                statusList.add(new ManualTagStatus(tag.getId(),4, ManualDataRegex.NUMBER.getMessage()));
+            if (!valid(tag.getMkEventDate(), DataRegex.DATE.getRegex()))
+                statusList.add(new ManualTagStatus(tag.getId(), 1, DataRegex.DATE.getMessage()));
+            if (!valid(tag.getMkStart(), DataRegex.DATE.getRegex()))
+                statusList.add(new ManualTagStatus(tag.getId(), 2, DataRegex.DATE.getMessage()));
+            if (!valid(tag.getMkExpire(), DataRegex.DATE.getRegex()))
+                statusList.add(new ManualTagStatus(tag.getId(), 3, DataRegex.DATE.getMessage()));
+            if (!valid(tag.getMkNumberValue(), DataRegex.NUMBER.getRegex()))
+                statusList.add(new ManualTagStatus(tag.getId(), 4, DataRegex.NUMBER.getMessage()));
         }
         return statusList;
     }

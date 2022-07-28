@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import ua.com.solidity.common.OtpExchange;
 import ua.com.solidity.common.RabbitMQListener;
 import ua.com.solidity.notification.listener.Receiver;
 
@@ -21,8 +22,6 @@ import ua.com.solidity.notification.listener.Receiver;
 @RequiredArgsConstructor
 public class RabbitConfiguration {
 
-    @Value("${notification.rabbitmq.name}")
-    private String queueName;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
     @Value("${spring.rabbitmq.username}")
@@ -48,14 +47,14 @@ public class RabbitConfiguration {
         return new RabbitTemplate(connectionFactory());
     }
 
-    @Bean
-    public Queue myQueue() {
-        return new Queue(queueName);
+    @Bean(name = "notificationQueue")
+    public Queue notificationQueue() {
+        return new Queue(OtpExchange.NOTIFICATION);
     }
 
     @Bean
     RabbitMQListener listener(Receiver receiver) {
-        return new RabbitMQListener(receiver, queueName);
+        return new RabbitMQListener(receiver, OtpExchange.NOTIFICATION);
     }
 
 }

@@ -21,32 +21,37 @@ import lombok.Setter;
 @Entity
 @Table(name = "yemail")
 public class YEmail {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	private String email;
-	@ManyToOne
-	@JsonBackReference
-	@JoinColumn(name = "person_id")
-	private YPerson person;
-	@ManyToMany
-	@JoinTable(
-			name = "yemail_import_source",
-			joinColumns = {@JoinColumn(name = "yemail_id")},
-			inverseJoinColumns = {@JoinColumn(name = "import_source_id")}
-	)
-	private Set<ImportSource> importSources =  new HashSet<>();
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String email;
+    @ManyToOne
+    @JsonBackReference
+    @JoinColumn(name = "person_id")
+    private YPerson person;
+    @ManyToMany
+    @JoinTable(
+            name = "yemail_import_source",
+            joinColumns = {@JoinColumn(name = "yemail_id")},
+            inverseJoinColumns = {@JoinColumn(name = "import_source_id")}
+    )
+    private Set<ImportSource> importSources = new HashSet<>();
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		YEmail yEmail = (YEmail) o;
-		return Objects.equals(email, yEmail.email);
-	}
+    public void cleanAssociations() {
+        this.person.getEmails().removeIf(email -> id.equals(email.getId()));
+        this.importSources = new HashSet<>();
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(email);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        YEmail yEmail = (YEmail) o;
+        return Objects.equals(email, yEmail.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(email);
+    }
 }

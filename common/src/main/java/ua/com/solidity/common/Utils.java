@@ -1,6 +1,41 @@
 package ua.com.solidity.common;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -9,33 +44,18 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ShutdownSignalException;
 import lombok.CustomLog;
 import lombok.Getter;
+import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.slf4j.helpers.MessageFormatter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.lang.NonNull;
-
-import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 
 @CustomLog
@@ -45,26 +65,29 @@ public class Utils {
     public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS[XXX]";
     public static final String OUTPUT_DATE_FORMAT = "yyyy-MM-dd[XXX]";
     public static final String OUTPUT_TIME_FORMAT = "hh:mm:ss.SSS[XXX]";
+    public static int PRETTY_INDENT_SIZE = 4;
+    public static boolean PRETTY_ARRAY_INDENTATION = true;
     private static final String RABBITMQ_LOG_ERROR_WITH_MESSAGE = "sendRabbitMQMessage: {} . ({}:{}) : {}";
     private static final String RABBITMQ_LOG_ERROR = "sendRabbitMQMessage: {} . ({}:{})";
+    private static final String NFS_VARIABLE_PROPERTY = "otp.nfs.variable";
+    private static final String NFS_FOLDER_PROPERTY = "otp.nfs.folder";
+    private static final String DEFAULT_NFS_VARIABLE = "OTP_TEMP";
     private static final long TRY_TO_SEND_DELTA = 180000; // 3 min
     private static final Timer timer = new Timer("Utils.timer");
+    private static final Map<String, Object> storedProperties = new HashMap<>();
     private static ApplicationContext context = null;
     private static com.rabbitmq.client.ConnectionFactory factory;
     private static Connection connection;
     private static Channel channel;
     private static ObjectMapper sortedMapper = null;
     private static XmlMapper xmlSortedMapper = null;
+    private static final Map<Integer, DefaultPrettyPrinter> printerCache = new HashMap<>();
+    private static ObjectMapper prettyMapper = null;
+
     private static final char[] hexChars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     private static final String HEX_DIGITS = new String(hexChars);
 
     private static final Set<String> topics = new HashSet<>();
-    private static final InternalApplicationContextLookup contextLookup = new InternalApplicationContextLookup();
-
-    private static class InternalApplicationContextLookup {
-        @Autowired
-        ApplicationContext context;
-    }
 
     private static class DeferredExecutionTimerTask extends TimerTask {
         Runnable runnable;
@@ -181,14 +204,11 @@ public class Utils {
     public static void setApplicationContext(ApplicationContext context) {
         if (Utils.context != null) return;
         Utils.context = context;
+        OtpExchange.prepareSpecialQueues();
     }
 
     public static boolean checkApplicationContext() {
         if (context != null) return true;
-        if (contextLookup.context != null) {
-            context = contextLookup.context;
-            return true;
-        }
         log.error("Utils ApplicationContext not assigned. Use Utils.setApplicationContext(ApplicationContext) before.");
         return false;
     }
@@ -410,11 +430,14 @@ public class Utils {
     }
 
     public static File checkFolder(String folder) {
-        File f = new File(folder);
-        if (!f.exists()) {
-            if (f.mkdirs()) return f;
-        } else return f;
-        return null;
+        Path p = Path.of(folder);
+        try {
+            Files.createDirectories(p);
+        } catch (Exception e) {
+            return null;
+        }
+
+        return new File(folder);
     }
 
     public static boolean streamCopy(InputStream source, OutputStream target) {
@@ -438,17 +461,42 @@ public class Utils {
         return true;
     }
 
-    public static synchronized String getContextProperty(String name, String defaultValue) {
+    public static synchronized String getContextProperty(String name, String defaultValue, boolean contextOnly) {
+        if (!contextOnly && storedProperties.containsKey(name)) {
+            Object value = storedProperties.get(name);
+            return value == null ? defaultValue : value.toString();
+        }
         return checkApplicationContext() ? context.getEnvironment().getProperty(name, defaultValue) : defaultValue;
     }
 
+    public static String getContextProperty(String name, String defaultValue) {
+        return getContextProperty(name, defaultValue, false);
+    }
+
+    public static synchronized void setContextProperty(String name, Object value, boolean ifNotExists) {
+        if (ifNotExists) {
+            String v = getContextProperty(name, null);
+            if (v != null && !v.isBlank()) return;
+        }
+
+        if (value == null || (value instanceof String && ((String) value).isBlank())) {
+            storedProperties.remove(name);
+        } else {
+            storedProperties.put(name, value);
+        }
+    }
+
+    public static void setContextProperty(String name, Object value) {
+        setContextProperty(name, value, false);
+    }
+
     static synchronized void getRabbitMQConnectionFactory() {
-        if (factory == null && checkApplicationContext()) {
+        if (factory == null) {
             factory = new com.rabbitmq.client.ConnectionFactory();
-            factory.setHost(context.getEnvironment().getProperty("spring.rabbitmq.host", "localhost"));
-            factory.setPort(Integer.parseInt(context.getEnvironment().getProperty("spring.rabbitmq.port", "5672")));
-            factory.setUsername(context.getEnvironment().getProperty("spring.rabbitmq.username", "guest"));
-            factory.setPassword(context.getEnvironment().getProperty("spring.rabbitmq.password", "guest"));
+            factory.setHost(getContextProperty("spring.rabbitmq.host", "localhost"));
+            factory.setPort(Integer.parseInt(getContextProperty("spring.rabbitmq.port", "5672")));
+            factory.setUsername(getContextProperty("spring.rabbitmq.username", "guest"));
+            factory.setPassword(getContextProperty("spring.rabbitmq.password", "guest"));
             factory.setAutomaticRecoveryEnabled(true);
             factory.setNetworkRecoveryInterval(3000);
         }
@@ -515,13 +563,39 @@ public class Utils {
         }
     }
 
-    static synchronized boolean prepareRabbitMQQueue(String queue) {
+    private static boolean queueDeclare(String queue) {
+        Map<String, Object> params = OtpExchange.getQueueParams(queue);
+        if (channelNeeded()) {
+            try {
+                channel.queueDeclare(queue, true, false, false, params);
+            } catch (Exception e) {
+                if (channelNeeded()) {
+                    try {
+                        channel.queuePurge(queue); // no messages
+                        channel.queueDelete(queue);
+                        channel.queueDeclare(queue, true, false, false, params);
+                    } catch (Exception e1) {
+                        channelNeeded();
+                        return false;
+                    }
+                }
+            }
+            try {
+                channel.queueBind(queue, queue, queue);
+            } catch (Exception e) {
+                channelNeeded();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static synchronized boolean prepareRabbitMQQueue(String queue) {
         if (channelNeeded()) {
             if (topics.contains(queue)) return true;
             try {
                 channel.exchangeDeclare(queue, BuiltinExchangeType.TOPIC, true);
-                channel.queueDeclare(queue, true, false, false, null);
-                channel.queueBind(queue, queue, queue);
+                if (!queueDeclare(queue)) return false;
                 topics.add(queue);
                 return true;
             } catch (Exception e) {
@@ -532,12 +606,16 @@ public class Utils {
         return false;
     }
 
-    public static synchronized void sendRabbitMQMessage(String queue, Object obj) {
+    public static synchronized void sendRabbitMQMessage(String queue, Object obj, byte priority) {
         if (queue == null || queue.isBlank()) return;
         String message = obj instanceof String ? (String) obj : objectToJsonString(obj);
         if (prepareRabbitMQQueue(queue)) {
             try {
-                channel.basicPublish(queue, queue, null, (message == null ? "" : message).getBytes(StandardCharsets.UTF_8));
+                AMQP.BasicProperties props = null;
+                if (priority > 0) {
+                    props = new AMQP.BasicProperties.Builder().priority((int) priority).build();
+                }
+                channel.basicPublish(queue, queue, props, (message == null ? "" : message).getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
                 rabbitMQLogError("Can't send a message", queue, queue, message, e);
             }
@@ -545,6 +623,10 @@ public class Utils {
             rabbitMQLogError("Can't send a message now, waiting.", queue, queue, message, null);
             deferredExecute(TRY_TO_SEND_DELTA, ()-> sendRabbitMQMessage(queue, message));
         }
+    }
+
+    public static synchronized void sendRabbitMQMessage(String queue, Object obj) {
+        sendRabbitMQMessage(queue, obj, (byte) 0);
     }
 
     @SuppressWarnings("all")
@@ -568,13 +650,102 @@ public class Utils {
     }
 
     public static String getOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder) {
-        if ((outputFolder == null || outputFolder.length() == 0) &&
-                defaultEnvironmentVariableForOutputFolder != null && defaultEnvironmentVariableForOutputFolder.length() > 0) {
+        if ((outputFolder == null || outputFolder.isBlank()) &&
+                defaultEnvironmentVariableForOutputFolder != null && !defaultEnvironmentVariableForOutputFolder.isBlank()) {
             Map<String, String> map = System.getenv();
             outputFolder = map.getOrDefault(defaultEnvironmentVariableForOutputFolder, null);
             if (outputFolder == null) outputFolder = System.getProperty("java.io.tmpdir");
         }
         return outputFolder;
+    }
+
+    public static String getOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder, String localPath) {
+        String folder = getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder);
+        if (folder == null) return null;
+        folder = folder.replace('\\', '/');
+        if (!folder.endsWith("/")) {
+            folder = folder + "/";
+        }
+
+        if (localPath != null && !localPath.isEmpty()) {
+            localPath = localPath.trim().replace('\\', '/');
+            if (localPath.startsWith("/")) {
+                localPath = localPath.substring(1);
+            }
+            if (localPath.endsWith("/")) {
+                localPath = localPath.substring(0, localPath.length() - 1);
+            }
+            folder += localPath;
+        }
+        return folder;
+    }
+
+    public static File prepareOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder, String localPath) {
+        return checkFolder(getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder, localPath));
+    }
+
+    public static File prepareOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder) {
+        return prepareOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder, null);
+    }
+
+    // bind deprecated application properties to otp.nfs.folder, otp.nfs.variable values
+
+    public static void bindNFSProperties(String folderValue, String variableValue) {
+        if (folderValue != null && !folderValue.isBlank()) {
+            setContextProperty(NFS_FOLDER_PROPERTY, folderValue);
+        }
+
+        if (variableValue != null && variableValue.isBlank()) {
+            setContextProperty(NFS_VARIABLE_PROPERTY, variableValue);
+        }
+    }
+
+    public static String getNFSVariable() {
+        return getContextProperty(NFS_VARIABLE_PROPERTY, DEFAULT_NFS_VARIABLE);
+    }
+
+    public static String getNFSFolder(String localPath) {
+        String folder = getContextProperty(NFS_FOLDER_PROPERTY, null);
+        String variable = getNFSVariable();
+        return getOutputFolder(folder, variable, localPath);
+    }
+
+    public static String getNFSFolder() {
+        return getNFSFolder(null);
+    }
+
+    public static File prepareNFSFolder(String localPath) {
+        String folder = getContextProperty(NFS_FOLDER_PROPERTY, null);
+        String variable = getContextProperty(NFS_VARIABLE_PROPERTY, DEFAULT_NFS_VARIABLE);
+        return prepareOutputFolder(folder, variable, localPath);
+    }
+
+    public static File prepareNFSFolder() {
+        return prepareNFSFolder(null);
+    }
+
+    public static File getFileFromNFSFolder(String fileName, boolean forRead) {
+        Path p = Path.of(fileName);
+        File res;
+        if (!p.isAbsolute()) {
+            Path parent = p.getParent();
+            parent = Path.of(getNFSFolder(parent == null ? null : parent.toString()));
+            try {
+                Files.createDirectories(parent);
+            } catch (Exception e) {
+                return null;
+            }
+
+            p = parent.resolve(p.getFileName());
+        }
+
+        res = p.toFile();
+
+        if (forRead && !res.exists()) {
+            return null;
+        }
+
+        return res;
     }
 
     public static ZipEntry getZipEntry(ZipFile zipFile, String match) {
@@ -598,6 +769,61 @@ public class Utils {
         public ObjectNode objectNode() {
             return new ObjectNode(this, new TreeMap<>());
         }
+    }
+
+    public static DefaultPrettyPrinter getPrettyPrinter(int indent, boolean arrayIndentation) {
+        if (indent <= 0) {
+            indent = 2;
+        }
+
+        int id = indent;
+
+        if (arrayIndentation) {
+            id = -indent;
+        }
+
+        DefaultPrettyPrinter printer = printerCache.getOrDefault(id, null);
+
+        if (printer == null) {
+            char[] indentArray = new char[indent];
+            Arrays.fill(indentArray, ' ');
+            DefaultPrettyPrinter.Indenter indenter = new DefaultIndenter(String.copyValueOf(indentArray),
+                    DefaultIndenter.SYS_LF);
+            printer = new DefaultPrettyPrinter();
+            printer.indentObjectsWith(indenter);
+
+            if (arrayIndentation) {
+                printer.indentArraysWith(indenter);
+            }
+
+            printerCache.put(id, printer);
+        }
+
+        return printer;
+    }
+
+    public static DefaultPrettyPrinter defaultPrettyPrinter() {
+        return getPrettyPrinter(PRETTY_INDENT_SIZE, PRETTY_ARRAY_INDENTATION);
+    }
+
+    public static ObjectMapper getPrettyMapper(DefaultPrettyPrinter printer) {
+        if (prettyMapper == null) {
+            prettyMapper = JsonMapper.builder().
+                    build().
+                    configure(SerializationFeature.INDENT_OUTPUT, true).
+                    setDateFormat(getJsonOutputDateTimeFormat());
+        }
+
+        prettyMapper.setDefaultPrettyPrinter(Objects.requireNonNullElseGet(printer, Utils::defaultPrettyPrinter));
+        return prettyMapper;
+    }
+
+    public static ObjectMapper getPrettyMapper() {
+        return getPrettyMapper(null);
+    }
+
+    public static ObjectMapper getPrettyMapper(int indent, boolean arrayIndentation) {
+        return getPrettyMapper(getPrettyPrinter(indent, arrayIndentation));
     }
 
     public static ObjectMapper getSortedMapper() {
@@ -641,7 +867,24 @@ public class Utils {
         return new byte[0];
     }
 
-    public static String getSortedJsonNodeString(JsonNode node) {
+    public static String getJsonNodePrettyString(JsonNode node, DefaultPrettyPrinter printer) {
+        ObjectMapper mapper = getPrettyMapper(printer);
+        try {
+            return mapper.writer().writeValueAsString(node);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String getJsonNodePrettyString(JsonNode node, int indent, boolean arrayIndentation) {
+        return getJsonNodePrettyString(node, getPrettyPrinter(indent, arrayIndentation));
+    }
+
+    public static String getJsonNodePrettyString(JsonNode node) {
+        return getJsonNodePrettyString(node, null);
+    }
+
+    public static String getJsonNodeUniqueString(JsonNode node) {
         try {
             ObjectMapper sortedMapper = getSortedMapper();
             return sortedMapper.writeValueAsString(node);
@@ -649,6 +892,19 @@ public class Utils {
             log.error("Can't convert node to Sorted String.", e);
         }
         return null;
+    }
+
+    public static void writeJsonNodeToFile(File file, JsonNode node, int indent, boolean arrayIndentation) {
+        if (file == null || node == null) return;
+        try(Writer w = new FileWriterWithEncoding(file, StandardCharsets.UTF_8)) {
+            w.write(getPrettyMapper(indent, arrayIndentation).writeValueAsString(node));
+        } catch (Exception e) {
+            // nothing
+        }
+    }
+
+    public static void writeJsonNodeToFile(File file, JsonNode node) {
+        writeJsonNodeToFile(file, node, PRETTY_INDENT_SIZE, PRETTY_ARRAY_INDENTATION);
     }
 
     public static byte[] complexDigest(JsonNode node) {

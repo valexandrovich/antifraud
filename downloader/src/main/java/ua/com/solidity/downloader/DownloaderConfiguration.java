@@ -3,6 +3,7 @@ package ua.com.solidity.downloader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ua.com.solidity.common.ActionObject;
+import ua.com.solidity.common.OtpExchange;
 import ua.com.solidity.common.RabbitMQListener;
 
 import javax.annotation.PostConstruct;
@@ -20,8 +21,8 @@ public class DownloaderConfiguration {
     }
 
     @Bean
-    RabbitMQListener listener(Config config, Receiver receiver) {
-        return new RabbitMQListener(receiver, config.getCollectMSecs(), config.getName());
+    RabbitMQListener listener(Receiver receiver) {
+        return new RabbitMQListener(receiver, OtpExchange.DOWNLOADER);
     }
 
     @PostConstruct

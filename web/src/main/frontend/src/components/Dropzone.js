@@ -1,12 +1,15 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useHistory } from "react-router";
 import authHeader from "../api/AuthHeader";
-import { setAlertMessageThunk } from "../store/reducers/AuthReducer";
 import CsvModal from "./Modal/CsvModal";
 import Table from "./Table";
 import Spinner from "./Loader";
+import {
+  setAlertMessageThunk,
+  setFileID,
+} from "../store/reducers/actions/Actions";
 
 function Dropzone() {
   const [filetoUpload, setFiletoUpload] = useState();
@@ -16,6 +19,19 @@ function Dropzone() {
   const [csv, setCsv] = useState(null);
   const dispatch = useDispatch();
   const history = useHistory();
+  const fileID = useSelector((state) => state.auth.fileID);
+
+  useEffect(() => {
+    const resetFile = () => {
+      if (fileID != null) {
+        fetch(`/api/uniPF/getUploaded/${fileID}`, { headers: authHeader() })
+          .then((res) => res.json())
+          .then((file) => setPrevFile(file))
+          .then(() => setLoader(false));
+      }
+    };
+    resetFile();
+  }, [fileID]);
   const [csvoptions, setCsvOptions] = useState({
     delimeter: ";",
     codingType: "UTF-8",
@@ -30,7 +46,6 @@ function Dropzone() {
       requestOptions
     ).then((res) => res.json().then((data) => setPrevFile(data)));
   };
-
   const fetchData = useCallback(() => {
     const formData = new FormData();
     setLoader(true);
@@ -46,16 +61,18 @@ function Dropzone() {
       .then((response) => response.json())
       .then(setCsv(null))
       .then((result) => {
+        dispatch(setFileID(result));
         fetch(`/api/uniPF/getUploaded/${result}`, { headers: authHeader() })
           .then((res) => res.json())
           .then((file) => setPrevFile(file))
-          .then(setLoader(false));
+          .then(() => setLoader(false));
       })
       .catch((error) => {
         setCsv(null);
         setLoader(false);
         console.error(error);
         dispatch(setAlertMessageThunk("Щось пішло не так", "danger"));
+        setFiletoUpload(null);
       });
   }, [csvoptions.codingType, csvoptions.delimeter, dispatch, filetoUpload]);
   const handleSubmissionCSV = () => {
@@ -82,10 +99,18 @@ function Dropzone() {
     fetch(
       `/api/uniPF/upload?uuid=${id}&description=${value}`,
       requestOptions
-    ).then(() =>
-      dispatch(setAlertMessageThunk("Файл успішно завантажено", "success"))
-    );
-    history.push("/uploaded_files");
+    ).then((res) => {
+      if (res.status === 200) {
+        dispatch(setAlertMessageThunk("Файл успішно завантажено", "success"));
+        history.push("/uploaded_files");
+        dispatch(setFileID(null));
+        setPrevFile([]);
+      }
+      if (res.status > 300) {
+        console.dir(res);
+        dispatch(setAlertMessageThunk("Виникла помилка", "danger"));
+      }
+    });
   };
   const onDrop = useCallback(
     (acceptedFiles, err) => {

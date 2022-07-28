@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
 
-const Pagination = ({ filesPerPage, totalFiles, paginate, reset, margin }) => {
+const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
   const pageNumbers = [];
   const [selected, setSelected] = useState(1);
+  const selectedPage =
+    Math.ceil(totalFiles / filesPerPage) < selected ? 1 : selected;
   useEffect(() => {
-    setSelected(reset + 1 || selected);
-  }, [filesPerPage, pageNumbers, reset, selected, totalFiles]);
-  if (totalFiles / filesPerPage <= 4) {
+    setSelected(
+      pageNo < Math.ceil(totalFiles / filesPerPage) ? pageNo + 1 : selectedPage
+    );
+  }, [filesPerPage, pageNo, pageNumbers, selected, selectedPage, totalFiles]);
+  if (totalFiles / filesPerPage <= 15) {
     for (let i = 1; i <= Math.ceil(totalFiles / filesPerPage); i++) {
       pageNumbers.push(i);
     }
@@ -29,7 +33,7 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, reset, margin }) => {
       <ul className="pagination flex-wrap align-items-center">
         {pageNumbers.map((number, idx) => {
           return (
-            <div key={number}>
+            <div key={idx}>
               {typeof number === "number" ? (
                 <li key={number + idx} className="page-item mb-2">
                   <button
@@ -43,7 +47,7 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, reset, margin }) => {
                     <span
                       className={selected === number ? "paginate-active" : null}
                     >
-                      {number}
+                      {number ? number : ""}
                     </span>
                   </button>
                 </li>
@@ -69,7 +73,6 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, reset, margin }) => {
                       }}
                       type={"number"}
                       value={selected}
-                      max={Math.ceil(totalFiles / filesPerPage)}
                     />
                     ...
                   </label>

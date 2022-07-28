@@ -17,9 +17,16 @@ public class RabbitMQActionTask extends RabbitMQImmediateTask {
     }
 
     @Override
-    protected void rmqExecute() {
+    protected boolean rmqExecute() {
         if (action != null && handler != null) {
-            handler.handle(this);
+            try {
+                handler.handle(this);
+                return true;
+            } catch (Exception e) {
+                log.error("Action Execution failed.", e);
+                return false;
+            }
         }
+        return false;
     }
 }

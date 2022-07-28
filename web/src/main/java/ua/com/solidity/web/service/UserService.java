@@ -9,14 +9,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.db.entities.User;
+import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.UserRepository;
+import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.dto.YCompanyDto;
+import ua.com.solidity.web.dto.olap.YPersonDto;
 import ua.com.solidity.web.exception.EntityNotFoundException;
 import ua.com.solidity.web.exception.IllegalApiArgumentException;
 import ua.com.solidity.web.request.PaginationRequest;
 import ua.com.solidity.web.security.service.Extractor;
+import ua.com.solidity.web.service.converter.YCompanyConverter;
 import ua.com.solidity.web.service.converter.YPersonConverter;
 import ua.com.solidity.web.service.factory.PageRequestFactory;
 
@@ -30,35 +34,68 @@ public class UserService {
     private final YPersonRepository yPersonRepository;
     private final UserRepository userRepository;
     private final PageRequestFactory pageRequestFactory;
+    private final YCompanyRepository yCompanyRepository;
+    private final YCompanyConverter yCompanyConverter;
 
-    public Page<YPersonDto> subscriptions(PaginationRequest paginationRequest, HttpServletRequest request) {
+    public Page<YPersonDto> subscriptionsYPerson(PaginationRequest paginationRequest, HttpServletRequest request) {
         User user = extractor.extractUser(request);
         PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
 
-        return yPersonRepository.findByUsers(user, pageRequest).map(p -> {
+        return yPersonRepository.findBySubscribedUsers(user, pageRequest).map(p -> {
             YPersonDto yPersonDto = yPersonConverter.toDto(p);
             yPersonDto.setSubscribe(true);
             return yPersonDto;
         });
     }
 
-    public void subscribe(UUID id, HttpServletRequest request) {
+    public void subscribeYPerson(UUID id, HttpServletRequest request) {
         User user = extractor.extractUser(request);
-        Optional<YPerson> personOptional = user.getPeople()
+        Optional<YPerson> personOptional = user.getPersonSubscriptions()
                 .stream()
                 .filter(e -> e.getId().equals(id))
                 .findAny();
         if (personOptional.isPresent()) throw new IllegalApiArgumentException("Ви вже підписалися на цю людину");
         YPerson yPerson = yPersonRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(YPerson.class, id));
-        user.getPeople().add(yPerson);
+        user.getPersonSubscriptions().add(yPerson);
         userRepository.save(user);
     }
 
-    public void unSubscribe(UUID id, HttpServletRequest request) {
+    public void unSubscribeYPerson(UUID id, HttpServletRequest request) {
         User user = extractor.extractUser(request);
-        boolean removed = user.getPeople().removeIf(i -> i.getId().equals(id));
+        boolean removed = user.getPersonSubscriptions().removeIf(i -> i.getId().equals(id));
         if (!removed) throw new IllegalApiArgumentException("Ви не підписані на цю людину");
+        userRepository.save(user);
+    }
+
+    public Page<YCompanyDto> subscriptionsYCompany(PaginationRequest paginationRequest, HttpServletRequest request) {
+        User user = extractor.extractUser(request);
+        PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
+
+        return yCompanyRepository.findByUsers(user, pageRequest).map(company -> {
+            YCompanyDto yCompanyDto = yCompanyConverter.toDto(company);
+            yCompanyDto.setSubscribe(true);
+            return yCompanyDto;
+        });
+    }
+
+    public void subscribeYCompany(UUID id, HttpServletRequest request) {
+        User user = extractor.extractUser(request);
+        Optional<YCompany> companyOptional = user.getCompanies()
+                .stream()
+                .filter(e -> e.getId().equals(id))
+                .findAny();
+        if (companyOptional.isPresent()) throw new IllegalApiArgumentException("Ви вже підписалися на цю компанію");
+        YCompany yCompany = yCompanyRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(YCompany.class, id));
+        user.getCompanies().add(yCompany);
+        userRepository.save(user);
+    }
+
+    public void unSubscribeYCompany(UUID id, HttpServletRequest request) {
+        User user = extractor.extractUser(request);
+        boolean removed = user.getCompanies().removeIf(i -> i.getId().equals(id));
+        if (!removed) throw new IllegalApiArgumentException("Ви не підписані на цю компанію");
         userRepository.save(user);
     }
 }

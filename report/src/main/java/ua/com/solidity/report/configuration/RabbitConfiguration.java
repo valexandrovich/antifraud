@@ -11,16 +11,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import ua.com.solidity.common.OtpExchange;
 
 @Slf4j
 @Configuration
 @PropertySource({"classpath:report.properties", "classpath:application.properties"})
 public class RabbitConfiguration {
 
-    @Value("${report.rabbitmq.name}")
-    private String reportQueue;
-    @Value("${notification.rabbitmq.name}")
-    private String notificationQueue;
     @Value("${spring.rabbitmq.host}")
     private String queueHost;
     @Value("${spring.rabbitmq.username}")
@@ -48,11 +45,11 @@ public class RabbitConfiguration {
 
     @Bean(name = "reportQueue")
     public Queue reportQueue() {
-        return new Queue(reportQueue);
+        return new Queue(OtpExchange.REPORT);
     }
 
     @Bean(name = "notificationQueue")
     public Queue notificationQueue() {
-        return new Queue(notificationQueue);
+        return new Queue(OtpExchange.NOTIFICATION);
     }
 }

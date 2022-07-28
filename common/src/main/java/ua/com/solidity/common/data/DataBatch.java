@@ -1,19 +1,16 @@
 package ua.com.solidity.common.data;
 
+import lombok.Getter;
+import lombok.Setter;
 import ua.com.solidity.common.ErrorReport;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-@SuppressWarnings("unused")
 public class DataBatch {
-    public static final int DEFAULT_OBJECT_COUNT = 16384;
-    public static final int DEFAULT_ERROR_COUNT = 1024;
-    public static final int DEFAULT_CAPACITY = 16384;
-
-    private static int LOADED_DEFAULT_CAPACITY = -1;
+    public static final int DEFAULT_CAPACITY = 16384; // for objects
+    private static int LOADED_CAPACITY = -1;
 
     public interface FlushHandler {
         void flush(DataBatch obj);
@@ -31,59 +28,85 @@ public class DataBatch {
         boolean handle(ErrorReport value);
     }
 
-    private final Item item;
+    @Getter
+    @Setter
+    private Item item;
+
+    @Getter
+    private UUID portion = null;
+
+    @Getter
+    @Setter
+    private String source;
     private final int capacity;
-    private int count = 0;
     private int objectCount = 0;
     private int errorCount = 0;
-    private final int objectCapacity;
-    private final int errorCapacity;
-    private int insertErrorCount;
     private int badObjectCount = 0;
+    private int objectErrorsCount = 0;
     private final List<Object> instances = new ArrayList<>();
     private final FlushHandler handler;
     private DataExtensionFactory extensionFactory = null;
 
-    public DataBatch(int capacity, int objectCapacity, int errorCapacity, Item item, FlushHandler handler) {
-        int defCapacity = getDefaultCapacity();
-
-        if (capacity < 1 && objectCapacity < 1 && errorCapacity < 1) {
-            capacity = defCapacity + DEFAULT_ERROR_COUNT;
+    public DataBatch(int capacity, FlushHandler handler) {
+        if (capacity < 1) {
+            capacity = getDefaultCapacity();
         }
-
-        this.objectCapacity = objectCapacity < 1 ? defCapacity : objectCapacity;
-        this.errorCapacity = errorCapacity < 1 ? DEFAULT_ERROR_COUNT : errorCapacity;
-        this.capacity = capacity < 1 ? this.objectCapacity + this.errorCapacity : capacity;
+        this.capacity = capacity;
         this.handler = handler;
-        this.insertErrorCount = 0;
-        this.item = item;
     }
 
     private static int getDefaultCapacity() {
-        if (LOADED_DEFAULT_CAPACITY < 1) {
+        if (LOADED_CAPACITY < 1) {
             int value = DEFAULT_CAPACITY;
             try {
-                value = Integer.parseInt(Utils.getContextProperty("importer.batch.size",
-                        String.valueOf(DEFAULT_CAPACITY)));
+                value = Integer.parseInt(Utils.getContextProperty("importer.batch.size", String.valueOf(DEFAULT_CAPACITY)));
             } catch (Exception e) {
                 // nothing
             }
-            LOADED_DEFAULT_CAPACITY = value;
+            LOADED_CAPACITY = value;
         }
-        return LOADED_DEFAULT_CAPACITY;
+        return LOADED_CAPACITY;
     }
 
     public final void setExtensionFactory(DataExtensionFactory factory) {
-        if (this.extensionFactory != null) return;
+        if (this.extensionFactory != factory) {
+            if (factory != null) {
+                for (var instance: instances) {
+                    if (instance instanceof DataObject) {
+                        DataObject obj = (DataObject) instance;
+                        DataExtension ext = factory.createExtension();
+                        ext.setPortion(getPortion());
+                        obj.setExtension(ext);
+                    }
+                }
+            } else {
+                for (var instance: instances) {
+                    if (instance instanceof DataObject) {
+                        DataObject obj = (DataObject) instance;
+                        obj.setExtension(null);
+                    }
+                }
+            }
+        }
         this.extensionFactory = factory;
+    }
+
+    public final void setPortion(UUID portion) {
+        if (this.portion == portion) return;
+        for (var instance: instances) {
+            if (instance instanceof DataObject) {
+                DataObject obj = (DataObject) instance;
+                DataExtension ext = obj.getExtension();
+                if (ext != null) {
+                    ext.setPortion(portion);
+                }
+            }
+        }
+        this.portion = portion;
     }
 
     public final DataExtensionFactory getExtensionFactory() {
         return this.extensionFactory;
-    }
-
-    public final Item getItem() {
-        return item;
     }
 
     private void doFlush() {
@@ -92,18 +115,46 @@ public class DataBatch {
                 handler.flush(this);
             }
         } finally {
-            count = 0;
+            clear();
+        }
+    }
+
+    private void handleError(ErrorResult oldValue, ErrorResult newValue) {
+        if (oldValue == newValue) return;
+        if (oldValue != null && oldValue.isErrorState()) {
+            ++objectCount;
+            --badObjectCount;
+            objectErrorsCount -= oldValue.getErrorCount();
+        }
+
+        if (newValue != null && newValue.isErrorState()) {
+            --objectCount;
+            ++badObjectCount;
+            objectErrorsCount += newValue.getErrorCount();
         }
     }
 
     public void put(DataObject object) {
         if (object == null) return;
         if (extensionFactory != null) {
-            extensionFactory.handle(object);
+            DataExtension ext = extensionFactory.handle(object);
+            if (getPortion() != null) {
+                ext.setPortion(getPortion());
+            }
         }
+
+        object.bindErrorHandler(this::handleError);
         instances.add(object);
-        ++objectCount;
-        if (objectCount == objectCapacity || instances.size() == capacity) {
+
+        if (object.hasErrors()) {
+            ++badObjectCount;
+            ErrorResult res = object.getErrorResult();
+            objectErrorsCount += res.getReport().size();
+        } else {
+            ++objectCount;
+        }
+
+        if (instances.size() == capacity) {
             doFlush();
         }
     }
@@ -112,8 +163,36 @@ public class DataBatch {
         if (report == null) return;
         instances.add(report);
         ++errorCount;
-        if (errorCount == errorCapacity || instances.size() == capacity) {
+        if (instances.size() == capacity) {
             doFlush();
+        }
+    }
+
+    public Object get(int index) {
+        return index < 0 || index >= instances.size() ? null : instances.get(index);
+    }
+
+    public void remove(int index) {
+        if (index >= 0 && index < instances.size() && instances.get(index) instanceof DataObject) {
+            instances.remove(index);
+        }
+    }
+
+    public void remove(Object obj) {
+        instances.remove(obj);
+    }
+
+    public void pack() {
+        for (int i = instances.size() - 1; i >= 0; --i) {
+            Object obj = instances.get(i);
+            if (obj instanceof DataObject) {
+                DataObject dataObject = (DataObject) obj;
+                if (dataObject.hasErrors()) {
+                    remove(i);
+                }
+            } else {
+                remove(i);
+            }
         }
     }
 
@@ -121,18 +200,15 @@ public class DataBatch {
         return badObjectCount;
     }
 
-    public final int getInsertErrorCount() {
-        return insertErrorCount;
-    }
-
-    public final void addInsertErrorCount(int count) {
-        insertErrorCount += count;
+    public final int getObjectErrorsCount() {
+        return objectErrorsCount;
     }
 
     public final int getObjectCount() {
         return objectCount;
     }
 
+    @SuppressWarnings("unused")
     public final int getCommittedCount() {
         return objectCount - badObjectCount;
     }
@@ -142,11 +218,7 @@ public class DataBatch {
     }
 
     public void clear() {
-        objectCount = 0;
-        errorCount = 0;
-        count = 0;
-        badObjectCount = 0;
-        insertErrorCount = 0;
+        objectCount = errorCount = badObjectCount = objectErrorsCount = 0;
         instances.clear();
     }
 
@@ -162,21 +234,19 @@ public class DataBatch {
 
     private void handleDataObject(ObjectHandler objectHandler, ErrorHandler errorHandler, DataObject obj) {
         ErrorResult res = objectHandler.handle(obj);
-        if (res.isErrorState()) {
+        if (res != null && res.isErrorState()) {
             ++badObjectCount;
             if (errorHandler != null) {
                 for (var report : res.getReport()) {
                     errorHandler.handle(report);
+                    ++objectErrorsCount;
                 }
             }
-            errorCount += res.getReport().size();
-            insertErrorCount += res.getReport().size();
         }
     }
 
     public final void handle(ObjectHandler objectHandler, ErrorHandler errorHandler) {
         for (Object obj : instances) {
-            List<ErrorReport> reports;
             if (obj instanceof DataObject) {
                 handleDataObject(objectHandler, errorHandler, (DataObject) obj);
             } else if (obj instanceof ErrorReport && errorHandler != null) {
@@ -190,4 +260,50 @@ public class DataBatch {
             instances.replaceAll(obj->obj instanceof DataObject ? modifyHandler.modify((DataObject) obj) : obj);
         }
     }
+
+    public final long size() {
+        return instances.size();
+    }
+
+    public final Iterable<DataObject> validObjects() {
+        return () -> new Iterator<>() {
+            private static final int UNINITIALIZED = -1;
+            private static final int OUT_OF_RANGE = -2;
+            int index = UNINITIALIZED;
+
+            private void findNextObject() {
+                for (int i = index + 1; i < size(); ++i) {
+                    Object obj = instances.get(i);
+                    if (obj instanceof DataObject) {
+                        DataObject dataObject = (DataObject) obj;
+                        ErrorResult res = dataObject.getErrorResult();
+                        if (res == null || !res.isErrorState()) {
+                            index = i;
+                            return;
+                        }
+                    }
+                }
+                index = OUT_OF_RANGE;
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (index == UNINITIALIZED) {
+                    findNextObject();
+                }
+                return index >= 0;
+            }
+
+            @Override
+            public DataObject next() {
+                if (index >= 0) {
+                    DataObject obj = (DataObject) instances.get(index);
+                    findNextObject();
+                    return obj;
+                }
+                return null;
+            }
+        };
+    }
+
 }

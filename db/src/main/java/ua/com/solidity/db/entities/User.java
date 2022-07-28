@@ -1,8 +1,7 @@
 package ua.com.solidity.db.entities;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import java.util.HashSet;
+import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -14,8 +13,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -55,9 +54,25 @@ public class User {
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
-			name = "users_yperson",
+			name = "users_yperson_subscriptions",
 			joinColumns = {@JoinColumn(name = "users_id")},
 			inverseJoinColumns = {@JoinColumn(name = "yperson_id")}
 	)
-	private Set<YPerson> people = new HashSet<>();
+	private Set<YPerson> personSubscriptions = new HashSet<>();
+
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(
+			name = "users_yperson_comparisons",
+			joinColumns = {@JoinColumn(name = "users_id")},
+			inverseJoinColumns = {@JoinColumn(name = "yperson_id")}
+	)
+	private Set<YPerson> personComparisons = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "users_ycompanies",
+            joinColumns = {@JoinColumn(name = "users_id")},
+            inverseJoinColumns = {@JoinColumn(name = "ycompany_id")}
+    )
+    private Set<YCompany> companies = new HashSet<>();
 }

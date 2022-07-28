@@ -3,8 +3,6 @@ version: "3.9"
 services:
   web:
     container_name: otp-web
-    volumes:
-      - tmp-storage:/tmp
     build:
       dockerfile: Dockerfile
       context: .
@@ -21,12 +19,10 @@ services:
       - otp-etl-network
     environment:
       - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=web.otp-etl
-      - OTP_TEMP=/tmp
 
   downloader:
-    container_name: otp-downloader
     volumes:
-      - tmp-storage:/tmp
+      - tmp-storage:/data
     build:
       dockerfile: Dockerfile
       context: .
@@ -34,7 +30,7 @@ services:
         - JAR_FILE=downloader/target/*.jar
     environment:
       - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=downloader.otp-etl -Ddata.gov.ua.domain=http://wrapper:9559
-      - OTP_TEMP=/tmp
+      - OTP_TEMP=/data
     image: otp-downloader:latest
     depends_on:
       - migration-k8s
@@ -44,9 +40,8 @@ services:
       - otp-etl-network
 
   importer:
-    container_name: otp-importer
     volumes:
-      - tmp-storage:/tmp
+      - tmp-storage:/data
     build:
       dockerfile: Dockerfile
       context: .
@@ -54,7 +49,7 @@ services:
         - JAR_FILE=importer/target/*.jar
     environment:
       - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=importer.otp-etl
-      - OTP_TEMP=/tmp
+      - OTP_TEMP=/data
     image: otp-importer:latest
     depends_on:
       - migration-k8s
@@ -144,14 +139,13 @@ services:
       - otp-etl-network
 
   enricher:
-    container_name: otp-enricher
     build:
       dockerfile: Dockerfile
       context: .
       args:
         - JAR_FILE=enricher/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=enricher.otp-etl
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=enricher.otp-etl -Ddispatcher.url.person=http://dispatcher:8090/dispatcher/person -Ddispatcher.url.person.delete=http://dispatcher:8090/dispatcher/person/delete -Ddispatcher.url.company=http://dispatcher:8090/dispatcher/company -Ddispatcher.url.company.delete=http://dispatcher:8090/dispatcher/company/delete
     image: otp-enricher:latest
     depends_on:
       - migration-k8s
@@ -173,6 +167,21 @@ services:
     depends_on:
       - migration-k8s
       - queue
+      - zipkin
+    networks:
+      - otp-etl-network
+
+  dispatcher:
+    container_name: otp-dispatcher
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - JAR_FILE=dispatcher/target/*.jar
+    environment:
+      - JAVA_OPTS=-Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=statuslogger.otp-dispatcher
+    image: otp-dispatcher:latest
+    depends_on:
       - zipkin
     networks:
       - otp-etl-network
@@ -440,10 +449,52 @@ services:
 
   zipkin:
     image: openzipkin/zipkin
+    container_name: zipkin
+    environment:
+      - STORAGE_TYPE=mysql
+      # Point the zipkin at the storage backend
+      - MYSQL_HOST=mysql
+      # Uncomment to enable scribe
+      # - SCRIBE_ENABLED=true
+      # Uncomment to enable self-tracing
+      # - SELF_TRACING_ENABLED=true
+      # Uncomment to enable debug logging
+      # - JAVA_OPTS=-Dlogging.level.zipkin2=DEBUG
     ports:
       - "9411:9411"
+    depends_on:
+      - mysql
+      - dependencies
     networks:
       - otp-etl-network
+
+  # Adds a cron to process spans since midnight every hour, and all spans each day
+  # This data is served by http://192.168.99.100:8080/dependency
+  #
+  # For more details, see https://github.com/openzipkin/docker-zipkin-dependencies
+  dependencies:
+    image: openzipkin/zipkin-dependencies
+    container_name: zipkin-dependencies
+    entrypoint: crond -f
+    environment:
+      - STORAGE_TYPE=mysql
+      - MYSQL_HOST=mysql
+      # Add the baked-in username and password for the zipkin-mysql image
+      - MYSQL_USER=zipkin
+      - MYSQL_PASS=zipkin
+      # Uncomment to see dependency processing logs
+      # - ZIPKIN_LOG_LEVEL=DEBUG
+      # Uncomment to adjust memory used by the dependencies job
+      # - JAVA_OPTS=-verbose:gc -Xms1G -Xmx1G
+    depends_on:
+      - mysql
+
+  mysql:
+    image: openzipkin/zipkin-mysql
+    container_name: zipkin-mysql
+    # Uncomment to expose the storage port for testing
+    ports:
+      - "3306:3306"
 
 networks:
   otp-etl-network:

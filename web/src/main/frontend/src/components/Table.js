@@ -34,7 +34,7 @@ const Table = (props) => {
 
   return (
     <div className="sroll-x tableFixHead">
-      <table className="table table-striped table-bordered table-sm">
+      <table className="table table-striped table-sm">
         <thead>
           <tr>{getHeader()}</tr>
         </thead>
@@ -78,15 +78,11 @@ const ErrCell = (props) => {
   const [edit, setEdit] = React.useState(false);
   const [errValue, setErrValue] = React.useState(props.data);
   const { name, id, idx } = props;
-
   return (
     <>
       {edit ? (
-        <div>
-          <div
-            style={{ position: "relative", width: "200px" }}
-            className="form-group"
-          >
+        <td>
+          <div className="form-group">
             <label className="text-danger" htmlFor="errorCell">
               {props.mis.message}
             </label>
@@ -114,13 +110,14 @@ const ErrCell = (props) => {
               Закрити
             </button>
           </div>
-        </div>
+        </td>
       ) : (
         <td
           onClick={() => setEdit(true)}
-          className="d-flex flex-column align-items-center text-danger"
+          className="text-danger border border-danger p-0"
         >
           <span className="table-header">{name?.replace("mk", "")}</span>
+
           <span>{props.data} </span>
         </td>
       )}

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import ua.com.solidity.common.OtpExchange;
 
 @Slf4j
 @Configuration
@@ -28,54 +29,42 @@ public class RabbitConfiguration {
     private String username;
     @Value("${spring.rabbitmq.password}")
     private String password;
-    @Value("${scheduler.rabbitmq.name}")
-    private String schedulerQueue;
-    @Value("${downloader.rabbitmq.name}")
-    private String downloaderQueue;
-    @Value("${dwh.rabbitmq.name}")
-    private String dwhQueue;
-    @Value("${report.rabbitmq.name}")
-    private String reportQueue;
-    @Value("${importer.rabbitmq.name}")
-    private String importerQueue;
-    @Value("${notification.rabbitmq.name}")
-    private String notificationQueue;
-    @Value("${statuslogger.rabbitmq.name}")
-    private String statusloggerQueue;
+
+    private static final String MAX_PRIORITY = "x-max-priority";
 
     @Bean(name = "schedulerQueue")
     public Queue schedulerQueue() {
-        return new Queue(schedulerQueue);
+        return new Queue(OtpExchange.SCHEDULER);
     }
 
     @Bean(name = "downloaderQueue")
     public Queue downloaderQueue() {
-        return new Queue(downloaderQueue);
+        return new Queue(OtpExchange.DOWNLOADER);
     }
 
     @Bean(name = "dwhQueue")
     public Queue dwhQueue() {
-        return new Queue(dwhQueue);
+        return new Queue(OtpExchange.DWH);
     }
 
     @Bean(name = "reportQueue")
     public Queue reportQueue() {
-        return new Queue(reportQueue);
+        return new Queue(OtpExchange.REPORT);
     }
 
     @Bean(name = "importerQueue")
     public Queue importerQueue() {
-        return new Queue(importerQueue);
+        return new Queue(OtpExchange.IMPORTER);
     }
 
     @Bean(name = "notificationQueue")
     public Queue notificationQueue() {
-        return new Queue(notificationQueue);
+        return new Queue(OtpExchange.NOTIFICATION);
     }
 
     @Bean(name = "statusloggerQueue")
     public Queue statusloggerQueue() {
-        return new Queue(statusloggerQueue);
+        return new Queue(OtpExchange.STATUS_LOGGER);
     }
 
     @Bean

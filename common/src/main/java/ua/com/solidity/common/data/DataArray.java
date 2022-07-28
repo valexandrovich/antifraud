@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import java.util.Iterator;
+
 @SuppressWarnings("unused")
 public abstract class DataArray {
     public interface DataArrayItemHandler {
@@ -20,9 +22,28 @@ public abstract class DataArray {
         return parent;
     }
 
+    public final DataExtension getExtension() {
+        return parent == null ? null : parent.getExtension();
+    }
+
     public abstract int getArrayLength();
 
     public abstract DataField getItem(int index);
+
+    public Iterable<DataField> items() {
+        return () -> new Iterator<>() {
+            int index = 0;
+            @Override
+            public boolean hasNext() {
+                return index < getArrayLength();
+            }
+
+            @Override
+            public DataField next() {
+                return index < getArrayLength() ? getItem(index++) : null;
+            }
+        };
+    }
 
     public void enumerate(DataArrayItemHandler handler) {
         if (handler != null) {

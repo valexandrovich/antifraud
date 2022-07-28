@@ -7,6 +7,7 @@ import ua.com.solidity.common.ConvertEncodingInputStream;
 import ua.com.solidity.common.CustomParser;
 import ua.com.solidity.common.FilteredTextInputStream;
 import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataObject;
 import ua.com.solidity.common.data.JsonDataObject;
 
@@ -36,7 +37,7 @@ public class JSONParser extends CustomParser {
 
     @Override
     protected boolean doOpen() {
-        Charset charset = Charset.availableCharsets().getOrDefault(params.getEncoding(), StandardCharsets.UTF_8);
+        Charset charset = params.getCharset();
         ConvertEncodingInputStream baseStream = new ConvertEncodingInputStream(stream, charset, StandardCharsets.UTF_8);
         mainStream = new FilteredTextInputStream(baseStream,8192);
         JsonFactory factory = new JsonFactory();

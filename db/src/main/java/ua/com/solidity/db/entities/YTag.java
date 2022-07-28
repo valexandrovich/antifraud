@@ -1,10 +1,9 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Getter;
-import lombok.Setter;
-import ua.com.solidity.db.abstraction.Identifiable;
-
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -15,10 +14,10 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
 
 @Getter
 @Setter
@@ -50,6 +49,11 @@ public class YTag implements Identifiable {
 			inverseJoinColumns = {@JoinColumn(name = "import_source_id")}
 	)
 	private Set<ImportSource> importSources =  new HashSet<>();
+
+	public void cleanAssociations() {
+		this.person.getTags().removeIf(tag -> id.equals(tag.getId()));
+		this.importSources = new HashSet<>();
+	}
 
 	@Override
 	public boolean equals(Object o) {

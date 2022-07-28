@@ -74,6 +74,11 @@ public class DefaultErrorLogger extends ErrorReportLogger {
     }
 
     @Override
+    protected void handleNewSource(String source) {
+        doWrite(Utils.messageFormat("\n***** Source: {} *****\n\n", source));
+    }
+
+    @Override
     protected void handleNewLine(DataLocation location, String info) {
         if (rowCount >= maxRowCount && maxRowCount > 0) {
             if (rowCount == maxRowCount) {

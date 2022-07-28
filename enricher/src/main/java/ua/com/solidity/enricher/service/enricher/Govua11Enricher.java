@@ -6,12 +6,15 @@ import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
+import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCyrillicLetters;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToLatinLetters;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.FOREIGN_PASSPORT;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,7 +36,10 @@ import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
+import ua.com.solidity.enricher.model.YPersonProcessing;
+import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.Govua11Repository;
+import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
 
@@ -48,11 +54,14 @@ public class Govua11Enricher implements Enricher {
     private final ImportSourceRepository isr;
     private final Govua11Repository govua11Repository;
     private final YPassportRepository passportRepository;
+    private final HttpClient httpClient;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${statuslogger.rabbitmq.name}")
-    private String queueName;
+    @Value("${dispatcher.url.person}")
+    private String urlPersonPost;
+    @Value("${dispatcher.url.person.delete}")
+    private String urlPersonDelete;
 
     @Override
     public void enrich(UUID portion) {
@@ -76,55 +85,89 @@ public class Govua11Enricher implements Enricher {
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             Set<YPerson> personSet = new HashSet<>();
-            Set<YPassport> passports = new HashSet<>();
-            Set<String> passportSeries = new HashSet<>();
-            Set<Integer> passportNumbers = new HashSet<>();
 
-            onePage.forEach(r -> {
-                if (StringUtils.isNotBlank(r.getNumber()) && r.getNumber().matches(ALL_NUMBER_REGEX)) {
-                    passportSeries.add(r.getSeries());
-                    passportNumbers.add(Integer.parseInt(r.getNumber()));
+            List<Govua11> page = onePage.toList();
+
+            while (!page.isEmpty()) {
+                List<YPersonProcessing> peopleProcessing = page.parallelStream().map(p -> {
+                    YPersonProcessing personProcessing = new YPersonProcessing();
+                    personProcessing.setUuid(p.getId());
+                    if (StringUtils.isNotBlank(p.getNumber()) && p.getNumber().matches(ALL_NUMBER_REGEX))
+                        personProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getSeries()), Integer.valueOf(p.getNumber())));
+                    return personProcessing;
+                }).collect(Collectors.toList());
+
+                UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
+
+                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                List<UUID> resp = response.getResp();
+                List<UUID> temp = response.getTemp();
+
+                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
+                        .collect(Collectors.toList());
+
+                Set<YPassport> passports = new HashSet<>();
+                Set<String> passportSeries = new HashSet<>();
+                Set<Integer> passportNumbers = new HashSet<>();
+                Set<YPerson> people = new HashSet<>();
+
+                page.forEach(r -> {
+                    if (StringUtils.isNotBlank(r.getNumber()) && r.getNumber().matches(ALL_NUMBER_REGEX)) {
+                        passportSeries.add(r.getSeries());
+                        passportNumbers.add(Integer.parseInt(r.getNumber()));
+                    }
+                });
+
+                if (!passportNumbers.isEmpty() && !passportSeries.isEmpty())
+                    passports = passportRepository.findPassports(passportSeries, passportNumbers);
+
+                Set<YPerson> savedPersonSet = new HashSet<>();
+                if (!passports.isEmpty())
+                    savedPersonSet = ypr.findPeoplePassportsForBaseEnricher(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList()));
+
+                Set<YPerson> savedPeople = savedPersonSet;
+
+                Set<YPassport> finalPassports = passports;
+                page.forEach(r -> {
+                    YPerson person = new YPerson();
+
+
+                    String passportNo = r.getNumber();
+                    String passportSerial = r.getSeries();
+
+                    if (isValidForeignPassport(passportNo, passportSerial, null, wrongCounter, counter, logger)) {
+                        passportSerial = transliterationToLatinLetters(passportSerial);
+                        int number = Integer.parseInt(passportNo);
+                        YPassport passport = new YPassport();
+                        passport.setSeries(passportSerial);
+                        passport.setNumber(number);
+                        passport.setAuthority(null);
+                        passport.setIssued(null);
+                        passport.setEndDate(r.getModified());
+                        passport.setRecordNumber(null);
+                        passport.setType(FOREIGN_PASSPORT);
+                        passport.setValidity(false);
+                        person = extender.addPassport(passport, people, source, person, savedPeople, finalPassports);
+
+                        extender.addPerson(people, person, source, false);
+                        counter[0]++;
+                        statusChanger.addProcessedVolume(1);
+                    }
+                });
+                UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
+                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+                    ypr.saveAll(people);
+                    personSet.addAll((people));
+
+                    httpClient.post(urlPersonDelete, Boolean.class, resp);
+
+                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
+                } else {
+                    counter[0] -= resp.size();
+                    statusChanger.setProcessedVolume(counter[0]);
                 }
-            });
-
-            if (!passportNumbers.isEmpty() && !passportSeries.isEmpty())
-                passports = passportRepository.findPassports(passportSeries, passportNumbers);
-
-            Set<YPerson> savedPersonSet = new HashSet<>();
-            if (!passports.isEmpty())
-                savedPersonSet = ypr.findPeoplePassportsForBaseEnricher(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList()));
-
-            Set<YPerson> savedPeople = savedPersonSet;
-
-            Set<YPassport> finalPassports = passports;
-            onePage.forEach(r -> {
-                YPerson person = new YPerson();
-
-
-                String passportNo = r.getNumber();
-                String passportSerial = r.getSeries();
-
-                if (isValidForeignPassport(passportNo, passportSerial, null, wrongCounter, counter, logger)) {
-                    passportSerial = transliterationToLatinLetters(passportSerial);
-                    int number = Integer.parseInt(passportNo);
-                    YPassport passport = new YPassport();
-                    passport.setSeries(passportSerial);
-                    passport.setNumber(number);
-                    passport.setAuthority(null);
-                    passport.setIssued(null);
-                    passport.setEndDate(r.getModified());
-                    passport.setRecordNumber(null);
-                    passport.setType(FOREIGN_PASSPORT);
-                    passport.setValidity(false);
-                    person = extender.addPassport(passport, personSet, source, person, savedPeople, finalPassports);
-
-                    extender.addPerson(personSet, person, source, false);
-                    counter[0]++;
-                    statusChanger.addProcessedVolume(1);
-                }
-            });
-            ypr.saveAll(personSet);
-            emnService.enrichMonitoringNotification(personSet);
+            }
+            emnService.enrichYPersonMonitoringNotification(personSet);
 
             onePage = govua11Repository.findAllByPortionId(portion, pageRequest);
 

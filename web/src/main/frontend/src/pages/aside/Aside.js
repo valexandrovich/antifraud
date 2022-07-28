@@ -12,7 +12,7 @@ const Aside = () => {
   const userRole = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
   const history = useHistory();
-
+  const visible = useSelector((state) => state.auth.monitoring);
   return (
     <>
       <IconContext.Provider value={{ color: "#60aa18" }}>
@@ -43,14 +43,17 @@ const Aside = () => {
 
             {userRole === "ADVANCED" || userRole === "ADMIN" ? (
               <>
-                <li className={SidebarData.Monitoring.cName}>
-                  <NavLink to={SidebarData.Monitoring.path}>
-                    {SidebarData.Monitoring.icon}
-                    <span className="icons">
-                      {SidebarData.Monitoring.title}
-                    </span>
-                  </NavLink>
-                </li>
+                {visible && (
+                  <li className={SidebarData.Monitoring.cName}>
+                    <NavLink to={SidebarData.Monitoring.path}>
+                      {SidebarData.Monitoring.icon}
+                      <span className="icons">
+                        {SidebarData.Monitoring.title}
+                      </span>
+                    </NavLink>
+                  </li>
+                )}
+
                 <li className={SidebarData.AddFile.cName}>
                   <NavLink to={SidebarData.AddFile.path}>
                     {SidebarData.AddFile.icon}
@@ -75,6 +78,16 @@ const Aside = () => {
                     <span className="icons">{SidebarData.Sheduler.title}</span>
                   </NavLink>
                 </li>
+                {userRole === "ADMIN" && (
+                  <li className={SidebarData.Relations.cName}>
+                    <NavLink to={SidebarData.Relations.path}>
+                      {SidebarData.Relations.icon}
+                      <span className="icons">
+                        {SidebarData.Relations.title}
+                      </span>
+                    </NavLink>
+                  </li>
+                )}
               </>
             ) : (
               ""

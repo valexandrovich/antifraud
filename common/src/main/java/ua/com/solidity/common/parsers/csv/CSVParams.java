@@ -32,6 +32,7 @@ public class CSVParams {
     private boolean autoComplete = false;
     private boolean autoTrim = true;
     private int columnCount = 0;
+    private String nullValue = "(?i)^(NULL)$";
 
     public CSVParams(String encoding, String delimiter, String quote, String escape, String ignoreCharsNearDelimiter, int flags, int columnCount) {
         this.columnCount = columnCount;
@@ -60,7 +61,7 @@ public class CSVParams {
     public final String lineSeparator = System.lineSeparator();
 
     private String nullOrEmpty(String value, String def) {
-        return value == null || value.length() == 0 ? def : value;
+        return value == null || value.length() == 0 || (nullValue != null && value.matches(nullValue)) ? def : value;
     }
 
     @SuppressWarnings("unused")

@@ -25,7 +25,7 @@ public class JsonDataObject extends DataObject {
     @Override
     public DataField getField(String fieldName) {
         JsonNode res = node.path(fieldName);
-        return res == null || res.isMissingNode() ? null : JsonDataField.create(this, res);
+        return res == null || res.isMissingNode() ? null : JsonDataField.create(this, res, fieldName);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class JsonDataObject extends DataObject {
             public FieldEntry next() {
                 Map.Entry<String, JsonNode> item = iterator == null ? null : iterator.next();
                 if (item == null) return null;
-                return new FieldEntry(item.getKey(), JsonDataField.create(object, item.getValue()));
+                return new FieldEntry(item.getKey(), JsonDataField.create(object, item.getValue(), item.getKey()));
             }
         };
     }

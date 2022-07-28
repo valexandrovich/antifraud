@@ -4,6 +4,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ua.com.solidity.common.prototypes.*;
+import ua.com.solidity.common.stats.StatsCollector;
+import ua.com.solidity.common.stats.StatsAction;
 import ua.com.solidity.importer.pipeline.ImportRevisionGroupRowImporter;
 import ua.com.solidity.pipeline.ContextPipelinePrototypeProvider;
 import ua.com.solidity.pipeline.PipelineFactory;
@@ -12,7 +14,8 @@ import ua.com.solidity.pipeline.PipelineFactory;
 public class PipelineConfiguration {
     @Bean
     public PipelineFactory importerFactory(ApplicationContext context) {
-        return new PipelineFactory(new ContextPipelinePrototypeProvider(context, "pp", ""));
+        return (StatsAction.pipelineFactory =
+                new PipelineFactory(new ContextPipelinePrototypeProvider(context, "pp", "")));
     }
 
     @Bean
@@ -70,5 +73,10 @@ public class PipelineConfiguration {
 
     @Bean PPDBTableWriter ppTableWriter() {
         return new PPDBTableWriter();
+    }
+
+    @Bean
+    public PPStatsCollector ppStatsCollector() {
+        return new PPStatsCollector();
     }
 }

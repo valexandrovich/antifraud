@@ -9,8 +9,11 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -29,7 +32,10 @@ import ua.com.solidity.db.entities.YAddress;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
+import ua.com.solidity.enricher.model.YPersonProcessing;
+import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.BaseElectionsRepository;
+import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
 
@@ -44,11 +50,14 @@ public class BaseElectionsEnricher implements Enricher {
     private final YPersonRepository ypr;
     private final MonitoringNotificationService emnService;
     private final ImportSourceRepository isr;
+    private final HttpClient httpClient;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${statuslogger.rabbitmq.name}")
-    private String queueName;
+    @Value("${dispatcher.url.person}")
+    private String urlPersonPost;
+    @Value("${dispatcher.url.person.delete}")
+    private String urlPersonDelete;
 
     @Override
     public void enrich(UUID portion) {
@@ -71,49 +80,89 @@ public class BaseElectionsEnricher implements Enricher {
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
             Set<YPerson> personSet = new HashSet<>();
+            List<BaseElections> page = onePage.toList();
 
-            onePage.forEach(r -> {
-                String[] fio = null;
-                String firstName = "";
-                String lastName = "";
-                String patName = "";
-                if (!StringUtils.isBlank(r.getFio())) fio = r.getFio().split(" ");
-                if (fio != null && fio.length >= 1) lastName = UtilString.toUpperCase(fio[0]);
-                if (fio != null && fio.length >= 2) firstName = UtilString.toUpperCase(fio[1]);
-                if (fio != null && fio.length >= 3) patName = UtilString.toUpperCase(fio[2]);
+            while (!page.isEmpty()) {
+                List<YPersonProcessing> peopleProcessing = page.parallelStream().map(p -> {
+                    String[] fio = null;
+                    String firstName = "";
+                    String lastName = "";
+                    String patName = "";
+                    if (!StringUtils.isBlank(p.getFio())) fio = p.getFio().split(" ");
+                    if (fio != null && fio.length >= 1) lastName = UtilString.toUpperCase(fio[0]);
+                    if (fio != null && fio.length >= 2) firstName = UtilString.toUpperCase(fio[1]);
+                    if (fio != null && fio.length >= 3) patName = UtilString.toUpperCase(fio[2]);
+                    YPersonProcessing personProcessing = new YPersonProcessing();
+                    personProcessing.setUuid(p.getId());
+                    personProcessing.setPersonHash(Objects.hash(UtilString.toUpperCase(firstName), UtilString.toUpperCase(lastName), UtilString.toUpperCase(patName),
+                            p.getBirthdate()));
+                    return personProcessing;
+                }).collect(Collectors.toList());
 
-                if (StringUtils.isBlank(lastName))
-                    logError(logger, (counter[0] + 1L), "LastName: " + lastName, "Empty last name");
+                UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-                YPerson person = new YPerson();
-                person.setLastName(lastName);
-                person.setFirstName(firstName);
-                person.setPatName(patName);
-                person.setBirthdate(r.getBirthdate());
+                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                List<UUID> resp = response.getResp();
+                List<UUID> temp = response.getTemp();
 
-                person = extender.addPerson(personSet, person, source, false);
+                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
+                        .collect(Collectors.toList());
 
-                if (!StringUtils.isBlank(r.getAddress())) {
-                    String[] partAddress = r.getAddress().split(", ");
-                    StringBuilder sbAddress = new StringBuilder();
-                    for (int i = partAddress.length - 1; i > 0; i--) {
-                        sbAddress.append(partAddress[i].toUpperCase()).append(", ");
+                Set<YPerson> people = new HashSet<>();
+
+                page.forEach(r -> {
+                    String[] fio = null;
+                    String firstName = "";
+                    String lastName = "";
+                    String patName = "";
+                    if (!StringUtils.isBlank(r.getFio())) fio = r.getFio().split(" ");
+                    if (fio != null && fio.length >= 1) lastName = UtilString.toUpperCase(fio[0]);
+                    if (fio != null && fio.length >= 2) firstName = UtilString.toUpperCase(fio[1]);
+                    if (fio != null && fio.length >= 3) patName = UtilString.toUpperCase(fio[2]);
+
+                    if (StringUtils.isBlank(lastName))
+                        logError(logger, (counter[0] + 1L), "LastName: " + lastName, "Empty last name");
+
+                    YPerson person = new YPerson();
+                    person.setLastName(lastName);
+                    person.setFirstName(firstName);
+                    person.setPatName(patName);
+                    person.setBirthdate(r.getBirthdate());
+
+                    person = extender.addPerson(people, person, source, false);
+
+                    if (!StringUtils.isBlank(r.getAddress())) {
+                        String[] partAddress = r.getAddress().split(", ");
+                        StringBuilder sbAddress = new StringBuilder();
+                        for (int i = partAddress.length - 1; i > 0; i--) {
+                            sbAddress.append(partAddress[i].toUpperCase()).append(", ");
+                        }
+                        sbAddress.append(partAddress[0].toUpperCase());
+
+                        Set<YAddress> addresses = new HashSet<>();
+                        YAddress address = new YAddress();
+                        address.setAddress(sbAddress.toString());
+                        addresses.add(address);
+
+                        extender.addAddresses(person, addresses, source);
                     }
-                    sbAddress.append(partAddress[0].toUpperCase());
+                    counter[0]++;
+                    statusChanger.addProcessedVolume(1);
+                });
+                UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
+                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+                    ypr.saveAll(people);
+                    personSet.addAll((people));
 
-                    Set<YAddress> addresses = new HashSet<>();
-                    YAddress address = new YAddress();
-                    address.setAddress(sbAddress.toString());
-                    addresses.add(address);
+                    httpClient.post(urlPersonDelete, Boolean.class, resp);
 
-                    extender.addAddresses(person, addresses, source);
+                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
+                } else {
+                    counter[0] -= resp.size();
+                    statusChanger.setProcessedVolume(counter[0]);
                 }
-                counter[0]++;
-                statusChanger.addProcessedVolume(1);
-            });
-
-            ypr.saveAll(personSet);
-            emnService.enrichMonitoringNotification(personSet);
+            }
+            emnService.enrichYPersonMonitoringNotification(personSet);
 
             onePage = ber.findAllByPortionId(portion, pageRequest);
         }

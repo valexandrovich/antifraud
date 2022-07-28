@@ -17,11 +17,18 @@ public class Receiver extends RabbitMQReceiver {
 
     @Override
     public RabbitMQTask createTask(String queue, String message) {
+        ActionObject actionObject = ActionObject.getAction(message);
+
+        if (actionObject != null) {
+            return createActionTask(actionObject);
+        }
+
         ImporterMessageData data = Utils.jsonToValue(message, ImporterMessageData.class);
         if (data == null || data.getData() == null || data.getData().getMainFile() == null) {
             log.warn("Invalid command received.");
             return null;
         }
+
         return new ImporterTask(importer, data);
     }
 }

@@ -26,6 +26,7 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
         ImportRevisionGroup group;
         Connection connection;
         PreparedStatement statement;
+        int flushedCount = 0;
         public Data(ImportRevisionGroup group) {
             this.group = group;
             this.connection = SQLTable.connectionNeeded();
@@ -47,6 +48,7 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
                 statement.setLong(3, group.getSourceGroup());
                 statement.setObject(4, obj.getNode().toString());
                 statement.addBatch();
+                ++flushedCount;
             } catch (Exception e) {
                 log.error("Can't add batch", e);
                 res.error();
@@ -66,11 +68,11 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
             return true;
         }
 
-        public int flush(OutputCache cache) {
-            if (statement == null) return 0;
+        public void flush(OutputCache cache) {
+            if (statement == null) return;
             DataBatch batch = cache.getBatch();
             batch.handle(this::doFlush, this::doError);
-            return SQLTable.executeStatement(statement);
+            cache.batchHandled();
         }
 
         public final boolean isValid() {
@@ -105,6 +107,11 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     }
 
     @Override
+    protected String getTableName(Item item) {
+        return "import_revision_group_rows";
+    }
+
+    @Override
     protected void beforeOutput(Item item, OutputCache cache) {
         ImporterMessageData data = item.getPipelineParam(DATA, ImporterMessageData.class);
         UUID revision = data.getImportRevisionId();
@@ -131,9 +138,9 @@ public class ImportRevisionGroupRowImporter extends PPCustomDBWriter {
     }
 
     @Override
-    protected int flushObjects(Item item, OutputCache cache) {
+    protected void flushObjects(Item item, OutputCache cache) {
         Data data = item.getInternalData(Data.class);
-        return data.flush(cache);
+        data.flush(cache);
     }
 
     @Override

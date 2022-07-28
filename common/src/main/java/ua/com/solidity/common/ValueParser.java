@@ -16,7 +16,7 @@ public class ValueParser {
     public static final String PATTERN_TRUE = "^([Tt][Rr][Uu][Ee])|([Yy][Ee][Ss])$";
     public static final String PATTERN_FALSE = "^([Ff][Aa][Ll][Ss][Ee])|([Nn][Oo])$";
     public static final String PATTERN_NULL = "^[Nn][Uu][Ll][Ll]$";
-    public static final String PATTERN_DOUBLE_INVALIDS = "[^.Ee+\\-0-9]+";
+    public static final String PATTERN_DOUBLE_INVALIDS = "[^.Ee+\\-\\d]+"; // old value: "[^.Ee+\\-0-9]+"
 
     public static final DateTimeFormatter zonedDateTimeOutputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ");
     public static final DateTimeFormatter dateTimeOutputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS");
@@ -280,6 +280,7 @@ public class ValueParser {
         return datetime.format(zonedDateOutputFormat);
     }
 
+    @SuppressWarnings("unused")
     public static String formatTime(LocalTime time) {
         return time.format(timeOutputFormat);
     }

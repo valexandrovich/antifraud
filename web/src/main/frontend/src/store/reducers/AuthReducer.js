@@ -1,11 +1,18 @@
 import authService from "../../api/AuthApi";
 import jwt_decode from "jwt-decode";
 
-const CHANGE_FORM_VALUE = "CHANGE_FORM_VALUE";
-const SUBMIT_AUTH = "SUBMIT_AUTH";
-const LOGOUT = "LOGOUT";
-const SET_ALERT_MESSAGE = "SET_ALERT_MESSAGE";
-const SET_AUTH = "SET_AUTH";
+import {
+  SET_ALERT_MESSAGE,
+  SET_FILE_ID,
+  setAlertMessageThunk,
+  TOGGLE_TAB,
+} from "./actions/Actions";
+
+export const CHANGE_FORM_VALUE = "CHANGE_FORM_VALUE";
+export const LOGOUT = "LOGOUT";
+export const SET_AUTH = "SET_AUTH";
+export const SUBMIT_AUTH = "SUBMIT_AUTH";
+
 let initialState = {
   authForm: {
     login: "",
@@ -19,6 +26,9 @@ let initialState = {
     message: "",
     type_message: "",
   },
+  activeTab: "fiz",
+  fileID: null,
+  monitoring: false,
 };
 
 const AuthReducer = (state = initialState, action = {}) => {
@@ -36,6 +46,12 @@ const AuthReducer = (state = initialState, action = {}) => {
         isAuth: true,
         role: action.role,
       };
+    case SET_FILE_ID: {
+      return {
+        ...state,
+        fileID: action.fileID,
+      };
+    }
     case SUBMIT_AUTH:
       return {
         ...state,
@@ -51,6 +67,12 @@ const AuthReducer = (state = initialState, action = {}) => {
         role: null,
         userName: null,
       };
+    case TOGGLE_TAB: {
+      return {
+        ...state,
+        activeTab: action.tab,
+      };
+    }
     case SET_ALERT_MESSAGE:
       return {
         ...state,
@@ -117,22 +139,6 @@ export const submitUserAuthThunk = (authForm) => (dispatch) => {
 export const logoutUserThunk = () => (dispatch) => {
   authService.logout();
   dispatch(logoutUser());
-};
-
-export const setAlertMessage = (active, message, type_message) => {
-  return {
-    type: SET_ALERT_MESSAGE,
-    active: active,
-    message: message,
-    type_message: type_message,
-  };
-};
-
-export const setAlertMessageThunk = (message, type_message) => (dispatch) => {
-  dispatch(setAlertMessage(true, message, type_message));
-  setTimeout(function () {
-    dispatch(setAlertMessage(false, "", ""));
-  }, 5500);
 };
 
 export default AuthReducer;

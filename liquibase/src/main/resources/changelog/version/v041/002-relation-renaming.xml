@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v041-4" author="Kyrylo Chornobryvets">
+        <renameTable oldTableName="users_yperson"
+                     newTableName="users_yperson_subscriptions"/>
+    </changeSet>
+
+    <changeSet id="v041-5" author="Kyrylo Chornobryvets">
+        <renameTable oldTableName="yperson_relation"
+                     newTableName="yperson_relation_group"/>
+    </changeSet>
+
+    <changeSet id="v041-6" author="Kyrylo Chornobryvets">
+        <renameTable oldTableName="yrelated_person"
+                     newTableName="yperson_relation"/>
+    </changeSet>
+
+    <changeSet id="v041-7" author="Kyrylo Chornobryvets">
+        <renameColumn tableName="yperson_relation"
+                      oldColumnName="relation_id"
+                      newColumnName="relation_group_id"/>
+    </changeSet>
+
+    <changeSet id="v041-8" author="Kyrylo Chornobryvets">
+        <insert tableName="yperson_relation_type">
+            <column name="id" value="4"/>
+            <column name="type" value="alter ego"/>
+        </insert>
+        <rollback>
+            <delete tableName="yperson_relation_type">
+                <where>id=4</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v041-9" author="Kyrylo Chornobryvets">
+        <renameColumn tableName="yperson_relation_group"
+                      oldColumnName="type_id"
+                      newColumnName="relation_type_id"/>
+    </changeSet>
+
+</databaseChangeLog>

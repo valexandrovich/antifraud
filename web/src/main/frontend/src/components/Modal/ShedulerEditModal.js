@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { DateObject } from "react-multi-date-picker";
 import { useDispatch } from "react-redux";
-import { setAlertMessageThunk } from "../../store/reducers/AuthReducer";
+import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";
 import NullSheduler from "../Sheduler/NullSheduler";
 import scheduleSettings from "../Sheduler/Settings";
 

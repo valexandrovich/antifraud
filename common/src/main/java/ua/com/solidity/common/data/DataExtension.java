@@ -16,6 +16,7 @@ public class DataExtension {
         id = UUID.randomUUID();
     }
 
+    @SuppressWarnings("unused")
     public final void setExtraId(String extraId) {
         this.extraId = extraId;
     }
@@ -24,17 +25,24 @@ public class DataExtension {
         return this.extraId;
     }
 
-    public static UUID getParentID(DataObject obj) {
-        DataObject parent = obj.getParent();
-        DataExtension parentExtension;
-        if (parent == null || (parentExtension = parent.getExtension()) == null) return null;
-        return parentExtension.id;
+    private static DataExtension getParentExtension(DataObject obj) {
+        DataObject parent;
+        if (obj == null || (parent = obj.getParent()) == null) return null;
+        DataExtension res = null;
+        while (parent != null && (res = parent.getExtension()) == null) {
+            parent = parent.getParent();
+        }
+        return res;
     }
 
+    public static UUID getParentID(DataObject obj) {
+        DataExtension extension = getParentExtension(obj);
+        return extension != null ? extension.id : null;
+    }
+
+    @SuppressWarnings("unused")
     public static String getParentExtraID(DataObject obj) {
-        DataObject parent = obj.getParent();
-        DataExtension parentExtension;
-        if (parent == null || (parentExtension = parent.getExtension()) == null) return null;
-        return parentExtension.extraId;
+        DataExtension extension = getParentExtension(obj);
+        return extension != null ? extension.extraId : null;
     }
 }

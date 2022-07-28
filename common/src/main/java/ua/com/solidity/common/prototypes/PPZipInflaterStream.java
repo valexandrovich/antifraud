@@ -3,7 +3,6 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.BOMInputStream;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
@@ -128,7 +127,7 @@ public class PPZipInflaterStream extends Prototype {
                 stream.close();
                 log.info("ZipInflaterStream closed.");
             } catch (Exception e) {
-                log.warn("Can't close zip inflater input stream.");
+                log.warn("Can't close ZipInflaterStream.");
             }
             item.setLocalData(STREAM, null);
         }

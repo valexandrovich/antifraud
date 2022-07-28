@@ -1,5 +1,8 @@
 package ua.com.solidity.web.controllers;
 
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -17,13 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.db.entities.YPerson;
-import ua.com.solidity.web.dto.YPersonDto;
+import ua.com.solidity.web.dto.YCompanyDto;
+import ua.com.solidity.web.dto.olap.YPersonDto;
 import ua.com.solidity.web.request.PaginationRequest;
 import ua.com.solidity.web.service.UserService;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
-import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -35,46 +35,89 @@ public class UserController {
 
 	private final UserService userService;
 
-	@PostMapping("/subscriptions")
+	@PostMapping("/subscriptionsPerson")
 	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
-	@ApiOperation(value = "Shows all subscriptions with paging.",
+	@ApiOperation(value = "Shows all yperson subscriptions with paging.",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
-	public ResponseEntity<Page<YPersonDto>> subscriptions(
+	public ResponseEntity<Page<YPersonDto>> subscriptionsYPerson(
 			@ApiParam()
 			@Valid @RequestBody PaginationRequest paginationRequest,
 			HttpServletRequest request) {
-		Page<YPersonDto> subscriptions = userService.subscriptions(paginationRequest, request);
+		Page<YPersonDto> subscriptions = userService.subscriptionsYPerson(paginationRequest, request);
 		return ResponseEntity.ok(subscriptions);
 	}
 
-	@PutMapping(path = "/subscribe/{id}")
+	@PutMapping(path = "/subscribePerson/{id}")
 	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Subscribes the user to yperson by specified id",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
-	public ResponseEntity<YPerson> subscribe(
+	public ResponseEntity<YPerson> subscribeYPerson(
 			@ApiParam(value = "YPerson id you need to subscribe for",
 					required = true)
 			@PathVariable UUID id,
 			HttpServletRequest request
 	) {
-		userService.subscribe(id, request);
+		userService.subscribeYPerson(id, request);
 		return ResponseEntity.ok().build();
 	}
 
-	@PutMapping(path = "/unsubscribe/{id}")
+	@PutMapping(path = "/unsubscribePerson/{id}")
 	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
 	@ApiOperation(value = "Unsubscribes the user from yperson by specified id",
 			response = ResponseEntity.class,
 			authorizations = @Authorization("Authorization"))
-	public ResponseEntity<YPerson> unsubscribe(
+	public ResponseEntity<YPerson> unSubscribeYPerson(
 			@ApiParam(value = "YPerson id you need to unsubscribe from",
 					required = true)
 			@PathVariable UUID id,
 			HttpServletRequest request
 	) {
-		userService.unSubscribe(id, request);
+		userService.unSubscribeYPerson(id, request);
+		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping("/subscriptionsCompany")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
+	@ApiOperation(value = "Shows all ycompany subscriptions with paging.",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<Page<YCompanyDto>> subscriptionsYCompany(
+			@ApiParam()
+			@Valid @RequestBody PaginationRequest paginationRequest,
+			HttpServletRequest request) {
+		Page<YCompanyDto> subscriptions = userService.subscriptionsYCompany(paginationRequest, request);
+		return ResponseEntity.ok(subscriptions);
+	}
+
+	@PutMapping(path = "/subscribeCompany/{id}")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
+	@ApiOperation(value = "Subscribes the user to ycompany by specified id",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<YPerson> subscribeYCompany(
+			@ApiParam(value = "YCompany id you need to subscribe for",
+					required = true)
+			@PathVariable UUID id,
+			HttpServletRequest request
+	) {
+		userService.subscribeYCompany(id, request);
+		return ResponseEntity.ok().build();
+	}
+
+	@PutMapping(path = "/unsubscribeCompany/{id}")
+	@PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
+	@ApiOperation(value = "Unsubscribes the user from ycompany by specified id",
+			response = ResponseEntity.class,
+			authorizations = @Authorization("Authorization"))
+	public ResponseEntity<YPerson> unSubscribeYCompany(
+			@ApiParam(value = "YCompany id you need to unsubscribe from",
+					required = true)
+			@PathVariable UUID id,
+			HttpServletRequest request
+	) {
+		userService.unSubscribeYCompany(id, request);
 		return ResponseEntity.ok().build();
 	}
 }

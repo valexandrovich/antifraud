@@ -19,6 +19,7 @@ public class PPDBTableWriter extends PPCustomDBWriter {
     private static final int DEFAULT_ROW_CACHE_SIZE = 1048576;
     private static final String NODE = "node";
     private static final String EXTENSION = "ext";
+    private static final String PARAMS = "params";
 
     @AllArgsConstructor
     private static class Data {
@@ -57,12 +58,17 @@ public class PPDBTableWriter extends PPCustomDBWriter {
 
     @Override
     public Class<?> getOutputClass() {
-        return null;
+        return DataBatch.class;
     }
 
     @Override
     public Class<?> getInputClass() {
         return DataBatch.class;
+    }
+
+    @Override
+    protected String getTableName(Item item) {
+        return item.getInternalData(Data.class).table.tableName;
     }
 
     private SQLTable initSQLTable(Item item, String tableName, JsonNode mapping, boolean singleTransaction, SQLFlushMode mode,
@@ -78,25 +84,13 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         return null;
     }
 
-    private SQLTable initializeTable(Item item, JsonNode node) {
-        String tableName = null;
-        JsonNode mapping = null;
-        int cacheSize = DEFAULT_CACHE_SIZE;
-        int rowCacheSize = DEFAULT_ROW_CACHE_SIZE;
-        boolean singleTran = false;
-        SQLFlushMode mode = SQLFlushMode.PREPARED_STATEMENT_BATCH;
-
-        if (node != null) {
-            InternalParams params = Utils.jsonToValue(node, InternalParams.class);
-            tableName = params.table;
-            mapping = params.mapping;
-            cacheSize = params.cacheSize;
-            rowCacheSize = params.rowCacheSize;
-            singleTran = params.isSingleTran();
-            mode = SQLFlushMode.parse(params.mode);
+    private SQLTable initializeTable(Item item) {
+        InternalParams params = item.getLocalData(PARAMS, InternalParams.class);
+        if (params != null) {
+            return initSQLTable(item, params.table, params.mapping, params.singleTran, SQLFlushMode.parse(params.mode),
+                    params.cacheSize, params.rowCacheSize);
         }
-
-        return initSQLTable(item, tableName, mapping, singleTran, mode, cacheSize, rowCacheSize);
+        return null;
     }
 
     @Override
@@ -104,16 +98,20 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         super.initialize(item, node);
         item.setLocalData(NODE, node);
         item.mapInputs(EXTENSION, DataExtensionFactory.class);
+        InternalParams params = Utils.jsonToValue(node, InternalParams.class);
+        item.setLocalData(PARAMS, params);
+        if (params != null) {
+            item.setLocalData(GROUP, params.table);
+        }
     }
 
     @Override
     protected void beforePipelineExecution(Item item) {
         super.beforePipelineExecution(item);
         if (item.terminated()) return;
-        SQLTable table = initializeTable(item, item.getLocalData(NODE, JsonNode.class));
+        SQLTable table = initializeTable(item);
         if (table != null) {
-            Data data = new Data(item.getInput(INPUT, 0), item.getInput(EXTENSION, 0), table, 0, 0,
-                    new StatusChanger(table.tableName, "IMPORTER"),
+            Data data = new Data(item.getInput(INPUT, 0), item.getInput(EXTENSION, 0), table, 0, 0, null,
                     item.getPipelineParam("logger", ErrorReportLogger.class));
             item.setInternalData(data);
             if (!data.isValid()) {
@@ -125,11 +123,12 @@ public class PPDBTableWriter extends PPCustomDBWriter {
     @Override
     protected void beforeOutput(Item item, OutputCache cache) {
         Data data = item.getInternalData(Data.class);
+        data.changer = new StatusChanger(data.table.tableName, "IMPORTER");
+        data.changer.newStage("", "", 0);
         DataExtensionFactory factory = data.extension.getValue(DataExtensionFactory.class);
-        if (!data.table.prepareTable(factory)) {
+        if (!data.table.prepareTable(factory, cache, data::handleError)) {
             item.terminate();
         }
-        data.changer.newStage("importing", "", 0);
     }
 
     @Override
@@ -139,22 +138,26 @@ public class PPDBTableWriter extends PPCustomDBWriter {
         if (data.errorLogger != null) {
             data.errorLogger.finish();
         }
-        data.changer.complete(String.format("Completed (%d total rows, %d parse errors, %d insert errors)",
-                cache.getGroup().getTotalRowCount(), cache.getGroup().getParseErrorCount(),
-                cache.getGroup().getInsertErrorCount()));
+
+        OutputStats.Group group = cache.getGroup();
+
+        data.changer.complete(String.format("Completed (%d total rows, %d parse errors, %d bad objects, %d rows inserted).",
+                group.getTotalRowCount(), group.getParseErrorCount(), group.getBadObjectCount(),
+                group.getInsertCount()));
     }
 
     @Override
-    protected int flushObjects(Item item, OutputCache cache) {
+    protected void flushObjects(Item item, OutputCache cache) {
+        SQLTable table = item.getInternalData(Data.class).table;
+        table.handleBatch();
+    }
+
+    @Override
+    protected void changeStatus(Item item, OutputCache cache) {
         Data data = item.getInternalData(Data.class);
-        data.objectCount += cache.getBatch().getObjectCount();
-        data.errorCount += cache.getBatch().getErrorCount();
-        int count = item.getInternalData(Data.class).table.doOutput(cache, item.getInternalData(Data.class)::handleError);
         OutputStats.Group group = cache.getGroup();
         data.changer.setProcessedVolume(group.getTotalRowCount());
-        data.changer.setStatus(String.format("import (%d total rows, %d parse errors, %d insert rows).",
-                data.changer.getProcessedVolume(), group.getParseErrorCount(),
-                group.getInsertErrorCount()));
-        return count;
+        data.changer.setStatus(String.format("importing (%d total rows, %d parse errors, %d bad objects, %d rows inserted).",
+                data.changer.getProcessedVolume(), group.getParseErrorCount(), group.getBadObjectCount(), group.getInsertCount()));
     }
 }

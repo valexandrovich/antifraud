@@ -4,9 +4,9 @@ import Table from "../../components/Table";
 import Pagination from "../../components/Pagination";
 import authHeader from "../../api/AuthHeader";
 import { useDispatch } from "react-redux";
-import { setAlertMessageThunk } from "../../store/reducers/AuthReducer";
 import ConfirmDeletemodal from "../../components/Modal/ConfirmDeletemodal";
 import UploadFilesActions from "./UploadFilesActions";
+import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";
 
 const UploadedFiles = () => {
   const [resp, setResp] = useState([]);
@@ -20,6 +20,7 @@ const UploadedFiles = () => {
   const paginate = useCallback((pageNumber) => setCurrentPage(pageNumber), []);
   const dispatch = useDispatch();
   const mountedRef = useRef(true);
+
   const getFiles = useCallback(() => {
     fetch("/api/uniPF/getUploaded", { headers: authHeader() })
       .then((response) => response.json())

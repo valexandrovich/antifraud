@@ -18,10 +18,12 @@ import Login from "./pages/login/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Progress from "./pages/progress/Progress";
 import Sheduler from "./pages/sheduler/Sheduler";
-import SingleCard from "./pages/card/SingleCard";
+import SingleYPersonCard from "./pages/card/SingleYPersonCard";
 import Monitoring from "./pages/monitoring/Monitoring";
 import { checkAutoLogin } from "./api/AuthApi";
 import NonFound from "./pages/NonFound";
+import SingleYCompanyCard from "./pages/card/SingleYCompanyCard";
+import Relations from "./pages/relations/Relations";
 
 const logOutTimeout = { timeout: null };
 
@@ -51,7 +53,7 @@ const App = () => {
           <Aside />
           <Switch>
             <Route path="/error" component={ErrorPage} />
-            <Route exact path="/ || /#/">
+            <Route exact path="/">
               <Redirect exact to="/search" component={Search} />
             </Route>
             <Route exact path="/search" component={Search} />
@@ -61,12 +63,14 @@ const App = () => {
               path="/uploaded_files"
               component={UploadedFiles}
             />
-            <Route exact path="/card/:id" component={SingleCard} />
+            f
+            <Route exact path="/YPerson/:id" component={SingleYPersonCard} />
+            <Route exact path="/YCompany/:id" component={SingleYCompanyCard} />
             <ProtectedRoute exact path="/add-file" component={UploadFile} />
             <ProtectedRoute exact path="/progress" component={Progress} />
             <ProtectedRoute exact path="/sheduler" component={Sheduler} />
-            <ProtectedRoute exact path="/subscription" component={Monitoring} />
-
+            {/*<ProtectedRoute exact path="/subscription" component={Monitoring} />*/}
+            <Route path="/relations" component={Relations} />
             <Route component={NonFound} />
           </Switch>
         </>

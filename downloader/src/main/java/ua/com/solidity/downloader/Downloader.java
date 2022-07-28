@@ -2,6 +2,7 @@ package ua.com.solidity.downloader;
 
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.*;
 
@@ -18,7 +19,8 @@ public class Downloader {
     private final File targetFolder;
 
     @Autowired
-    public Downloader(Config config) {
+    public Downloader(Config config, ApplicationContext context) {
+        Utils.setApplicationContext(context);
         targetFolder = Utils.checkFolder(config.getDownloaderOutputFolder());
         if (targetFolder == null) {
             log.warn("Target folder not found or can't be created: {}", config.getOutputFolder());

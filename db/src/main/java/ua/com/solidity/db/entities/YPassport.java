@@ -47,6 +47,13 @@ public class YPassport implements Identifiable {
 	)
 	private Set<ImportSource> importSources =  new HashSet<>();
 
+	public void cleanAssociations() {
+		this.people.forEach(yPerson -> {
+			yPerson.getPassports().removeIf(passport -> id.equals(passport.getId()));
+		});
+		this.importSources = new HashSet<>();
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

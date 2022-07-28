@@ -21,7 +21,7 @@ public class JsonDataArray extends DataArray {
 
     @Override
     public DataField getItem(int index) {
-        return index < 0 || index >= node.size() ? null : JsonDataField.create(getParent(), node.get(index));
+        return index < 0 || index >= node.size() ? null : JsonDataField.create(getParent(), node.get(index), index);
     }
 
     @Override
@@ -30,7 +30,7 @@ public class JsonDataArray extends DataArray {
             int size = node.size();
             DataObject p = getParent();
             for (int i = 0; i < size; ++i) {
-                handler.handle(this, i, JsonDataField.create(p, node.get(i)));
+                handler.handle(this, i, JsonDataField.create(p, node.get(i), i));
             }
         }
     }

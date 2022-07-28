@@ -1,5 +1,8 @@
 package ua.com.solidity.report.listener;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -11,16 +14,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Component;
-import ua.com.solidity.db.entities.MonitoringNotification;
 import ua.com.solidity.db.entities.User;
+import ua.com.solidity.db.entities.YCompany;
+import ua.com.solidity.db.entities.YCompanyMonitoringNotification;
 import ua.com.solidity.db.entities.YPerson;
-import ua.com.solidity.db.repositories.MonitoringNotificationRepository;
+import ua.com.solidity.db.entities.YPersonMonitoringNotification;
 import ua.com.solidity.db.repositories.UserRepository;
+import ua.com.solidity.db.repositories.YCompanyMonitoringNotificationRepository;
+import ua.com.solidity.db.repositories.YPersonMonitoringNotificationRepository;
 import ua.com.solidity.report.model.SendEmailRequest;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @EnableRabbit
@@ -37,7 +39,8 @@ public class RabbitMQListener {
 	private final AmqpTemplate template;
 
 	private final UserRepository userRepository;
-	private final MonitoringNotificationRepository mnRepository;
+	private final YPersonMonitoringNotificationRepository ypmnRepository;
+	private final YCompanyMonitoringNotificationRepository ycmnRepository;
 
 	@RabbitListener(queues = "${report.rabbitmq.name}")
 	public void processMyQueue() {
@@ -46,19 +49,28 @@ public class RabbitMQListener {
 		List<User> userList = userRepository.findAll();
 
 		userList.forEach(user -> {
-			List<MonitoringNotification> monitoringNotificationList = new ArrayList<>();
-			Set<YPerson> people = user.getPeople();
-			people.forEach(yPerson -> monitoringNotificationList.addAll(mnRepository.findByYpersonIdAndSent(yPerson.getId(), false)));
+			List<YPersonMonitoringNotification> ypersonMonitoringNotificationList = new ArrayList<>();
+			List<YCompanyMonitoringNotification> ycompanyMonitoringNotificationList = new ArrayList<>();
+			Set<YPerson> people = user.getPersonSubscriptions();
+			Set<YCompany> companies = user.getCompanies();
+			people.forEach(yperson -> ypersonMonitoringNotificationList
+					.addAll(ypmnRepository.findByYpersonIdAndSent(yperson.getId(), false)));
+			companies.forEach(ycompany -> ycompanyMonitoringNotificationList
+					.addAll(ycmnRepository.findByYcompanyIdAndSent(ycompany.getId(), false)));
 
 			StringBuilder messageBuilder = new StringBuilder();
-			for (MonitoringNotification monitoringNotification : monitoringNotificationList) {
-				messageBuilder.append(monitoringNotification.getMessage()).append("\n");
+			for (YPersonMonitoringNotification ypersonMonitoringNotification : ypersonMonitoringNotificationList) {
+				messageBuilder.append(ypersonMonitoringNotification.getMessage()).append("\n");
+			}
+
+			for (YCompanyMonitoringNotification ycompanyMonitoringNotification : ycompanyMonitoringNotificationList) {
+				messageBuilder.append(ycompanyMonitoringNotification.getMessage()).append("\n");
 			}
 
 			if (messageBuilder.length() != 0) {
 				SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
 						.to(user.getEmail())
-						.subject("Notification about monitoring person's changes.")
+						.subject("Notification about monitoring people and companies changes.")
 						.body(messageBuilder.toString())
 						.retries(2)
 						.build();
@@ -72,8 +84,12 @@ public class RabbitMQListener {
 					log.error("Couldn't convert json: {}", e.getMessage());
 				}
 
-				monitoringNotificationList.forEach(monitoringNotification -> monitoringNotification.setSent(true));
-				mnRepository.saveAll(monitoringNotificationList);
+				ypersonMonitoringNotificationList
+						.forEach(ypersonMonitoringNotification -> ypersonMonitoringNotification.setSent(true));
+				ycompanyMonitoringNotificationList
+						.forEach(ycompanyMonitoringNotification -> ycompanyMonitoringNotification.setSent(true));
+				if (!ypersonMonitoringNotificationList.isEmpty())ypmnRepository.saveAll(ypersonMonitoringNotificationList);
+				if (!ycompanyMonitoringNotificationList.isEmpty())ycmnRepository.saveAll(ycompanyMonitoringNotificationList);
 			}
 		});
 	}

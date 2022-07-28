@@ -54,6 +54,10 @@ public class PPInputStream extends Prototype {
                 fileName = data.getMainFile().getFileName();
             }
         }
+
+        if (fileName == null) {
+            fileName = item.getPipelineParam("FileName", String.class);
+        }
         return fileName;
     }
 

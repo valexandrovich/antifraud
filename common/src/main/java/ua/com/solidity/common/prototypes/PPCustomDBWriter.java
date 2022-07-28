@@ -3,13 +3,17 @@ package ua.com.solidity.common.prototypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import ua.com.solidity.common.OtpExchange;
 import ua.com.solidity.common.OutputCache;
 import ua.com.solidity.common.OutputStats;
+import ua.com.solidity.common.Utils;
 import ua.com.solidity.common.data.DataBatch;
+import ua.com.solidity.common.model.EnricherPortionMessage;
 import ua.com.solidity.pipeline.Input;
 import ua.com.solidity.pipeline.Item;
 import ua.com.solidity.pipeline.Prototype;
+
+import java.util.UUID;
 
 
 @CustomLog
@@ -38,7 +42,7 @@ public abstract class PPCustomDBWriter extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        item.setLocalData(GROUP, node.hasNonNull(GROUP) && node.get(GROUP).isTextual() ? node.get(GROUP).asText() : DEFAULT_NAME);
+        //old variant: item.setLocalData(GROUP, node.hasNonNull(GROUP) && node.get(GROUP).isTextual() ? node.get(GROUP).asText() : DEFAULT_NAME);
         item.mapInputs(INPUT, getInputClass());
     }
 
@@ -51,6 +55,11 @@ public abstract class PPCustomDBWriter extends Prototype {
             item.setPipelineParam(OUTPUT_STATS, stats);
         }
         initCache(stats, item);
+    }
+
+    protected void changeStatus(Item item, OutputCache cache) {
+
+        // nothing yet
     }
 
     private void doExecuteOnBOF(Item item, OutputCache cache) {
@@ -67,7 +76,23 @@ public abstract class PPCustomDBWriter extends Prototype {
     private void doExecuteOnNotEOF(Item item, OutputCache cache, DataBatch batch) {
         if (batch == null) return;
         cache.put(batch);
-        cache.batchHandled(flushObjects(item, cache));
+        boolean selfPortionID = batch.getPortion() == null;
+        if (selfPortionID) {
+            batch.setPortion(UUID.randomUUID());
+        }
+        flushObjects(item, cache);
+        cache.batchHandled();
+        changeStatus(item, cache);
+        batch.pack();
+        if (batch.getObjectCount() > 0) {
+            item.yieldResult(batch, false);
+        }
+
+        if (selfPortionID) {
+            Utils.sendRabbitMQMessage(OtpExchange.ENRICHER,
+                    new EnricherPortionMessage(getTableName(item), batch.getPortion()));
+            batch.setPortion(null);
+        }
     }
 
     private Object doExecute(Item item, Input input, OutputCache cache) {
@@ -106,11 +131,13 @@ public abstract class PPCustomDBWriter extends Prototype {
         return item.getLocalData(CACHE, OutputCache.class);
     }
 
+    protected abstract String getTableName(Item item);
+
     protected abstract void beforeOutput(Item item, OutputCache cache);
 
     protected abstract void afterOutput(Item item, OutputCache cache);
 
-    protected abstract int flushObjects(Item item, OutputCache cache);
+    protected abstract void flushObjects(Item item, OutputCache cache);
 
     @Override
     protected void close(Item item) {

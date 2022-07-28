@@ -30,36 +30,43 @@ public class ImporterTask extends RabbitMQTask {
     }
 
     @Override
-    protected void rmqExecute() {
+    protected boolean rmqExecute() {
         ImportSource importSource = ImportSource.findImportSourceById(data.getImportSourceId());
 
         if (importSource == null) {
             log.error("Import source not found for id={}.", data.getImportSourceId());
-            return;
+            return false;
         }
 
         importSourceName = importSource.getName();
 
         if (!ImportSource.sourceLocker(data.getImportSourceId(), true)) {
             log.info("=== Import source (id: {}) already locked in another session. ===", data.getImportSourceId());
-            enqueueBack();
-            return;
+            return false;
         }
+
+        boolean res;
         try {
             log.info("File import requested: {}.", data.getData().getMainFile().getFileName());
-            importer.doImport(data);
-            if (data.getExtraData(DROP_REVISION).asBoolean(false)) { // god mode
+            acknowledge(true);
+            res = importer.doImport(data);
+            log.info("Import " + (res ? "" : "not ") + "completed.");
+            if (res && data.getExtraData(DROP_REVISION).asBoolean(false)) { // god mode
                 ImportRevision.removeRevision(data.getImportRevisionId());
                 log.info("--- revision and revision_group rows removed ---");
             }
-            if (data.getExtraData(REMOVE_FILES).asBoolean(importer.getConfig().isRemoveFiles())) {
+            if (res && data.getExtraData(REMOVE_FILES).asBoolean(importer.getConfig().isRemoveFiles())) {
                 data.getData().removeAllFiles();
                 log.info("--- all files removed ---");
             }
+        } catch (Exception e) {
+            log.error("Exception found.", e);
+            res = false;
         } finally {
             ImportSource.sourceLocker(data.getImportSourceId(), false);
+            log.info("=== Import source (id: {}, \"{}\") unlocked === ", data.getImportSourceId(), importSource.getName());
         }
-        log.info("=== Import source (id: {}, \"{}\") unlocked === ", data.getImportSourceId(), importSource.getName());
+        return res;
     }
 
     @Override

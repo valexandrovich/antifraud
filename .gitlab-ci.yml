@@ -53,6 +53,7 @@ maven-package:
       - enricher/target/*.jar
       - statuslogger/target/*.jar
       - report/target/*.jar
+      - dispatcher/target/*.jar
 
 kaniko-build:
   stage: kaniko-build

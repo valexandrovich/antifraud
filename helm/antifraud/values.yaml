@@ -13,6 +13,7 @@ spec:
   source:
     targetrevision:
       downloader: version
+      dispatcher: version
       importer: version
       notification: version
       scheduler: version
@@ -24,6 +25,7 @@ spec:
       report: version
     name:
       downloader: downloader
+      dispatcher: dispatcher
       importer: importer
       notification: notification
       scheduler: scheduler

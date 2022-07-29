@@ -69,7 +69,7 @@ kaniko-build:
     - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
   script:
     - >-
-      for file in $(find . -type f -regex '.*target/.*\.jar'); do
+      for file in $(find . -type f -regex '^.*target\/(.+?)-(\d[^-]*?)\.jar$'); do
         echo $file
         app_name=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
@@ -122,7 +122,7 @@ helm-package:
   <<: *default-rules
   script:
     - >-
-      for file in $(find . -type f -regex '.*target/.*\.jar'); do
+      for file in $(find . -type f -regex '^.*target\/(.+?)-(\d[^-]*?)\.jar$'); do
         echo $file
         app_name=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL

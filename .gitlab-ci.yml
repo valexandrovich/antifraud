@@ -28,6 +28,7 @@ maven-package:
   stage: maven-package
   image: nexus.otpbank.com.ua:19443/repository/openjdk:11
   <<: *default-rules
+  retry: 2
   before_script:
     - echo -n "$SSL_CHAIN" | base64 -d > /usr/local/share/ca-certificates/cert.crt && update-ca-certificates
     - keytool -importcert -file /usr/local/share/ca-certificates/cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt

@@ -3,8 +3,10 @@ package ua.com.solidity.web.service.converter;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
+import ua.com.solidity.db.entities.TagType;
 import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.web.configuration.TypeMapName;
+import ua.com.solidity.web.dto.olap.TagTypeDto;
 import ua.com.solidity.web.dto.olap.YTagDto;
 
 @Component
@@ -19,5 +21,11 @@ public class YTagConverter {
 
     public YTagDto toDto(YTag entity) {
         return modelMapper.map(entity, YTagDto.class);
+    }
+
+    public TagTypeDto toTagTypeDto(TagType tagType) {
+        TagTypeDto dto = new TagTypeDto();
+        dto.setCode(tagType.getCode());
+        return dto;
     }
 }

@@ -715,3 +715,23 @@ datalist {
     white-space: nowrap;
 }
 
+.editable {
+    display: table;
+    width: 100%;
+    height: 90px;
+    cursor: pointer;
+}
+
+.editable:hover {
+    color: black;
+    background-color: var(--light-green);
+}
+
+.editable:after {
+    content: "Додати запис";
+    position: absolute;
+    top: 0;
+    right: -10px;
+    bottom: 0;
+
+}

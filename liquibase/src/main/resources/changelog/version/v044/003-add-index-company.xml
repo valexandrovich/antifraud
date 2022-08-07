@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v044-20" author="Olha Tankevych">
+        <tagDatabase tag="v044-20"/>
+    </changeSet>
+
+    <changeSet id="v044-21" author="Olha Tankevych">
+        <createIndex tableName="ycompany" indexName="ycompany_edrpou">
+            <column name="edrpou"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-22" author="Olha Tankevych">
+        <createIndex tableName="ycompany" indexName="ycompany_pdv">
+            <column name="pdv"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-23" author="Olha Tankevych">
+        <createIndex tableName="ycompany" indexName="ycompany_name">
+            <column name="name"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-24" author="Olha Tankevych">
+        <createIndex tableName="yaltcompany" indexName="yaltcompsny_name">
+            <column name="name"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-25" author="Olha Tankevych">
+        <createIndex tableName="yaltcompany" indexName="yaltcompsny_owner">
+            <column name="company_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-26" author="Olha Tankevych">
+        <createIndex tableName="yctag" indexName="yctag_type">
+            <column name="tag_type_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-27" author="Olha Tankevych">
+        <createIndex tableName="yctag" indexName="yctag_owner">
+            <column name="company_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-28" author="Olha Tankevych">
+        <createIndex tableName="ycaddress" indexName="ycaddress_address">
+            <column name="address"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-29" author="Olha Tankevych">
+        <createIndex tableName="ycaddress" indexName="ycaddress_owner">
+            <column name="company_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-30" author="Olha Tankevych">
+        <createIndex tableName="ycompany_relation" indexName="ycompany_relation_owner">
+            <column name="company_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-31" author="Olha Tankevych">
+        <createIndex tableName="ycompany_relation" indexName="ycompany_relation_role">
+            <column name="role_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-32" author="Olha Tankevych">
+        <createIndex tableName="ycompany_relation" indexName="ycompany_relation_person">
+            <column name="person_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-33" author="Olha Tankevych">
+        <createIndex tableName="ycompany_relation_company" indexName="ycompany_relation_company_owner">
+            <column name="company_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-34" author="Olha Tankevych">
+        <createIndex tableName="ycompany_relation_company" indexName="ycompany_relation_company_creator">
+            <column name="company_creator_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="v044-35" author="Olha Tankevych">
+        <createIndex tableName="ycompany_relation_company" indexName="ycompany_relation_company_role">
+            <column name="role_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

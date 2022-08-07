@@ -12,13 +12,16 @@ import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
+import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NAL;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -32,17 +35,20 @@ import ua.com.solidity.common.StatusChanger;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.db.entities.Govua10;
 import ua.com.solidity.db.entities.ImportSource;
+import ua.com.solidity.db.entities.TagType;
 import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.entities.YPerson;
+import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
+import ua.com.solidity.db.repositories.TagTypeRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.model.YPersonProcessing;
-import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.Govua10Repository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+import ua.com.solidity.util.model.YPersonProcessing;
+import ua.com.solidity.util.model.response.YPersonDispatcherResponse;
 
 @CustomLog
 @Service
@@ -57,6 +63,7 @@ public class Govua10Enricher implements Enricher {
     private final Govua10Repository govua10Repository;
     private final YPassportRepository passportRepository;
     private final HttpClient httpClient;
+    private final TagTypeRepository tagTypeRepository;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
@@ -64,6 +71,7 @@ public class Govua10Enricher implements Enricher {
     private String urlPersonPost;
     @Value("${dispatcher.url.person.delete}")
     private String urlPersonDelete;
+    private List<UUID> resp;
 
     @Override
     public void enrich(UUID portion) {
@@ -88,7 +96,6 @@ public class Govua10Enricher implements Enricher {
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            Set<YPerson> personSet = new HashSet<>();
             List<Govua10> page = onePage.toList();
 
             while (!page.isEmpty()) {
@@ -103,7 +110,7 @@ public class Govua10Enricher implements Enricher {
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
                 YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
-                List<UUID> resp = response.getResp();
+                resp = response.getResp();
                 List<UUID> temp = response.getTemp();
 
                 page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
@@ -130,6 +137,7 @@ public class Govua10Enricher implements Enricher {
                 Set<YPerson> savedPeople = savedPersonSet;
 
                 Set<YPassport> finalPassports = passports;
+                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NAL);
                 page.forEach(r -> {
                     YPerson person = new YPerson();
 
@@ -167,13 +175,27 @@ public class Govua10Enricher implements Enricher {
                         }
                     }
                     extender.addPerson(people, person, source, false);
+
+                    Set<YTag> tags = new HashSet<>();
+                    YTag tag = new YTag();
+                    tagType.ifPresent(tag::setTagType);
+                    tag.setSource(GOVUA10);
+                    tags.add(tag);
+
+                    extender.addTags(person, tags, source);
+                    people.add(person);
+
                     counter[0]++;
                     statusChanger.addProcessedVolume(1);
                 });
                 UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
                 if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                    emnService.enrichYPersonPackageMonitoringNotification(people);
+
                     ypr.saveAll(people);
-                    personSet.addAll((people));
+
+                    emnService.enrichYPersonMonitoringNotification(people);
 
                     httpClient.post(urlPersonDelete, Boolean.class, resp);
 
@@ -183,7 +205,6 @@ public class Govua10Enricher implements Enricher {
                     statusChanger.setProcessedVolume(counter[0]);
                 }
             }
-            emnService.enrichYPersonMonitoringNotification(personSet);
 
             onePage = govua10Repository.findAllByPortionId(portion, pageRequest);
         }
@@ -192,5 +213,11 @@ public class Govua10Enricher implements Enricher {
         logger.finish();
 
         statusChanger.complete(importedRecords(counter[0]));
+    }
+
+    @Override
+    @PreDestroy
+    public void deleteResp() {
+        httpClient.post(urlPersonDelete, Boolean.class, resp);
     }
 }

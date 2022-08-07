@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import PageTitle from "../../components/PageTitle";
-import TableItem from "../../components/ProgressBar/TableItem";
+import PageTitle from "../../common/PageTitle";
+import TableItem from "../../common/TableItem";
 import ShedulerEditModal from "../../components/Modal/ShedulerEditModal";
 import authHeader from "../../api/AuthHeader";
 import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";

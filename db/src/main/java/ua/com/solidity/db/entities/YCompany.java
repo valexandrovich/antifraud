@@ -7,7 +7,6 @@ import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
@@ -42,6 +41,7 @@ import lombok.Setter;
                         @NamedAttributeNode(value = "tags", subgraph = "importSourcesAndTagType-subgraph"),
                         @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "altCompanies", subgraph = "importSources-subgraph"),
+                        @NamedAttributeNode("state"),
                         @NamedAttributeNode("importSources")})
 })
 @Entity
@@ -65,7 +65,7 @@ public class YCompany {
     @JsonManagedReference
     private Set<YCAddress> addresses = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "state_id", referencedColumnName = "id")
     private YCompanyState state;
 
@@ -85,7 +85,7 @@ public class YCompany {
     )
     private Set<User> users = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     @JoinTable(
             name = "ycompany_import_source",
             joinColumns = {@JoinColumn(name = "ycompany_id")},

@@ -6,4 +6,5 @@ public interface Enricher {
 
 	void enrich(UUID portion);
 
+    void deleteResp();
 }

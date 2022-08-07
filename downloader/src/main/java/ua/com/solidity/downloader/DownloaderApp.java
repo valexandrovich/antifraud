@@ -9,8 +9,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import ua.com.solidity.common.RabbitMQListener;
 import ua.com.solidity.common.Utils;
-import ua.com.solidity.common.logger.LoggerWrapperFactory;
-
 
 @CustomLog
 @EnableJpaRepositories(basePackages = "ua.com.solidity.db.repositories")

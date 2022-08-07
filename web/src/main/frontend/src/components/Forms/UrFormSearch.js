@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import FloatInput from "../../common/FloatInput";
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchYCompaniesDataThunk } from "../../store/reducers/UrSearchReducer";
-import Spinner from "../Loader";
+import Spinner from "../../common/Loader";
 import FormBtn from "../../common/FormBtn";
 import {
   changeYCompanyFormValueAC,
@@ -12,8 +12,8 @@ import {
   setCurrentPageYcompanyCount,
 } from "../../store/reducers/actions/YcompanyActions";
 import Card from "../YCompanyCard/Card";
-import PerPage from "../PerPage";
-import Pagination from "../Pagination";
+import PerPage from "../../common/PerPage";
+import Pagination from "../../common/Pagination";
 
 const urSchema = Yup.object().shape({
   edrpou: Yup.string().matches("^[0-9]{8,9}$", "8-9 Цифр"),

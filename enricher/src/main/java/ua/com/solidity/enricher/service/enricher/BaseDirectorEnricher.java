@@ -1,7 +1,5 @@
 package ua.com.solidity.enricher.service.enricher;
 
-import static ua.com.solidity.enricher.service.validator.Validator.isValidEdrpou;
-import static ua.com.solidity.enricher.service.validator.Validator.isValidInn;
 import static ua.com.solidity.enricher.util.Base.BASE_DIRECTOR;
 import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
@@ -13,13 +11,18 @@ import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.DIRECTOR;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_ID;
+import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
+import static ua.com.solidity.util.validator.Validator.isValidInn;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -33,25 +36,28 @@ import ua.com.solidity.common.StatusChanger;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.db.entities.BaseDirector;
 import ua.com.solidity.db.entities.ImportSource;
+import ua.com.solidity.db.entities.TagType;
 import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YCompanyRelation;
 import ua.com.solidity.db.entities.YCompanyRole;
 import ua.com.solidity.db.entities.YINN;
 import ua.com.solidity.db.entities.YPerson;
+import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
+import ua.com.solidity.db.repositories.TagTypeRepository;
 import ua.com.solidity.db.repositories.YCompanyRelationRepository;
 import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YCompanyRoleRepository;
 import ua.com.solidity.db.repositories.YINNRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.model.YCompanyProcessing;
-import ua.com.solidity.enricher.model.YPersonProcessing;
-import ua.com.solidity.enricher.model.response.YCompanyDispatcherResponse;
-import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.BaseDirectorRepository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+import ua.com.solidity.util.model.YCompanyProcessing;
+import ua.com.solidity.util.model.YPersonProcessing;
+import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
+import ua.com.solidity.util.model.response.YPersonDispatcherResponse;
 
 @CustomLog
 @Service
@@ -69,6 +75,7 @@ public class BaseDirectorEnricher implements Enricher {
     private final YCompanyRoleRepository companyRoleRepository;
     private final HttpClient httpClient;
     private final MonitoringNotificationService emnService;
+    private final TagTypeRepository tagTypeRepository;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
@@ -80,6 +87,8 @@ public class BaseDirectorEnricher implements Enricher {
     private String urlCompanyPost;
     @Value("${dispatcher.url.company.delete}")
     private String urlCompanyDelete;
+    private List<UUID> respPeople;
+    private List<UUID> respCompanies;
 
     @Override
     public void enrich(UUID portion) {
@@ -96,14 +105,12 @@ public class BaseDirectorEnricher implements Enricher {
         statusChanger.newStage(null, "enriching", count, null);
         String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DIRECTOR, portion));
+                                                           Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DIRECTOR, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_DIRECTOR);
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            Set<YPerson> peopleSet = new HashSet<>();
-            Set<YCompany> companiesSet = new HashSet<>();
             List<BaseDirector> page = onePage.toList();
 
             while (!page.isEmpty()) {
@@ -125,11 +132,11 @@ public class BaseDirectorEnricher implements Enricher {
                 UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
 
                 YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
-                List<UUID> respPeople = response.getResp();
+                respPeople = response.getResp();
                 List<UUID> tempPeople = response.getTemp();
 
                 YCompanyDispatcherResponse responseCompanies = httpClient.post(urlCompanyPost, YCompanyDispatcherResponse.class, companiesProcessing);
-                List<UUID> respCompanies = responseCompanies.getResp();
+                respCompanies = responseCompanies.getResp();
                 List<UUID> tempCompanies = responseCompanies.getTemp();
 
                 Set<UUID> resp = new HashSet<>();
@@ -176,6 +183,7 @@ public class BaseDirectorEnricher implements Enricher {
                 Set<YCompany> finalCompanies = companies;
                 Set<YINN> finalInns = inns;
                 Set<YCompanyRelation> finalCompaniesRelations = companiesRelations;
+                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_ID);
                 page.forEach(r -> {
                     YPerson person = null;
                     if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
@@ -185,6 +193,15 @@ public class BaseDirectorEnricher implements Enricher {
                             person = extender.addInn(Long.parseLong(inn), personSet, source, person, finalInns, savedPeople);
                             if (person.getId() == null)
                                 person.setId(UUID.randomUUID());
+
+                            Set<YTag> tags = new HashSet<>();
+                            YTag tag = new YTag();
+                            tagType.ifPresent(tag::setTagType);
+                            tag.setSource(DIRECTOR);
+                            tags.add(tag);
+
+                            extender.addTags(person, tags, source);
+
                             personSet.add(person);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
@@ -204,9 +221,9 @@ public class BaseDirectorEnricher implements Enricher {
                             wrongCounter[0]++;
                         }
                     }
-                    if (company != null && person != null) {
-                        YCompanyRole role = companyRoleRepository.findByRole(DIRECTOR);
-                        extender.addCompanyRelation(person, company, role, source, yCompanyRelationSet, finalCompaniesRelations);
+                    Optional<YCompanyRole> role = companyRoleRepository.findByRole(DIRECTOR);
+                    if (company != null && person != null && role.isPresent()) {
+                        extender.addCompanyRelation(person, company, role.get(), source, yCompanyRelationSet, finalCompaniesRelations);
                     }
 
                     counter[0]++;
@@ -215,13 +232,15 @@ public class BaseDirectorEnricher implements Enricher {
 
                 UUID dispatcherIdFinish = httpClient.get(urlCompanyPost, UUID.class);
                 if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+                    emnService.enrichYPersonPackageMonitoringNotification(personSet);
                     ypr.saveAll(personSet);
-                    peopleSet.addAll(personSet);
 
                     httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companySet);
-                    companiesSet.addAll(companySet);
+
+                    emnService.enrichYPersonMonitoringNotification(personSet);
+                    emnService.enrichYCompanyMonitoringNotification(companySet);
 
                     httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
@@ -234,9 +253,6 @@ public class BaseDirectorEnricher implements Enricher {
                 }
             }
 
-            emnService.enrichYPersonMonitoringNotification(peopleSet);
-            emnService.enrichYCompanyMonitoringNotification(companiesSet);
-
             onePage = baseDirectorRepository.findAllByPortionId(portion, pageRequest);
         }
 
@@ -244,5 +260,12 @@ public class BaseDirectorEnricher implements Enricher {
         logger.finish();
 
         statusChanger.complete(importedRecords(counter[0]));
+    }
+
+    @Override
+    @PreDestroy
+    public void deleteResp() {
+        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
     }
 }

@@ -14,8 +14,6 @@ import ua.com.solidity.db.entities.YCompany;
 
 public interface YCompanyRepository extends JpaRepository<YCompany, Long>, JpaSpecificationExecutor<YCompany> {
 
-    Optional<YCompany> findByEdrpou(Long edrpou);
-
     Page<YCompany> findByUsers(User user, Pageable pageable);
 
     @EntityGraph(value = "ycompany.addressesAndAltCompaniesAndTagsAndEmailsAndImportSources")

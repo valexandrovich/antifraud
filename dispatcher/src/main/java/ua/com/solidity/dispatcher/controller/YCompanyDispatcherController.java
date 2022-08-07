@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.dispatcher.config.Config;
-import ua.com.solidity.dispatcher.model.YCompanyProcessing;
-import ua.com.solidity.dispatcher.model.response.YCompanyDispatcherResponse;
 import ua.com.solidity.dispatcher.service.YCompanyDispatcherService;
+import ua.com.solidity.util.model.YCompanyProcessing;
+import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
 
 @RestController
 @RequestMapping(value = "/dispatcher/company")

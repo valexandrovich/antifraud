@@ -1,7 +1,5 @@
 package ua.com.solidity.enricher.service.enricher;
 
-import static ua.com.solidity.enricher.service.validator.Validator.isValidEdrpou;
-import static ua.com.solidity.enricher.service.validator.Validator.isValidInn;
 import static ua.com.solidity.enricher.util.Base.GOVUA1;
 import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
@@ -12,6 +10,8 @@ import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
+import static ua.com.solidity.util.validator.Validator.isValidInn;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -46,14 +47,14 @@ import ua.com.solidity.db.repositories.TagTypeRepository;
 import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YINNRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.model.YCompanyProcessing;
-import ua.com.solidity.enricher.model.YPersonProcessing;
-import ua.com.solidity.enricher.model.response.YCompanyDispatcherResponse;
-import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.Govua1Repository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+import ua.com.solidity.util.model.YCompanyProcessing;
+import ua.com.solidity.util.model.YPersonProcessing;
+import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
+import ua.com.solidity.util.model.response.YPersonDispatcherResponse;
 
 @CustomLog
 @Service
@@ -81,6 +82,8 @@ public class Govua1Enricher implements Enricher {
     private String urlCompanyPost;
     @Value("${dispatcher.url.company.delete}")
     private String urlCompanyDelete;
+    private List<UUID> respPeople;
+    private List<UUID> respCompanies;
 
     @Override
     public void enrich(UUID portion) {
@@ -103,9 +106,7 @@ public class Govua1Enricher implements Enricher {
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            Set<YPerson> personSet = new HashSet<>();
-            Set<YCompany> companySet = new HashSet<>();
-            List<Govua1> page = onePage.toList();
+            Set<Govua1> page = onePage.toSet();
 
             while (!page.isEmpty()) {
                 List<YPersonProcessing> peopleProcessing = page.parallelStream().map(p -> {
@@ -126,22 +127,15 @@ public class Govua1Enricher implements Enricher {
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
                 YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
-                List<UUID> respPeople = response.getResp();
+                respPeople = response.getResp();
                 List<UUID> tempPeople = response.getTemp();
 
                 YCompanyDispatcherResponse responseCompanies = httpClient.post(urlCompanyPost, YCompanyDispatcherResponse.class, companiesProcessing);
-                List<UUID> respCompanies = responseCompanies.getResp();
+                respCompanies = responseCompanies.getResp();
                 List<UUID> tempCompanies = responseCompanies.getTemp();
 
-                Set<UUID> resp = new HashSet<>();
-                Set<UUID> temp = new HashSet<>();
-                resp.addAll(respPeople);
-                resp.addAll(respCompanies);
-                temp.addAll(tempPeople);
-                temp.addAll(tempCompanies);
-
-                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
-                        .collect(Collectors.toList());
+                page = onePage.stream().parallel().filter(p -> respPeople.contains(p.getId()) || respCompanies.contains(p.getId()))
+                        .collect(Collectors.toSet());
 
                 Set<Long> codes = new HashSet<>();
                 Set<YINN> inns = new HashSet<>();
@@ -177,7 +171,7 @@ public class Govua1Enricher implements Enricher {
                         if (isValidEdrpou(code)) {
                             company = new YCompany();
                             company.setEdrpou(Long.parseLong(code));
-                            company.setName(r.getName());
+                            company.setName(UtilString.toUpperCase(r.getName()));
                             company = extender.addCompany(companies, source, company, finalCompanies);
                             companies.add(company);
                             if (StringUtils.isNotBlank(r.getCaseNumber()) && StringUtils.isNotBlank(r.getRecordType())) {
@@ -275,25 +269,28 @@ public class Govua1Enricher implements Enricher {
 
                 UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
                 if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                    emnService.enrichYPersonPackageMonitoringNotification(people);
+
                     ypr.saveAll(people);
-                    personSet.addAll(people);
 
                     httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companies);
-                    companySet.addAll(companies);
+
+                    emnService.enrichYPersonMonitoringNotification(people);
+                    emnService.enrichYCompanyMonitoringNotification(companies);
 
                     httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
 
-                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
+                    page = onePage.stream().parallel().filter(p -> tempCompanies.contains(p.getId()) || tempPeople.contains(p.getId()))
+                            .collect(Collectors.toSet());
                 } else {
-                    counter[0] -= resp.size();
+                    counter[0] -= page.size();
                     statusChanger.setProcessedVolume(counter[0]);
                 }
             }
-            emnService.enrichYPersonMonitoringNotification(personSet);
-            emnService.enrichYCompanyMonitoringNotification(companySet);
 
             onePage = govua1Repository.findAllByPortionId(portion, pageRequest);
         }
@@ -302,5 +299,12 @@ public class Govua1Enricher implements Enricher {
         logger.finish();
 
         statusChanger.complete(importedRecords(counter[0]));
+    }
+
+    @Override
+    @PreDestroy
+    public void deleteResp() {
+        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
     }
 }

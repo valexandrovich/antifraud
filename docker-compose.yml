@@ -203,8 +203,9 @@ services:
 
   db:
     image: postgres:10
-    # Uncomment following two lines to use persistent storage
-#    volumes:
+    volumes:
+      - ./docker/db/max_conns.sql:/docker-entrypoint-initdb.d/max_conns.sql
+      # Uncomment following line to use persistent storage
 #      - psql-storage:/var/lib/postgresql/data
     restart: always
     healthcheck:

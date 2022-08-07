@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import PageTitle from "../../components/PageTitle";
+import PageTitle from "../../common/PageTitle";
 import * as IoIcons from "react-icons/io";
 import Passports from "../../components/YPersonCard/Passports";
 import Inn from "../../components/YPersonCard/Inn";
@@ -12,7 +12,7 @@ import authHeader from "../../api/AuthHeader";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import AltPerson from "../../components/YPersonCard/AltPerson";
-import ToggleCard from "../../components/YPersonCard/ToggleCard";
+import ToggleCard from "../../common/ToggleCard";
 import { DateObject } from "react-multi-date-picker";
 import {
   formatInn,
@@ -22,19 +22,21 @@ import {
 import passportService from "../../api/YPassportApi";
 import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";
 import { useDispatch } from "react-redux";
+import Relations from "../../components/YPersonCard/Relations";
 
 const SingleYPersonCard = () => {
   let { id } = useParams();
   const dispatch = useDispatch();
   const [personDetails, setPersonDetails] = useState(null);
   const [components, setComponents] = useState({
-    passports: false,
-    inn: false,
-    address: false,
-    email: false,
-    tag: false,
-    phone: false,
-    alt: false,
+    passports: true,
+    inn: true,
+    address: true,
+    email: true,
+    tag: true,
+    phone: true,
+    alt: true,
+    relations: true,
   });
   const deletePassport = (id) => {
     passportService.deletePassport(id).then((res) => {
@@ -47,6 +49,7 @@ const SingleYPersonCard = () => {
   };
 
   const handleChange = (e, type) => {
+    debugger;
     const { name, value, checked, id } = e.target;
     setPersonDetails((prevState) => ({
       ...prevState,
@@ -78,11 +81,26 @@ const SingleYPersonCard = () => {
     getPersonDetails();
   }, [id]);
   const exportPdf = () => {
-    html2canvas(document.querySelector("#print")).then((canvas) => {
+    window.scrollTo(0, 0);
+    const divToPrint = document.querySelector("#print");
+    html2canvas(divToPrint).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF();
-      pdf.addImage(imgData, "PNG", 0, 0);
-      pdf.save(`звіт ${personDetails.lastName} ${personDetails.firstName}.pdf`);
+      const imgWidth = 190;
+      const pageHeight = 290;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      const doc = new jsPDF("pt", "mm");
+      let position = 20;
+      doc.addImage(imgData, "PNG", 10, 0, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        doc.addPage();
+        doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight + 45);
+        debugger;
+        heightLeft -= pageHeight;
+      }
+      doc.save(`звіт ${personDetails.lastName} ${personDetails.firstName}.pdf`);
     });
   };
 
@@ -117,7 +135,6 @@ const SingleYPersonCard = () => {
               </div>
               <div className="d-flex">
                 <b className="mr-10">Дата народження:</b>
-
                 <p>
                   {personDetails.birthdate
                     ? new DateObject(personDetails.birthdate).format(
@@ -147,7 +164,7 @@ const SingleYPersonCard = () => {
                       } ${sourceName(
                         personDetails.passports[0].importSources
                       )})`
-                    : ""}
+                    : " "}
                 </span>
               </div>
 
@@ -156,7 +173,7 @@ const SingleYPersonCard = () => {
                 <p>
                   {personDetails.addresses && personDetails.addresses.length > 0
                     ? personDetails.addresses[0].address
-                    : ""}
+                    : " "}
                 </p>
                 <span className="ml-10">
                   {personDetails.addresses && personDetails.addresses.length > 0
@@ -276,6 +293,7 @@ const SingleYPersonCard = () => {
                 ))
               }
             />
+
             <ToggleCard
               setComponents={setComponents}
               components={components.alt}
@@ -293,6 +311,24 @@ const SingleYPersonCard = () => {
                 ))
               }
             />
+            <ToggleCard
+              setComponents={setComponents}
+              components={components.relations}
+              name={"Зв'язки"}
+              type={"relations"}
+              element={personDetails.relationGroups}
+            >
+              {personDetails.relationGroups &&
+                personDetails.relationGroups.length > 0 &&
+                personDetails.relationGroups.map((rel) => (
+                  <Relations
+                    personId={id}
+                    onChange={(e) => handleChange(e, "personRelations")}
+                    key={rel.id}
+                    data={rel}
+                  />
+                ))}
+            </ToggleCard>
           </div>
         </div>
       )}

@@ -405,6 +405,21 @@ public class Utils {
         return "";
     }
 
+    public static JsonNode objectToJsonNode(ObjectMapper mapper, Object object) {
+        if (mapper == null || object == null) return null;
+        JsonNode res = null;
+        try {
+            res = mapper.valueToTree(object);
+        } catch (Exception e) {
+            log.error("Can't convert object to JsonNode.", e);
+        }
+        return res;
+    }
+
+    public static JsonNode objectToJsonNode(Object object) {
+        return objectToJsonNode(getSortedMapper(), object);
+    }
+
     @SuppressWarnings("unused")
     public static JsonNode getNodeValue(JsonNode node, String name) {
         return node.has(name) ? node.get(name) : JsonNodeFactory.instance.nullNode();
@@ -471,6 +486,52 @@ public class Utils {
 
     public static String getContextProperty(String name, String defaultValue) {
         return getContextProperty(name, defaultValue, false);
+    }
+
+    public static long getLongContextProperty(String name, long defaultValue, boolean contextOnly) {
+        String value = getContextProperty(name, String.valueOf(defaultValue), contextOnly).trim();
+        try {
+            return Long.parseLong(value);
+        } catch (Exception e) {
+            // nothing
+        }
+        return defaultValue;
+    }
+
+    public static long getLongContextProperty(String name, long defaultValue) {
+        return getLongContextProperty(name, defaultValue, false);
+    }
+
+    public static int getIntContextProperty(String name, int defaultValue, boolean contextOnly) {
+        long value = getLongContextProperty(name, defaultValue, contextOnly);
+        return value < Integer.MIN_VALUE || value > Integer.MAX_VALUE ? defaultValue : (int) value;
+    }
+
+    public static int getIntContextProperty(String name, int defaultValue) {
+        return getIntContextProperty(name, defaultValue, false);
+    }
+
+    public static boolean getBooleanContextProperty(String name, boolean defaultValue, boolean contextOnly) {
+        String value = getContextProperty(name, String.valueOf(defaultValue), contextOnly).trim();
+        return value.equalsIgnoreCase("true");
+    }
+
+    public static boolean getBooleanContextProperty(String name, boolean defaultValue) {
+        return getBooleanContextProperty(name, defaultValue, false);
+    }
+
+    public static double getFloatContextProperty(String name, double defaultValue, boolean contextOnly) {
+        String value = getContextProperty(name, String.valueOf(defaultValue), contextOnly);
+        try {
+            return Double.parseDouble(value);
+        } catch (Exception e) {
+            // nothing
+        }
+        return defaultValue;
+    }
+
+    public static double getFloatContextProperty(String name, double defaultValue) {
+        return getFloatContextProperty(name, defaultValue, false);
     }
 
     public static synchronized void setContextProperty(String name, Object value, boolean ifNotExists) {

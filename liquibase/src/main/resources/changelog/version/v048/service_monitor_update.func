@@ -1,0 +1,30 @@
+CREATE OR REPLACE FUNCTION service_monitor_update(
+	id uuid,
+	name character varying,
+	data jsonb)
+    RETURNS void
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+            declare
+            session_start timestamp with time zone;
+    session_pid integer;
+            Begin
+    session_pid := pg_backend_pid();
+            select backend_start into session_start from pg_stat_activity where pid = session_pid;
+
+            if exists(select * from service_monitor where pid = session_pid and backend_start = session_start) then
+            update service_monitor
+            set
+                id = $1,
+                name = $2,
+                last_activity = CURRENT_TIMESTAMP(6),
+                data = $3
+            where pid = session_pid and backend_start = session_start;
+            else
+         insert into service_monitor(pid, backend_start, id, name, last_activity, data)
+         values(session_pid, session_start, $1, $2, CURRENT_TIMESTAMP(6), $3);
+            end if;
+End;
+$BODY$;

@@ -2,8 +2,12 @@ package ua.com.solidity.web.service.converter;
 
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.YCompany;
+import ua.com.solidity.db.entities.YCompanyRole;
+import ua.com.solidity.db.entities.YCompanyState;
 import ua.com.solidity.web.dto.YCompanyDto;
 import ua.com.solidity.web.dto.YCompanySearchDto;
+import ua.com.solidity.web.dto.olap.CompanyRoleDto;
+import ua.com.solidity.web.dto.olap.CompanyStateDto;
 
 @Component
 public class YCompanyConverter {
@@ -27,6 +31,18 @@ public class YCompanyConverter {
         dto.setAddresses(entity.getAddresses());
         dto.setAltCompanies(entity.getAltCompanies());
         dto.setImportSources(entity.getImportSources());
+        return dto;
+    }
+
+    public CompanyStateDto toCompanyStateDto(YCompanyState companyState) {
+        CompanyStateDto dto = new CompanyStateDto();
+        dto.setState(companyState.getState());
+        return dto;
+    }
+
+    public CompanyRoleDto toCompanyRoleDto(YCompanyRole companyRole) {
+        CompanyRoleDto dto = new CompanyRoleDto();
+        dto.setRole(companyRole.getRole());
         return dto;
     }
 }

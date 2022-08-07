@@ -1,6 +1,5 @@
 package ua.com.solidity.enricher.service.enricher;
 
-import static ua.com.solidity.enricher.service.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.enricher.util.Base.GOVUA17;
 import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
@@ -11,13 +10,16 @@ import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,12 +39,12 @@ import ua.com.solidity.db.entities.YCompanyState;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YCompanyStateRepository;
-import ua.com.solidity.enricher.model.YCompanyProcessing;
-import ua.com.solidity.enricher.model.response.YCompanyDispatcherResponse;
 import ua.com.solidity.enricher.repository.Govua17Repository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+import ua.com.solidity.util.model.YCompanyProcessing;
+import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +64,8 @@ public class Govua17Enricher implements Enricher {
     private String urlCompanyPost;
     @Value("${dispatcher.url.company.delete}")
     private String urlCompanyDelete;
+    private List<UUID> resp;
+
 
     @Override
     public void enrich(UUID portion) {
@@ -100,7 +104,7 @@ public class Govua17Enricher implements Enricher {
                 UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
 
                 YCompanyDispatcherResponse responseCompanies = httpClient.post(urlCompanyPost, YCompanyDispatcherResponse.class, companiesProcessing);
-                List<UUID> resp = responseCompanies.getResp();
+                resp = responseCompanies.getResp();
                 List<UUID> temp = responseCompanies.getTemp();
 
                 page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
@@ -131,8 +135,8 @@ public class Govua17Enricher implements Enricher {
                             company = new YCompany();
                             company.setEdrpou(Long.parseLong(code));
                             company.setName(UtilString.toUpperCase(r.getName()));
-                            YCompanyState state = companyStateRepository.findByState(UtilString.toUpperCase(r.getStatus()));
-                            if (state != null) company.setState(state);
+                            Optional<YCompanyState> state = companyStateRepository.findByState(UtilString.toUpperCase(r.getStatus()));
+                            if (state.isPresent()) company.setState(state.get());
                             company = extender.addCompany(companies, source, company, finalCompanies);
 
                             Set<YCAddress> addresses = new HashSet<>();
@@ -146,14 +150,12 @@ public class Govua17Enricher implements Enricher {
                                 extender.addAltCompany(company, UtilString.toUpperCase(r.getShortName()), "UA", source);
 
                             companies.add(company);
-                            counter[0]++;
-                            statusChanger.addProcessedVolume(1);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
                             wrongCounter[0]++;
                         }
                     }
-
+                    counter[0]++;
                     statusChanger.addProcessedVolume(1);
                 });
                 UUID dispatcherIdFinish = httpClient.get(urlCompanyPost, UUID.class);
@@ -178,5 +180,11 @@ public class Govua17Enricher implements Enricher {
         logger.finish();
 
         statusChanger.complete(importedRecords(counter[0]));
+    }
+
+    @Override
+    @PreDestroy
+    public void deleteResp() {
+        httpClient.post(urlCompanyDelete, Boolean.class, resp);
     }
 }

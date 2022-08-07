@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import PageTitle from "../../components/PageTitle";
+import PageTitle from "../../common/PageTitle";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import authHeader from "../../api/AuthHeader";
 import { useParams } from "react-router-dom";
 import * as IoIcons from "react-icons/io";
 import { sourceName } from "../../components/YPersonCard/Card";
-import ToggleCard from "../../components/YPersonCard/ToggleCard";
+import ToggleCard from "../../common/ToggleCard";
 import Addresses from "../../components/YPersonCard/Addresses";
 import Tags from "../../components/YPersonCard/Tags";
 import AltCompanies from "../../components/YCompanyCard/AltCompanies";
@@ -15,12 +15,12 @@ const SingleYCompanyCard = () => {
   let { id } = useParams();
   const [companyDetails, setCompanyDetails] = useState(null);
   const [components, setComponents] = useState({
-    address: false,
-    pdv: false,
-    edrpou: false,
-    name: false,
-    tags: false,
-    alt: false,
+    address: true,
+    pdv: true,
+    edrpou: true,
+    name: true,
+    tags: true,
+    alt: true,
   });
 
   useEffect(() => {
@@ -43,7 +43,7 @@ const SingleYCompanyCard = () => {
     html2canvas(document.querySelector("#print")).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF();
-      pdf.addImage(imgData, "PNG", 0, 0);
+      pdf.addImage(imgData, "PNG", 10, 10);
       pdf.save(`звіт ${companyDetails.edrpou}.pdf`);
     });
   };

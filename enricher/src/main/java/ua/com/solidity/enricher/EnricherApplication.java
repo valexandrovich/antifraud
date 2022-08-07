@@ -21,7 +21,9 @@ public class EnricherApplication {
     @Autowired
     public EnricherApplication(ApplicationContext context) {
         Utils.setApplicationContext(context);
+        Utils.prepareRabbitMQQueue(OtpExchange.ENRICHER);
     }
+
 
     public static void main(String[] args) {
         SpringApplication.run(EnricherApplication.class, args).getBean(EnricherApplication.class).run();

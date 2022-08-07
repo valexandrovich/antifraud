@@ -1,6 +1,5 @@
 package ua.com.solidity.enricher.service.enricher;
 
-import static ua.com.solidity.enricher.service.validator.Validator.isValidInn;
 import static ua.com.solidity.enricher.service.validator.Validator.isValidLocalPassport;
 import static ua.com.solidity.enricher.util.Base.BASE_PASSPORTS;
 import static ua.com.solidity.enricher.util.LogUtil.logError;
@@ -14,6 +13,7 @@ import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCy
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.util.validator.Validator.isValidInn;
 
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -42,12 +43,12 @@ import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.YINNRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.model.YPersonProcessing;
-import ua.com.solidity.enricher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.enricher.repository.BasePassportsRepository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+import ua.com.solidity.util.model.YPersonProcessing;
+import ua.com.solidity.util.model.response.YPersonDispatcherResponse;
 
 @CustomLog
 @Service
@@ -70,6 +71,7 @@ public class BasePassportsEnricher implements Enricher {
     private String urlPersonPost;
     @Value("${dispatcher.url.person.delete}")
     private String urlPersonDelete;
+    private List<UUID> resp;
 
     @Override
     public void enrich(UUID portion) {
@@ -92,7 +94,6 @@ public class BasePassportsEnricher implements Enricher {
 
         while (!onePage.isEmpty()) {
             pageRequest = pageRequest.next();
-            Set<YPerson> personSet = new HashSet<>();
             List<BasePassports> page = onePage.toList();
 
             while (!page.isEmpty()) {
@@ -111,7 +112,7 @@ public class BasePassportsEnricher implements Enricher {
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
                 YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
-                List<UUID> resp = response.getResp();
+                resp = response.getResp();
                 List<UUID> temp = response.getTemp();
 
                 page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
@@ -194,8 +195,12 @@ public class BasePassportsEnricher implements Enricher {
                 });
                 UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
                 if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                    emnService.enrichYPersonPackageMonitoringNotification(people);
+
                     ypr.saveAll(people);
-                    personSet.addAll((people));
+
+                    emnService.enrichYPersonMonitoringNotification(people);
 
                     httpClient.post(urlPersonDelete, Boolean.class, resp);
 
@@ -205,7 +210,6 @@ public class BasePassportsEnricher implements Enricher {
                     statusChanger.setProcessedVolume(counter[0]);
                 }
             }
-            emnService.enrichYPersonMonitoringNotification(personSet);
 
             onePage = bpr.findAllByPortionId(portion, pageRequest);
         }
@@ -214,5 +218,11 @@ public class BasePassportsEnricher implements Enricher {
         logger.finish();
 
         statusChanger.complete(importedRecords(counter[0]));
+    }
+
+    @Override
+    @PreDestroy
+    public void deleteResp() {
+        httpClient.post(urlPersonDelete, Boolean.class, resp);
     }
 }

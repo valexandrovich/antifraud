@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="048-001-1" author="Beetone">
+        <createTable tableName="service_monitor">
+            <column name="pid" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_service_monitor"/>
+            </column>
+            <column name="backend_start" type="timestamp">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_service_monitor"/>
+            </column>
+            <column name="id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="last_activity" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSONB"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="048-001-2" author="Beetone">
+        <sqlFile encoding="utf8"
+                 path="service_monitor_update.func"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS service_monitor_update(uuid, character varying, jsonb);
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="048-001-3" author="Beetone">
+        <sqlFile encoding="utf8"
+                 path="service_monitor_clean.func"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS service_monitor_clean();
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="048-001-4" author="Beetone">
+        <sqlFile encoding="utf8"
+                 path="service_monitor_state.func"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+        />
+        <rollback>
+            <sql>
+                DROP FUNCTION IF EXISTS service_monitor_state();
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

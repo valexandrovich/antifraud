@@ -1,6 +1,5 @@
 package ua.com.solidity.enricher.service.enricher;
 
-import static ua.com.solidity.enricher.service.validator.Validator.isValidPdv;
 import static ua.com.solidity.enricher.util.Base.GOVUA20;
 import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
@@ -11,6 +10,7 @@ import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.util.validator.Validator.isValidPdv;
 
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,12 +35,12 @@ import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.YCompanyRepository;
-import ua.com.solidity.enricher.model.YCompanyProcessing;
-import ua.com.solidity.enricher.model.response.YCompanyDispatcherResponse;
 import ua.com.solidity.enricher.repository.Govua20Repository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
+import ua.com.solidity.util.model.YCompanyProcessing;
+import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +59,7 @@ public class Govua20Enricher implements Enricher {
     private String urlCompanyPost;
     @Value("${dispatcher.url.company.delete}")
     private String urlCompanyDelete;
+    private List<UUID> resp;
 
     @Override
     public void enrich(UUID portion) {
@@ -96,7 +98,7 @@ public class Govua20Enricher implements Enricher {
                 UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
 
                 YCompanyDispatcherResponse responseCompanies = httpClient.post(urlCompanyPost, YCompanyDispatcherResponse.class, companiesProcessing);
-                List<UUID> resp = responseCompanies.getResp();
+                resp = responseCompanies.getResp();
                 List<UUID> temp = responseCompanies.getTemp();
 
                 page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
@@ -162,5 +164,11 @@ public class Govua20Enricher implements Enricher {
         logger.finish();
 
         statusChanger.complete(importedRecords(counter[0]));
+    }
+
+    @Override
+    @PreDestroy
+    public void deleteResp() {
+        httpClient.post(urlCompanyDelete, Boolean.class, resp);
     }
 }

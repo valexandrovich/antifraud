@@ -67,7 +67,7 @@ public class Importer {
             }
             log.info("Import completed. {} / {}", stats.source, elapsedTime.getDurationString());
         } else {
-            log.info("Import completed. {}", elapsedTime.getDurationString());
+            log.info("All import tasks completed. {}", elapsedTime.getDurationString());
         }
         return true;
     }

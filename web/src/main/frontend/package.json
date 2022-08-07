@@ -1,7 +1,8 @@
 {
   "name": "banned",
-  "version": "0.1.0",
+  "version": "4.5",
   "private": true,
+  "buildDate": 1659719307920,
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
@@ -14,6 +15,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "jwt-decode": "^3.1.2",
+    "moment": "^2.29.4",
     "multiselect-react-dropdown": "^2.0.21",
     "react": "^16.13.1",
     "react-bootstrap": "^1.2.2",
@@ -35,9 +37,10 @@
   "scripts": {
     "start": "react-scripts start",
     "test1": "react-scripts build",
-    "build": "yarn build:cra && yarn build:move",
+    "build": "yarn build:version && yarn build:cra && yarn build:move",
     "build:cra": "cross-env CI=false react-scripts build",
     "build:move": "rm -fr ../../../target/classes/static && cp -r ./build ../../../target/classes/static && mv ../../../target/classes/static/index.html ../../../target/classes/templates/index.html",
+    "build:version": "node ./update-build.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

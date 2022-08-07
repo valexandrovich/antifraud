@@ -1,9 +1,11 @@
 package ua.com.solidity.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.*;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.helpers.MessageFormatter;
+import ua.com.solidity.common.monitoring.ServiceMonitor;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,7 +32,6 @@ public class StatusChanger {
         private String status;
         private Long progress;
         private String unit;
-
         @JsonIgnore
         public final void setStartedDateTime(LocalDateTime datetime) {
             started = format.format(datetime);
@@ -62,6 +63,7 @@ public class StatusChanger {
     }
 
     private static synchronized void remove(StatusChanger changer) {
+        ServiceMonitor.removeJob(changer);
         List<StatusChanger> items = periodMap.get(changer.task);
         items.remove(changer);
         if (items.isEmpty()) {
@@ -78,6 +80,10 @@ public class StatusChanger {
                 remove(changer);
             }
         }
+    }
+
+    public synchronized final JsonNode getJsonObject() {
+        return Utils.objectToJsonNode(statusObject);
     }
 
     private static synchronized void execute(TimerTask task) {
@@ -122,6 +128,7 @@ public class StatusChanger {
         statusObject.id = id;
         statusObject.userName = userName;
         statusObject.setStartedDateTime(LocalDateTime.now());
+        ServiceMonitor.addJob(this);
         task = add(period,this);
     }
 
@@ -151,7 +158,7 @@ public class StatusChanger {
         }
     }
 
-    public final void update() {
+    public synchronized final void update() {
         if (!completed) {
             forceExecute(this);
         }
@@ -194,12 +201,12 @@ public class StatusChanger {
         newStage(stage, status, 0, null, Utils.getPeriodicExecutionTaskPeriod(task));
     }
 
-    private void doOnComplete() {
+    private synchronized void doOnComplete() {
         statusObject.progress = 100L;
         statusObject.unit = "%";
     }
 
-    public final void stageComplete(String status) {
+    public synchronized final void stageComplete(String status) {
         synchronized (this) {
             doOnComplete();
             statusObject.status = status;
@@ -232,7 +239,7 @@ public class StatusChanger {
         }
     }
 
-    public final void addProcessedVolume(long volume) {
+    public synchronized final void addProcessedVolume(long volume) {
         if (volume == 0) return;
         setProcessedVolume(processedVolume + volume);
     }
@@ -249,11 +256,9 @@ public class StatusChanger {
         finalStatus(status);
     }
 
-    public final void complete(String status) {
-        synchronized(this) {
-            statusObject.name = name;
-            doOnComplete();
-            finalStatus(status);
-        }
+    public synchronized final void complete(String status) {
+        statusObject.name = name;
+        doOnComplete();
+        finalStatus(status);
     }
 }

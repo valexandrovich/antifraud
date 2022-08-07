@@ -4,6 +4,7 @@ import jwt_decode from "jwt-decode";
 import {
   SET_ALERT_MESSAGE,
   SET_FILE_ID,
+  SET_JURIDICAL_FILE_ID,
   setAlertMessageThunk,
   TOGGLE_TAB,
 } from "./actions/Actions";
@@ -28,6 +29,7 @@ let initialState = {
   },
   activeTab: "fiz",
   fileID: null,
+  juridicalFileID: null,
   monitoring: false,
 };
 
@@ -50,6 +52,12 @@ const AuthReducer = (state = initialState, action = {}) => {
       return {
         ...state,
         fileID: action.fileID,
+      };
+    }
+    case SET_JURIDICAL_FILE_ID: {
+      return {
+        ...state,
+        juridicalFileID: action.juridicalFileID,
       };
     }
     case SUBMIT_AUTH:
@@ -130,7 +138,6 @@ export const submitUserAuthThunk = (authForm) => (dispatch) => {
       }
       dispatch(submitUserAuth(res.data.role, res.data.userName));
     })
-
     .catch((err) => {
       dispatch(setAlertMessageThunk(err.response.data.message, "danger"));
     });

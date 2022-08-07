@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import PageTitle from "../../components/PageTitle";
-import TableItem from "../../components/ProgressBar/TableItem";
+import PageTitle from "../../common/PageTitle";
+import TableItem from "../../common/TableItem";
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
 import authHeader from "../../api/AuthHeader";
 

@@ -95,6 +95,28 @@ const unsubscribeCompany = async (id) => {
     console.log(err);
   }
 };
+
+const getComparisonsPerson = async () => {
+  try {
+    const resp = await axios.get("/api/user/comparisonsPerson", {
+      headers: authHeader(),
+    });
+    return resp.data;
+  } catch (err) {
+    console.log(err);
+  }
+};
+const unComparePerson = async (id) => {
+  try {
+    const resp = await axios.put(`/api/user/unComparePerson/${id}`, null, {
+      headers: authHeader(),
+    });
+    return resp.data;
+  } catch (err) {
+    return err.response;
+  }
+};
+
 const userService = {
   getSubscribed,
   subscribe,
@@ -102,5 +124,7 @@ const userService = {
   getSubscribedCompany,
   subscribeCompany,
   unsubscribeCompany,
+  getComparisonsPerson,
+  unComparePerson,
 };
 export default userService;

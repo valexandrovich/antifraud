@@ -4,9 +4,9 @@ import MaskedInput from "react-text-mask";
 import * as Yup from "yup";
 import Card from "../YPersonCard/Card.js";
 import { useDispatch, useSelector } from "react-redux";
-import Pagination from "../Pagination";
-import PerPage from "../PerPage";
-import Spinner from "../Loader";
+import Pagination from "../../common/Pagination";
+import PerPage from "../../common/PerPage";
+import Spinner from "../../common/Loader";
 
 import FloatInput from "../../common/FloatInput";
 import { setSearchDataYPersonsThunk } from "../../store/reducers/FizSearchReducer";

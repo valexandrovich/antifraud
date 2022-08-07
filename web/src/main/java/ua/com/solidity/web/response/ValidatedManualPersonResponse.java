@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import ua.com.solidity.web.dto.ManualPersonDto;
+import ua.com.solidity.web.dto.dynamicfile.ManualPersonDto;
 import ua.com.solidity.web.response.secondary.ManualPersonStatus;
 import ua.com.solidity.web.response.secondary.ManualTagStatus;
 

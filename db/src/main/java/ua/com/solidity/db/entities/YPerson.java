@@ -68,8 +68,9 @@ import lombok.Setter;
                                 @NamedAttributeNode("importSources")
                         })},
                 attributeNodes = @NamedAttributeNode(value = "altPeople", subgraph = "importSources-subgraph")),
-        @NamedEntityGraph(name = "yperson.sources", attributeNodes =
-        @NamedAttributeNode("importSources")),
+        @NamedEntityGraph(name = "yperson.sources",
+                attributeNodes =
+                @NamedAttributeNode("importSources")),
         @NamedEntityGraph(name = "yperson.forBaseEnricher",
                 subgraphs = {
                         @NamedSubgraph(name = "importSources-subgraph",
@@ -89,7 +90,15 @@ import lombok.Setter;
                         @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "tags", subgraph = "importSourcesAndTagType-subgraph"),
                         @NamedAttributeNode(value = "companyRelations"),
-                        @NamedAttributeNode("importSources")})
+                        @NamedAttributeNode("importSources")}),
+        @NamedEntityGraph(name = "yperson.tagsTagType",
+                subgraphs = {
+                        @NamedSubgraph(name = "tagType-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("tagType")
+                                })},
+                attributeNodes = {
+                        @NamedAttributeNode(value = "tags", subgraph = "tagType-subgraph")})
 })
 @Entity
 @Table(name = "yperson")

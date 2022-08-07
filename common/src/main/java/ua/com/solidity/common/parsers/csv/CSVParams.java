@@ -60,8 +60,16 @@ public class CSVParams {
     @JsonIgnore
     public final String lineSeparator = System.lineSeparator();
 
-    private String nullOrEmpty(String value, String def) {
+    public String nullOrEmpty(String value, String def) {
         return value == null || value.length() == 0 || (nullValue != null && value.matches(nullValue)) ? def : value;
+    }
+
+    public final String matchNull(String value) {
+        String valueTrimmed = value == null ? null : value.trim();
+        if (autoTrim) {
+            value = valueTrimmed;
+        }
+        return value == null || value.isEmpty() || (nullValue != null && valueTrimmed.matches(nullValue)) ? null : value;
     }
 
     @SuppressWarnings("unused")

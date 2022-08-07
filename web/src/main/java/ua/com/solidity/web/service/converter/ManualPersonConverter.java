@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.ManualPerson;
-import ua.com.solidity.web.dto.ManualPersonDto;
+import ua.com.solidity.web.dto.dynamicfile.ManualPersonDto;
 
 @Component
 @AllArgsConstructor
@@ -28,7 +28,7 @@ public class ManualPersonConverter {
         dto.setBirthday(entity.getBirthday());
         dto.setOkpo(entity.getOkpo());
         dto.setCountry(entity.getCountry());
-        dto.setAddress(dto.getAddress());
+        dto.setAddress(entity.getAddress());
         dto.setPhone(entity.getPhone());
         dto.setEmail(entity.getEmail());
         dto.setBirthPlace(entity.getBirthPlace());

@@ -15,6 +15,11 @@ import java.nio.charset.StandardCharsets;
 @Configuration
 @PropertySource({"classpath:scheduler.properties", "classpath:application.properties"})
 public class SchedulerConfiguration {
+/* service monitor activation:
+    @Bean boolean serviceMonitor(ApplicationContext context) {
+        return ServiceMonitor.initialize(context, true, true, false);
+    }*/
+
     @Bean
     RabbitMQListener listener(Config config, Receiver receiver) {
         return new RabbitMQListener(receiver, config.getName());

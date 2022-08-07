@@ -1,14 +1,20 @@
 package ua.com.solidity.enricher.util;
 
 public class StringStorage {
-	public final static String ENRICHER = "ENRICHER";
-	public final static String PERCENT = "%";
-	public final static String DOMESTIC_PASSPORT = "UA_DOMESTIC";
-	public final static String IDCARD_PASSPORT = "UA_IDCARD";
-	public final static String LATIN_LETTERS = "ABEKMHOPCTXY";
-	public final static String CYRILLIC_LETTERS = "АВЕКМНОРСТХУ";
-	public final static String FOREIGN_PASSPORT = "UA_FOREIGN";
-	public final static String DIRECTOR = "DIRECTOR";
-	public final static String CREATOR = "CREATOR";
-	public final static String ENRICHER_ERROR_REPORT_MESSAGE = "Enricher error report for table: {} with revision: {}";
+    public static final String ENRICHER = "ENRICHER";
+    public static final String PERCENT = "%";
+    public static final String DOMESTIC_PASSPORT = "UA_DOMESTIC";
+    public static final String IDCARD_PASSPORT = "UA_IDCARD";
+    public static final String LATIN_LETTERS = "ABEKMHOPCTXY";
+    public static final String CYRILLIC_LETTERS = "АВЕКМНОРСТХУ";
+    public static final String FOREIGN_PASSPORT = "UA_FOREIGN";
+    public static final String DIRECTOR = "DIRECTOR";
+    public static final String CREATOR = "CREATOR";
+    public static final String ENRICHER_ERROR_REPORT_MESSAGE = "Enricher error report for table: {} with revision: {}";
+    public static final String COMPANY_STATE_CRASH = "ПОРУШЕНО СПРАВУ ПРО БАНКРОТСТВО";
+    public static final String TAG_TYPE_NBB1 = "NBB1";
+    public static final String TAG_TYPE_IZ = "IZ";
+    public static final String TAG_TYPE_ID = "ID";
+    public static final String TAG_TYPE_RC = "RC";
+    public static final String TAG_TYPE_NAL = "NAL";
 }

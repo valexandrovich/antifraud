@@ -18,4 +18,5 @@ public class YPersonSearchDto {
     private YAddress address;
     private YPassport passport;
     private boolean subscribe;
+    private boolean compared;
 }

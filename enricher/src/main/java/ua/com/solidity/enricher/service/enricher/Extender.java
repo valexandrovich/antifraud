@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import ua.com.solidity.db.entities.YCAddress;
 import ua.com.solidity.db.entities.YCTag;
 import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YCompanyRelation;
+import ua.com.solidity.db.entities.YCompanyRelationCompany;
 import ua.com.solidity.db.entities.YCompanyRole;
 import ua.com.solidity.db.entities.YEmail;
 import ua.com.solidity.db.entities.YINN;
@@ -29,8 +31,6 @@ import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.entities.YPhone;
 import ua.com.solidity.db.entities.YTag;
-import ua.com.solidity.db.repositories.YCompanyRelationRepository;
-import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
 
@@ -40,8 +40,6 @@ public class Extender {
 
     private final YPersonRepository ypr;
     private final YPassportRepository yPassportRepository;
-    private final YCompanyRepository yCompanyRepository;
-    private final YCompanyRelationRepository yCompanyRelationRepository;
 
     public void addAltPerson(YPerson person, String lastName, String firstName,
                              String patName, String language,
@@ -429,6 +427,26 @@ public class Extender {
         YCompanyRelation yCompanyRelation = yCompanyRelationOptional.orElseGet(YCompanyRelation::new);
         yCompanyRelation.setCompany(company);
         yCompanyRelation.setPerson(person);
+        yCompanyRelation.setRole(role);
+
+        companyRelationSet.add(yCompanyRelation);
+    }
+
+    public void addCompanyRelation(YCompany companyCreator, YCompany company, YCompanyRole role, ImportSource source,
+                                   Set<YCompanyRelationCompany> companyRelationSet, Set<YCompanyRelationCompany> companyRelationsSaved) {
+        Optional<YCompanyRelationCompany> yCompanyRelationOptional = companyRelationSet.parallelStream()
+                .filter(mr -> Objects.equals(mr.getCompany(), company)
+                        && Objects.equals(mr.getCompanyCreator(), companyCreator)
+                        && Objects.equals(mr.getRole(), role)).findAny();
+        if (yCompanyRelationOptional.isEmpty())
+            yCompanyRelationOptional = companyRelationsSaved.parallelStream()
+                    .filter(mr -> Objects.equals(mr.getCompany(), company)
+                            && Objects.equals(mr.getCompanyCreator(), companyCreator)
+                            && Objects.equals(mr.getRole(), role)).findAny();
+
+        YCompanyRelationCompany yCompanyRelation = yCompanyRelationOptional.orElseGet(YCompanyRelationCompany::new);
+        yCompanyRelation.setCompany(company);
+        yCompanyRelation.setCompanyCreator(companyCreator);
         yCompanyRelation.setRole(role);
 
         companyRelationSet.add(yCompanyRelation);

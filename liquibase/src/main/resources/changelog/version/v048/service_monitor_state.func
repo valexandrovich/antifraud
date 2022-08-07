@@ -1,0 +1,23 @@
+CREATE OR REPLACE FUNCTION service_monitor_state(
+	)
+    RETURNS jsonb
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+            begin
+            return array_to_json(array_agg(row_to_json(x))) FROM
+        (SELECT sm.pid,
+    		sm.backend_start,
+    		sm.id,
+    		sm.name,
+    		sm.last_activity,
+    		sm.data
+   			FROM
+			 	service_monitor sm
+	     	INNER JOIN
+			 	pg_stat_activity a
+			ON a.pid = sm.pid AND a.backend_start = a.backend_start
+  		ORDER BY sm.name, sm.backend_start) x;
+            end;
+            $BODY$;

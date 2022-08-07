@@ -9,9 +9,14 @@ public class Base {
     public static final String BASE_PASSPORTS = "base_passports";
     public static final String CONTRAGENT = "contragent";
     public static final String GOVUA1 = "govua_1";
+    public static final String GOVUA2 = "govua_2";
+    public static final String GOVUA4 = "govua_4";
+    public static final String GOVUA5 = "govua_5";
+    public static final String GOVUA7 = "govua_7";
     public static final String GOVUA10 = "govua_10";
     public static final String GOVUA11 = "govua_11";
     public static final String GOVUA17 = "govua_17_le";
     public static final String GOVUA20 = "govua_20";
+    public static final String MANUAL_COMPANY = "manual_company";
     public static final String MANUAL_PERSON = "manual_person";
 }

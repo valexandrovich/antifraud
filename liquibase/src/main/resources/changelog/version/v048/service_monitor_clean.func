@@ -1,0 +1,17 @@
+CREATE OR REPLACE FUNCTION service_monitor_clean(
+)
+    RETURNS void
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+Begin
+    delete from service_monitor
+        using
+            service_monitor sm
+                left outer join
+                pg_stat_activity a
+                on a.pid = sm.pid and a.backend_start = sm.backend_start
+    where a.pid IS NULL;
+End;
+$BODY$;

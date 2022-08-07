@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="046-002-1" author="Beetone">
+        <createTable tableName="govua_15">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_govua_15"/>
+            </column>
+            <column name="revision" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="portion_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fio" type="VARCHAR(64)"/>
+            <column name="job" type="VARCHAR(1024)"/>
+            <column name="judgment_composition" type="VARCHAR(512)"/>
+            <column name="period" type="VARCHAR(32)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="046-002-2" author="Beetone">
+        <createIndex tableName="govua_15" indexName="idx_govua_15_revision" unique="false">
+            <column name="revision"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="046-002-3" author="Beetone">
+        <createIndex tableName="govua_15" indexName="idx_govua_15_portion_id" unique="false">
+            <column name="portion_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="046-002-4" author="Beetone">
+        <sql>
+            insert into import_source(id, name, pipeline_info, source_info)
+            values(2015, 'govua15_t', '{
+              "pipeline": [
+                {
+                    "name": "zip",
+                    "prototype": "ZipFile"
+                },
+                {
+                    "name": "stream",
+                    "inputs": {
+                        "zip": "zip"
+                    },
+                    "prototype": "ZipInflaterStream"
+                },
+                {
+                    "data": {
+                        "format": {
+                            "path": [
+                                "DATA"
+                            ]
+                        }
+                      },
+                      "name": "parser",
+                      "inputs": {
+                           "ext": "extension",
+                           "stream": "stream"
+                      },
+                      "prototype": "XMLParser"
+                },
+                {
+                  "name": "extension",
+                  "prototype": "RevisionExtension"
+                },
+                {
+                  "data": {
+                    "mode": "statement",
+                    "table": "govua_15",
+                    "mapping": {
+                      "fio": "FIO",
+                      "job": "JOB",
+                      "judgment_composition": "JUDGMENT_COMPOSITION",
+                      "period": "PERIOD"
+                    }
+                  },
+                  "name": "writer",
+                  "inputs": {
+                    "ext": "extension",
+                    "input": "parser"
+                  },
+                  "prototype": "TableWriter"
+                }
+              ]}', '{
+              "apiKey": "8faa71c1-3a54-45e8-8f6e-06c92b1ff8bc",
+              "handler": "dataGovUa"
+            }');
+        </sql>
+        <rollback>
+            <sql>
+                delete from import_source
+                where id = 2015;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="046-002-5" author="Beetone">
+        <sql>
+            insert into scheduler(group_name, name, exchange, data, enabled, force_disabled)
+            values('govua', '015.govua_15', 'otp-etl.downloader', '{"ident": "govua15_t", "attemptsLeft": 3}', false, false);
+        </sql>
+        <rollback>
+            <sql>
+                delete from scheduler
+                where name = '015.govua_15';
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

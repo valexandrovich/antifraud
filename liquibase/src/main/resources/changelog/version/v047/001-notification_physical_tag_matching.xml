@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v047-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v047-0"/>
+    </changeSet>
+
+    <changeSet id="v047-1" author="Kyrylo Chornobryvets">
+        <createTable tableName="notification_condition_tag_type">
+            <column name="condition_id" type="INT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_condition_tag_type"/>
+            </column>
+            <column name="tag_type_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_condition_tag_type"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v047-2" author="Kyrylo Chornobryvets">
+        <createTable tableName="notification_matching_notification_condition">
+            <column name="condition_id" type="INT">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_notification_matching_notification_condition"/>
+            </column>
+            <column name="matching_id" type="INT">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_notification_matching_notification_condition"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v047-3" author="Kyrylo Chornobryvets">
+        <createTable tableName="notification_physical_tag_condition">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_notification_physical_tag_condition"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="v047-4" author="Kyrylo Chornobryvets">
+        <createTable tableName="notification_physical_tag_matching">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_physical_tag_matching"/>
+            </column>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="description" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+
+
+    <changeSet id="v047-5" author="Kyrylo Chornobryvets">
+        <addUniqueConstraint columnNames="id" constraintName="uc_notification_physical_tag_condition_id"
+                             tableName="notification_physical_tag_condition"/>
+    </changeSet>
+    <changeSet id="v047-6" author="Kyrylo Chornobryvets">
+        <addUniqueConstraint columnNames="id" constraintName="uc_notification_physical_tag_matching_id"
+                             tableName="notification_physical_tag_matching"/>
+    </changeSet>
+    <changeSet id="v047-7" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="condition_id" baseTableName="notification_condition_tag_type"
+                                 constraintName="fk_notcontagtyp_on_notification_physical_tag_condition"
+                                 referencedColumnNames="id" referencedTableName="notification_physical_tag_condition"/>
+    </changeSet>
+    <changeSet id="v047-8" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="tag_type_id" baseTableName="notification_condition_tag_type"
+                                 constraintName="fk_notcontagtyp_on_tag_type" referencedColumnNames="id"
+                                 referencedTableName="tag_type"/>
+    </changeSet>
+    <changeSet id="v047-9" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="condition_id"
+                                 baseTableName="notification_matching_notification_condition"
+                                 constraintName="fk_notmatnotcon_on_notification_physical_tag_condition"
+                                 referencedColumnNames="id" referencedTableName="notification_physical_tag_condition"/>
+    </changeSet>
+    <changeSet id="v047-10" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="matching_id"
+                                 baseTableName="notification_matching_notification_condition"
+                                 constraintName="fk_notmatnotcon_on_notification_physical_tag_matching"
+                                 referencedColumnNames="id" referencedTableName="notification_physical_tag_matching"/>
+    </changeSet>
+
+    <changeSet id="v047-11" author="Kyrylo Chornobryvets">
+        <insert tableName="notification_physical_tag_matching">
+            <column name="id" value="1"/>
+            <column name="email" value="antifraud-info-ubb@otpbank.com.ua"/>
+        </insert>
+        <insert tableName="notification_physical_tag_matching">
+            <column name="id" value="2"/>
+            <column name="email" value="antifraud-info-finmon@otpbank.com.ua"/>
+        </insert>
+        <insert tableName="notification_physical_tag_matching">
+            <column name="id" value="3"/>
+            <column name="email" value="antifraud-info-compliance@otpbank.com.ua"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="notification_physical_tag_matching"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v047-12" author="Kyrylo Chornobryvets">
+
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="1"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="2"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="3"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="4"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="5"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="6"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="7"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="8"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="9"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="10"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="11"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="12"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="13"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="14"/>
+        </insert>
+
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="15"/>
+        </insert>
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="16"/>
+        </insert>
+
+        <insert tableName="notification_physical_tag_condition">
+            <column name="id" value="17"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="notification_physical_tag_condition"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v047-13" author="Kyrylo Chornobryvets">
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="1"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="1"/>
+            <column name="tag_type_id" value="8"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="2"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="2"/>
+            <column name="tag_type_id" value="7"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="3"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="3"/>
+            <column name="tag_type_id" value="10"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="4"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="4"/>
+            <column name="tag_type_id" value="13"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="5"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="5"/>
+            <column name="tag_type_id" value="12"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="6"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="6"/>
+            <column name="tag_type_id" value="13"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="7"/>
+            <column name="tag_type_id" value="2"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="7"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="8"/>
+            <column name="tag_type_id" value="3"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="8"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="9"/>
+            <column name="tag_type_id" value="4"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="9"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="10"/>
+            <column name="tag_type_id" value="5"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="10"/>
+            <column name="tag_type_id" value="14"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="11"/>
+            <column name="tag_type_id" value="2"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="11"/>
+            <column name="tag_type_id" value="15"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="12"/>
+            <column name="tag_type_id" value="3"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="12"/>
+            <column name="tag_type_id" value="15"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="13"/>
+            <column name="tag_type_id" value="4"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="13"/>
+            <column name="tag_type_id" value="15"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="14"/>
+            <column name="tag_type_id" value="5"/>
+        </insert>
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="14"/>
+            <column name="tag_type_id" value="15"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="15"/>
+            <column name="tag_type_id" value="7"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="16"/>
+            <column name="tag_type_id" value="9"/>
+        </insert>
+
+        <insert tableName="notification_condition_tag_type">
+            <column name="condition_id" value="17"/>
+            <column name="tag_type_id" value="8"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="notification_condition_tag_type"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v047-14" author="Kyrylo Chornobryvets">
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="1"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="2"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="3"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="4"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="5"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="6"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="7"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="8"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="9"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="10"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="11"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="12"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="13"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="1"/>
+            <column name="condition_id" value="14"/>
+        </insert>
+
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="2"/>
+            <column name="condition_id" value="15"/>
+        </insert>
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="2"/>
+            <column name="condition_id" value="16"/>
+        </insert>
+
+        <insert tableName="notification_matching_notification_condition">
+            <column name="matching_id" value="3"/>
+            <column name="condition_id" value="17"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="notification_matching_notification_condition"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

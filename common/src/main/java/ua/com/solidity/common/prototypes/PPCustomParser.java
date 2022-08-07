@@ -15,7 +15,6 @@ import java.io.InputStream;
 public abstract class PPCustomParser extends Prototype {
     protected static final String STREAM = "stream";
     protected static final String EXTENSION = "ext";
-    protected static final String PARSER = "parser";
     protected static final String LIMITS = "limits";
 
     @NoArgsConstructor
@@ -110,6 +109,9 @@ public abstract class PPCustomParser extends Prototype {
 
     @Override
     protected void close(Item item) {
-        item.getLocalData(PARSER, CustomParser.class).close();
+        Data data = item.getInternalData(Data.class);
+        if (data != null) {
+            data.parser.close();
+        }
     }
 }

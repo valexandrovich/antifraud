@@ -7,9 +7,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import ua.com.solidity.dispatcher.model.YPersonProcessing;
-import ua.com.solidity.dispatcher.model.response.YPersonDispatcherResponse;
 import ua.com.solidity.dispatcher.storage.YPersonStorage;
+import ua.com.solidity.util.model.YPersonProcessing;
+import ua.com.solidity.util.model.response.YPersonDispatcherResponse;
 
 @Service
 public class YPersonDispatcherService {

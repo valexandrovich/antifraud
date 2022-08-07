@@ -42,14 +42,13 @@ export const checkAutoLogin = (dispatch, history, logOutTimeout, location) => {
     return;
   }
   dispatch(authenticate());
-  history.replace(location);
+  history.replace(location === "/" ? "/search" : location);
   let expireDate = decoded.exp * 1000 - 5000;
   let iatDate = Date.now();
   if (iatDate >= expireDate) {
     dispatch(logoutUserThunk());
     return;
   }
-
   const timer = expireDate - iatDate;
   runLogoutTimer(dispatch, timer, logOutTimeout);
 };

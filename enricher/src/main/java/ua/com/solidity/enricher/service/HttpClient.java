@@ -25,7 +25,6 @@ public class HttpClient {
             try {
                 result = restTemplate.postForObject(url, request, clazz);
             } catch (ResourceAccessException e) {
-                log.warn(e.getMessage());
                 log.info("Need to run the Dispatcher");
             }
             try {
@@ -46,7 +45,6 @@ public class HttpClient {
             try {
                 result = restTemplate.getForObject(url, clazz);
             } catch (ResourceAccessException e) {
-                log.warn(e.getMessage());
                 log.info("Need to run the Dispatcher");
             }
             try {

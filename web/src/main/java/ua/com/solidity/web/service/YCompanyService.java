@@ -65,7 +65,7 @@ public class YCompanyService {
             gs.add(new SearchCriteria(PDV, pdv, null, SearchOperation.EQUALS));
         }
 
-        String address = Objects.toString(searchRequest.getAddress(), "");
+        String address = Objects.toString(searchRequest.getAddress().toUpperCase().trim(), "");
         if (!address.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(ADDRESS, address, ADDRESSES, SearchOperation.MATCH));

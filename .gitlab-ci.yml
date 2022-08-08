@@ -55,6 +55,8 @@ maven-package:
       - statuslogger/target/*.jar
       - report/target/*.jar
       - dispatcher/target/*.jar
+    exclude:
+      - enricher/target/*-exec.jar
 
 kaniko-build:
   stage: kaniko-build
@@ -70,7 +72,7 @@ kaniko-build:
     - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
   script:
     - >-
-      for file in $(find . -type f -regex '.*target/[^-]*-[^-]*\.jar'); do
+      for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
         app_name=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL
@@ -123,7 +125,7 @@ helm-package:
   <<: *default-rules
   script:
     - >-
-      for file in $(find . -type f -regex '.*target/[^-]*-[^-]*\.jar'); do
+      for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
         app_name=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f1 | tr -d _)
         version=$(echo $file | sed 's/.jar$//' | rev | cut -d'/' -f1 | rev | cut -d'-' -f2)$COMMIT_HASH_TAIL

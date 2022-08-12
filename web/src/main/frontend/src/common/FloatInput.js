@@ -1,4 +1,5 @@
 import React from "react";
+import { Field } from "formik";
 
 const FloatInput = ({
   name,
@@ -16,7 +17,7 @@ const FloatInput = ({
   return (
     <div className={`form-group ${col}`}>
       <span className="has-float-label">
-        <input
+        <Field
           name={name}
           onChange={onChange}
           onBlur={handleBlur}

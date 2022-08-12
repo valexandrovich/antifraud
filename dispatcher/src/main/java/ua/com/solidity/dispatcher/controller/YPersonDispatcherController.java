@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ua.com.solidity.dispatcher.config.Config;
 import ua.com.solidity.dispatcher.service.YPersonDispatcherService;
@@ -20,10 +21,10 @@ public class YPersonDispatcherController {
     private final YPersonDispatcherService dispatcherService;
 
     @PostMapping
-    public YPersonDispatcherResponse personDispatcherPost (@RequestBody List <YPersonProcessing> people)
+    public YPersonDispatcherResponse personDispatcherPost (@RequestBody List <YPersonProcessing> people, @RequestParam(name = "id") String id)
     {
         synchronized (dispatcherService) {
-            return dispatcherService.dispatch(people);
+            return dispatcherService.dispatch(people, id);
         }
     }
 

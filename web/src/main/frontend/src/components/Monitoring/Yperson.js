@@ -26,7 +26,6 @@ const Yperson = () => {
         setLoader(false);
         if (!mountedRef.current) return null;
       } catch (e) {
-        console.log(e);
         setLoader(false);
       }
     });

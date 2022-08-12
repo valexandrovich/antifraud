@@ -47,7 +47,6 @@ function withClearCache(Component) {
       const location = window.location.href;
       window.location.replace(location);
       setIsLatestBuildDate(true);
-      debugger;
     };
     return <>{isLatestBuildDate ? <Component {...props} /> : null}</>;
   }

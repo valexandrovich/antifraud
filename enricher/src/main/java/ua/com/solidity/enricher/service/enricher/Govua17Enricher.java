@@ -149,7 +149,6 @@ public class Govua17Enricher implements Enricher {
                             if (StringUtils.isNotBlank(r.getShortName()))
                                 extender.addAltCompany(company, UtilString.toUpperCase(r.getShortName()), "UA", source);
 
-                            companies.add(company);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
                             wrongCounter[0]++;
@@ -163,7 +162,8 @@ public class Govua17Enricher implements Enricher {
                     companyRepository.saveAll(companies);
                     companySet.addAll(companies);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, resp);
+                    if (!resp.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, resp);
 
                     page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                 } else {

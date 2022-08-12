@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
+import * as IoIcons from "react-icons/io";
 
-const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
+const PaginationWithConfirm = ({
+  filesPerPage,
+  totalFiles,
+  paginate,
+  margin,
+  pageNo,
+  search,
+  setSearch,
+}) => {
   const pageNumbers = [];
   const [selected, setSelected] = useState(1);
   const selectedPage =
@@ -26,6 +35,9 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
       Math.ceil(totalFiles / filesPerPage)
     );
   }
+  const handleSearch = () => {
+    setSearch(!search);
+  };
 
   return (
     <nav
@@ -43,6 +55,7 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
                     onClick={() => {
                       paginate(number);
                       setSelected(number);
+                      setSearch(!search);
                     }}
                     className="page-link"
                   >
@@ -54,11 +67,14 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
                   </button>
                 </li>
               ) : (
-                <li style={{ width: 120 }} className="page-item mb-2">
-                  <label className={"d-flex"}>
-                    ...
+                <li className="page-item mb-2">
+                  <div className={"d-flex"}>
+                    <label htmlFor="header-search">
+                      <span className="visually-hidden">Сторінка</span>
+                    </label>
+
                     <input
-                      className={"form-control"}
+                      style={{ width: 120, outline: "none" }}
                       onChange={(e) => {
                         setSelected(
                           e.target.value > totalFiles / filesPerPage ||
@@ -73,11 +89,20 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
                             : Number(e.target.value)
                         );
                       }}
-                      type={"number"}
                       value={selected}
+                      type="number"
+                      placeholder="Сторінка"
+                      name="search"
+                      className={"form-control border-0"}
                     />
-                    ...
-                  </label>
+                    <button
+                      className={"page-link border-0"}
+                      onClick={handleSearch}
+                      type="button"
+                    >
+                      <IoIcons.IoIosSearch />
+                    </button>
+                  </div>
                 </li>
               )}
             </div>
@@ -88,4 +113,4 @@ const Pagination = ({ filesPerPage, totalFiles, paginate, margin, pageNo }) => {
   );
 };
 
-export default Pagination;
+export default PaginationWithConfirm;

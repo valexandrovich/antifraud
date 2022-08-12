@@ -27,7 +27,6 @@ const Relations = () => {
     YPersonService.joinToExistingRelation(selectedGroup, checked).then(
       (res) => {
         if (res.status > 300) {
-          debugger;
           dispatch(
             setAlertMessageThunk(
               res.data.messages.map((m) => m),
@@ -47,7 +46,6 @@ const Relations = () => {
   const createNew = () => {
     YPersonService.createNewRelation(checked, relationType).then((res) => {
       if (res.status > 300) {
-        debugger;
         dispatch(
           setAlertMessageThunk(
             res.data.messages.map((m) => m),
@@ -82,10 +80,13 @@ const Relations = () => {
             return (
               <div key={el.group.id}>
                 <PreviewTableGroups
-                  name={`${el.group.id} ${el.group.relationType.type}`}
+                  name={el.group.type}
+                  groupID={el.group.id}
                   group={el}
                   type={"checkbox"}
                   setSelectedGroup={setSelectedGroup}
+                  delBTN={comparisonsPerson.newPeople}
+                  setComparisonsPerson={setComparisonsPerson}
                 />
               </div>
             );
@@ -109,10 +110,18 @@ const Relations = () => {
                   className="form-select"
                 >
                   <option value="">Додати до існуючого</option>
-                  <option value="1">Створити новий Sibling</option>
-                  <option value="2">Створити новий Parent</option>
-                  <option value="3">Створити новий Spouse</option>
-                  <option value="4">Створити новий Alter ego</option>
+                  <option value="1">
+                    Створити новий тип зв'язків брат/сестра
+                  </option>
+                  <option value="2">
+                    Створити новий тип зв'язків батьки/дитина
+                  </option>
+                  <option value="3">
+                    Створити новий тип зв'язків подружжя
+                  </option>
+                  <option value="4">
+                    Створити новий тип зв'язків ідентичність
+                  </option>
                 </select>
               </span>
             </div>
@@ -130,7 +139,7 @@ const Relations = () => {
                 onClick={createNew}
                 className={"btn custom-btn"}
               >
-                Обеднати
+                Об'єднати
               </button>
             )}
           </div>

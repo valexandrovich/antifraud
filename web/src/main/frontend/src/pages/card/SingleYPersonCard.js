@@ -49,7 +49,6 @@ const SingleYPersonCard = () => {
   };
 
   const handleChange = (e, type) => {
-    debugger;
     const { name, value, checked, id } = e.target;
     setPersonDetails((prevState) => ({
       ...prevState,
@@ -97,7 +96,6 @@ const SingleYPersonCard = () => {
         position = heightLeft - imgHeight;
         doc.addPage();
         doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight + 45);
-        debugger;
         heightLeft -= pageHeight;
       }
       doc.save(`звіт ${personDetails.lastName} ${personDetails.firstName}.pdf`);
@@ -319,15 +317,12 @@ const SingleYPersonCard = () => {
               element={personDetails.relationGroups}
             >
               {personDetails.relationGroups &&
-                personDetails.relationGroups.length > 0 &&
-                personDetails.relationGroups.map((rel) => (
+                personDetails.relationGroups.length > 0 && (
                   <Relations
-                    personId={id}
                     onChange={(e) => handleChange(e, "personRelations")}
-                    key={rel.id}
-                    data={rel}
+                    data={personDetails.relationGroups}
                   />
-                ))}
+                )}
             </ToggleCard>
           </div>
         </div>

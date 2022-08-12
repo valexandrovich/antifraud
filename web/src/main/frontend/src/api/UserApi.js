@@ -117,6 +117,25 @@ const unComparePerson = async (id) => {
   }
 };
 
+const removePersonFromRelation = async (personId, groupId) => {
+  try {
+    const resp = await axios.post(
+      "/api/yperson/removePersonFromRelation",
+      null,
+      {
+        headers: authHeader(),
+        params: {
+          personId,
+          groupId,
+        },
+      }
+    );
+    return resp.data;
+  } catch (err) {
+    return err.response;
+  }
+};
+
 const userService = {
   getSubscribed,
   subscribe,
@@ -126,5 +145,6 @@ const userService = {
   unsubscribeCompany,
   getComparisonsPerson,
   unComparePerson,
+  removePersonFromRelation,
 };
 export default userService;

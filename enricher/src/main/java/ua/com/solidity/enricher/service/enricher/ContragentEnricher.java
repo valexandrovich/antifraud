@@ -151,7 +151,8 @@ public class ContragentEnricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-                YPersonDispatcherResponse responsePeople = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse responsePeople = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 respPeople = responsePeople.getResp();
                 List<UUID> tempPeople = responsePeople.getTemp();
 
@@ -319,8 +320,6 @@ public class ContragentEnricher implements Enricher {
                                 cTag.setSource(CONTRAGENT);
                                 cTags.add(cTag);
                                 extender.addTags(company, cTags, source);
-
-                                companies.add(company);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getIdentifyCode()), "Wrong EDRPOU");
                                 wrongCounter[0]++;
@@ -338,14 +337,16 @@ public class ContragentEnricher implements Enricher {
 
                     ypr.saveAll(people);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+                    if (!respPeople.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companies);
 
                     emnService.enrichYPersonMonitoringNotification(people);
                     emnService.enrichYCompanyMonitoringNotification(companies);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
+                    if (!respCompanies.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
                     page = onePage.stream().parallel().filter(p -> tempCompanies.contains(p.getUuid()) || tempPeople.contains(p.getUuid()))
                             .collect(Collectors.toSet());

@@ -13,6 +13,7 @@ import * as IoIcons from "react-icons/io";
 const UploadedFiles = () => {
   const [resp, setResp] = useState([]);
   const [singleFile, setSingleFile] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [filesPerPage] = useState(15);
   const [confirmationRemove, setConfirmationRemove] = useState(null);
@@ -22,6 +23,12 @@ const UploadedFiles = () => {
   const paginate = useCallback((pageNumber) => setCurrentPage(pageNumber), []);
   const dispatch = useDispatch();
   const mountedRef = useRef(true);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line no-unused-expressions
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [singleFile]);
 
   const getFiles = useCallback(() => {
     fetch("/api/uniPF/getUploaded", { headers: authHeader() })
@@ -116,7 +123,7 @@ const UploadedFiles = () => {
                       }}
                     >
                       {el.uuid}
-                      {el.type?.name === "PHYSICAL" ? (
+                      {el.type?.name === "PHYSICAL" || el.type?.name == null ? (
                         <IoIcons.IoMdPerson
                           style={{
                             width: 20,
@@ -146,12 +153,12 @@ const UploadedFiles = () => {
                     <td>{el.rowCount || "не вказано"}</td>
                     <td>{el.description}</td>
                     <UploadFilesActions
-                      type={el.type.name}
+                      type={el.type?.name}
                       enrich={enrich}
                       el={el.uuid}
                       remove={() => setConfirmationRemove(el.uuid)}
                       info={(e) => {
-                        getInfo(e, el.type.name);
+                        getInfo(e, el.type?.name);
                       }}
                     />
                   </tr>
@@ -178,10 +185,16 @@ const UploadedFiles = () => {
       )}
 
       {singleFile.persons && singleFile.persons.length > 0 && (
-        <Table canEdit={false} data={singleFile.persons} />
+        <>
+          <Table canEdit={false} data={singleFile.persons} />
+          <div ref={bottomRef}></div>
+        </>
       )}
       {singleFile.companies && singleFile.companies.length > 0 && (
-        <Table data={singleFile.companies} />
+        <>
+          <Table data={singleFile.companies} />
+          <div ref={bottomRef}></div>
+        </>
       )}
     </div>
   );

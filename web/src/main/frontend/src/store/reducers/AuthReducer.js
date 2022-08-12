@@ -9,6 +9,9 @@ import {
   TOGGLE_TAB,
 } from "./actions/Actions";
 
+import { resetFormValueAc } from "./actions/YPersonActions";
+import { resetYCompanyFormValueAc } from "./actions/YcompanyActions";
+
 export const CHANGE_FORM_VALUE = "CHANGE_FORM_VALUE";
 export const LOGOUT = "LOGOUT";
 export const SET_AUTH = "SET_AUTH";
@@ -146,6 +149,8 @@ export const submitUserAuthThunk = (authForm) => (dispatch) => {
 export const logoutUserThunk = () => (dispatch) => {
   authService.logout();
   dispatch(logoutUser());
+  dispatch(resetFormValueAc());
+  dispatch(resetYCompanyFormValueAc());
 };
 
 export default AuthReducer;

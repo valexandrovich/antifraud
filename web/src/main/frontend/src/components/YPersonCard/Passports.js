@@ -108,7 +108,6 @@ const Passports = ({ data, onChange, onClick }) => {
                 }}
                 validationSchema={uaIdCard}
                 onSubmit={(values) => {
-                  console.log(values, "UaIdCard");
                   update(values);
                 }}
               >

@@ -12,6 +12,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,9 @@ public class NotificationPhysicalTagCondition {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", unique = true)
     private Integer id;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "matching_id", referencedColumnName = "id")
+    private NotificationPhysicalTagMatching matching;
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "notification_condition_tag_type",

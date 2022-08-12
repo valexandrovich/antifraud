@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -286,7 +287,7 @@ public class ManualFileService {
             String column = executor.getColumn();
             if (header.contains(column) && !StringUtils.isBlank(line.get(header.indexOf(column)))) {
                 String value = line.get(header.indexOf(column)).replace("\"", "");
-                executor.getFieldSetter().accept(value);
+                executor.getFieldSetter().accept(UtilString.toUpperCase(value).trim());
                 isEmpty.state = false;
             }
         });
@@ -330,7 +331,7 @@ public class ManualFileService {
             String column = executor.getColumn();
             if (header.contains(column) && !StringUtils.isBlank(line.get(header.indexOf(column)))) {
                 String value = line.get(header.indexOf(column)).replace("\"", "");
-                executor.getFieldSetter().accept(value);
+                executor.getFieldSetter().accept(UtilString.toUpperCase(value).trim());
                 isEmpty.state = false;
             }
         });
@@ -372,7 +373,7 @@ public class ManualFileService {
                     List<Integer> listValue = findDuplicateColumn(tagColumn, header);
                     if (header.contains(tagColumn) && !StringUtils.isBlank(line.get(listValue.get(index)))) {
                         String value = line.get(listValue.get(index)).replace("\"", "");
-                        executor.getFieldSetter().accept(value);
+                        executor.getFieldSetter().accept(UtilString.toUpperCase(value).trim());
                         isEmptyTag.state = false;
                     }
                 });
@@ -412,7 +413,7 @@ public class ManualFileService {
                     List<Integer> listValue = findDuplicateColumn(tagColumn, header);
                     if (header.contains(tagColumn) && !StringUtils.isBlank(line.get(listValue.get(index)))) {
                         String value = line.get(listValue.get(index)).replace("\"", "");
-                        executor.getFieldSetter().accept(value);
+                        executor.getFieldSetter().accept(UtilString.toUpperCase(value).trim());
                         isEmptyTag.state = false;
                     }
                 });
@@ -612,38 +613,39 @@ public class ManualFileService {
 
     public ValidatedManualPersonResponse updateManualPerson(Long id, int index, String value) {
         ManualPerson person = manualPersonRepository.getById(id);
+        String finalValue = UtilString.toUpperCase(value).trim();
         List<Consumer<ManualPerson>> consumerList = List.of(
-                p -> p.setCnum(value),
-                p -> p.setLnameUk(value),
-                p -> p.setFnameUk(value),
-                p -> p.setPnameUk(value),
-                p -> p.setLnameRu(value),
-                p -> p.setFnameRu(value),
-                p -> p.setPnameRu(value),
-                p -> p.setLnameEn(value),
-                p -> p.setFnameEn(value),
-                p -> p.setPnameEn(value),
-                p -> p.setBirthday(value),
-                p -> p.setOkpo(value),
-                p -> p.setCountry(value),
-                p -> p.setAddress(value),
-                p -> p.setPhone(value),
-                p -> p.setEmail(value),
-                p -> p.setBirthPlace(value),
-                p -> p.setSex(value),
-                p -> p.setComment(value),
-                p -> p.setPassLocalNum(value),
-                p -> p.setPassLocalSerial(value),
-                p -> p.setPassLocalIssuer(value),
-                p -> p.setPassLocalIssueDate(value),
-                p -> p.setPassIntNum(value),
-                p -> p.setPassIntRecNum(value),
-                p -> p.setPassIntIssuer(value),
-                p -> p.setPassIntIssueDate(value),
-                p -> p.setPassIdNum(value),
-                p -> p.setPassIdRecNum(value),
-                p -> p.setPassIdIssuer(value),
-                p -> p.setPassIdIssueDate(value));
+                p -> p.setCnum(finalValue),
+                p -> p.setLnameUk(finalValue),
+                p -> p.setFnameUk(finalValue),
+                p -> p.setPnameUk(finalValue),
+                p -> p.setLnameRu(finalValue),
+                p -> p.setFnameRu(finalValue),
+                p -> p.setPnameRu(finalValue),
+                p -> p.setLnameEn(finalValue),
+                p -> p.setFnameEn(finalValue),
+                p -> p.setPnameEn(finalValue),
+                p -> p.setBirthday(finalValue),
+                p -> p.setOkpo(finalValue),
+                p -> p.setCountry(finalValue),
+                p -> p.setAddress(finalValue),
+                p -> p.setPhone(finalValue),
+                p -> p.setEmail(finalValue),
+                p -> p.setBirthPlace(finalValue),
+                p -> p.setSex(finalValue),
+                p -> p.setComment(finalValue),
+                p -> p.setPassLocalNum(finalValue),
+                p -> p.setPassLocalSerial(finalValue),
+                p -> p.setPassLocalIssuer(finalValue),
+                p -> p.setPassLocalIssueDate(finalValue),
+                p -> p.setPassIntNum(finalValue),
+                p -> p.setPassIntRecNum(finalValue),
+                p -> p.setPassIntIssuer(finalValue),
+                p -> p.setPassIntIssueDate(finalValue),
+                p -> p.setPassIdNum(finalValue),
+                p -> p.setPassIdRecNum(finalValue),
+                p -> p.setPassIdIssuer(finalValue),
+                p -> p.setPassIdIssueDate(finalValue));
         consumerList.get(index).accept(person);
         manualPersonRepository.save(person);
         return getUploadedManualPerson(person.getUuid().getUuid());
@@ -651,23 +653,24 @@ public class ManualFileService {
 
     public ValidatedManualCompanyResponse updateManualCompany(Long id, int index, String value) {
         ManualCompany company = manualCompanyRepository.getById(id);
+        String finalValue = UtilString.toUpperCase(value).trim();
         List<Consumer<ManualCompany>> consumerList = List.of(
-                p -> p.setCnum(value),
-                p -> p.setName(value),
-                p -> p.setNameEn(value),
-                p -> p.setShortName(value),
-                p -> p.setEdrpou(value),
-                p -> p.setPdv(value),
-                p -> p.setState(UtilString.toUpperCase(value)),
-                p -> p.setAddress(value),
-                p -> p.setLname(value),
-                p -> p.setFname(value),
-                p -> p.setPname(value),
-                p -> p.setInn(value),
-                p -> p.setTypeRelationPerson(value),
-                p -> p.setCname(value),
-                p -> p.setEdrpouRelationCompany(value),
-                p -> p.setTypeRelationCompany(value));
+                p -> p.setCnum(finalValue),
+                p -> p.setName(finalValue),
+                p -> p.setNameEn(finalValue),
+                p -> p.setShortName(finalValue),
+                p -> p.setEdrpou(finalValue),
+                p -> p.setPdv(finalValue),
+                p -> p.setState(finalValue),
+                p -> p.setAddress(finalValue),
+                p -> p.setLname(finalValue),
+                p -> p.setFname(finalValue),
+                p -> p.setPname(finalValue),
+                p -> p.setInn(finalValue),
+                p -> p.setTypeRelationPerson(finalValue),
+                p -> p.setCname(finalValue),
+                p -> p.setEdrpouRelationCompany(finalValue),
+                p -> p.setTypeRelationCompany(finalValue));
         consumerList.get(index).accept(company);
         manualCompanyRepository.save(company);
         return getUploadedManualCompany(company.getUuid().getUuid());
@@ -675,15 +678,16 @@ public class ManualFileService {
 
     public ValidatedManualPersonResponse updateManualTag(Long id, int index, String value) {
         ManualTag tag = manualTagRepository.getById(id);
+        String finalValue = UtilString.toUpperCase(value).trim();
         List<Consumer<ManualTag>> consumerList = List.of(
-                t -> t.setMkId(UtilString.toUpperCase(value)),
-                t -> t.setMkEventDate(value),
-                t -> t.setMkStart(value),
-                t -> t.setMkExpire(value),
-                t -> t.setMkNumberValue(value),
-                t -> t.setMkTextValue(value),
-                t -> t.setMkDescription(value),
-                t -> t.setMkSource(value));
+                t -> t.setMkId(finalValue),
+                t -> t.setMkEventDate(finalValue),
+                t -> t.setMkStart(finalValue),
+                t -> t.setMkExpire(finalValue),
+                t -> t.setMkNumberValue(finalValue),
+                t -> t.setMkTextValue(finalValue),
+                t -> t.setMkDescription(finalValue),
+                t -> t.setMkSource(finalValue));
         consumerList.get(index).accept(tag);
         manualTagRepository.save(tag);
         return getUploadedManualPerson(tag.getPerson().getUuid().getUuid());
@@ -691,15 +695,16 @@ public class ManualFileService {
 
     public ValidatedManualCompanyResponse updateManualCTag(Long id, int index, String value) {
         ManualCTag tag = manualCTagRepository.getById(id);
+        String finalValue = UtilString.toUpperCase(value).trim();
         List<Consumer<ManualCTag>> consumerList = List.of(
-                t -> t.setMkId(UtilString.toUpperCase(value)),
-                t -> t.setMkEventDate(value),
-                t -> t.setMkStart(value),
-                t -> t.setMkExpire(value),
-                t -> t.setMkNumberValue(value),
-                t -> t.setMkTextValue(value),
-                t -> t.setMkDescription(value),
-                t -> t.setMkSource(value));
+                t -> t.setMkId(finalValue),
+                t -> t.setMkEventDate(finalValue),
+                t -> t.setMkStart(finalValue),
+                t -> t.setMkExpire(finalValue),
+                t -> t.setMkNumberValue(finalValue),
+                t -> t.setMkTextValue(finalValue),
+                t -> t.setMkDescription(finalValue),
+                t -> t.setMkSource(finalValue));
         consumerList.get(index).accept(tag);
         manualCTagRepository.save(tag);
         return getUploadedManualCompany(tag.getCompany().getUuid().getUuid());
@@ -707,17 +712,19 @@ public class ManualFileService {
 
     public Set<TagTypeDto> getTagType() {
         return tagTypeRepository.findAll().stream()
-                .map(tagConverter::toTagTypeDto).collect(Collectors.toSet());
+                .map(tagConverter::toTagTypeDto)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public Set<CompanyStateDto> getCompanyState() {
         return companyStateRepository.findAll().stream()
-                .map(companyConverter::toCompanyStateDto).collect(Collectors.toSet());
+                .map(companyConverter::toCompanyStateDto)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public Set<CompanyRoleDto> getCompanyRole() {
         return companyRoleRepository.findAll().stream()
-                .map(companyConverter::toCompanyRoleDto).collect(Collectors.toSet());
+                .map(companyConverter::toCompanyRoleDto).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public ByteArrayInputStream downloadJuridicalFile() throws IOException {

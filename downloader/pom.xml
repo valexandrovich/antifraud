@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>4.5.241-SNAPSHOT</version>
+        <version>4.5.256</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>4.5.241-SNAPSHOT</version>
+    <version>4.5.256</version>
 
     <artifactId>downloader</artifactId>
 
@@ -51,7 +51,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>common</artifactId>
-            <version>4.5.241-SNAPSHOT</version>
+            <version>4.5.256</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>4.5.241-SNAPSHOT</version>
+            <version>4.5.256</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

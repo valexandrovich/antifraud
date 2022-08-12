@@ -77,6 +77,9 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
     @EntityGraph(value = "yperson.forBaseEnricher")
     Optional<YPerson> findForBaseEnricherById(UUID id);
 
+    @EntityGraph(value = "yperson.innsAndTags")
+    Optional<YPerson> findWithInnsAndTagsById(UUID id);
+
     boolean existsAllByIdIn(Set<UUID> ids);
 }
 

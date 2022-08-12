@@ -62,6 +62,19 @@ import lombok.Setter;
                                 @NamedAttributeNode("person")
                         })},
                 attributeNodes = @NamedAttributeNode(value = "inns", subgraph = "importSourcesAndPerson-subgraph")),
+        @NamedEntityGraph(
+                name = "yperson.innsAndTags",
+                subgraphs = {
+                        @NamedSubgraph(
+                                name = "tagType-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode(value = "tagType")
+                                })
+                },
+                attributeNodes = {
+                        @NamedAttributeNode(value = "inns"),
+                        @NamedAttributeNode(value = "tags", subgraph = "tagType-subgraph")
+                }),
         @NamedEntityGraph(name = "yperson.altPeople", subgraphs = {
                 @NamedSubgraph(name = "importSources-subgraph",
                         attributeNodes = {

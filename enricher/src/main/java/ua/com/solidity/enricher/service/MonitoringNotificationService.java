@@ -1,5 +1,7 @@
 package ua.com.solidity.enricher.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Service;
 import ua.com.solidity.db.abstraction.Identifiable;
 import ua.com.solidity.db.entities.NotificationPhysicalTagCondition;
 import ua.com.solidity.db.entities.NotificationPhysicalTagMatching;
-import ua.com.solidity.db.entities.TagType;
 import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YCompanyMonitoringNotification;
@@ -148,8 +149,14 @@ public class MonitoringNotificationService {
         List<NotificationPhysicalTagMatching> matchingList = physicalTagMatchingRepository.findAll();
 
         List<YPerson> peopleGlobalSaved = yPersonRepository.findAllInIds(people.stream()
-                                                                                .map(YPerson::getId)
-                                                                                .collect(Collectors.toList()));
+                                                                                 .map(YPerson::getId)
+                                                                                 .collect(Collectors.toList()));
+        people.forEach(person -> {
+            person.getTags()
+                    .forEach(tag -> {
+                        if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
+                    });
+        });
 
         List<YPerson> peopleLocalNew = new ArrayList<>();
         List<YPerson> peopleLocalSaved = new ArrayList<>();
@@ -175,94 +182,52 @@ public class MonitoringNotificationService {
             //new people
             peopleLocalNew.forEach(person -> {
 
-                StringBuilder personName = new StringBuilder();
-                Stream.of(person.getLastName(), person.getFirstName(), person.getPatName())
-                        .forEach(name -> {
-                            if (name != null) personName.append(" ").append(name);
-                        });
-                StringBuilder messageBuilder = new StringBuilder(personName + " got conditions ");
-
-                var conditionFound = new Object() {
-                    boolean state = false;
-                };
-
-                List<List<String>> gotConditionsCodesList = new ArrayList<>();
-
                 conditions.forEach(condition -> {
                     boolean hasCondition = condition.getTagTypes()
                             .stream()
                             .allMatch(tagType -> person.getTags()
-                                        .stream()
-                                        .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())));
+                                    .stream()
+                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())
+                                            && tag.getUntil().isAfter(LocalDateTime.now().toLocalDate())));
 
                     if (hasCondition) {
-                        conditionFound.state = true;
-                        gotConditionsCodesList.add(condition.getTagTypes()
-                                                .stream()
-                                                .map(TagType::getCode)
-                                                .collect(Collectors.toList()));
+                        YPersonPackageMonitoringNotification notification = new YPersonPackageMonitoringNotification();
+                        notification.setYpersonId(person.getId());
+                        notification.setEmail(matching.getEmail());
+                        notification.setCondition(condition);
+                        personPackageMonitoringNotificationRepository.save(notification);
                     }
                 });
 
-                if (conditionFound.state) {
-                    String conditionsCodesString = gotConditionsCodesList.toString();
-                    messageBuilder.append(conditionsCodesString, 1, conditionsCodesString.length() - 1);
-                    YPersonPackageMonitoringNotification notification = new YPersonPackageMonitoringNotification();
-                    notification.setYpersonId(person.getId());
-                    notification.setMessage(messageBuilder.toString());
-                    notification.setEmail(matching.getEmail());
-                    personPackageMonitoringNotificationRepository.save(notification);
-                }
             });
 
             //existing people
-            peopleLocalSaved.forEach(personLocal -> {
+            peopleLocalSaved.forEach(personLocalSaved -> {
 
-                YPerson personGlobal = peopleGlobalSavedMap.get(personLocal.getId());
-                StringBuilder personName = new StringBuilder();
-                Stream.of(personLocal.getLastName(), personLocal.getFirstName(), personLocal.getPatName())
-                        .forEach(name -> {
-                            if (name != null) personName.append(" ").append(name);
-                        });
-                StringBuilder messageBuilder = new StringBuilder(personName + " got conditions ");
-
-                var conditionFound = new Object() {
-                    boolean state = false;
-                };
-
-                List<List<String>> gotConditionsCodesList = new ArrayList<>();
+                YPerson personGlobalSaved = peopleGlobalSavedMap.get(personLocalSaved.getId());
 
                 conditions.forEach(condition -> {
                     boolean localHasCondition = condition.getTagTypes()
                             .stream()
-                            .allMatch(tagType -> personLocal.getTags()
+                            .allMatch(tagType -> personLocalSaved.getTags()
                                     .stream()
-                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())));
+                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())
+                                            && tag.getUntil().isAfter(LocalDateTime.now().toLocalDate())));
 
                     boolean globalHasCondition = condition.getTagTypes()
                             .stream()
-                            .allMatch(tagType -> personGlobal.getTags()
+                            .allMatch(tagType -> personGlobalSaved.getTags()
                                     .stream()
                                     .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())));
 
                     if (localHasCondition && !globalHasCondition) {
-                        conditionFound.state = true;
-                        gotConditionsCodesList.add(condition.getTagTypes()
-                                                        .stream()
-                                                        .map(TagType::getCode)
-                                                        .collect(Collectors.toList()));
+                        YPersonPackageMonitoringNotification notification = new YPersonPackageMonitoringNotification();
+                        notification.setYpersonId(personLocalSaved.getId());
+                        notification.setEmail(matching.getEmail());
+                        notification.setCondition(condition);
+                        personPackageMonitoringNotificationRepository.save(notification);
                     }
                 });
-
-                if (conditionFound.state) {
-                    String conditionsCodesString = gotConditionsCodesList.toString();
-                    messageBuilder.append(conditionsCodesString, 1, conditionsCodesString.length() - 1);
-                    YPersonPackageMonitoringNotification notification = new YPersonPackageMonitoringNotification();
-                    notification.setYpersonId(personLocal.getId());
-                    notification.setMessage(messageBuilder.toString());
-                    notification.setEmail(matching.getEmail());
-                    personPackageMonitoringNotificationRepository.save(notification);
-                }
 
             });
 

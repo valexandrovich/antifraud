@@ -166,7 +166,8 @@ public class ManualCompanyEnricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + revision;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 respPeople = response.getResp();
                 List<UUID> tempPeople = response.getTemp();
 
@@ -302,8 +303,6 @@ public class ManualCompanyEnricher implements Enricher {
                             tags.add(tag);
                         });
                         extender.addTags(company, tags, source);
-
-                        companies.add(company);
                     }
 
                     Optional<YCompanyRole> role = companyRoleRepository.findByRole(UtilString.toUpperCase(r.getTypeRelationPerson()));
@@ -338,7 +337,8 @@ public class ManualCompanyEnricher implements Enricher {
                     ypr.saveAll(personSet);
                     peopleSet.addAll(personSet);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+                    if (!respPeople.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companies);
                     companiesSet.addAll(companies);
@@ -346,7 +346,8 @@ public class ManualCompanyEnricher implements Enricher {
                     companyRepository.saveAll(companiesCreators);
                     companiesSet.addAll(companiesCreators);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
+                    if (!respCompanies.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
                     yCompanyRelationRepository.saveAll(yCompanyRelationSet);
 

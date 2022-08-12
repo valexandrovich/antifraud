@@ -126,7 +126,8 @@ public class Govua1Enricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 respPeople = response.getResp();
                 List<UUID> tempPeople = response.getTemp();
 
@@ -173,7 +174,6 @@ public class Govua1Enricher implements Enricher {
                             company.setEdrpou(Long.parseLong(code));
                             company.setName(UtilString.toUpperCase(r.getName()));
                             company = extender.addCompany(companies, source, company, finalCompanies);
-                            companies.add(company);
                             if (StringUtils.isNotBlank(r.getCaseNumber()) && StringUtils.isNotBlank(r.getRecordType())) {
                                 Optional<TagType> tagType = tagTypeRepository.findByCode("NBB2");
 
@@ -274,14 +274,16 @@ public class Govua1Enricher implements Enricher {
 
                     ypr.saveAll(people);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+                    if (!respPeople.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companies);
 
                     emnService.enrichYPersonMonitoringNotification(people);
                     emnService.enrichYCompanyMonitoringNotification(companies);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
+                    if (!respCompanies.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
 
                     page = onePage.stream().parallel().filter(p -> tempCompanies.contains(p.getId()) || tempPeople.contains(p.getId()))

@@ -105,7 +105,7 @@ public class BaseDirectorEnricher implements Enricher {
         statusChanger.newStage(null, "enriching", count, null);
         String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                                                           Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DIRECTOR, portion));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DIRECTOR, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_DIRECTOR);
 
@@ -131,7 +131,8 @@ public class BaseDirectorEnricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 respPeople = response.getResp();
                 List<UUID> tempPeople = response.getTemp();
 
@@ -139,14 +140,7 @@ public class BaseDirectorEnricher implements Enricher {
                 respCompanies = responseCompanies.getResp();
                 List<UUID> tempCompanies = responseCompanies.getTemp();
 
-                Set<UUID> resp = new HashSet<>();
-                Set<UUID> temp = new HashSet<>();
-                resp.addAll(respPeople);
-                resp.addAll(respCompanies);
-                temp.addAll(tempPeople);
-                temp.addAll(tempCompanies);
-
-                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
+                page = onePage.stream().parallel().filter(p -> respPeople.contains(p.getId()) || respCompanies.contains(p.getId()))
                         .collect(Collectors.toList());
 
                 Set<YCompanyRelation> yCompanyRelationSet = new HashSet<>();
@@ -201,8 +195,6 @@ public class BaseDirectorEnricher implements Enricher {
                             tags.add(tag);
 
                             extender.addTags(person, tags, source);
-
-                            personSet.add(person);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
                             wrongCounter[0]++;
@@ -215,7 +207,6 @@ public class BaseDirectorEnricher implements Enricher {
                             company = new YCompany();
                             company.setEdrpou(Long.parseLong(edrpou));
                             company = extender.addCompany(companySet, source, company, finalCompanies);
-                            companySet.add(company);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("OKPO: {}", r.getOkpo()), "Wrong OKPO");
                             wrongCounter[0]++;
@@ -235,20 +226,22 @@ public class BaseDirectorEnricher implements Enricher {
                     emnService.enrichYPersonPackageMonitoringNotification(personSet);
                     ypr.saveAll(personSet);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+                    if (!respPeople.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companySet);
 
                     emnService.enrichYPersonMonitoringNotification(personSet);
                     emnService.enrichYCompanyMonitoringNotification(companySet);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
+                    if (!respCompanies.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
                     yCompanyRelationRepository.saveAll(yCompanyRelationSet);
 
-                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
+                    page = onePage.stream().parallel().filter(p -> tempPeople.contains(p.getId()) || tempCompanies.contains(p.getId())).collect(Collectors.toList());
                 } else {
-                    counter[0] -= resp.size();
+                    counter[0] -= page.size();
                     statusChanger.setProcessedVolume(counter[0]);
                 }
             }

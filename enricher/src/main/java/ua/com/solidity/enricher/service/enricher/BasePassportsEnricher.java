@@ -111,9 +111,12 @@ public class BasePassportsEnricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                log.info("Passing {}, count: {}", portion, peopleProcessing.size());
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 resp = response.getResp();
                 List<UUID> temp = response.getTemp();
+                log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
 
                 page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
                         .collect(Collectors.toList());
@@ -198,15 +201,21 @@ public class BasePassportsEnricher implements Enricher {
 
                     emnService.enrichYPersonPackageMonitoringNotification(people);
 
+                    log.info("Save people");
                     ypr.saveAll(people);
 
                     emnService.enrichYPersonMonitoringNotification(people);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, resp);
+                    if (!resp.isEmpty()) {
+                        log.info("Going to remove, count: {}", resp.size());
+                        httpClient.post(urlPersonDelete, Boolean.class, resp);
+                        log.info("Removed");
+                    }
 
                     page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                 } else {
                     counter[0] -= resp.size();
+                    statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                     statusChanger.setProcessedVolume(counter[0]);
                 }
             }

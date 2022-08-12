@@ -82,7 +82,7 @@ public class BaseDrfoEnricher implements Enricher {
         statusChanger.newStage(null, "enriching", count, null);
         String fileName = fileFormatUtil.getLogFileName(portion.toString());
         DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                                                           Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DRFO, portion));
+                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_DRFO, portion));
 
         ImportSource source = isr.findImportSourceByName(BASE_DRFO);
 
@@ -97,13 +97,14 @@ public class BaseDrfoEnricher implements Enricher {
                     if (p.getInn() != null)
                         personProcessing.setInn(p.getInn());
                     personProcessing.setPersonHash(Objects.hash(UtilString.toUpperCase(p.getLastName()), UtilString.toUpperCase(p.getFirstName()), UtilString.toUpperCase(p.getPatName()),
-                                                                p.getBirthdate()));
+                            p.getBirthdate()));
                     return personProcessing;
                 }).collect(Collectors.toList());
 
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 resp = response.getResp();
                 List<UUID> temp = response.getTemp();
 
@@ -192,7 +193,8 @@ public class BaseDrfoEnricher implements Enricher {
 
                     emnService.enrichYPersonMonitoringNotification(people);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, resp);
+                    if (!resp.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, resp);
 
                     page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                 } else {

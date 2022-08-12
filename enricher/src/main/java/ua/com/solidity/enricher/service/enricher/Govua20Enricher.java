@@ -130,7 +130,6 @@ public class Govua20Enricher implements Enricher {
                             company.setPdv(Long.parseLong(code));
                             company.setName(r.getName());
                             company = extender.addCompany(companies, source, company, finalCompanies);
-                            companies.add(company);
 
                             counter[0]++;
                             statusChanger.addProcessedVolume(1);
@@ -147,7 +146,8 @@ public class Govua20Enricher implements Enricher {
                     companyRepository.saveAll(companies);
                     companySet.addAll(companies);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, resp);
+                    if (!resp.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, resp);
 
                     page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                 } else {

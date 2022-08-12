@@ -152,8 +152,6 @@ public class Govua7Enricher implements Enricher {
                             tags.add(tag);
 
                             extender.addTags(company, tags, source);
-
-                            companies.add(company);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getCode()), "Wrong EDRPOU");
                             wrongCounter[0]++;
@@ -167,7 +165,8 @@ public class Govua7Enricher implements Enricher {
                     companyRepository.saveAll(companies);
                     companySet.addAll(companies);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, resp);
+                    if (!resp.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, resp);
 
                     page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toSet());
                 } else {

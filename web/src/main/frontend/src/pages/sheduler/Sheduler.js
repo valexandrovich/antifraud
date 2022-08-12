@@ -281,14 +281,17 @@ const Sheduler = () => {
                       }
                     />
                     <td className="text-center align-middle">
-                      <input
-                        id={row.groupName + "/" + row.name}
-                        className="big-checkbox"
-                        type="checkbox"
-                        checked={row.forceDisabled}
-                        name="forceDisabled"
-                        onChange={(e) => update(e)}
-                      />
+                      <label className="checkbox-container">
+                        <input
+                          id={row.groupName + "/" + row.name}
+                          className="big-checkbox"
+                          type="checkbox"
+                          checked={row.forceDisabled}
+                          name="forceDisabled"
+                          onChange={(e) => update(e)}
+                        />
+                        <span className="checkmark"></span>
+                      </label>
                     </td>
 
                     <SchedulerActions

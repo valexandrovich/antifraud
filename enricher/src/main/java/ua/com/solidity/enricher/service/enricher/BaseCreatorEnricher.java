@@ -113,7 +113,6 @@ public class BaseCreatorEnricher implements Enricher {
             pageRequest = pageRequest.next();
             List<BaseCreator> page = onePage.toList();
 
-
             while (!page.isEmpty()) {
                 List<YPersonProcessing> peopleProcessing = page.parallelStream().map(p -> {
                     YPersonProcessing personProcessing = new YPersonProcessing();
@@ -132,7 +131,8 @@ public class BaseCreatorEnricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 respPeople = response.getResp();
                 List<UUID> tempPeople = response.getTemp();
 
@@ -140,14 +140,7 @@ public class BaseCreatorEnricher implements Enricher {
                 respCompanies = responseCompanies.getResp();
                 List<UUID> tempCompanies = responseCompanies.getTemp();
 
-                Set<UUID> resp = new HashSet<>();
-                Set<UUID> temp = new HashSet<>();
-                resp.addAll(respPeople);
-                resp.addAll(respCompanies);
-                temp.addAll(tempPeople);
-                temp.addAll(tempCompanies);
-
-                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
+                page = onePage.stream().parallel().filter(p -> respPeople.contains(p.getId()) || respCompanies.contains(p.getId()))
                         .collect(Collectors.toList());
 
                 Set<YCompanyRelation> yCompanyRelationSet = new HashSet<>();
@@ -156,7 +149,8 @@ public class BaseCreatorEnricher implements Enricher {
 
                 Set<YINN> inns = new HashSet<>();
                 Set<YCompany> companies = new HashSet<>();
-                Set<YCompanyRelation> companiesRelations = new HashSet<>();
+                Set<YCompanyRelation> savedCompaniesRelations = new HashSet<>();
+                Set<YPerson> savedPersonSet = new HashSet<>();
 
                 page.forEach(r -> {
                     if (StringUtils.isNotBlank(r.getInn()))
@@ -168,22 +162,21 @@ public class BaseCreatorEnricher implements Enricher {
 
                 if (!peopleCodes.isEmpty()) {
                     inns = yinnRepository.findInns(peopleCodes);
-                    companiesRelations = yCompanyRelationRepository.findRelationByInns(peopleCodes);
+                    savedCompaniesRelations = yCompanyRelationRepository.findRelationByInns(peopleCodes);
+                    savedPersonSet = ypr.findPeopleInnsForBaseEnricher(peopleCodes);
                 }
                 if (!companiesCodes.isEmpty()) {
                     companies = companyRepository.findWithEdrpouCompanies(companiesCodes);
-                    companiesRelations.addAll(yCompanyRelationRepository.findRelationByEdrpous(companiesCodes));
+                    savedCompaniesRelations.addAll(yCompanyRelationRepository.findRelationByEdrpous(companiesCodes));
                 }
-                Set<YPerson> savedPersonSet = new HashSet<>();
-                if (!inns.isEmpty())
-                    savedPersonSet = ypr.findPeopleInnsForBaseEnricher(peopleCodes);
+
                 Set<YPerson> savedPeople = savedPersonSet;
                 Set<YPerson> personSet = new HashSet<>();
                 Set<YCompany> companySet = new HashSet<>();
 
-                Set<YCompany> finalCompanies = companies;
+                Set<YCompany> savedCompanies = companies;
                 Set<YINN> finalInns = inns;
-                Set<YCompanyRelation> finalCompaniesRelations = companiesRelations;
+                Set<YCompanyRelation> finalCompaniesRelations = savedCompaniesRelations;
                 Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_IZ);
                 page.forEach(r -> {
                     YPerson person = null;
@@ -202,8 +195,6 @@ public class BaseCreatorEnricher implements Enricher {
                             tags.add(tag);
 
                             extender.addTags(person, tags, source);
-
-                            personSet.add(person);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
                             wrongCounter[0]++;
@@ -215,8 +206,7 @@ public class BaseCreatorEnricher implements Enricher {
                         if (isValidEdrpou(edrpou)) {
                             company = new YCompany();
                             company.setEdrpou(Long.parseLong(edrpou));
-                            company = extender.addCompany(companySet, source, company, finalCompanies);
-                            companySet.add(company);
+                            company = extender.addCompany(companySet, source, company, savedCompanies);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("OKPO: {}", r.getOkpo()), "Wrong OKPO");
                             wrongCounter[0]++;
@@ -239,20 +229,22 @@ public class BaseCreatorEnricher implements Enricher {
 
                     ypr.saveAll(personSet);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, respPeople);
+                    if (!respPeople.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
 
                     companyRepository.saveAll(companySet);
 
                     emnService.enrichYPersonMonitoringNotification(personSet);
                     emnService.enrichYCompanyMonitoringNotification(companySet);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
+                    if (!respCompanies.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
 
                     yCompanyRelationRepository.saveAll(yCompanyRelationSet);
 
-                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
+                    page = onePage.stream().parallel().filter(p -> tempPeople.contains(p.getId()) || tempCompanies.contains(p.getId())).collect(Collectors.toList());
                 } else {
-                    counter[0] -= resp.size();
+                    counter[0] -= page.size();
                     statusChanger.setProcessedVolume(counter[0]);
                 }
             }

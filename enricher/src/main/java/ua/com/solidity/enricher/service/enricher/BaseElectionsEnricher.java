@@ -101,7 +101,8 @@ public class BaseElectionsEnricher implements Enricher {
 
                 UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
 
-                YPersonDispatcherResponse response = httpClient.post(urlPersonPost, YPersonDispatcherResponse.class, peopleProcessing);
+                String url = urlPersonPost + "?id=" + portion;
+                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
                 resp = response.getResp();
                 List<UUID> temp = response.getTemp();
 
@@ -158,7 +159,8 @@ public class BaseElectionsEnricher implements Enricher {
 
                     emnService.enrichYPersonMonitoringNotification(people);
 
-                    httpClient.post(urlPersonDelete, Boolean.class, resp);
+                    if (!resp.isEmpty())
+                        httpClient.post(urlPersonDelete, Boolean.class, resp);
 
                     page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                 } else {

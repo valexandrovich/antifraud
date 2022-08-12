@@ -116,7 +116,7 @@ public class Govua4Enricher implements Enricher {
                 companiesProcessing.addAll(page.parallelStream().map(c -> {
                     YCompanyProcessing companyProcessing = new YCompanyProcessing();
                     companyProcessing.setUuid(c.getId());
-                    if (StringUtils.isNotBlank(c.getStiChief()) && c.getSubEdrpou().matches(ALL_NUMBER_REGEX))
+                    if (StringUtils.isNotBlank(c.getSubEdrpou()) && c.getSubEdrpou().matches(ALL_NUMBER_REGEX))
                         companyProcessing.setEdrpou(Long.valueOf(c.getSubEdrpou()));
                     if (StringUtils.isNotBlank(c.getSubName()))
                         companyProcessing.setCompanyHash(Objects.hash(c.getSubName()));
@@ -173,8 +173,6 @@ public class Govua4Enricher implements Enricher {
                             tags.add(tag);
 
                             extender.addTags(company, tags, source);
-
-                            companies.add(company);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
                             wrongCounter[0]++;
@@ -199,8 +197,6 @@ public class Govua4Enricher implements Enricher {
                             tags.add(tag);
 
                             extender.addTags(subCompany, tags, source);
-
-                            companies.add(subCompany);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getSubEdrpou()), "Wrong EDRPOU");
                             wrongCounter[0]++;
@@ -219,7 +215,8 @@ public class Govua4Enricher implements Enricher {
                     companyRepository.saveAll(companies);
                     companySet.addAll(companies);
 
-                    httpClient.post(urlCompanyDelete, Boolean.class, resp);
+                    if (!resp.isEmpty())
+                        httpClient.post(urlCompanyDelete, Boolean.class, resp);
 
                     companyRelationCompanyRepository.saveAll(yCompanyRelationCompaniesSet);
 

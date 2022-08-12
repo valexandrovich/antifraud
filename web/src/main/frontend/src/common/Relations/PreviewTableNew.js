@@ -73,6 +73,7 @@ const PreviewTableNew = ({
                 <td>{data.address?.address}</td>
                 <td>
                   <button
+                    style={{ float: "right" }}
                     onClick={() => setConfirmationRemove(data.id)}
                     className={"btn btn-danger"}
                   >

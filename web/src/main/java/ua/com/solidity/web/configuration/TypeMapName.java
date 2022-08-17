@@ -8,4 +8,5 @@ public class TypeMapName {
     public static final String YEMAIL_TO_UPPER_CASE = "yemailToUpperCase";
     public static final String YPHONE_TO_UPPER_CASE = "yphoneToUpperCase";
     public static final String YTAG_TO_UPPER_CASE = "ytagToUpperCase";
+    public static final String NOTIFICATION_PHYSICAL_TAG_MATCHING_SIMPLE = "notificationPhysicalTagMatchingSimple";
 }

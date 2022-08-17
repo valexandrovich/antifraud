@@ -19,6 +19,7 @@ public abstract class ActionObject {
     private static final Map<String, Class<? extends ActionObject>> registeredActions = new HashMap<>();
     protected String action;
     protected JsonNode node;
+    private RabbitMQActionTask associatedTask;
 
     public static ActionObject getAction(JsonNode node) {
         Class<? extends ActionObject> clazz;
@@ -28,6 +29,10 @@ public abstract class ActionObject {
         ActionObject res = Utils.jsonToValue(node, clazz);
         res.node = node;
         return res;
+    }
+
+    void setAssociatedTask(RabbitMQActionTask task) {
+        associatedTask = task;
     }
 
     @SuppressWarnings("unused")
@@ -45,6 +50,12 @@ public abstract class ActionObject {
 
     protected abstract boolean doValidate();
     protected abstract boolean doExecute();
+
+    protected final void acknowledge() {
+        if (associatedTask != null) {
+            associatedTask.acknowledge(true);
+        }
+    }
 
     public final boolean execute() {
         try {

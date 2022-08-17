@@ -14,6 +14,7 @@ public class RabbitMQActionTask extends RabbitMQImmediateTask {
         super(listener, message);
         this.handler = handler;
         this.action = action;
+        this.action.setAssociatedTask(this);
     }
 
     @Override

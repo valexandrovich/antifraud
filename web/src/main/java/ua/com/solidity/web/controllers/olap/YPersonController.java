@@ -1,8 +1,10 @@
 package ua.com.solidity.web.controllers.olap;
 
+import java.util.List;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -17,9 +19,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ua.com.solidity.web.dto.olap.YPersonCompareDto;
 import ua.com.solidity.web.dto.olap.YPersonDto;
 import ua.com.solidity.web.dto.olap.YPersonSearchDto;
+import ua.com.solidity.web.request.JoinToExistingRelationRequest;
+import ua.com.solidity.web.request.JoinToNewRelationRequest;
 import ua.com.solidity.web.request.PaginationSearchRequest;
 import ua.com.solidity.web.service.YPersonService;
 
@@ -60,5 +66,78 @@ public class YPersonController {
     ) {
         YPersonDto dto = yPersonService.findById(id, request);
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/findByGroupIds")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED','BASIC')")
+    @ApiOperation(value = "Shows all people in specified relation groups.",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<List<YPersonCompareDto>> findAllByGroupIds(
+            @ApiParam(value = "List of relation groups ids you need to find people by",
+                    required = true)
+            @RequestBody List<Long> groupIds,
+            HttpServletRequest request) {
+        List<YPersonCompareDto> comparisons = yPersonService.findAllByGroupIds(groupIds, request);
+        return ResponseEntity.ok(comparisons);
+    }
+
+    @GetMapping("/findByGroupId")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED','BASIC')")
+    @ApiOperation(value = "Shows all people in specified relation group.",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<List<YPersonCompareDto>> findAllByGroupId(
+            @ApiParam(value = "Relations Group id you need to find people by",
+                    required = true)
+            @RequestParam Long groupId,
+            HttpServletRequest request) {
+        List<YPersonCompareDto> comparisons = yPersonService.findAllByGroupId(groupId, request);
+        return ResponseEntity.ok(comparisons);
+    }
+
+    @PostMapping("/joinToNewRelation")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @ApiOperation(value = "Joins people to new relation.",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<Void> joinToNewRelation(
+            @ApiParam(value = "JoinToNewRelationRequest",
+                    required = true)
+            @Valid @RequestBody JoinToNewRelationRequest joinToNewRelationRequest,
+            HttpServletRequest httpRequest) {
+        yPersonService.joinToNewRelation(joinToNewRelationRequest, httpRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/joinToExistingRelation")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @ApiOperation(value = "Joins person to existing relation.",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<Void> joinToExistingRelation(
+            @ApiParam(value = "JoinToExistingRelationRequest",
+                    required = true)
+            @Valid @RequestBody JoinToExistingRelationRequest joinToExistingRelationRequest,
+            HttpServletRequest httpRequest) {
+        yPersonService.joinToExistingRelation(joinToExistingRelationRequest, httpRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/removePersonFromRelation")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @ApiOperation(value = "Removes person from relation.",
+            response = ResponseEntity.class,
+            authorizations = @Authorization("Authorization"))
+    public ResponseEntity<Void> removePersonFromRelation(
+            @ApiParam(value = "person id",
+                    required = true)
+            @NotNull(message = "Не повинен бути пустий") @RequestParam UUID personId,
+            @ApiParam(value = "relation group id",
+                    required = true)
+            @NotNull(message = "Не повинен бути пустий") @RequestParam Long groupId,
+            HttpServletRequest httpRequest) {
+        yPersonService.removePersonFromRelation(personId, groupId, httpRequest);
+        return ResponseEntity.ok().build();
     }
 }

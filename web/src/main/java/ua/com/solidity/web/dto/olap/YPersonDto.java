@@ -11,7 +11,6 @@ import ua.com.solidity.db.entities.YCompanyRelation;
 import ua.com.solidity.db.entities.YEmail;
 import ua.com.solidity.db.entities.YINN;
 import ua.com.solidity.db.entities.YPassport;
-import ua.com.solidity.db.entities.YPersonRelation;
 import ua.com.solidity.db.entities.YPhone;
 import ua.com.solidity.db.entities.YTag;
 
@@ -22,7 +21,7 @@ public class YPersonDto {
 	private String firstName;
 	private String patName;
 	private LocalDate birthdate;
-	private Set<YPersonRelation> personRelations;
+	private Set<RelationGroupDto> relationGroups;
 	private Set<YCompanyRelation> companyRelations;
 	private Set<YINN> inns;
 	private Set<YAddress> addresses;
@@ -33,4 +32,5 @@ public class YPersonDto {
 	private Set<YPhone> phones;
 	private Set<ImportSource> sources;
 	private boolean subscribe;
+	private boolean compared;
 }

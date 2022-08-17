@@ -15,6 +15,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import ua.com.solidity.db.abstraction.Identifiable;
@@ -60,15 +61,16 @@ public class YTag implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YTag yTag = (YTag) o;
-		return Objects.equals(tagType, yTag.tagType) && Objects.equals(asOf, yTag.asOf) && Objects.equals(until, yTag.until) && Objects.equals(source, yTag.source) && Objects.equals(person, yTag.person);
+		return Objects.equals(tagType, yTag.tagType) && Objects.equals(asOf, yTag.asOf) && Objects.equals(until, yTag.until) && Objects.equals(source, yTag.source);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(tagType, asOf, until, source, person);
+		return Objects.hash(tagType, asOf, until, source);
 	}
 
 	@Override
+	@JsonIgnore
 	public Long getIdentifier() {
 		return id;
 	}

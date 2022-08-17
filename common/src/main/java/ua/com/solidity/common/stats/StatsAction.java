@@ -37,6 +37,11 @@ public class StatsAction extends ActionObject {
     @JsonIgnore
     private ObjectNode root = null;
 
+    @SuppressWarnings("unused")
+    private ArrayNode rebuildPipeline(ArrayNode pipeline, String attachName) {
+        return pipeline;
+    }
+
     @Override
     protected boolean doValidate() {
         input = Utils.getFileFromNFSFolder(inputFile, true);
@@ -65,6 +70,8 @@ public class StatsAction extends ActionObject {
     @SuppressWarnings("Duplicates")
     protected boolean doExecute() {
         DurationPrinter elapsedTime = new DurationPrinter();
+
+        acknowledge();
 
         Pipeline p = pipelineFactory.createPipelineByNode(root);
         if (p == null || !p.isValid()) {

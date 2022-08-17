@@ -7,7 +7,6 @@ import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
@@ -42,7 +41,16 @@ import lombok.Setter;
                         @NamedAttributeNode(value = "tags", subgraph = "importSourcesAndTagType-subgraph"),
                         @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "altCompanies", subgraph = "importSources-subgraph"),
-                        @NamedAttributeNode("importSources")})
+                        @NamedAttributeNode("state"),
+                        @NamedAttributeNode("importSources")}),
+        @NamedEntityGraph(name = "ycompany.tagsTagType",
+                subgraphs = {
+                        @NamedSubgraph(name = "tagType-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("tagType")
+                                })},
+                attributeNodes = {
+                        @NamedAttributeNode(value = "tags", subgraph = "tagType-subgraph")})
 })
 @Entity
 @Table(name = "ycompany")
@@ -65,7 +73,7 @@ public class YCompany {
     @JsonManagedReference
     private Set<YCAddress> addresses = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "state_id", referencedColumnName = "id")
     private YCompanyState state;
 
@@ -85,7 +93,7 @@ public class YCompany {
     )
     private Set<User> users = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     @JoinTable(
             name = "ycompany_import_source",
             joinColumns = {@JoinColumn(name = "ycompany_id")},

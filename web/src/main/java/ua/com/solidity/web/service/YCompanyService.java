@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YCompany;
@@ -51,7 +52,7 @@ public class YCompanyService {
         GenericSpecification<YCompany> gs = new GenericSpecification<>();
         criteriaFound = false;
 
-        searchByName(searchRequest, gs, paginationRequest);
+        Specification<YCompany> gsName = searchByName(searchRequest);
 
         String edrpou = Objects.toString(searchRequest.getEdrpou(), "");
         if (!edrpou.equals("")) {
@@ -65,7 +66,7 @@ public class YCompanyService {
             gs.add(new SearchCriteria(PDV, pdv, null, SearchOperation.EQUALS));
         }
 
-        String address = Objects.toString(searchRequest.getAddress(), "");
+        String address = Objects.toString(searchRequest.getAddress().toUpperCase().trim(), "");
         if (!address.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(ADDRESS, address, ADDRESSES, SearchOperation.MATCH));
@@ -74,7 +75,7 @@ public class YCompanyService {
         PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
         if (criteriaFound) {
             User user = extractor.extractUser(httpServletRequest);
-            return yCompanyRepository.findAll(gs, pageRequest)
+            return yCompanyRepository.findAll(gsName.and(gs), pageRequest)
                     .map(entity -> {
                         YCompanySearchDto dto = yCompanyConverter.toSearchDto(entity);
                         user.getCompanies().forEach(subscribedYCompany -> {
@@ -87,25 +88,16 @@ public class YCompanyService {
         }
     }
 
-    private void searchByName(YCompanySearchRequest searchRequest,
-                              GenericSpecification<YCompany> gs,
-                              PaginationRequest paginationRequest) {
+    private Specification<YCompany> searchByName(YCompanySearchRequest searchRequest) {
+        GenericSpecification<YCompany> gs = new GenericSpecification<>();
+        GenericSpecification<YCompany> gsAltName = new GenericSpecification<>();
         String name = Objects.toString(searchRequest.getName().toUpperCase().trim(), ""); // Protection from null
         if (!name.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(NAME, name, null, SearchOperation.MATCH));
+            gsAltName.add(new SearchCriteria(NAME, name, ALT_COMPANIES, SearchOperation.MATCH));
         }
-
-        if (criteriaFound) {
-            PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
-            if (yCompanyRepository.findAll(gs, pageRequest).isEmpty()) {
-                gs.clear();
-                if (!name.equals("")) {
-                    criteriaFound = true;
-                    gs.add(new SearchCriteria(NAME, name, ALT_COMPANIES, SearchOperation.MATCH));
-                }
-            }
-        }
+        return Specification.where(gs.or(gsAltName));
     }
 
     public YCompanyDto findById(UUID id, HttpServletRequest request) {

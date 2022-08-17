@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import userApi from "../../api/UserApi";
-import PerPage from "../PerPage";
+import PerPage from "../../common/PerPage";
 import { Link } from "react-router-dom";
 import Card from "../YPersonCard/Card";
-import Pagination from "../Pagination";
-import Spinner from "../Loader";
+import Pagination from "../../common/Pagination";
+import Spinner from "../../common/Loader";
 
 const Yperson = () => {
   const [subscribed, setSubscribed] = useState([]);
@@ -26,7 +26,6 @@ const Yperson = () => {
         setLoader(false);
         if (!mountedRef.current) return null;
       } catch (e) {
-        console.log(e);
         setLoader(false);
       }
     });

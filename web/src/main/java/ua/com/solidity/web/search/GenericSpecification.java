@@ -32,7 +32,7 @@ public class GenericSpecification<T> implements Specification<T> {
         for (SearchCriteria criteria : list) {
             Path<T> path = root;
             if (!StringUtils.isBlank(criteria.getJoinedTable()))
-                path = root.join(criteria.getJoinedTable(), JoinType.INNER);
+                path = root.join(criteria.getJoinedTable(), JoinType.LEFT);
 
             switch (criteria.getOperation()) {
                 case GREATER_THAN:

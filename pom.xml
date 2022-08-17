@@ -9,6 +9,7 @@
         <module>common</module>
         <module>downloader</module>
         <module>db</module>
+        <module>util</module>
         <module>dispatcher</module>
         <module>web</module>
         <module>pipeline</module>
@@ -27,7 +28,7 @@
     </parent>
     <groupId>ua.com.solidity</groupId>
     <artifactId>otp</artifactId>
-    <version>4.4.241</version>
+    <version>5.0.256-SNAPSHOT</version>
     <name>otp</name>
     <description>ETL project for OTP</description>
     <properties>

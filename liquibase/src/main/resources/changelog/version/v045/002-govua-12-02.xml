@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="045-002-1" author="Beetone">
+        <sql>
+            insert into import_source(id, name, pipeline_info, source_info)
+            values(2022, 'govua12_02_t', '{
+              "pipeline": [
+                {
+                  "name": "stream",
+                  "prototype": "InputStream"
+                },
+                {
+                  "name": "extension",
+                  "prototype": "RevisionExtension"
+                },
+                {
+                  "data": {
+                    "format": {
+                      "encoding": "UTF-8"
+                    }
+                  },
+                  "name": "parser",
+                  "inputs": {
+                    "ext": "extension",
+                    "stream": "stream"
+                  },
+                  "prototype": "JSONParser"
+                },
+                {
+                  "data": {
+                    "mode": "statement",
+                    "table": "govua_12",
+                    "mapping": {
+                      "ovd": "OVD",
+                      "code": "ID",
+                      "type": "D_TYPE",
+                      "number": "D_NUMBER",
+                      "series": "D_SERIES",
+                      "status": "D_STATUS",
+                      "rec_date": "INSERT_DATE",
+                      "theft_date": "THEFT_DATA"
+                    }
+                  },
+                  "name": "writer",
+                  "inputs": {
+                    "ext": "extension",
+                    "input": "parser"
+                  },
+                  "prototype": "TableWriter"
+                }
+              ]}', '{
+              "mask": "^.*_v05\\.json$",
+              "apiKey": "ab09ed00-4f51-4f6c-a2f7-1b2fb118be0f",
+              "handler": "dataGovUa"
+            }');
+        </sql>
+        <rollback>
+            <sql>
+                delete from import_source
+                where id = 2022;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="045-002-2" author="Beetone">
+        <sql>
+            insert into scheduler(group_name, name, exchange, data, enabled, force_disabled)
+            values('govua', '012.govua_12_02', 'otp-etl.downloader', '{"ident": "govua12_02_t", "attemptsLeft": 3}', false, false);
+        </sql>
+        <rollback>
+            <sql>
+                delete from scheduler
+                where name = '012.govua_12_02';
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import packageJson from "../package.json";
 import "bootstrap/dist/css/bootstrap.css";
 import "./styles/Style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,7 +16,7 @@ import Search from "./pages/search/Search";
 import Aside from "./pages/aside/Aside";
 import UploadedFiles from "./pages/uploaded_files/UploadedFiles";
 import Login from "./pages/login/Login";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./common/ProtectedRoute";
 import Progress from "./pages/progress/Progress";
 import Sheduler from "./pages/sheduler/Sheduler";
 import SingleYPersonCard from "./pages/card/SingleYPersonCard";
@@ -24,21 +25,28 @@ import { checkAutoLogin } from "./api/AuthApi";
 import NonFound from "./pages/NonFound";
 import SingleYCompanyCard from "./pages/card/SingleYCompanyCard";
 import Relations from "./pages/relations/Relations";
+import withClearCache, { getBuildDate } from "./common/ClearCache";
 
 const logOutTimeout = { timeout: null };
 
-const App = () => {
+const MainApp = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
   const alertMsg = useSelector((state) => state.auth.alert);
   const dispatch = useDispatch();
   const userRole = useSelector((state) => state.auth.role);
   const history = useHistory();
   let location = useLocation();
+  const d = getBuildDate(packageJson.buildDate);
+
+  const build =
+    [d.getDate(), d.getMonth() + 1, d.getFullYear()].join(".") +
+    " " +
+    [d.getHours(), d.getMinutes(), d.getSeconds()].join(":");
   useEffect(() => {
     checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
-    return () =>
-      checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
-  }, [dispatch, history, location.pathname]);
+    return checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
+  }, [dispatch, history, location.pathname, isAuth]);
+
   return (
     <>
       {alertMsg.message && (
@@ -50,7 +58,7 @@ const App = () => {
       )}
       {isAuth && userRole !== null ? (
         <>
-          <Aside />
+          <Aside build={build} />
           <Switch>
             <Route path="/error" component={ErrorPage} />
             <Route exact path="/">
@@ -63,7 +71,6 @@ const App = () => {
               path="/uploaded_files"
               component={UploadedFiles}
             />
-            f
             <Route exact path="/YPerson/:id" component={SingleYPersonCard} />
             <Route exact path="/YCompany/:id" component={SingleYCompanyCard} />
             <ProtectedRoute exact path="/add-file" component={UploadFile} />
@@ -80,5 +87,10 @@ const App = () => {
     </>
   );
 };
+const ClearCacheComponent = withClearCache(MainApp);
+
+function App() {
+  return <ClearCacheComponent />;
+}
 
 export default App;

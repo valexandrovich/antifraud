@@ -34,4 +34,8 @@ public class YPersonRelation {
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "relation_group_id", referencedColumnName = "id", nullable = false)
 	private YPersonRelationGroup relationGroup;
+
+	public YPersonRelation(YPersonRelationGroup relationGroup) {
+		this.relationGroup = relationGroup;
+	}
 }

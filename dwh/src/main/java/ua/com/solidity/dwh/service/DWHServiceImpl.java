@@ -96,7 +96,7 @@ public class DWHServiceImpl implements DWHService {
         log.info("Importing from DWH records archived after: {}", Timestamp.valueOf(date.atStartOfDay()));
 
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
-                AR_CONTRAGENT, DWH, startTime, null, null);
+                                                     AR_CONTRAGENT, DWH, startTime, null, null);
         template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
@@ -181,36 +181,44 @@ public class DWHServiceImpl implements DWHService {
                 contragentEntityList.add(c);
                 counter[0]++;
             });
-            cr.saveAll(contragentEntityList);
+
             onePage = acr.findByArContragentIDArcDateGreaterThanEqual(date, pageRequest);
 
-            statusLogger = new StatusLogger(revision, counter[0], RECORDS,
-                    AR_CONTRAGENT, DWH, startTime, null, null);
-            template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
+            if (counter[0] > 0) {
+                cr.saveAll(contragentEntityList);
 
-            log.debug("Sending task to otp-etl.enricher");
+                statusLogger = new StatusLogger(revision, counter[0], RECORDS,
+                                                AR_CONTRAGENT, DWH, startTime, null, null);
+                template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
-            EnricherPortionMessage enricherMessage = new EnricherPortionMessage(CONTRAGENT, portion);
-            template.convertAndSend(OtpExchange.ENRICHER, Utils.objectToJsonString(enricherMessage));
+                log.debug("Sending task to otp-etl.enricher");
+
+                EnricherPortionMessage enricherMessage = new EnricherPortionMessage(CONTRAGENT, portion);
+                template.convertAndSend(OtpExchange.ENRICHER, Utils.objectToJsonString(enricherMessage));
+            }
         }
 
-        Instant newInstant = Timestamp.valueOf(startTime).toInstant();
+        if (counter[0] > 0) {
+            Instant newInstant = Timestamp.valueOf(startTime).toInstant();
 
-        ImportRevision newImportRevision = new ImportRevision();
-        newImportRevision.setId(revision);
-        newImportRevision.setSource(SOURCE);
-        newImportRevision.setRevisionDate(newInstant);
-        irr.save(newImportRevision);
+            ImportRevision newImportRevision = new ImportRevision();
+            newImportRevision.setId(revision);
+            newImportRevision.setSource(SOURCE);
+            newImportRevision.setRevisionDate(newInstant);
+            irr.save(newImportRevision);
 
-        log.info("Imported {} records from DWH", counter[0]);
+            log.info("Imported {} records from DWH", counter[0]);
 
-        statusLogger = new StatusLogger(revision, 100L, "%",
-                AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
-                importedRecords(counter[0], date));
-        template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
+            statusLogger = new StatusLogger(revision, 100L, "%",
+                                            AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
+                                            importedRecords(counter[0], date));
+            template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
+        } else {
+            log.info("No records to be imported from DWH");
+        }
     }
 
-	private String handleString(String string){
-		return string == null ? "" : string.replaceAll("\u0000", "");
-	}
+    private String handleString(String string) {
+        return string == null ? "" : string.replaceAll("\u0000", "");
+    }
 }

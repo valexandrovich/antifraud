@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v049-11" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v049-11"/>
+    </changeSet>
+
+    <changeSet id="v049-12" author="Kyrylo Chornobryvets">
+        <update tableName="yperson_relation_type">
+            <column name="type" value="брат/сестра"/>
+            <where>id=1</where>
+        </update>
+        <update tableName="yperson_relation_type">
+            <column name="type" value="батьки/дитина"/>
+            <where>id=2</where>
+        </update>
+        <update tableName="yperson_relation_type">
+            <column name="type" value="подружжя"/>
+            <where>id=3</where>
+        </update>
+        <update tableName="yperson_relation_type">
+            <column name="type" value="ідентичність"/>
+            <where>id=4</where>
+        </update>
+        <rollback>
+            <update tableName="yperson_relation_type">
+                <column name="type" value="sibling"/>
+                <where>id=1</where>
+            </update>
+            <update tableName="yperson_relation_type">
+                <column name="type" value="parent"/>
+                <where>id=2</where>
+            </update>
+            <update tableName="yperson_relation_type">
+                <column name="type" value="spouse"/>
+                <where>id=3</where>
+            </update>
+            <update tableName="yperson_relation_type">
+                <column name="type" value="alter ego"/>
+                <where>id=4</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

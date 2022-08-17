@@ -1,14 +1,14 @@
 package ua.com.solidity.db.entities;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import java.time.LocalDate;
+import java.util.Objects;
+import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDate;
-import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -54,4 +54,17 @@ public class Govua1 {
 
 	@Column(name = "end_registration_date")
 	private LocalDate endRegistrationDate;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Govua1 govua1 = (Govua1) o;
+        return Objects.equals(id, govua1.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

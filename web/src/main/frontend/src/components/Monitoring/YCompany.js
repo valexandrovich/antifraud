@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import userApi from "../../api/UserApi";
-import PerPage from "../PerPage";
+import PerPage from "../../common/PerPage";
 import { Link } from "react-router-dom";
 
-import Pagination from "../Pagination";
-import Spinner from "../Loader";
+import Pagination from "../../common/Pagination";
+import Spinner from "../../common/Loader";
 import Card from "../YCompanyCard/Card";
 
 const YCompany = () => {

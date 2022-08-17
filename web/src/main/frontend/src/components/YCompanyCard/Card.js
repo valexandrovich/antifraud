@@ -7,7 +7,6 @@ import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";
 
 const Card = ({ data, totalFiles, setTotalFiles }) => {
   const { id, name, edrpou, pdv, subscribe, address } = data;
-  console.log(address);
   const [sub, setSub] = useState(subscribe);
   const userRole = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
@@ -90,18 +89,24 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
           </div>
           <hr />
           <div className="card-body">
-            <div className="d-flex ">
-              <b className="mr-10">ЄДРПОУ:</b>
-              <p>{edrpou}</p>
-            </div>
-            <div className="d-flex ">
-              <b className="mr-10">Код платника ПДВ:</b>
-              <p>{pdv}</p>
-            </div>
-            <div className="d-flex ">
-              <b className="mr-10">Адреса:</b>
-              <p className="over">{address?.address}</p>
-            </div>
+            {edrpou && (
+              <div className="d-flex ">
+                <b className="mr-10">ЄДРПОУ:</b>
+                <p>{edrpou}</p>
+              </div>
+            )}
+            {pdv && (
+              <div className="d-flex ">
+                <b className="mr-10">Код платника ПДВ:</b>
+                <p>{pdv}</p>
+              </div>
+            )}
+            {address && (
+              <div className="d-flex ">
+                <b className="mr-10">Адреса:</b>
+                <p className="over">{address?.address}</p>
+              </div>
+            )}
           </div>
           <div className="card-footer d-flex justify-content-end pointer">
             <Link className="text-dark" to={`/YCompany/${id}`}>

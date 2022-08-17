@@ -19,6 +19,9 @@ import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 @CustomLog
@@ -42,10 +45,12 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
     public static final String FILE_MASK = "mask";
     public static final String LAST = "last";
     public static final String SCHEMA = "schema";
+    public static final String DESCRIPTION = "description";
     public static final String NAME = "name";
 
     static class ResourceInfo {
         JsonNode resource;
+        JsonNode revisions;
         boolean isMain;
         String name;
         ResourceInfoFileData data = new ResourceInfoFileData();
@@ -55,10 +60,20 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
             this.isMain = isMain;
             this.name = name;
             data.setResourceId(getResourceId());
+            data.setDescription(getResourceDescription());
+            data.setName(getResourceName());
         }
 
         public final String getResourceId() {
             return resource.get(KEY_ID).textValue();
+        }
+
+        public final String getResourceDescription() {
+            return resource.has(DESCRIPTION) ? resource.get(DESCRIPTION).textValue() : "";
+        }
+
+        public final String getResourceName() {
+            return resource.has(NAME) ? resource.get(NAME).textValue() : "";
         }
 
         public final String getFormat() {
@@ -67,6 +82,14 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
 
         public final String getMimeType() {
             return resource.has(KEY_MIMETYPE) ? resource.get(KEY_MIMETYPE).textValue() : null;
+        }
+
+        public final void assignCommonFields(JsonNode item) {
+            data.setUrl(item.has(KEY_URL) ? item.get(KEY_URL).textValue() : null);
+            data.setSize(item.has(KEY_SIZE) ? item.get(KEY_SIZE).asLong() : -1);
+            data.setDigest(item.has(KEY_DIGEST) ? item.get(KEY_DIGEST).textValue() : null);
+            data.setFormat(item.has(KEY_FORMAT) ? item.get(KEY_FORMAT).textValue() : Objects.requireNonNull(getFormat()));
+            data.setMimeType(item.has(KEY_MIMETYPE) ? item.get(KEY_MIMETYPE).textValue() : getMimeType());
         }
     }
 
@@ -166,16 +189,21 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         return false;
     }
 
-    private boolean loadApiInfo() {
+    public static JsonNode loadApiInfo(Config config, String apiKey) {
         String url = MessageFormat.format(config.getDataGovUaApiUrl(), apiKey);
-        apiDataNode = Utils.getJsonNode(url, "UTF-8");
-        if (apiDataNode == null) {
+        JsonNode res = Utils.getJsonNode(url, "UTF-8");
+        if (res == null) {
             log.warn("No data received from {}", url);
         }
-        return apiDataNode != null && handleApiInfo(apiDataNode);
+        return res;
     }
 
-    private boolean prepareMainFileAndDictionaries() {
+    private boolean loadApiInfo() {
+        apiDataNode = loadApiInfo(config, apiKey);
+        return handleApiInfo(apiDataNode);
+    }
+
+    private boolean prepareMainFileAndDictionaries(JsonNode node) {
         if (mainResource != null) {
             setMainFile(mainResource.data);
         }
@@ -188,21 +216,30 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         return mainResource != null;
     }
 
-    private boolean handleApiInfo(JsonNode apiData) {
+    public static boolean handleApiInfo(JsonNode apiData, Consumer<JsonNode> resourceHandler, Function<JsonNode, Boolean> preparer) {
+        if (apiData == null || resourceHandler == null) return false;
         JsonNode node = apiData.has(KEY_RESULT) ? apiData.get(KEY_RESULT) : null;
         if (node != null && node.isObject()) {
             JsonNode resourcesNode = node.has(KEY_RESOURCES) ? node.get(KEY_RESOURCES) : null;
             if (resourcesNode != null && resourcesNode.isArray()) {
-                handleApiInfoResources(resourcesNode);
+                resourceHandler.accept(resourcesNode);
             }
-            boolean prepared = prepareMainFileAndDictionaries();
+
+            boolean prepared = preparer == null;
             if (!prepared) {
-                log.warn("Main file not detected.");
+                prepared = preparer.apply(node);
+                if (!prepared) {
+                    log.warn("Main file not detected.");
+                }
             }
 
             return prepared;
         }
         return false;
+    }
+
+    private boolean handleApiInfo(JsonNode apiData) {
+        return handleApiInfo(apiData, this::handleApiInfoResources, this::prepareMainFileAndDictionaries);
     }
 
     @JsonIgnore
@@ -246,42 +283,33 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         }
     }
 
-    private void handleApiInfoResources(JsonNode resourcesNode) {
+    public static void handleApiInfoResources(JsonNode resourcesNode, BiConsumer<JsonNode, String> handler) {
+        if (handler == null || resourcesNode == null || !resourcesNode.isArray() || resourcesNode.isEmpty()) return;
         for (int i = 0; i < resourcesNode.size(); ++i) {
             JsonNode info = resourcesNode.get(i);
             String name = info.hasNonNull(NAME) ? StringEscapeUtils.unescapeJava(info.get(NAME).asText("")) : "";
-            String dictName = getDictionaryItemName(name);
-            boolean isMain = dictName == null && isMainResourceName(name);
+            handler.accept(info, name);
+        }
+    }
 
-            if (isMain && mainResource != null && !useLastResource) {
-                log.warn("Only one resource can be used as main (other ignored). Assign mask or schema fields.");
-                continue;
-            }
+    private void doHandleApiResources(JsonNode info, String name) {
+        String dictName = getDictionaryItemName(name);
+        boolean isMain = dictName == null && isMainResourceName(name);
+
+        if (isMain && mainResource != null && !useLastResource) {
+            log.warn("Only one resource can be used as main (other ignored). Assign mask or schema fields.");
+        } else {
             if (isMain || dictName != null) {
                 doPushResource(info, isMain, isMain ? name : dictName);
             }
         }
     }
 
-    private void handleResource(ResourceInfo info) {
-        if (info != null && info.resource.has(KEY_ID)) {
-            String resId = info.resource.get(KEY_ID).textValue();
-            String url = MessageFormat.format(config.getDataGovUaResourceUrl(), resId);
-            JsonNode revisions = Utils.getJsonNode(url, "UTF-8");
-            if (revisions != null && revisions.has(KEY_RESULT)) {
-                revisions = revisions.get(KEY_RESULT);
-                JsonNode revisionsNode = revisions.isObject() && revisions.has(KEY_REVISIONS) ? revisions.get(KEY_REVISIONS) : null;
-                if (revisionsNode != null && revisionsNode.isArray() && revisionsNode.size() > 0) {
-                    handleRevisions(info, revisionsNode);
-                } else {
-                    assignCommonFields(info, revisions);
-                    info.data.setRevision(revisions.get(KEY_LAST_MODIFIED).textValue());
-                }
-            }
-        }
+    private void handleApiInfoResources(JsonNode resourcesNode) {
+        handleApiInfoResources(resourcesNode, this::doHandleApiResources);
     }
 
-    private void handleRevisions(ResourceInfo info, JsonNode revisionsArray) {
+    static void handleRevisions(ResourceInfo info, JsonNode revisionsArray) {
         List<SourceDataNodeInfo> nodes = new ArrayList<>();
         for (JsonNode revision : revisionsArray) {
             nodes.add(new SourceDataNodeInfo(revision,
@@ -291,15 +319,30 @@ public class DataGovUaSourceInfo extends ResourceInfoData {
         Collections.sort(nodes);
         SourceDataNodeInfo node = nodes.get(nodes.size() - 1);
         info.data.setRevisionDateTime(node.datetime);
-        assignCommonFields(info, node.node);
+        info.assignCommonFields(node.node);
     }
 
-    private void assignCommonFields(ResourceInfo info, JsonNode item) {
-        info.data.setUrl(item.has(KEY_URL) ? item.get(KEY_URL).textValue() : null);
-        info.data.setSize(item.has(KEY_SIZE) ? item.get(KEY_SIZE).asLong() : -1);
-        info.data.setDigest(item.has(KEY_DIGEST) ? item.get(KEY_DIGEST).textValue() : null);
-        info.data.setFormat(item.has(KEY_FORMAT) ? item.get(KEY_FORMAT).textValue() : Objects.requireNonNull(info.getFormat()));
-        info.data.setMimeType(item.has(KEY_MIMETYPE) ? item.get(KEY_MIMETYPE).textValue() : info.getMimeType());
+    static void handleResource(Config config, ResourceInfo info) {
+        if (info != null && info.resource.has(KEY_ID)) {
+            String resId = info.resource.get(KEY_ID).textValue();
+            String url = MessageFormat.format(config.getDataGovUaResourceUrl(), resId);
+            JsonNode revisions = Utils.getJsonNode(url, "UTF-8");
+            info.revisions = revisions;
+            if (revisions != null && revisions.has(KEY_RESULT)) {
+                revisions = revisions.get(KEY_RESULT);
+                JsonNode revisionsNode = revisions.isObject() && revisions.has(KEY_REVISIONS) ? revisions.get(KEY_REVISIONS) : null;
+                if (revisionsNode != null && revisionsNode.isArray() && revisionsNode.size() > 0) {
+                    handleRevisions(info, revisionsNode);
+                } else {
+                    info.assignCommonFields(revisions);
+                    info.data.setRevision(revisions.get(KEY_LAST_MODIFIED).textValue());
+                }
+            }
+        }
+    }
+
+    private void handleResource(ResourceInfo info) {
+        handleResource(config, info);
     }
 
     @Override

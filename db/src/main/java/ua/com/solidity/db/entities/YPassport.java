@@ -15,6 +15,7 @@ import javax.persistence.NamedAttributeNode;
 import javax.persistence.NamedEntityGraph;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import ua.com.solidity.db.abstraction.Identifiable;
@@ -48,9 +49,7 @@ public class YPassport implements Identifiable {
 	private Set<ImportSource> importSources =  new HashSet<>();
 
 	public void cleanAssociations() {
-		this.people.forEach(yPerson -> {
-			yPerson.getPassports().removeIf(passport -> id.equals(passport.getId()));
-		});
+		this.people.forEach(yPerson -> yPerson.getPassports().removeIf(passport -> id.equals(passport.getId())));
 		this.importSources = new HashSet<>();
 	}
 
@@ -59,15 +58,16 @@ public class YPassport implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YPassport yPassport = (YPassport) o;
-		return Objects.equals(series, yPassport.series) && Objects.equals(number, yPassport.number) && Objects.equals(type, yPassport.type);
+		return Objects.equals(series, yPassport.series) && Objects.equals(number, yPassport.number);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(series, number, type);
+		return Objects.hash(series, number);
 	}
 
 	@Override
+	@JsonIgnore
 	public Long getIdentifier() {
 		return id;
 	}

@@ -13,6 +13,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import ua.com.solidity.db.abstraction.Identifiable;
@@ -60,6 +61,7 @@ public class YAltPerson implements Identifiable {
 	}
 
 	@Override
+	@JsonIgnore
 	public Long getIdentifier() {
 		return id;
 	}

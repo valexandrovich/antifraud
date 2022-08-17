@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { DateObject } from "react-multi-date-picker";
 import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";
 import userService from "../../api/UserApi";
+import authHeader from "../../api/AuthHeader";
 
 export function pad(num, size) {
   const numLength = num.toString().length;
@@ -75,8 +76,30 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
     birthdate,
     address,
     subscribe,
+    compared,
   } = data;
+
+  const addToCompare = async (id) => {
+    try {
+      await fetch(`/api/user/comparePerson/${id}`, {
+        method: "PUT",
+        headers: authHeader(),
+      }).then((res) => {
+        if (res.status === 200) {
+          dispatch(
+            setAlertMessageThunk(
+              `Користувач з ${id} доданий до об'єднання`,
+              "success"
+            )
+          );
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const [sub, setSub] = useState(subscribe);
+  const [comp, setComp] = useState(compared);
   useEffect(() => {
     setSub(subscribe);
   }, [subscribe]);
@@ -163,55 +186,79 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
           </div>
           <hr />
           <div className="card-body">
-            <div className="d-flex ">
-              <b className="mr-10">Дата народження:</b>
-              <p>{new DateObject(birthdate).format("DD.MM.YYYY")}</p>
-            </div>
-            <div className="d-flex ">
-              <b className="mr-10">Паспорт:</b>
-              <p>{singlePassport(passport)}</p>
+            {birthdate && (
+              <div className="d-flex ">
+                <b className="mr-10">Дата народження:</b>
+                <p>{new DateObject(birthdate).format("DD.MM.YYYY")}</p>
+              </div>
+            )}
 
-              <span className="ml-10">
-                {passport
-                  ? `(${passport?.importSources.length} ${sourceName(
-                      passport?.importSources
-                    )})`
-                  : ""}
-              </span>
-            </div>
-            <div className="d-flex">
-              <b className="mr-10">ІПН:</b>
-              <p>{singleInn(inn)} </p>
-              <span className="ml-10">
-                {inn
-                  ? `(${inn.importSources.length} ${sourceName(
-                      inn.importSources
-                    )})`
-                  : ""}
-              </span>
-            </div>
-            <div className="d-flex">
-              <b className="mr-10">Адреса:</b>
-              <p>{address ? address.address : ""}</p>
-              <span className="ml-10">
-                {address
-                  ? `(${address.importSources.length} ${sourceName(
-                      address.importSources
-                    )})`
-                  : ""}
-              </span>
-            </div>
+            {passport && (
+              <div className="d-flex ">
+                <b className="mr-10">Паспорт:</b>
+                <p>{singlePassport(passport)}</p>
+
+                <span className="ml-10">
+                  {passport
+                    ? `(${passport?.importSources.length} ${sourceName(
+                        passport?.importSources
+                      )})`
+                    : ""}
+                </span>
+              </div>
+            )}
+
+            {inn && (
+              <div className="d-flex">
+                <b className="mr-10">ІПН:</b>
+                <p>{singleInn(inn)}</p>
+                <span className="ml-10">
+                  {inn
+                    ? `(${inn.importSources.length} ${sourceName(
+                        inn.importSources
+                      )})`
+                    : null}
+                </span>
+              </div>
+            )}
+            {address && (
+              <div className="d-flex">
+                <b className="mr-10">Адреса:</b>
+                <p>{address ? address.address : ""}</p>
+                <span className="ml-10">
+                  {address
+                    ? `(${address.importSources.length} ${sourceName(
+                        address.importSources
+                      )})`
+                    : ""}
+                </span>
+              </div>
+            )}
           </div>
           <div className="card-footer d-flex justify-content-between align-items-center pointer">
-            <IoIcons.IoIosGitCompare
-              title={"Об'єднати"}
-              style={{
-                width: 20,
-                height: 20,
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            />
+            {userRole === "ADMIN" ? (
+              <button
+                onClick={() => {
+                  addToCompare(id);
+                  setComp(!comp);
+                }}
+                className={"border -0"}
+                disabled={comp}
+              >
+                <IoIcons.IoIosGitCompare
+                  title={"Об'єднати"}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                />
+              </button>
+            ) : (
+              <span />
+            )}
+
             <Link className="text-dark" to={`/YPerson/${id}`}>
               Детальніше...
             </Link>

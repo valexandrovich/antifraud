@@ -27,5 +27,6 @@ public class OTPApplication {
     @Autowired
     public OTPApplication(ApplicationContext context) {
         Utils.setApplicationContext(context);
+        Utils.prepareRabbitMQQueue(OtpExchange.ENRICHER);
     }
 }

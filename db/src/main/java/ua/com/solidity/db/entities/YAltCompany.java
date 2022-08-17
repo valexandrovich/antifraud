@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -14,6 +13,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import ua.com.solidity.db.abstraction.Identifiable;
@@ -40,7 +40,7 @@ public class YAltCompany implements Identifiable {
     @JoinColumn(name = "company_id")
     private YCompany company;
 
-	@ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany
 	@JoinTable(
 			name = "yaltcompany_import_source",
 			joinColumns = {@JoinColumn(name = "yaltcompany_id")},
@@ -49,6 +49,7 @@ public class YAltCompany implements Identifiable {
 	private Set<ImportSource> importSources = new HashSet<>();
 
 	@Override
+	@JsonIgnore
 	public Long getIdentifier() {
 		return id;
 	}

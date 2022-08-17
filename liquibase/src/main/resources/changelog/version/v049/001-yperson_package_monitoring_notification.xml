@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v049-0" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v049-0"/>
+    </changeSet>
+
+    <changeSet id="v049-1" author="Kyrylo Chornobryvets">
+        <addColumn tableName="yperson_package_monitoring_notification">
+            <column name="condition_id" type="INT"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="v049-2" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="condition_id" baseTableName="yperson_package_monitoring_notification"
+                                 constraintName="FK_YPERSON_PACKAGE_MONITORING_NOTIFICATION_ON_CONDITION"
+                                 referencedColumnNames="id" referencedTableName="notification_physical_tag_condition"/>
+    </changeSet>
+    <changeSet id="v049-3" author="Kyrylo Chornobryvets">
+        <update tableName="notification_condition_tag_type">
+            <column name="tag_type_id" value="4"/>
+            <where>condition_id=1 and tag_type_id=14</where>
+        </update>
+        <rollback>
+            <update tableName="notification_condition_tag_type">
+                <column name="tag_type_id" value="14"/>
+                <where>condition_id=1 and tag_type_id=4</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v049-4" author="Kyrylo Chornobryvets">
+        <tagDatabase tag="v049-4"/>
+    </changeSet>
+
+    <changeSet id="v049-5" author="Kyrylo Chornobryvets">
+        <addColumn tableName="notification_physical_tag_condition">
+            <column name="matching_id"
+                    type="INT"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="v049-6" author="Kyrylo Chornobryvets">
+        <addForeignKeyConstraint baseColumnNames="matching_id"
+                                 baseTableName="notification_physical_tag_condition"
+                                 constraintName="FK_NOTIFICATION_PHYSICAL_TAG_CONDITION_ON_MATCHING"
+                                 referencedColumnNames="id"
+                                 referencedTableName="notification_physical_tag_matching"/>
+    </changeSet>
+    <changeSet id="v049-7" author="Kyrylo Chornobryvets">
+        <dropForeignKeyConstraint baseTableName="notification_matching_notification_condition"
+                                  constraintName="fk_notmatnotcon_on_notification_physical_tag_condition"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="condition_id"
+                                     baseTableName="notification_matching_notification_condition"
+                                     constraintName="fk_notmatnotcon_on_notification_physical_tag_condition"
+                                     referencedColumnNames="id" referencedTableName="notification_physical_tag_condition"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v049-8" author="Kyrylo Chornobryvets">
+        <dropForeignKeyConstraint baseTableName="notification_matching_notification_condition"
+                                  constraintName="fk_notmatnotcon_on_notification_physical_tag_matching"/>
+        <rollback>
+            <addForeignKeyConstraint baseColumnNames="matching_id"
+                                     baseTableName="notification_matching_notification_condition"
+                                     constraintName="fk_notmatnotcon_on_notification_physical_tag_matching"
+                                     referencedColumnNames="id" referencedTableName="notification_physical_tag_matching"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="v049-9" author="Kyrylo Chornobryvets">
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=1</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=2</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=3</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=4</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=5</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=6</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=7</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=8</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=9</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=10</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=11</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=12</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=13</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="1"/>
+            <where>id=14</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="2"/>
+            <where>id=15</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="2"/>
+            <where>id=16</where>
+        </update>
+        <update tableName="notification_physical_tag_condition">
+            <column name="matching_id" value="3"/>
+            <where>id=17</where>
+        </update>
+        
+        <rollback>
+            <update tableName="notification_physical_tag_condition">
+                <column name="matching_id" value="null"/>
+                <where>id>0</where>
+            </update>
+        </rollback>
+    </changeSet>
+    
+    <changeSet id="v049-10" author="Kyrylo Chornobryvets">
+        <dropTable tableName="notification_matching_notification_condition" cascadeConstraints="true"/>
+        <rollback>
+            <createTable tableName="notification_matching_notification_condition">
+                <column name="condition_id" type="INT">
+                    <constraints nullable="false" primaryKey="true"
+                                 primaryKeyName="pk_notification_matching_notification_condition"/>
+                </column>
+                <column name="matching_id" type="INT">
+                    <constraints nullable="false" primaryKey="true"
+                                 primaryKeyName="pk_notification_matching_notification_condition"/>
+                </column>
+            </createTable>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -21,12 +21,28 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
 
     List<YPerson> findByLastNameAndFirstNameAndPatNameAndBirthdate(String lastName, String firstName,
                                                                    String patName, LocalDate birthDate);
+    @EntityGraph(value = "yperson.tagsTagType")
+    @Query("SELECT p FROM YPerson p " +
+            "where p.id in (:ids)")
+    List<YPerson> findAllInIds(List<UUID> ids);
 
     List<YPerson> findByFirstName(String firstName);
 
     List<YPerson> findByPatName(String patName);
 
     Page<YPerson> findBySubscribedUsers(User user, Pageable pageable);
+
+    @Query("SELECT p FROM YPerson p " +
+            "join p.personRelations r " +
+            "join r.relationGroup g " +
+            "where g.id = :groupId")
+    List<YPerson> findAllByRelationGroupId(Long groupId);
+
+    @Query("SELECT DISTINCT p FROM YPerson p " +
+            "join p.personRelations r " +
+            "join r.relationGroup g " +
+            "where g.id in (:groupIds)")
+    List<YPerson> findAllInRelationGroupIds(Set<Long> groupIds);
 
     @EntityGraph(value = "yperson.inns")
     Optional<YPerson> findByInnsContains(YINN inn);
@@ -60,5 +76,10 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
 
     @EntityGraph(value = "yperson.forBaseEnricher")
     Optional<YPerson> findForBaseEnricherById(UUID id);
+
+    @EntityGraph(value = "yperson.innsAndTags")
+    Optional<YPerson> findWithInnsAndTagsById(UUID id);
+
+    boolean existsAllByIdIn(Set<UUID> ids);
 }
 

@@ -398,18 +398,25 @@ public class CSVParser extends CustomParser {
         return parseRow();
     }
 
+    @SuppressWarnings("unused")
     private void pushField(String field, boolean quoted) {
         if (field != null) {
             if (data.params.isAutoTrim()) {
                 field = field.trim();
             }
+
+            if (!quoted) {
+                field = data.params.matchNull(field);
+            }
+
+            /* Old code:
             if (field.length() == 0) {
                 if (quoted) {
                     field = "";
                 } else {
                     field = null;
                 }
-            }
+            } */
         }
         dataFields.add(field);
     }

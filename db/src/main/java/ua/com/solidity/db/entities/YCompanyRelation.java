@@ -3,7 +3,6 @@ package ua.com.solidity.db.entities;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -27,11 +26,11 @@ public class YCompanyRelation {
 	@Column(name = "id")
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.EAGER)
+	@ManyToOne
 	@JoinColumn(name = "company_id", referencedColumnName = "id")
 	private YCompany company;
 
-	@ManyToOne(fetch = FetchType.EAGER)
+	@ManyToOne
 	@JoinColumn(name = "role_id", referencedColumnName = "id")
 	private YCompanyRole role;
 

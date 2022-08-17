@@ -1,5 +1,5 @@
 import React from "react";
-import PageTitle from "../../components/PageTitle";
+import PageTitle from "../../common/PageTitle";
 import { useSelector } from "react-redux";
 import Tabs from "../../components/Forms/Tabs";
 import Yperson from "../../components/Monitoring/Yperson";

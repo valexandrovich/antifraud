@@ -4,9 +4,8 @@ import MaskedInput from "react-text-mask";
 import * as Yup from "yup";
 import Card from "../YPersonCard/Card.js";
 import { useDispatch, useSelector } from "react-redux";
-import Pagination from "../Pagination";
-import PerPage from "../PerPage";
-import Spinner from "../Loader";
+import PerPage from "../../common/PerPage";
+import Spinner from "../../common/Loader";
 
 import FloatInput from "../../common/FloatInput";
 import { setSearchDataYPersonsThunk } from "../../store/reducers/FizSearchReducer";
@@ -16,6 +15,7 @@ import {
   resetFormValueAc,
   setCurrentPageCount,
 } from "../../store/reducers/actions/YPersonActions";
+import PaginationWithConfirm from "../../common/PaginationWithConfirm";
 
 export const registerMask = [
   /\d/,
@@ -38,8 +38,8 @@ const fizSchema = Yup.object().shape({
   name: Yup.string().max(64, "Занадто довге"),
   surname: Yup.string().max(64, "Занадто довге"),
   patronymic: Yup.string().max(64, "Занадто довге"),
-  day: Yup.string().matches("^([1-9]|[1-2][0-9]|[3][0-1])$", "1-31"),
-  month: Yup.string().matches("^(1[0-2]|[1-9])$", "1-12"),
+  day: Yup.string().matches("^([0][1-9]|([1-2][0-9])|[3][0-1])$", "01-31"),
+  month: Yup.string().matches("^(1[0-2]|[0][1-9])$", "01-12"),
   year: Yup.string().matches("^(([1][9]|[2][0])\\d{2,2})|2100$", "1900-2100 "),
   age: Yup.string().matches("^([1-9]|[1-9][0-9]|1[01][0-9]|120)$", "1-120"),
   phone: Yup.string().matches("^(?:\\+)?(\\d{5,12})$", "Не вірний формат"),
@@ -64,6 +64,7 @@ const fizSchema = Yup.object().shape({
 
 const FizFormSearch = () => {
   const [documentType, setDocumentType] = useState("passport");
+  const [search, setSearch] = useState(false);
   const [, setPageSize] = useState(6);
   const [, setPageNo] = useState(0);
   const paginate = (pageNumber) => {
@@ -93,11 +94,23 @@ const FizFormSearch = () => {
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fizFormState.currentPage, fizFormState.perPage]);
+  }, [search, fizFormState.perPage]);
+
   const handleInput = (e, key, handleChange) => {
     handleChange(e);
     handleInputChange(e);
     updateValFromStore(key, e.target.value);
+  };
+  const validate = (values) => {
+    let errors = {};
+
+    if (values.day === "" && values.month !== "") {
+      errors.day = "Обов'зкове поле";
+    }
+    if (values.month === "" && values.day !== "") {
+      errors.month = "Обов'зкове поле";
+    }
+    return errors;
   };
   return (
     <>
@@ -106,6 +119,7 @@ const FizFormSearch = () => {
           ...fizFormState.fizForm,
         }}
         validationSchema={fizSchema}
+        validate={validate}
         onSubmit={(values, { setSubmitting }) => {
           setSubmitting(false);
         }}
@@ -122,18 +136,6 @@ const FizFormSearch = () => {
           <Form onSubmit={handleSubmit}>
             <div className="row mt-3">
               <FloatInput
-                name={"name"}
-                label={"Ім'я"}
-                val={fizFormState.fizForm.name}
-                errors={errors.name}
-                touched={touched.name}
-                max={64}
-                onBlur={handleBlur}
-                onChange={(e) => {
-                  handleInput(e, "name", handleChange);
-                }}
-              />
-              <FloatInput
                 name={"surname"}
                 label={"Прізвище"}
                 val={fizFormState.fizForm.surname}
@@ -143,6 +145,18 @@ const FizFormSearch = () => {
                 onBlur={handleBlur}
                 onChange={(e) => {
                   handleInput(e, "surname", handleChange);
+                }}
+              />
+              <FloatInput
+                name={"name"}
+                label={"Ім'я"}
+                val={fizFormState.fizForm.name}
+                errors={errors.name}
+                touched={touched.name}
+                max={64}
+                onBlur={handleBlur}
+                onChange={(e) => {
+                  handleInput(e, "name", handleChange);
                 }}
               />
               <FloatInput
@@ -453,11 +467,13 @@ const FizFormSearch = () => {
         })}
       </div>
       {fizFormState.searchResults.length > 0 && (
-        <Pagination
+        <PaginationWithConfirm
           filesPerPage={fizFormState.perPage}
           totalFiles={fizFormState.totalElements}
           paginate={paginate}
           pageNo={fizFormState.currentPage}
+          search={search}
+          setSearch={setSearch}
         />
       )}
       <Spinner loader={fizFormState.loader} message={"Шукаю збіги"} />

@@ -12,8 +12,6 @@ import ua.com.solidity.db.entities.YPerson;
 
 public interface YCompanyRelationRepository extends JpaRepository<YCompanyRelation, Long> {
 
-    Optional<YCompanyRelation> findByCompanyAndPersonAndRole(YCompany company, YPerson person, YCompanyRole role);
-
     @Query("SELECT cr FROM YCompanyRelation cr " +
             "join cr.person p " +
             "join p.inns i " +
@@ -24,4 +22,9 @@ public interface YCompanyRelationRepository extends JpaRepository<YCompanyRelati
             "join cr.company c " +
             "where c.edrpou in (:edrpous)")
     Set<YCompanyRelation> findRelationByEdrpous(Set<Long> edrpous);
+
+    @Query("SELECT cr FROM YCompanyRelation cr " +
+            "join cr.company c " +
+            "where c.pdv in (:pdvs)")
+    Set<YCompanyRelation> findRelationByPdvs(Set<Long> pdvs);
 }

@@ -5,12 +5,12 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>4.4.241</version>
+        <version>5.0.256-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>enricher</artifactId>
-    <version>4.4.241</version>
+    <version>5.0.256-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -62,17 +62,22 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>common</artifactId>
-            <version>4.4.241</version>
+            <version>5.0.256-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>4.4.241</version>
+            <version>5.0.256-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>ua.com.solidity</groupId>
+            <artifactId>util</artifactId>
+            <version>5.0.256-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>dispatcher</artifactId>
-            <version>4.4.241</version>
+            <version>5.0.256-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -89,16 +94,6 @@
                         </exclude>
                     </excludes>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>exec</classifier>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

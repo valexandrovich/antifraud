@@ -14,6 +14,7 @@ public interface YPassportRepository extends JpaRepository<YPassport, Long> {
 
     @EntityGraph(value = "ypassport.sources")
     @Query("SELECT p FROM YPassport p " +
-            "where p.series in (:series) and p.number in (:numbers)")
-    Set<YPassport> findPassports(Set<String> series, Set<Integer> numbers);
+            "where p.number in (:numbers)")
+    Set<YPassport> findPassportsByNumber(Set<Integer> numbers);
 }
+

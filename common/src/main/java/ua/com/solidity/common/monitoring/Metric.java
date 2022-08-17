@@ -1,7 +1,7 @@
 package ua.com.solidity.common.monitoring;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.CustomLog;
 
@@ -10,33 +10,32 @@ import java.util.*;
 
 @CustomLog
 @SuppressWarnings("unused")
-public class Statistic {
-    public static final Map<String, Statistic> items = new HashMap<>();
-    private double priorValue = 0;
+public class Metric {
+    public static final Map<String, Metric> items = new HashMap<>();
     private double value = 0;
     private double startValue = 0;
     private double minValue = 0;
     private double maxValue = 0;
     private double accumulator = 0;
     private long startMs = 0;
-    private long priorMs = 0;
+    private long currentMs = 0;
     private long maxValueMs = 0;
     private long minValueMs = 0;
-    private final StatsTuple statsTuple;
+    private final MetricTuple metricTuple;
 
-    public static Statistic create(String name) {
+    public static Metric create(String name) {
         synchronized(items) {
-            Statistic res = items.getOrDefault(name, null);
+            Metric res = items.getOrDefault(name, null);
             if (res == null) {
-                res = new Statistic(name);
+                res = new Metric(name);
                 items.put(name, res);
             }
             return res;
         }
     }
 
-    private Statistic(String name) {
-        statsTuple = new StatsTuple(name);
+    private Metric(String name) {
+        metricTuple = new MetricTuple(name);
     }
 
     public static void initialize(Instant start) {
@@ -49,12 +48,15 @@ public class Statistic {
 
     final void initializeItem(Instant start) {
         if (startMs > 0) return;
-        startMs = priorMs = minValueMs = maxValueMs = start.toEpochMilli();
-        startValue = priorValue = minValue = maxValue = 0;
+        startMs = currentMs = minValueMs = maxValueMs = start.toEpochMilli();
+        startValue = minValue = maxValue = 0;
     }
 
     private void putValue(double value, long current) {
-        if (startMs < 0) return;
+        if (startMs <= 0) return;
+
+        double priorValue = this.value;
+
         if (value < minValue) {
             minValue = value;
             minValueMs = current;
@@ -66,15 +68,14 @@ public class Statistic {
         }
 
         double accumValue = value + priorValue;
-        long deltaMs = current - priorMs;
+        long deltaMs = current - currentMs;
 
         if (accumValue != 0 && deltaMs > 0) {
-            accumulator += accumValue * (((double) deltaMs) / 2e6);
+            accumulator += accumValue * (((double) deltaMs) / 2f);
         }
-        priorMs = current;
-        priorValue = this.value;
+        currentMs = current;
         this.value = value;
-        log.info("$monitor${} put: {} at {}.", statsTuple.getName(), value, current);
+        log.info("$monitor${} put: {} at {}.", metricTuple.getName(), value, current);
     }
 
     @JsonIgnore
@@ -93,31 +94,37 @@ public class Statistic {
     }
 
     @JsonIgnore
-    public synchronized StatsTuple doFlush() {
+    public synchronized MetricTuple doFlush() {
         long finishMs = Instant.now().toEpochMilli();
+        putValue(value, finishMs);
         long deltaMs = finishMs - startMs;
-        statsTuple.assign(startMs, finishMs, startValue, value, minValue, maxValue, deltaMs > 0 ? accumulator / deltaMs : 0);
+        metricTuple.assign(startMs, finishMs, startValue, value, minValue, maxValue, deltaMs > 0 ? accumulator / deltaMs : 0);
         minValue = maxValue = startValue = value;
         minValueMs = maxValueMs = startMs = finishMs;
         accumulator = 0;
-        log.info("$monitor${} flush: (start: {}, finish: {}, min: {}, max: {}, avg: {}), startTime:{}, finishTime: {}.", statsTuple.getName(),
-                statsTuple.getStartValue(), statsTuple.getFinishValue(), statsTuple.getMin(), statsTuple.getMax(), statsTuple.getAvg(),
-                statsTuple.getStart(), statsTuple.getFinish());
-        return statsTuple;
+        log.info("$monitor${} flush: (start: {}, finish: {}, min: {}, max: {}, avg: {}), startTime:{}, finishTime: {}.", metricTuple.getName(),
+                metricTuple.getStartValue(), metricTuple.getFinishValue(), metricTuple.getMin(), metricTuple.getMax(), metricTuple.getAvg(),
+                metricTuple.getStart(), metricTuple.getFinish());
+        return metricTuple;
     }
 
     public synchronized void release() { // too more synchronized, is a trouble?
         startMs = 0;
         synchronized(items) {
-            items.remove(statsTuple.getName());
+            items.remove(metricTuple.getName());
         }
     }
 
     public static ObjectNode flush() {
-        JsonNode res;
+        ObjectNode res = null;
         synchronized(items) {
-            res = items.isEmpty() ? null : ServiceMonitor.mapper.valueToTree(items);
+            if (!items.isEmpty()) {
+                res = JsonNodeFactory.instance.objectNode();
+                for (var item : items.entrySet()) {
+                    res.set(item.getKey(), ServiceMonitor.mapper.valueToTree(item.getValue().doFlush()));
+                }
+            }
         }
-        return res == null || !res.isObject() ? null : ((ObjectNode) res);
+        return res == null || !res.isObject() ? null : res;
     }
 }

@@ -14,17 +14,23 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.db.abstraction.Identifiable;
+import ua.com.solidity.db.entities.NotificationJuridicalTagCondition;
+import ua.com.solidity.db.entities.NotificationJuridicalTagMatching;
 import ua.com.solidity.db.entities.NotificationPhysicalTagCondition;
 import ua.com.solidity.db.entities.NotificationPhysicalTagMatching;
 import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YCompanyMonitoringNotification;
+import ua.com.solidity.db.entities.YCompanyPackageMonitoringNotification;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.entities.YPersonMonitoringNotification;
 import ua.com.solidity.db.entities.YPersonPackageMonitoringNotification;
+import ua.com.solidity.db.repositories.NotificationJuridicalTagMatchingRepository;
 import ua.com.solidity.db.repositories.NotificationPhysicalTagMatchingRepository;
 import ua.com.solidity.db.repositories.UserRepository;
 import ua.com.solidity.db.repositories.YCompanyMonitoringNotificationRepository;
+import ua.com.solidity.db.repositories.YCompanyPackageMonitoringNotificationRepository;
+import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YPersonMonitoringNotificationRepository;
 import ua.com.solidity.db.repositories.YPersonPackageMonitoringNotificationRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
@@ -37,8 +43,11 @@ public class MonitoringNotificationService {
     private final YPersonMonitoringNotificationRepository personMonitoringNotificationRepository;
     private final YCompanyMonitoringNotificationRepository companyMonitoringNotificationRepository;
     private final YPersonRepository yPersonRepository;
+    private final YCompanyRepository yCompanyRepository;
     private final NotificationPhysicalTagMatchingRepository physicalTagMatchingRepository;
+    private final NotificationJuridicalTagMatchingRepository juridicalTagMatchingRepository;
     private final YPersonPackageMonitoringNotificationRepository personPackageMonitoringNotificationRepository;
+    private final YCompanyPackageMonitoringNotificationRepository companyPackageMonitoringNotificationRepository;
 
     public void enrichYPersonMonitoringNotification(Set<YPerson> people) {
         Map<UUID, YPerson> personMap = new HashMap<>();
@@ -233,5 +242,94 @@ public class MonitoringNotificationService {
 
         });
 
+    }
+
+    public void enrichYCompanyPackageMonitoringNotification(Set<YCompany> companies) {
+        List<NotificationJuridicalTagMatching> matchingList = juridicalTagMatchingRepository.findAll();
+
+        List<YCompany> companiesGlobalSaved = yCompanyRepository.findAllWithTagsInIds(companies.stream()
+                                                                                 .map(YCompany::getId)
+                                                                                 .collect(Collectors.toList()));
+        companies.forEach(company -> {
+            company.getTags()
+                    .forEach(tag -> {
+                        if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
+                    });
+        });
+
+        List<YCompany> companiesLocalNew = new ArrayList<>();
+        List<YCompany> companiesLocalSaved = new ArrayList<>();
+
+        companies.forEach(company -> {
+            boolean contains = companiesGlobalSaved.stream()
+                    .anyMatch(personGS -> personGS.getId().equals(company.getId()));
+            if (!contains) companiesLocalNew.add(company);
+        });
+
+        companies.forEach(company -> {
+            boolean contains = companiesGlobalSaved.stream()
+                    .anyMatch(personGS -> personGS.getId().equals(company.getId()));
+            if (contains) companiesLocalSaved.add(company);
+        });
+
+        Map<UUID, YCompany> companiesGlobalSavedMap = new HashMap<>();
+        companiesGlobalSaved.forEach(person -> companiesGlobalSavedMap.put(person.getId(), person));
+
+        matchingList.forEach(matching -> {
+            Set<NotificationJuridicalTagCondition> conditions = matching.getConditions();
+
+            //new people
+            companiesLocalNew.forEach(company -> {
+
+                conditions.forEach(condition -> {
+                    boolean hasCondition = condition.getTagTypes()
+                            .stream()
+                            .allMatch(tagType -> company.getTags()
+                                    .stream()
+                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())
+                                            && tag.getUntil().isAfter(LocalDateTime.now().toLocalDate())));
+
+                    if (hasCondition) {
+                        YCompanyPackageMonitoringNotification notification = new YCompanyPackageMonitoringNotification();
+                        notification.setYcompanyId(company.getId());
+                        notification.setEmail(matching.getEmail());
+                        notification.setCondition(condition);
+                        companyPackageMonitoringNotificationRepository.save(notification);
+                    }
+                });
+
+            });
+
+            //existing people
+            companiesLocalSaved.forEach(companyLocalSaved -> {
+
+                YCompany companyGlobalSaved = companiesGlobalSavedMap.get(companyLocalSaved.getId());
+
+                conditions.forEach(condition -> {
+                    boolean localHasCondition = condition.getTagTypes()
+                            .stream()
+                            .allMatch(tagType -> companyLocalSaved.getTags()
+                                    .stream()
+                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())
+                                            && tag.getUntil().isAfter(LocalDateTime.now().toLocalDate())));
+
+                    boolean globalHasCondition = condition.getTagTypes()
+                            .stream()
+                            .allMatch(tagType -> companyGlobalSaved.getTags()
+                                    .stream()
+                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())));
+
+                    if (localHasCondition && !globalHasCondition) {
+                        YCompanyPackageMonitoringNotification notification = new YCompanyPackageMonitoringNotification();
+                        notification.setYcompanyId(companyLocalSaved.getId());
+                        notification.setEmail(matching.getEmail());
+                        notification.setCondition(condition);
+                        companyPackageMonitoringNotificationRepository.save(notification);
+                    }
+                });
+
+            });
+
+        });
     }
 }

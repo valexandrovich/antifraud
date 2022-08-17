@@ -1,5 +1,6 @@
 package ua.com.solidity.common.monitoring;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,24 +11,24 @@ import java.util.Arrays;
 @Setter
 @NoArgsConstructor
 @SuppressWarnings("unused")
-public class StatsTuple {
+public class MetricTuple {
     public static final int INDEX_START = 0;
     public static final int INDEX_FINISH = 1;
     public static final int INDEX_MIN = 2;
     public static final int INDEX_MAX = 3;
     public static final int INDEX_AVG = 4;
-
+    @JsonIgnore
     private String name;
     private double[] values = new double[INDEX_AVG + 1];
     private long start;
     private long finish;
 
-    StatsTuple(String name) {
+    MetricTuple(String name) {
         this.name = name;
         clear();
     }
 
-    StatsTuple(String name, long startMs, long finishMs, double start, double finish, double min, double max, double avg) {
+    MetricTuple(String name, long startMs, long finishMs, double start, double finish, double min, double max, double avg) {
         this(name);
         assign(startMs, finishMs, start, finish, min, max, avg);
     }
@@ -38,31 +39,32 @@ public class StatsTuple {
     }
 
     public final void assign(long startMs, long finishMs, double start, double finish, double min, double max, double avg) {
-        this.values[0] = start;
-        this.values[1] = finish;
-        this.values[2] = min;
-        this.values[3] = max;
-        this.values[4] = avg;
+        this.values[INDEX_START] = start;
+        this.values[INDEX_FINISH] = finish;
+        this.values[INDEX_MIN] = min;
+        this.values[INDEX_MAX] = max;
+        this.values[INDEX_AVG] = avg;
         this.start = startMs;
         this.finish = finishMs;
     }
 
+    @JsonIgnore
     public final double getStartValue() {
         return values[INDEX_START];
     }
-
+    @JsonIgnore
     public final double getFinishValue() {
         return values[INDEX_FINISH];
     }
-
+    @JsonIgnore
     public final double getMin() {
         return values[INDEX_MIN];
     }
-
+    @JsonIgnore
     public final double getMax() {
         return values[INDEX_MAX];
     }
-
+    @JsonIgnore
     public final double getAvg() {
         return values[INDEX_AVG];
     }

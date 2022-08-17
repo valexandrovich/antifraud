@@ -1,17 +1,16 @@
 package ua.com.solidity.db.entities;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.Hibernate;
-
+import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.util.Objects;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.Hibernate;
 
 @Getter
 @Setter
@@ -27,6 +26,10 @@ public class TagType {
 	private String code;
 	@Column(name = "description", unique = true, nullable = false)
 	private String description;
+	@Column(name = "physical", nullable = false)
+	private boolean physical;
+	@Column(name = "juridical", nullable = false)
+	private boolean juridical;
 
 	public TagType(String code, String description) {
 		this.code = code;

@@ -16,21 +16,23 @@ import java.util.UUID;
 @NoArgsConstructor
 public class ResourceInfoFileData {
     protected String resourceId = null;
-
-    @JsonIgnore
-    protected ZonedDateTime revisionDateTime = null;
-
     protected String fileName = null;
+    protected String name = null;
+    protected String description = null;
     protected String format = null;
     protected boolean zipped = false;
     protected String mimeType = null;
     protected String url = null;
     protected String digest = null;
     protected long size = -1;
+
+    @JsonIgnore
+    protected ZonedDateTime revisionDateTime = null;
+    @JsonIgnore
     protected boolean downloaded = false;
 
     public void clear() {
-        resourceId = format = mimeType = url = digest = null;
+        resourceId = format = mimeType = url = digest = name = description = null;
         revisionDateTime = null;
         zipped = false;
         size = -1;
@@ -64,13 +66,11 @@ public class ResourceInfoFileData {
     }
 
     @JsonIgnore
-    @SuppressWarnings("unused")
     public Instant getInstant() {
         return revisionDateTime == null ? null : revisionDateTime.toInstant();
     }
 
     @JsonIgnore
-    @SuppressWarnings("unused")
     public void setInstant(Instant value) {
         revisionDateTime = value == null ? null : value.atZone(ZoneId.systemDefault());
     }
@@ -109,12 +109,12 @@ public class ResourceInfoFileData {
         revisionDateTime = ValueParser.getZonedDateTime(value);
     }
 
-    @SuppressWarnings("unused")
     public String getRevision() {
         return revisionDateTime == null ? null : ValueParser.formatZonedDateTime(revisionDateTime);
     }
 
     @JsonIgnore
+    @SuppressWarnings("unused")
     public ImporterMessageData getImporterMessageData(Long importSourceId, UUID importRevisionId, ResourceInfoData data, JsonNode pipelineInfo) {
         return new ImporterMessageData(importSourceId, importRevisionId, data, pipelineInfo, null, null, -1);
     }

@@ -61,12 +61,12 @@ public class YTag implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YTag yTag = (YTag) o;
-		return Objects.equals(tagType, yTag.tagType) && Objects.equals(asOf, yTag.asOf) && Objects.equals(until, yTag.until) && Objects.equals(source, yTag.source) && Objects.equals(person, yTag.person);
+		return Objects.equals(tagType, yTag.tagType) && Objects.equals(asOf, yTag.asOf) && Objects.equals(until, yTag.until) && Objects.equals(source, yTag.source);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(tagType, asOf, until, source, person);
+		return Objects.hash(tagType, asOf, until, source);
 	}
 
 	@Override

@@ -13,6 +13,10 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -20,10 +24,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -51,10 +57,8 @@ import ua.com.solidity.enricher.repository.Govua1Repository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
-import ua.com.solidity.util.model.YCompanyProcessing;
-import ua.com.solidity.util.model.YPersonProcessing;
-import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
-import ua.com.solidity.util.model.response.YPersonDispatcherResponse;
+import ua.com.solidity.util.model.EntityProcessing;
+import ua.com.solidity.util.model.response.DispatcherResponse;
 
 @CustomLog
 @Service
@@ -74,176 +78,174 @@ public class Govua1Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${dispatcher.url.person}")
-    private String urlPersonPost;
-    @Value("${dispatcher.url.person.delete}")
-    private String urlPersonDelete;
-    @Value("${dispatcher.url.company}")
-    private String urlCompanyPost;
-    @Value("${dispatcher.url.company.delete}")
-    private String urlCompanyDelete;
-    private List<UUID> respPeople;
-    private List<UUID> respCompanies;
+    @Value("${enricher.searchPortion}")
+    private Integer searchPortion;
+    @Value("${enricher.timeOutTime}")
+    private Integer timeOutTime;
+    @Value("${enricher.sleepTime}")
+    private Long sleepTime;
+    @Value("${dispatcher.url}")
+    private String urlPost;
+    @Value("${dispatcher.url.delete}")
+    private String urlDelete;
+    private List<EntityProcessing> resp = new ArrayList<>();
 
+    @SneakyThrows
     @Override
     public void enrich(UUID portion) {
-        logStart(GOVUA1);
+        LocalDateTime startTime = LocalDateTime.now();
+        try {
+            logStart(GOVUA1);
 
-        StatusChanger statusChanger = new StatusChanger(portion, GOVUA1, ENRICHER);
+            StatusChanger statusChanger = new StatusChanger(portion, GOVUA1, ENRICHER);
 
-        long[] counter = new long[1];
-        long[] wrongCounter = new long[1];
+            long[] counter = new long[1];
+            long[] wrongCounter = new long[1];
 
-        Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<Govua1> onePage = govua1Repository.findAllByPortionId(portion, pageRequest);
-        long count = govua1Repository.countAllByPortionId(portion);
-        statusChanger.newStage(null, "enriching", count, null);
-        String fileName = fileFormatUtil.getLogFileName(portion.toString());
-        DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA1, portion));
+            Pageable pageRequest = PageRequest.of(0, pageSize);
+            Page<Govua1> onePage = govua1Repository.findAllByPortionId(portion, pageRequest);
+            long count = govua1Repository.countAllByPortionId(portion);
+            statusChanger.newStage(null, "enriching", count, null);
+            String fileName = fileFormatUtil.getLogFileName(portion.toString());
+            DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
+                                                               Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA1, portion));
 
-        ImportSource source = isr.findImportSourceByName(GOVUA1);
+            ImportSource source = isr.findImportSourceByName(GOVUA1);
 
-        while (!onePage.isEmpty()) {
-            pageRequest = pageRequest.next();
-            Set<Govua1> page = onePage.toSet();
+            while (!onePage.isEmpty()) {
+                pageRequest = pageRequest.next();
+                List<Govua1> page = onePage.toList();
 
-            while (!page.isEmpty()) {
-                List<YPersonProcessing> peopleProcessing = page.parallelStream().map(p -> {
-                    YPersonProcessing personProcessing = new YPersonProcessing();
-                    personProcessing.setUuid(p.getId());
-                    if (StringUtils.isNotBlank(p.getEdrpou()) && p.getEdrpou().matches(ALL_NUMBER_REGEX))
-                        personProcessing.setInn(Long.valueOf(p.getEdrpou()));
-                    return personProcessing;
-                }).collect(Collectors.toList());
-                List<YCompanyProcessing> companiesProcessing = page.parallelStream().map(c -> {
-                    YCompanyProcessing companyProcessing = new YCompanyProcessing();
-                    companyProcessing.setUuid(c.getId());
-                    if (StringUtils.isNotBlank(c.getEdrpou()) && c.getEdrpou().matches(ALL_NUMBER_REGEX))
-                        companyProcessing.setEdrpou(Long.valueOf(c.getEdrpou()));
-                    return companyProcessing;
-                }).collect(Collectors.toList());
+                while (!page.isEmpty()) {
+                    Duration duration = Duration.between(startTime, LocalDateTime.now());
+                    if (duration.getSeconds() > timeOutTime)
+                        throw new TimeoutException("Time ran out for portion: " + portion);
+                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
+                        EntityProcessing entityProcessing = new EntityProcessing();
+                        entityProcessing.setUuid(p.getId());
+                        if (StringUtils.isNotBlank(p.getEdrpou()) && p.getEdrpou().matches(ALL_NUMBER_REGEX))
+                            entityProcessing.setInn(Long.parseLong(p.getEdrpou()));
+                        if (StringUtils.isNotBlank(p.getEdrpou()) && p.getEdrpou().matches(ALL_NUMBER_REGEX))
+                            entityProcessing.setEdrpou(Long.parseLong(p.getEdrpou()));
+                        return entityProcessing;
+                    }).collect(Collectors.toList());
 
-                UUID dispatcherId = httpClient.get(urlPersonPost, UUID.class);
+                    UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
-                String url = urlPersonPost + "?id=" + portion;
-                YPersonDispatcherResponse response = httpClient.post(url, YPersonDispatcherResponse.class, peopleProcessing);
-                respPeople = response.getResp();
-                List<UUID> tempPeople = response.getTemp();
+                    String url = urlPost + "?id=" + portion;
+                    DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
+                    resp = new ArrayList<>(response.getResp());
+                    List<UUID> respId = response.getRespId();
+                    List<UUID> temp = response.getTemp();
 
-                YCompanyDispatcherResponse responseCompanies = httpClient.post(urlCompanyPost, YCompanyDispatcherResponse.class, companiesProcessing);
-                respCompanies = responseCompanies.getResp();
-                List<UUID> tempCompanies = responseCompanies.getTemp();
+                    List<Govua1> workPortion = page.parallelStream().filter(p -> respId.contains(p.getId()))
+                            .collect(Collectors.toList());
 
-                page = onePage.stream().parallel().filter(p -> respPeople.contains(p.getId()) || respCompanies.contains(p.getId()))
-                        .collect(Collectors.toSet());
+                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
 
-                Set<Long> codes = new HashSet<>();
-                Set<YINN> inns = new HashSet<>();
-                Set<YPerson> people = new HashSet<>();
-                Set<YCompany> companies = new HashSet<>();
+                    Set<Long> codes = new HashSet<>();
+                    Set<YINN> inns = new HashSet<>();
+                    Set<YPerson> people = new HashSet<>();
+                    Set<YCompany> companies = new HashSet<>();
+                    Set<YPerson> savedPersonSet = new HashSet<>();
 
-                Set<YCompany> savedCompanies = new HashSet<>();
+                    Set<YCompany> savedCompanies = new HashSet<>();
 
-                page.forEach(r -> {
-                    if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
-                        codes.add(Long.parseLong(r.getEdrpou()));
+                    workPortion.forEach(r -> {
+                        if (StringUtils.isNotBlank(r.getEdrpou()) && r.getEdrpou().matches(ALL_NUMBER_REGEX)) {
+                            codes.add(Long.parseLong(r.getEdrpou()));
+                        }
+                    });
+
+                    if (!codes.isEmpty()) {
+                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
+                        for (List<Long> list : codesListArray) {
+                            inns.addAll(yinnRepository.findInns(new HashSet<>(list)));
+                            savedCompanies.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
+                            savedPersonSet.addAll(ypr.findPeopleInns(new HashSet<>(list)));
+                        }
                     }
-                });
 
-                if (!codes.isEmpty()) {
-                    inns = yinnRepository.findInns(codes);
-                    savedCompanies = companyRepository.findWithEdrpouCompanies(codes);
-                }
-                Set<YPerson> savedPersonSet = new HashSet<>();
-                if (!inns.isEmpty())
-                    savedPersonSet = ypr.findPeopleInns(codes);
-                Set<YPerson> savedPeople = savedPersonSet;
+                    workPortion.forEach(r -> {
 
-                Set<YINN> finalInns = inns;
-                Set<YCompany> finalCompanies = savedCompanies;
-                page.forEach(r -> {
-                    YPerson person;
-                    YCompany company;
+                        if (StringUtils.isNotBlank(r.getEdrpou()) && r.getEdrpou().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String code = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
 
-                    if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
-                        String code = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            if (isValidEdrpou(code)) {
+                                YCompany company = new YCompany();
+                                company.setEdrpou(Long.parseLong(code));
+                                company.setName(UtilString.toUpperCase(r.getName()));
+                                company = extender.addCompany(companies, source, company, savedCompanies);
+                                if (StringUtils.isNotBlank(r.getCaseNumber()) && StringUtils.isNotBlank(r.getRecordType())) {
+                                    Optional<TagType> tagType = tagTypeRepository.findByCode("NBB2");
 
-                        if (isValidEdrpou(code)) {
-                            company = new YCompany();
-                            company.setEdrpou(Long.parseLong(code));
-                            company.setName(UtilString.toUpperCase(r.getName()));
-                            company = extender.addCompany(companies, source, company, finalCompanies);
-                            if (StringUtils.isNotBlank(r.getCaseNumber()) && StringUtils.isNotBlank(r.getRecordType())) {
-                                Optional<TagType> tagType = tagTypeRepository.findByCode("NBB2");
-
-                                if (tagType.isPresent()) {
-                                    Set<YCTag> tagSet = new HashSet<>();
-                                    YCTag ycTag = new YCTag();
-                                    ycTag.setAsOf(r.getRecordDate());
-                                    ycTag.setTagType(tagType.get());
-                                    ycTag.setSource(r.getCaseNumber());
-                                    tagSet.add(ycTag);
-                                    extender.addTags(company, tagSet, source);
+                                    if (tagType.isPresent()) {
+                                        Set<YCTag> tagSet = new HashSet<>();
+                                        YCTag ycTag = new YCTag();
+                                        ycTag.setAsOf(r.getRecordDate());
+                                        ycTag.setTagType(tagType.get());
+                                        ycTag.setSource(GOVUA1);
+                                        ycTag.setUntil(LocalDate.of(3500, 1, 1));
+                                        tagSet.add(ycTag);
+                                        extender.addTags(company, tagSet, source);
+                                    }
                                 }
-                            }
-                            counter[0]++;
-                        } else if (isValidInn(code, null)) {
-                            person = new YPerson();
+                                counter[0]++;
+                            } else if (isValidInn(code, null)) {
+                                YPerson person = new YPerson();
 
-                            String lastName = null;
-                            String firstName = null;
-                            String patName = null;
+                                String lastName = null;
+                                String firstName = null;
+                                String patName = null;
 
-                            List<String> splitedList;
-                            String[] fio = new String[3];
-                            Integer commaIndex = null;
+                                List<String> splitedList;
+                                String[] fio = new String[3];
+                                Integer commaIndex = null;
 
-                            if (StringUtils.isNotBlank(r.getName())) {
-                                splitedList = Arrays.stream(r.getName().split("[ .]+"))
-                                        .filter(s -> StringUtils.isNotBlank(s) && !s.contains("»") && !s.contains("«"))
-                                        .collect(Collectors.toList());
-                                int splitedSize = splitedList.size();
+                                if (StringUtils.isNotBlank(r.getName())) {
+                                    splitedList = Arrays.stream(r.getName().split("[ .]+"))
+                                            .filter(s -> StringUtils.isNotBlank(s) && !s.contains("»") && !s.contains("«"))
+                                            .collect(Collectors.toList());
+                                    int splitedSize = splitedList.size();
 
-                                if (splitedList.size() > 3) {
-                                    for (int i = 0; i < splitedSize; i++) {
-                                        if (splitedList.get(i).contains(",")) {
-                                            splitedList.add(i, splitedList.get(i).replaceAll(",", ""));
-                                            commaIndex = i;
-                                            break;
+                                    if (splitedList.size() > 3) {
+                                        for (int i = 0; i < splitedSize; i++) {
+                                            if (splitedList.get(i).contains(",")) {
+                                                splitedList.add(i, splitedList.get(i).replaceAll(",", ""));
+                                                commaIndex = i;
+                                                break;
+                                            }
+                                        }
+
+                                        if (commaIndex != null && commaIndex >= 2) {
+                                            fio[0] = splitedList.get(commaIndex - 2);
+                                            fio[1] = splitedList.get(commaIndex - 1);
+                                            fio[2] = splitedList.get(commaIndex);
+                                        } else {
+                                            fio[0] = splitedList.get(splitedSize - 3);
+                                            fio[1] = splitedList.get(splitedSize - 2);
+                                            fio[2] = splitedList.get(splitedSize - 1);
+                                        }
+                                    } else {
+                                        for (int i = 0; i < splitedSize; i++) {
+                                            fio[i] = splitedList.get(i);
                                         }
                                     }
 
-                                    if (commaIndex != null && commaIndex >= 2) {
-                                        fio[0] = splitedList.get(commaIndex - 2);
-                                        fio[1] = splitedList.get(commaIndex - 1);
-                                        fio[2] = splitedList.get(commaIndex);
-                                    } else {
-                                        fio[0] = splitedList.get(splitedSize - 3);
-                                        fio[1] = splitedList.get(splitedSize - 2);
-                                        fio[2] = splitedList.get(splitedSize - 1);
-                                    }
-                                } else {
-                                    for (int i = 0; i < splitedSize; i++) {
-                                        fio[i] = splitedList.get(i);
-                                    }
+                                    lastName = UtilString.toUpperCase(fio[0]);
+                                    firstName = UtilString.toUpperCase(fio[1]);
+                                    patName = UtilString.toUpperCase(fio[2]);
+
                                 }
 
-                                lastName = UtilString.toUpperCase(fio[0]);
-                                firstName = UtilString.toUpperCase(fio[1]);
-                                patName = UtilString.toUpperCase(fio[2]);
 
-                            }
+                                person.setLastName(lastName);
+                                person.setFirstName(firstName);
+                                person.setPatName(patName);
 
+                                person = extender.addInn(Long.parseLong(code), people, source, person, inns, savedPersonSet);
+                                person = extender.addPerson(people, person, source, true);
 
-                            person.setLastName(lastName);
-                            person.setFirstName(firstName);
-                            person.setPatName(patName);
-
-                            person = extender.addInn(Long.parseLong(code), people, source, person, finalInns, savedPeople);
-                            person = extender.addPerson(people, person, source, true);
-
-                            if (StringUtils.isNotBlank(r.getCaseNumber()) && StringUtils.isNotBlank(r.getRecordType())) {
                                 Optional<TagType> tagType = tagTypeRepository.findByCode("NBB2");
 
                                 if (tagType.isPresent()) {
@@ -251,62 +253,68 @@ public class Govua1Enricher implements Enricher {
                                     YTag yTag = new YTag();
                                     yTag.setAsOf(r.getRecordDate());
                                     yTag.setTagType(tagType.get());
-                                    yTag.setSource(r.getCaseNumber());
+                                    yTag.setSource(GOVUA1);
+                                    yTag.setUntil(LocalDate.of(3500, 1, 1));
                                     tagSet.add(yTag);
                                     extender.addTags(person, tagSet, source);
                                 }
+                            } else {
+                                logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
+                                wrongCounter[0]++;
                             }
-
-                            counter[0]++;
-                        } else {
-                            logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
-                            wrongCounter[0]++;
                         }
+                        if (!resp.isEmpty()) {
+                            counter[0]++;
+                            statusChanger.addProcessedVolume(1);
+                        }
+                    });
+
+                    UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
+                    if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                        if (!people.isEmpty()) {
+                            emnService.enrichYPersonPackageMonitoringNotification(people);
+                            ypr.saveAll(people);
+                        }
+
+                        if (!companies.isEmpty()) {
+                            emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                            companyRepository.saveAll(companies);
+                        }
+
+                        if (!this.resp.isEmpty()) {
+                            httpClient.post(urlDelete, Boolean.class, this.resp);
+                            this.resp.clear();
+                        }
+
+                        emnService.enrichYPersonMonitoringNotification(people);
+                        emnService.enrichYCompanyMonitoringNotification(companies);
+
+                        page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
+                    } else {
+                        counter[0] -= resp.size();
+                        statusChanger.addProcessedVolume(-resp.size());
                     }
-
-                    statusChanger.addProcessedVolume(1);
-                });
-
-                UUID dispatcherIdFinish = httpClient.get(urlPersonPost, UUID.class);
-                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
-
-                    emnService.enrichYPersonPackageMonitoringNotification(people);
-
-                    ypr.saveAll(people);
-
-                    if (!respPeople.isEmpty())
-                        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
-
-                    companyRepository.saveAll(companies);
-
-                    emnService.enrichYPersonMonitoringNotification(people);
-                    emnService.enrichYCompanyMonitoringNotification(companies);
-
-                    if (!respCompanies.isEmpty())
-                        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
-
-
-                    page = onePage.stream().parallel().filter(p -> tempCompanies.contains(p.getId()) || tempPeople.contains(p.getId()))
-                            .collect(Collectors.toSet());
-                } else {
-                    counter[0] -= page.size();
-                    statusChanger.setProcessedVolume(counter[0]);
                 }
+
+                onePage = govua1Repository.findAllByPortionId(portion, pageRequest);
             }
 
-            onePage = govua1Repository.findAllByPortionId(portion, pageRequest);
+            logFinish(GOVUA1, counter[0]);
+            logger.finish();
+
+            statusChanger.complete(importedRecords(counter[0]));
+        } finally {
+            deleteResp();
         }
-
-        logFinish(GOVUA1, counter[0]);
-        logger.finish();
-
-        statusChanger.complete(importedRecords(counter[0]));
     }
 
     @Override
     @PreDestroy
     public void deleteResp() {
-        httpClient.post(urlPersonDelete, Boolean.class, respPeople);
-        httpClient.post(urlCompanyDelete, Boolean.class, respCompanies);
+        if (!resp.isEmpty()) {
+            httpClient.post(urlDelete, Boolean.class, resp);
+            resp.clear();
+        }
     }
 }

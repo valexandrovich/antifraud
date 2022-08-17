@@ -15,7 +15,6 @@ public class ServiceMonitorState {
     private static final TimerTask lookupTask = new ServiceMonitorLookupStateTask();
     private PreparedStatement lookupStatement;
     private String currentStateString = null;
-    private JsonNode currentState = null;
 
     private static class ServiceMonitorLookupStateTask extends TimerTask {
         @Override
@@ -58,13 +57,11 @@ public class ServiceMonitorState {
                      Object obj = res.getObject(0);
                      if (obj instanceof String) {
                          currentStateString = (String) obj;
-                         currentState = Utils.getJsonNode(currentStateString);
                      } else {
                          currentStateString = null;
-                         currentState = null;
                      }
                  }
-                 log.info("$monitor$Data:{}", currentStateString);
+                 log.info("$monitor-state$Data:{}", currentStateString);
              } catch (Exception e) {
                  log.error("ServiceMonitor lookup state error.", e);
              }
@@ -79,7 +76,7 @@ public class ServiceMonitorState {
 
     public final JsonNode getState() {
         synchronized(ServiceMonitor.class) {
-            return currentState;
+            return Utils.getJsonNode(currentStateString);
         }
     }
 }

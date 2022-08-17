@@ -58,12 +58,12 @@ public class YPassport implements Identifiable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		YPassport yPassport = (YPassport) o;
-		return Objects.equals(series, yPassport.series) && Objects.equals(number, yPassport.number) && Objects.equals(type, yPassport.type);
+		return Objects.equals(series, yPassport.series) && Objects.equals(number, yPassport.number);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(series, number, type);
+		return Objects.hash(series, number);
 	}
 
 	@Override

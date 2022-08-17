@@ -14,7 +14,7 @@ public class ServiceMonitorCleaner {
     private static class ServiceMonitorCleanTask extends TimerTask {
         @Override
         public void run() {
-            if (ServiceMonitor.instance != null && instance != null) instance.cleanMonitor();
+            if (instance != null) instance.cleanMonitor();
         }
     }
 
@@ -51,9 +51,9 @@ public class ServiceMonitorCleaner {
             if (cleanStatementNeeded()) {
                 try {
                     cleanStatement.execute();
-                    log.info("$monitor$Cleaning...");
+                    log.info("$monitor-clean$===============> Cleaning...");
                 } catch (Exception e) {
-                    log.error("Service-monitor clean error.", e);
+                    log.error("ServiceMonitor clean error.", e);
                 }
             }
         }

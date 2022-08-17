@@ -1,5 +1,6 @@
 package ua.com.solidity.db.repositories;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -24,10 +25,23 @@ public interface YCompanyRepository extends JpaRepository<YCompany, Long>, JpaSp
     @EntityGraph(value = "ycompany.addressesAndAltCompaniesAndTagsAndEmailsAndImportSources")
     @Query("SELECT c FROM YCompany c " +
             "where c.edrpou in (:edrpous)")
-    Set<YCompany> findWithEdrpouCompanies(Set<Long> edrpous);
+    Set<YCompany> finnByEdrpous(Set<Long> edrpous);
+
+    @EntityGraph(value = "ycompany.addressesAndAltCompaniesAndTagsAndEmailsAndImportSources")
+    @Query("SELECT c FROM YCompany c " +
+            "where c.edrpou in (:edrpous)")
+    Page<YCompany> finnByEdrpous1(Set<Long> edrpous, Pageable pageable);
 
     @EntityGraph(value = "ycompany.addressesAndAltCompaniesAndTagsAndEmailsAndImportSources")
     @Query("SELECT c FROM YCompany c " +
             "where c.pdv in (:pdvs)")
     Set<YCompany> findWithPdvCompanies(Set<Long> pdvs);
+
+    @EntityGraph(value = "ycompany.tagsTagType")
+    @Query("SELECT c FROM YCompany c " +
+            "where c.id in (:ids)")
+    List<YCompany> findAllWithTagsInIds(List<UUID> ids);
+
+    @EntityGraph(value = "ycompany.tagsTagType")
+    Optional<YCompany> findWithTagsById(UUID id);
 }

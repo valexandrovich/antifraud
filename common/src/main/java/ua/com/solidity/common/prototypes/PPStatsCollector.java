@@ -98,6 +98,9 @@ public class PPStatsCollector extends Prototype {
     protected void close(Item item) {
         Data data = item.getInternalData(Data.class);
         JsonNode node = data.collector.getNode();
-        Utils.writeJsonNodeToFile(data.outputFile, node);
+        boolean res = Utils.writeJsonNodeToFile(data.outputFile, node);
+        if (!res) {
+            log.info("Can't write stats data to file {}", data.outputFile.getAbsolutePath());
+        }
     }
 }

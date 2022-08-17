@@ -5,14 +5,15 @@ import static ua.com.solidity.enricher.util.Chooser.chooseNotNull;
 import static ua.com.solidity.enricher.util.Regex.INN_FORMAT_REGEX;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.ImportSource;
@@ -103,13 +104,13 @@ public class Extender {
         Optional<YPassport> optionalYPassport = yPersonList.parallelStream()
                 .flatMap(p -> p.getPassports().parallelStream())
                 .filter(p -> Objects.equals(p.getSeries(), ypassport.getSeries())
-                && Objects.equals(p.getNumber(), ypassport.getNumber())
-                && Objects.equals(p.getType(), ypassport.getType())).findAny();
+                        && Objects.equals(p.getNumber(), ypassport.getNumber())
+                        && Objects.equals(p.getType(), ypassport.getType())).findAny();
 
         if (optionalYPassport.isEmpty()) optionalYPassport = passports.parallelStream()
                 .filter(p -> Objects.equals(p.getSeries(), ypassport.getSeries())
-                && Objects.equals(p.getNumber(), ypassport.getNumber())
-                && Objects.equals(p.getType(), ypassport.getType())).findAny();
+                        && Objects.equals(p.getNumber(), ypassport.getNumber())
+                        && Objects.equals(p.getType(), ypassport.getType())).findAny();
 
         passport = optionalYPassport.orElseGet(YPassport::new);
         addSource(passport.getImportSources(), source);
@@ -488,6 +489,7 @@ public class Extender {
         yCompany.setName(chooseNotBlank(yCompany.getName(), company.getName()));
         yCompany.setState(chooseNotNull(yCompany.getState(), company.getState()));
 
+        companySet.add(yCompany);
         return yCompany;
     }
 
@@ -505,4 +507,21 @@ public class Extender {
             person.setBirthdate(birthDay);
         }
     }
+
+    public <T> List<T>[] partition(List<T> list, int size) {
+        int countPart = list.size() / size;
+        if (list.size() % size != 0) {
+            countPart++;
+        }
+
+        List<List<T>> itr = ListUtils.partition(list, size);
+
+        List<T>[] partition = new ArrayList[countPart];
+        for (int i = 0; i < countPart; i++) {
+            partition[i] = new ArrayList<>(itr.get(i));
+        }
+
+        return partition;
+    }
+
 }

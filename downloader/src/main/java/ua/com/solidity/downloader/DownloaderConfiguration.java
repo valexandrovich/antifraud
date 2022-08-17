@@ -10,6 +10,7 @@ import javax.annotation.PostConstruct;
 
 @Configuration
 public class DownloaderConfiguration {
+
     @Bean
     DownloaderTaskHandler dataGovUa(DataGovUaSourceInfo info) {
         return new DownloaderTaskGovUaHandler(info);
@@ -29,5 +30,6 @@ public class DownloaderConfiguration {
     void initRabbitMQActions() {
         ActionObject.register(DownloaderDropRevisionAction.class, "drop_revision");
         ActionObject.register(DownloaderDropLastRevisionAction.class, "drop_last_revision");
+        ActionObject.register(DataGovUaApiDumpAction.class, "govua_dump");
     }
 }

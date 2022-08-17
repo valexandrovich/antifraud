@@ -16,25 +16,25 @@ import lombok.Setter;
 import org.hibernate.Hibernate;
 
 @Entity
-@Table(name = "yperson_package_monitoring_notification")
+@Table(name = "ycompany_package_monitoring_notification")
 @Getter
 @Setter
-public class YPersonPackageMonitoringNotification {
+public class YCompanyPackageMonitoringNotification {
 
 	@Id
 	@Column(name = "id")
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "yperson_id")
-	private UUID ypersonId;
+	@Column(name = "ycompany_id")
+	private UUID ycompanyId;
 
 	@Column(name = "message")
 	private String message;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "condition_id", referencedColumnName = "id")
-	private NotificationPhysicalTagCondition condition;
+	private NotificationJuridicalTagCondition condition;
 
 	@Column(name = "sent")
 	private boolean sent;
@@ -46,7 +46,7 @@ public class YPersonPackageMonitoringNotification {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-		YPersonPackageMonitoringNotification that = (YPersonPackageMonitoringNotification) o;
+		YCompanyPackageMonitoringNotification that = (YCompanyPackageMonitoringNotification) o;
 		return id != null && Objects.equals(id, that.id);
 	}
 

@@ -42,7 +42,15 @@ import lombok.Setter;
                         @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode(value = "altCompanies", subgraph = "importSources-subgraph"),
                         @NamedAttributeNode("state"),
-                        @NamedAttributeNode("importSources")})
+                        @NamedAttributeNode("importSources")}),
+        @NamedEntityGraph(name = "ycompany.tagsTagType",
+                subgraphs = {
+                        @NamedSubgraph(name = "tagType-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("tagType")
+                                })},
+                attributeNodes = {
+                        @NamedAttributeNode(value = "tags", subgraph = "tagType-subgraph")})
 })
 @Entity
 @Table(name = "ycompany")

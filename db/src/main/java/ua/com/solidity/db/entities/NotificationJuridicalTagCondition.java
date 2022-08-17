@@ -22,9 +22,9 @@ import org.hibernate.Hibernate;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "notification_physical_tag_condition")
+@Table(name = "notification_juridical_tag_condition")
 @Entity
-public class NotificationPhysicalTagCondition {
+public class NotificationJuridicalTagCondition {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", unique = true)
@@ -33,10 +33,10 @@ public class NotificationPhysicalTagCondition {
     private String description;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "matching_id", referencedColumnName = "id")
-    private NotificationPhysicalTagMatching matching;
+    private NotificationJuridicalTagMatching matching;
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "notification_physical_condition_tag_type",
+            name = "notification_juridical_condition_tag_type",
             joinColumns = {@JoinColumn(name = "condition_id")},
             inverseJoinColumns = {@JoinColumn(name = "tag_type_id")}
     )
@@ -46,16 +46,16 @@ public class NotificationPhysicalTagCondition {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        NotificationPhysicalTagCondition that = (NotificationPhysicalTagCondition) o;
+        NotificationJuridicalTagCondition that = (NotificationJuridicalTagCondition) o;
         return id != null && Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(id);
     }
 
-    public NotificationPhysicalTagCondition(Set<TagType> tagTypes) {
+    public NotificationJuridicalTagCondition(Set<TagType> tagTypes) {
         this.tagTypes = tagTypes;
     }
 }

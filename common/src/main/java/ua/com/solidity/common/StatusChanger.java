@@ -1,15 +1,21 @@
 package ua.com.solidity.common;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TimerTask;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.helpers.MessageFormatter;
 import ua.com.solidity.common.monitoring.ServiceMonitor;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 
 public class StatusChanger {
     public static final String UNIT_BYTES = "bytes";
@@ -139,7 +145,7 @@ public class StatusChanger {
 
     @SuppressWarnings("unused")
     public StatusChanger(UUID id, String name, String userName) {
-        this(id, name, userName, defaultPeriod);
+        this(id, name, userName  + "." + ProcessHandle.current().pid(), defaultPeriod);
     }
 
     @SuppressWarnings("unused")

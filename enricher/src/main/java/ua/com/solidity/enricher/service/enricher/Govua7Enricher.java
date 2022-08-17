@@ -14,16 +14,22 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NBB1;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import io.micrometer.core.instrument.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,8 +53,8 @@ import ua.com.solidity.enricher.repository.Govua7Repository;
 import ua.com.solidity.enricher.service.HttpClient;
 import ua.com.solidity.enricher.service.MonitoringNotificationService;
 import ua.com.solidity.enricher.util.FileFormatUtil;
-import ua.com.solidity.util.model.YCompanyProcessing;
-import ua.com.solidity.util.model.response.YCompanyDispatcherResponse;
+import ua.com.solidity.util.model.EntityProcessing;
+import ua.com.solidity.util.model.response.DispatcherResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -65,129 +71,159 @@ public class Govua7Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${dispatcher.url.company}")
-    private String urlCompanyPost;
-    @Value("${dispatcher.url.company.delete}")
-    private String urlCompanyDelete;
-    private List<UUID> resp;
+    @Value("${enricher.searchPortion}")
+    private Integer searchPortion;
+    @Value("${enricher.timeOutTime}")
+    private Integer timeOutTime;
+    @Value("${enricher.sleepTime}")
+    private Long sleepTime;
+    @Value("${dispatcher.url}")
+    private String urlPost;
+    @Value("${dispatcher.url.delete}")
+    private String urlDelete;
+    private List<EntityProcessing> resp = new ArrayList<>();
 
+    @SneakyThrows
     @Override
     public void enrich(UUID portion) {
-        logStart(GOVUA7);
+        LocalDateTime startTime = LocalDateTime.now();
+        try {
+            logStart(GOVUA7);
 
-        StatusChanger statusChanger = new StatusChanger(portion, GOVUA7, ENRICHER);
+            StatusChanger statusChanger = new StatusChanger(portion, GOVUA7, ENRICHER);
 
-        long[] counter = new long[1];
-        long[] wrongCounter = new long[1];
+            long[] counter = new long[1];
+            long[] wrongCounter = new long[1];
 
-        Pageable pageRequest = PageRequest.of(0, pageSize);
-        Page<Govua7> onePage = govua7Repository.findAllByPortionId(portion, pageRequest);
-        long count = govua7Repository.countAllByPortionId(portion);
-        statusChanger.newStage(null, "enriching", count, null);
-        String fileName = fileFormatUtil.getLogFileName(portion.toString());
-        DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA7, portion));
+            Pageable pageRequest = PageRequest.of(0, pageSize);
+            Page<Govua7> onePage = govua7Repository.findAllByPortionId(portion, pageRequest);
+            long count = govua7Repository.countAllByPortionId(portion);
+            statusChanger.newStage(null, "enriching", count, null);
+            String fileName = fileFormatUtil.getLogFileName(portion.toString());
+            DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
+                    Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA7, portion));
 
-        ImportSource source = isr.findImportSourceByName(GOVUA7);
+            ImportSource source = isr.findImportSourceByName(GOVUA7);
 
-        while (!onePage.isEmpty()) {
-            pageRequest = pageRequest.next();
-            Set<YCompany> companySet = new HashSet<>();
-            Set<Govua7> page = onePage.toSet();
+            while (!onePage.isEmpty()) {
+                pageRequest = pageRequest.next();
+                Set<Govua7> page = onePage.toSet();
 
-            while (!page.isEmpty()) {
-                List<YCompanyProcessing> companiesProcessing = page.parallelStream().map(c -> {
-                    YCompanyProcessing companyProcessing = new YCompanyProcessing();
-                    companyProcessing.setUuid(c.getId());
-                    if (StringUtils.isNotBlank(c.getCode()) && c.getCode().matches(ALL_NUMBER_REGEX))
-                        companyProcessing.setEdrpou(Long.valueOf(c.getCode()));
-                    if (StringUtils.isNotBlank(c.getName()))
-                        companyProcessing.setCompanyHash(Objects.hash(c.getName()));
-                    return companyProcessing;
-                }).collect(Collectors.toList());
+                while (!page.isEmpty()) {
+                    Duration duration = Duration.between(startTime, LocalDateTime.now());
+                    if (duration.getSeconds() > timeOutTime)
+                        throw new TimeoutException("Time ran out for portion: " + portion);
+                    List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
+                        EntityProcessing entityProcessing = new EntityProcessing();
+                        entityProcessing.setUuid(c.getId());
+                        if (StringUtils.isNotBlank(c.getCode()) && c.getCode().matches(ALL_NUMBER_REGEX))
+                            entityProcessing.setEdrpou(Long.parseLong(c.getCode()));
+                        if (StringUtils.isNotBlank(c.getName()))
+                            entityProcessing.setCompanyHash(Objects.hash(c.getName()));
+                        return entityProcessing;
+                    }).collect(Collectors.toList());
 
-                UUID dispatcherId = httpClient.get(urlCompanyPost, UUID.class);
+                    UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
-                YCompanyDispatcherResponse responseCompanies = httpClient.post(urlCompanyPost, YCompanyDispatcherResponse.class, companiesProcessing);
-                resp = responseCompanies.getResp();
-                List<UUID> temp = responseCompanies.getTemp();
+                    String url = urlPost + "?id=" + portion;
+                    DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
+                    resp = new ArrayList<>(response.getResp());
+                    List<UUID> respId = response.getRespId();
+                    List<UUID> temp = response.getTemp();
 
-                page = onePage.stream().parallel().filter(p -> resp.contains(p.getId()))
-                        .collect(Collectors.toSet());
+                    List<Govua7> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
+                            .collect(Collectors.toList());
 
-                Set<Long> codes = new HashSet<>();
-                Set<YCompany> companies = new HashSet<>();
+                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
 
-                Set<YCompany> savedCompanies = new HashSet<>();
-                page.forEach(r -> {
-                    if (StringUtils.isNotBlank(r.getCode()) && r.getCode().matches(ALL_NUMBER_REGEX)) {
-                        codes.add(Long.parseLong(r.getCode()));
-                    }
-                });
+                    Set<Long> codes = new HashSet<>();
+                    Set<YCompany> companies = new HashSet<>();
 
-                if (!codes.isEmpty()) {
-                    savedCompanies = companyRepository.findWithEdrpouCompanies(codes);
-                }
-
-                Set<YCompany> finalCompanies = savedCompanies;
-                Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
-                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
-                page.forEach(r -> {
-                    YCompany company;
-
-                    if (UtilString.matches(r.getCode(), CONTAINS_NUMERAL_REGEX)) {
-                        String code = r.getCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-
-                        if (isValidEdrpou(code)) {
-                            company = new YCompany();
-                            company.setEdrpou(Long.parseLong(code));
-                            company.setName(UtilString.toUpperCase(r.getName()));
-                            state.ifPresent(company::setState);
-                            company = extender.addCompany(companies, source, company, finalCompanies);
-
-                            Set<YCTag> tags = new HashSet<>();
-                            YCTag tag = new YCTag();
-                            tagType.ifPresent(tag::setTagType);
-                            tag.setSource(GOVUA7);
-                            tags.add(tag);
-
-                            extender.addTags(company, tags, source);
-                        } else {
-                            logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getCode()), "Wrong EDRPOU");
-                            wrongCounter[0]++;
+                    Set<YCompany> savedCompanies = new HashSet<>();
+                    workPortion.forEach(r -> {
+                        if (StringUtils.isNotBlank(r.getCode()) && r.getCode().matches(ALL_NUMBER_REGEX)) {
+                            codes.add(Long.parseLong(r.getCode()));
                         }
+                    });
+
+                    if (!codes.isEmpty()) {
+                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
+                        for (List<Long> list : codesListArray)
+                            savedCompanies.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
                     }
-                    counter[0]++;
-                    statusChanger.addProcessedVolume(1);
-                });
-                UUID dispatcherIdFinish = httpClient.get(urlCompanyPost, UUID.class);
-                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
-                    companyRepository.saveAll(companies);
-                    companySet.addAll(companies);
 
-                    if (!resp.isEmpty())
-                        httpClient.post(urlCompanyDelete, Boolean.class, resp);
+                    Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
+                    Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
+                    workPortion.forEach(r -> {
+                        YCompany company;
 
-                    page = onePage.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toSet());
-                } else {
-                    counter[0] -= page.size();
-                    statusChanger.setProcessedVolume(counter[0]);
+                        if (UtilString.matches(r.getCode(), CONTAINS_NUMERAL_REGEX)) {
+                            String code = r.getCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+
+                            if (isValidEdrpou(code)) {
+                                company = new YCompany();
+                                company.setEdrpou(Long.parseLong(code));
+                                company.setName(UtilString.toUpperCase(r.getName()));
+                                state.ifPresent(company::setState);
+                                company = extender.addCompany(companies, source, company, savedCompanies);
+
+                                Set<YCTag> tags = new HashSet<>();
+                                YCTag tag = new YCTag();
+                                tagType.ifPresent(tag::setTagType);
+                                tag.setSource(GOVUA7);
+                                tag.setUntil(LocalDate.of(3500, 1, 1));
+                                tags.add(tag);
+
+                                extender.addTags(company, tags, source);
+                            } else {
+                                logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getCode()), "Wrong EDRPOU");
+                                wrongCounter[0]++;
+                            }
+                        }
+                        if (!resp.isEmpty()) {
+                            counter[0]++;
+                            statusChanger.addProcessedVolume(1);
+                        }
+                    });
+                    UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
+                    if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+                        if (!companies.isEmpty()) {
+                            emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                            companyRepository.saveAll(companies);
+                        }
+
+                        if (!resp.isEmpty()) {
+                            httpClient.post(urlDelete, Boolean.class, resp);
+                            resp.clear();
+                        }
+
+                        emnService.enrichYCompanyMonitoringNotification(companies);
+
+                        page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toSet());
+                    } else {
+                        counter[0] -= resp.size();
+                        statusChanger.addProcessedVolume(-resp.size());
+                    }
                 }
+
+                onePage = govua7Repository.findAllByPortionId(portion, pageRequest);
             }
-            emnService.enrichYCompanyMonitoringNotification(companySet);
 
-            onePage = govua7Repository.findAllByPortionId(portion, pageRequest);
+            logFinish(GOVUA7, counter[0]);
+            logger.finish();
+
+            statusChanger.complete(importedRecords(counter[0]));
+        } finally {
+            deleteResp();
         }
-
-        logFinish(GOVUA7, counter[0]);
-        logger.finish();
-
-        statusChanger.complete(importedRecords(counter[0]));
     }
 
     @Override
     @PreDestroy
     public void deleteResp() {
-        httpClient.post(urlCompanyDelete, Boolean.class, resp);
+        if (!resp.isEmpty()) {
+            httpClient.post(urlDelete, Boolean.class, resp);
+            resp.clear();
+        }
     }
 }

@@ -455,6 +455,7 @@ public class Utils {
         return new File(folder);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean streamCopy(InputStream source, OutputStream target) {
         return streamCopy(source, target, null);
     }
@@ -710,6 +711,17 @@ public class Utils {
         return 0;
     }
 
+    public static String normalizePath(String folder) {
+        if (folder != null && !folder.isBlank()) {
+            folder = folder.trim().replace('\\', '/');
+            if (folder.endsWith("/")) {
+                folder = folder.substring(0, folder.length() - 1);
+            }
+            return folder;
+        }
+        return null;
+    }
+
     public static String getOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder) {
         if ((outputFolder == null || outputFolder.isBlank()) &&
                 defaultEnvironmentVariableForOutputFolder != null && !defaultEnvironmentVariableForOutputFolder.isBlank()) {
@@ -721,22 +733,11 @@ public class Utils {
     }
 
     public static String getOutputFolder(String outputFolder, String defaultEnvironmentVariableForOutputFolder, String localPath) {
-        String folder = getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder);
+        String folder = normalizePath(getOutputFolder(outputFolder, defaultEnvironmentVariableForOutputFolder));
         if (folder == null) return null;
-        folder = folder.replace('\\', '/');
-        if (!folder.endsWith("/")) {
-            folder = folder + "/";
-        }
-
-        if (localPath != null && !localPath.isEmpty()) {
-            localPath = localPath.trim().replace('\\', '/');
-            if (localPath.startsWith("/")) {
-                localPath = localPath.substring(1);
-            }
-            if (localPath.endsWith("/")) {
-                localPath = localPath.substring(0, localPath.length() - 1);
-            }
-            folder += localPath;
+        localPath = normalizePath(localPath);
+        if (localPath != null) {
+            folder = normalizePath(folder) + "/" + normalizePath(localPath);
         }
         return folder;
     }
@@ -788,15 +789,9 @@ public class Utils {
     public static File getFileFromNFSFolder(String fileName, boolean forRead) {
         Path p = Path.of(fileName);
         File res;
+        Path parent = p.getParent();
         if (!p.isAbsolute()) {
-            Path parent = p.getParent();
             parent = Path.of(getNFSFolder(parent == null ? null : parent.toString()));
-            try {
-                Files.createDirectories(parent);
-            } catch (Exception e) {
-                return null;
-            }
-
             p = parent.resolve(p.getFileName());
         }
 
@@ -804,9 +799,42 @@ public class Utils {
 
         if (forRead && !res.exists()) {
             return null;
+        } else {
+            try {
+                Files.createDirectories(parent);
+            } catch (Exception e) {
+                return null;
+            }
         }
-
         return res;
+    }
+
+    public static File checkFolder(String folder, boolean useNFS) {
+        if (!useNFS) {
+            return checkFolder(folder);
+        } else {
+            Path parent = Path.of(folder);
+            if (!parent.isAbsolute()) {
+                parent = Path.of(getNFSFolder(folder));
+            }
+            try {
+                Files.createDirectories(parent);
+            } catch(Exception e) {
+                return null;
+            }
+            return parent.toFile();
+        }
+    }
+
+    public static File getFileFromFolder(File targetFolder, String localPath) {
+        Path realPath = targetFolder.toPath().resolve(localPath);
+        Path parent = realPath.getParent();
+        try {
+            Files.createDirectories(parent);
+        } catch (Exception e) {
+            return null;
+        }
+        return realPath.toFile();
     }
 
     public static ZipEntry getZipEntry(ZipFile zipFile, String match) {
@@ -955,17 +983,20 @@ public class Utils {
         return null;
     }
 
-    public static void writeJsonNodeToFile(File file, JsonNode node, int indent, boolean arrayIndentation) {
-        if (file == null || node == null) return;
+    public static boolean writeJsonNodeToFile(File file, JsonNode node, int indent, boolean arrayIndentation) {
+        if (file == null || node == null) return false;
         try(Writer w = new FileWriterWithEncoding(file, StandardCharsets.UTF_8)) {
             w.write(getPrettyMapper(indent, arrayIndentation).writeValueAsString(node));
         } catch (Exception e) {
-            // nothing
+            log.error("File {} not saved.", file.getAbsolutePath());
+            return false;
         }
+        return true;
     }
 
-    public static void writeJsonNodeToFile(File file, JsonNode node) {
-        writeJsonNodeToFile(file, node, PRETTY_INDENT_SIZE, PRETTY_ARRAY_INDENTATION);
+    @SuppressWarnings("unused")
+    public static boolean writeJsonNodeToFile(File file, JsonNode node) {
+        return writeJsonNodeToFile(file, node, PRETTY_INDENT_SIZE, PRETTY_ARRAY_INDENTATION);
     }
 
     public static byte[] complexDigest(JsonNode node) {

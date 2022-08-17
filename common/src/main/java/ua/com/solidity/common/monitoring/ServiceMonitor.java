@@ -26,9 +26,9 @@ public class ServiceMonitor {
     public static final long MIN_UPDATE_DELAY = 250;  // 0.25s
     public static final long MIN_CLEAN_DELAY = 10000; // 10s
 
-    public static final long DEFAULT_SCAN_DELAY = 1000000; // 1s
-    public static final long DEFAULT_UPDATE_DELAY = 2000000; // 2s
-    public static final long DEFAULT_CLEAN_DELAY = 60000000; // 1m
+    public static final long DEFAULT_SCAN_DELAY = 500; // 0.5s
+    public static final long DEFAULT_UPDATE_DELAY = 1000; // 1s
+    public static final long DEFAULT_CLEAN_DELAY = 120000; // 2m
 
     public static long SCAN_DELAY = DEFAULT_SCAN_DELAY;
     public static long UPDATE_DELAY = DEFAULT_UPDATE_DELAY;
@@ -47,16 +47,16 @@ public class ServiceMonitor {
     static ServiceMonitor instance = null;
     private static final UUID service_id = UUID.randomUUID();
     static final Timer timer = new Timer("service-monitor");
-    private static final TimerTask updateTask = new ServiceScanTask();
+    private static final TimerTask flushTask = new ServiceFlushTask();
     private static final TimerTask scanTask = new ServiceScanTask();
     private static final List<StatusChanger> jobs = new ArrayList<>();
 
     static Connection connection;
 
     private String processStatus = null;
-    private final Statistic memoryUsed;
-    private final Statistic memoryCommitted;
-    private Statistic processorStats = null;
+    private final Metric memoryUsed;
+    private final Metric memoryCommitted;
+    private Metric processorStats = null;
     private final MemoryMXBean memory = ManagementFactory.getMemoryMXBean();
     private final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
     private final String serviceName;
@@ -80,7 +80,7 @@ public class ServiceMonitor {
         @Override
         public void run() {
             if (instance == null) return;
-            ObjectNode node = Statistic.flush();
+            ObjectNode node = Metric.flush();
             ArrayNode jobs = jobsFlush();
             instance.flush(node, jobs);
         }
@@ -102,14 +102,15 @@ public class ServiceMonitor {
         if (instance == null) {
             if (context == null) {
                 if (!Utils.checkApplicationContext()) {
+                    log.error("==> ServiceMonitor start failed.");
                     return false;
                 }
             } else {
                 Utils.setApplicationContext(context);
             }
 
-            UPDATE_DELAY = Math.min(MIN_UPDATE_DELAY, Utils.getLongContextProperty(UPDATE_DELAY_PROP, DEFAULT_UPDATE_DELAY));
-            CLEAN_DELAY = Math.min(MIN_CLEAN_DELAY, Utils.getLongContextProperty(CLEAN_DELAY_PROP, DEFAULT_CLEAN_DELAY));
+            UPDATE_DELAY = Math.max(MIN_UPDATE_DELAY, Utils.getLongContextProperty(UPDATE_DELAY_PROP, DEFAULT_UPDATE_DELAY));
+            CLEAN_DELAY = Math.max(MIN_CLEAN_DELAY, Utils.getLongContextProperty(CLEAN_DELAY_PROP, DEFAULT_CLEAN_DELAY));
             SCAN_DELAY = Math.min(UPDATE_DELAY, Utils.getLongContextProperty(SCAN_DELAY_PROP, DEFAULT_SCAN_DELAY));
 
             instance = new ServiceMonitor(Utils.getApplicationContext());
@@ -141,8 +142,8 @@ public class ServiceMonitor {
         return (service && initialize()) || (cleaner && initializeCleaner()) || (stateLookup && initializeStateLookup());
     }
 
-    public static Statistic getStatistic(String name) {
-        return Statistic.create(name);
+    public static Metric getStatistic(String name) {
+        return Metric.create(name);
     }
 
     private ServiceMonitor(ApplicationContext context) {
@@ -159,22 +160,18 @@ public class ServiceMonitor {
         if (threads.isThreadCpuTimeSupported()) {
             processorStats = getStatistic("CPU");
         }
-        schedule(updateTask, 0);
-        schedule(scanTask, 0);
+        schedule(flushTask, 0);  // for flush data
+        schedule(scanTask, 0);    // for scan memory and cpu
     }
 
     public static void schedule(TimerTask task, long delayAdd) {
-        long millis = Instant.now().toEpochMilli();
-        long delay = millis % 1000000;
-        if (delay > 0) {
-            delay = 1000000 - delay;
-        }
-        timer.schedule(task, delay + delayAdd, UPDATE_DELAY);
+        long delay = Instant.now().toEpochMilli() % 1000;
+        timer.schedule(task, (delay > 0 ? 1000 - delay: 0) + delayAdd, UPDATE_DELAY);
     }
 
     private void collectMemory() {
-        memoryUsed.putValue((double)memory.getHeapMemoryUsage().getUsed() /1073741824); // in GB
-        memoryCommitted.putValue((double)memory.getHeapMemoryUsage().getCommitted() /1073741824); // in GB
+        memoryUsed.putValue((double)memory.getHeapMemoryUsage().getUsed() / 1048576); // in Mb
+        memoryCommitted.putValue((double)memory.getHeapMemoryUsage().getCommitted() / 1048576); // in Mb
     }
 
     private void collectCPUTime() {
@@ -191,9 +188,9 @@ public class ServiceMonitor {
         long oldCollected = cpuTimeCollected;
         long oldCollectedAt = cpuTimeCollectedAt;
         collectCPUTime();
-        long deltaMs = cpuTimeCollectedAt = oldCollectedAt;
+        long deltaMs = cpuTimeCollectedAt - oldCollectedAt;
         double deltaCPU = cpuTimeCollected - oldCollected;
-        processorStats.putValue(deltaMs <= 0 ? 0 : deltaCPU / instance.processorCount);
+        processorStats.putValue(deltaMs <= 0 ? 0 : deltaCPU / instance.processorCount / 1e6);
     }
 
     public static synchronized void setProcessStatus(String value) {
@@ -218,7 +215,7 @@ public class ServiceMonitor {
             state = processStatus;
         }
         res.put("state", state);
-        if (stats != null) res.set("stats", stats);
+        if (stats != null) res.set("metrics", stats);
         if (jobs != null) res.set("jobs", jobs);
         saveData(res);
     }
@@ -257,8 +254,9 @@ public class ServiceMonitor {
             try {
                 updateStatement.setObject(1, service_id);
                 updateStatement.setString(2, serviceName);
-                updateStatement.setObject(3, node);
+                updateStatement.setObject(3, node == null ? null : node.toString());
                 updateStatement.execute();
+                log.info("$monitor$flush: {}", node == null ? "(null)" : node.toString());
             } catch (Exception e) {
                 log.error("Service-monitor update error.", e);
             }

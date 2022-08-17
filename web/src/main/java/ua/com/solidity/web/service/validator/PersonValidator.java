@@ -88,8 +88,6 @@ public class PersonValidator {
             if (StringUtils.isNotBlank(person.getComment()) && person.getComment().length() == 255
                     && person.getLnameUk().contains("..."))
                 statusList.add(new ManualPersonStatus(person.getId(), 18, MESSAGE_LONG_VALUE));
-            if (!valid(person.getComment(), DataRegex.UK_RU_EN_MULTIPLE.getRegex()))
-                statusList.add(new ManualPersonStatus(person.getId(), 18, DataRegex.UK_RU_EN_MULTIPLE.getMessage()));
             if (!valid(person.getPassLocalNum(), DataRegex.PASSPORT_NUMBER.getRegex()))
                 statusList.add(new ManualPersonStatus(person.getId(), 19, DataRegex.PASSPORT_NUMBER.getMessage()));
             if (!valid(person.getPassLocalSerial(), DataRegex.DOMESTIC_PASSPORT_SERIES.getRegex()))

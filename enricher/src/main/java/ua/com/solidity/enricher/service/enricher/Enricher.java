@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public interface Enricher {
 
-	void enrich(UUID portion);
+    void enrich(UUID portion);
 
     void deleteResp();
 }

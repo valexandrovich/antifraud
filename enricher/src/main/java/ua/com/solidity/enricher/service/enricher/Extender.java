@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.Chooser.chooseNotNull;
 import static ua.com.solidity.enricher.util.Regex.INN_FORMAT_REGEX;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,7 +12,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.ImportSource;
@@ -221,8 +219,7 @@ public class Extender {
                 && StringUtils.isBlank(person.getPatName())
                 && StringUtils.isBlank(newPerson.getLastName())
                 && StringUtils.isBlank(newPerson.getFirstName())
-                && StringUtils.isBlank(newPerson.getPatName())
-                && person.getInns().isEmpty())
+                && StringUtils.isBlank(newPerson.getPatName()))
             return false;
         return !(newPerson != null
                 && ((StringUtils.isNotBlank(person.getLastName())
@@ -413,44 +410,30 @@ public class Extender {
         return person;
     }
 
-    public void addCompanyRelation(YPerson person, YCompany company, YCompanyRole role, ImportSource source,
-                                   Set<YCompanyRelation> companyRelationSet, Set<YCompanyRelation> companyRelationsSaved) {
-        Optional<YCompanyRelation> yCompanyRelationOptional = companyRelationSet.parallelStream()
+    public void addCompanyRelation(YPerson person, YCompany company, YCompanyRole role, ImportSource source) {
+        Optional<YCompanyRelation> yCompanyRelationOptional = person.getCompanyRelations().parallelStream()
                 .filter(mr -> Objects.equals(mr.getCompany(), company)
                         && Objects.equals(mr.getPerson(), person)
                         && Objects.equals(mr.getRole(), role)).findAny();
-        if (yCompanyRelationOptional.isEmpty())
-            yCompanyRelationOptional = companyRelationsSaved.parallelStream()
-                    .filter(mr -> Objects.equals(mr.getCompany(), company)
-                            && Objects.equals(mr.getPerson(), person)
-                            && Objects.equals(mr.getRole(), role)).findAny();
 
         YCompanyRelation yCompanyRelation = yCompanyRelationOptional.orElseGet(YCompanyRelation::new);
         yCompanyRelation.setCompany(company);
         yCompanyRelation.setPerson(person);
         yCompanyRelation.setRole(role);
-
-        companyRelationSet.add(yCompanyRelation);
+        person.getCompanyRelations().add(yCompanyRelation);
     }
 
-    public void addCompanyRelation(YCompany companyCreator, YCompany company, YCompanyRole role, ImportSource source,
-                                   Set<YCompanyRelationCompany> companyRelationSet, Set<YCompanyRelationCompany> companyRelationsSaved) {
-        Optional<YCompanyRelationCompany> yCompanyRelationOptional = companyRelationSet.parallelStream()
+    public void addCompanyRelation(YCompany companyCreator, YCompany company, YCompanyRole role, ImportSource source) {
+        Optional<YCompanyRelationCompany> yCompanyRelationOptional = companyCreator.getCompanyRelationsWithCompanies().parallelStream()
                 .filter(mr -> Objects.equals(mr.getCompany(), company)
                         && Objects.equals(mr.getCompanyCreator(), companyCreator)
                         && Objects.equals(mr.getRole(), role)).findAny();
-        if (yCompanyRelationOptional.isEmpty())
-            yCompanyRelationOptional = companyRelationsSaved.parallelStream()
-                    .filter(mr -> Objects.equals(mr.getCompany(), company)
-                            && Objects.equals(mr.getCompanyCreator(), companyCreator)
-                            && Objects.equals(mr.getRole(), role)).findAny();
 
         YCompanyRelationCompany yCompanyRelation = yCompanyRelationOptional.orElseGet(YCompanyRelationCompany::new);
         yCompanyRelation.setCompany(company);
         yCompanyRelation.setCompanyCreator(companyCreator);
         yCompanyRelation.setRole(role);
-
-        companyRelationSet.add(yCompanyRelation);
+        companyCreator.getCompanyRelationsWithCompanies().add(yCompanyRelation);
     }
 
     public LocalDate stringToDate(String date) {
@@ -470,11 +453,11 @@ public class Extender {
         YCompany yCompany;
         Optional<YCompany> optionalYCompany = companySet.parallelStream()
                 .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())
-                        && Objects.equals(c.getPdv(), company.getPdv())).findAny();
+                        || Objects.equals(c.getPdv(), company.getPdv())).findAny();
         if (optionalYCompany.isEmpty())
             optionalYCompany = companies.parallelStream()
                     .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())
-                            && Objects.equals(c.getPdv(), company.getPdv())).findAny();
+                            || Objects.equals(c.getPdv(), company.getPdv())).findAny();
 
         yCompany = optionalYCompany.orElseGet(YCompany::new);
         if (yCompany.getId() == null) yCompany.setId(UUID.randomUUID());
@@ -507,21 +490,4 @@ public class Extender {
             person.setBirthdate(birthDay);
         }
     }
-
-    public <T> List<T>[] partition(List<T> list, int size) {
-        int countPart = list.size() / size;
-        if (list.size() % size != 0) {
-            countPart++;
-        }
-
-        List<List<T>> itr = ListUtils.partition(list, size);
-
-        List<T>[] partition = new ArrayList[countPart];
-        for (int i = 0; i < countPart; i++) {
-            partition[i] = new ArrayList<>(itr.get(i));
-        }
-
-        return partition;
-    }
-
 }

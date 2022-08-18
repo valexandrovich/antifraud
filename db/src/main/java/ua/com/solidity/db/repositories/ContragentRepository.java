@@ -10,7 +10,6 @@ import ua.com.solidity.db.entities.Contragent;
 
 @Repository
 public interface ContragentRepository extends JpaRepository<Contragent, UUID> {
-    Page<Contragent> findAllByRevision(UUID revision, Pageable pageRequest);
 
     Page<Contragent> findAllByPortionId(UUID portion, Pageable pageRequest);
 

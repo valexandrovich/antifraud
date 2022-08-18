@@ -6,7 +6,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
-import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCyrillicLetters;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToLatinLetters;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
@@ -84,6 +83,7 @@ public class Govua11Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(GOVUA11);
@@ -91,7 +91,6 @@ public class Govua11Enricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, GOVUA11, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua11> onePage = govua11Repository.findAllByPortionId(portion, pageRequest);
@@ -116,17 +115,20 @@ public class Govua11Enricher implements Enricher {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(p.getId());
                         if (StringUtils.isNotBlank(p.getNumber()) && p.getNumber().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getSeries()), Integer.valueOf(p.getNumber())));
+                            entityProcessing.setPassHash(Objects.hash(transliterationToLatinLetters(p.getSeries()), Integer.valueOf(p.getNumber())));
                         return entityProcessing;
                     }).collect(Collectors.toList());
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Govua11> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -166,7 +168,7 @@ public class Govua11Enricher implements Enricher {
                         String passportNo = r.getNumber();
                         String passportSerial = r.getSeries();
 
-                        if (isValidForeignPassport(passportNo, passportSerial, null, wrongCounter, counter, logger)) {
+                        if (isValidForeignPassport(passportNo, passportSerial, null, counter, logger)) {
                             passportSerial = transliterationToLatinLetters(passportSerial);
                             int number = Integer.parseInt(passportNo);
                             YPassport passport = new YPassport();
@@ -202,19 +204,19 @@ public class Govua11Enricher implements Enricher {
 
                         emnService.enrichYPersonPackageMonitoringNotification(people);
 
-                        if (!people.isEmpty())
+                        if (!people.isEmpty()) {
+                            log.info("Saving people");
                             ypr.saveAll(people);
-
-                        emnService.enrichYPersonMonitoringNotification(people);
-
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                            emnService.enrichYPersonMonitoringNotification(people);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
+
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -236,8 +238,10 @@ public class Govua11Enricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

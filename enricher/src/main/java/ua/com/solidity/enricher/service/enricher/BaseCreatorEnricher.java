@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.CREATOR;
@@ -44,14 +43,12 @@ import ua.com.solidity.db.entities.BaseCreator;
 import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.TagType;
 import ua.com.solidity.db.entities.YCompany;
-import ua.com.solidity.db.entities.YCompanyRelation;
 import ua.com.solidity.db.entities.YCompanyRole;
 import ua.com.solidity.db.entities.YINN;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.TagTypeRepository;
-import ua.com.solidity.db.repositories.YCompanyRelationRepository;
 import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YCompanyRoleRepository;
 import ua.com.solidity.db.repositories.YINNRepository;
@@ -72,7 +69,6 @@ public class BaseCreatorEnricher implements Enricher {
     private final FileFormatUtil fileFormatUtil;
     private final ImportSourceRepository isr;
     private final BaseCreatorRepository baseCreatorRepository;
-    private final YCompanyRelationRepository yCompanyRelationRepository;
     private final YINNRepository yinnRepository;
     private final YPersonRepository ypr;
     private final YCompanyRepository companyRepository;
@@ -83,8 +79,6 @@ public class BaseCreatorEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -98,6 +92,7 @@ public class BaseCreatorEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(BASE_CREATOR);
@@ -105,7 +100,6 @@ public class BaseCreatorEnricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, BASE_CREATOR, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<BaseCreator> onePage = baseCreatorRepository.findAllByPortionId(portion, pageRequest);
@@ -128,58 +122,59 @@ public class BaseCreatorEnricher implements Enricher {
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(p.getId());
-                        if (StringUtils.isNotBlank(p.getInn()) && p.getInn().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setInn(Long.parseLong(p.getInn()));
-                        if (StringUtils.isNotBlank(p.getOkpo()) && p.getOkpo().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setEdrpou(Long.parseLong(p.getOkpo()));
+                        if (StringUtils.isNotBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String inn = p.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setInn(Long.parseLong(inn));
+                        }
+                        if (StringUtils.isNotBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String edrpou = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setEdrpou(Long.parseLong(edrpou));
+                        }
                         return entityProcessing;
                     }).collect(Collectors.toList());
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<BaseCreator> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
 
                     if (workPortion.isEmpty()) Thread.sleep(sleepTime);
 
-                    Set<YCompanyRelation> yCompanyRelationSet = new HashSet<>();
                     Set<Long> peopleCodes = new HashSet<>();
                     Set<Long> companiesCodes = new HashSet<>();
 
                     Set<YINN> inns = new HashSet<>();
                     Set<YCompany> companies = new HashSet<>();
-                    Set<YCompanyRelation> savedCompaniesRelations = new HashSet<>();
                     Set<YPerson> savedPersonSet = new HashSet<>();
 
                     workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getInn()))
-                            peopleCodes.add(Long.parseLong(r.getInn()));
+                        if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            peopleCodes.add(Long.parseLong(inn));
+                        }
 
-                        if (StringUtils.isNotBlank(r.getOkpo()))
-                            companiesCodes.add(Long.parseLong(r.getOkpo()));
+                        if (StringUtils.isNotBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String edrpou = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            companiesCodes.add(Long.parseLong(edrpou));
+                        }
                     });
 
                     if (!peopleCodes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(peopleCodes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            inns.addAll(yinnRepository.findInns(new HashSet<>(list)));
-                            savedCompaniesRelations.addAll(yCompanyRelationRepository.findRelationByInns(new HashSet<>(list)));
-                            savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(new HashSet<>(list)));
-                        }
+                        inns.addAll(yinnRepository.findInns(peopleCodes));
+                        savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(peopleCodes));
                     }
-                    if (!companiesCodes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(companiesCodes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            companies.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
-                            savedCompaniesRelations.addAll(yCompanyRelationRepository.findRelationByEdrpous(new HashSet<>(list)));
-                        }
-                    }
+
+                    if (!companiesCodes.isEmpty())
+                        companies.addAll(companyRepository.findByEdrpous(companiesCodes));
 
                     Set<YPerson> personSet = new HashSet<>();
                     Set<YCompany> companySet = new HashSet<>();
@@ -205,7 +200,6 @@ public class BaseCreatorEnricher implements Enricher {
 
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
-                                wrongCounter[0]++;
                             }
                         }
                         YCompany company = null;
@@ -215,15 +209,15 @@ public class BaseCreatorEnricher implements Enricher {
                                 company = new YCompany();
                                 company.setEdrpou(Long.parseLong(edrpou));
                                 company = extender.addCompany(companySet, source, company, companies);
+                                counter[0]++;
+                                statusChanger.addProcessedVolume(1);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("OKPO: {}", r.getOkpo()), "Wrong OKPO");
-                                wrongCounter[0]++;
                             }
                         }
                         Optional<YCompanyRole> role = companyRoleRepository.findByRole(CREATOR);
                         if (company != null && person != null && role.isPresent())
-                            extender.addCompanyRelation(person, company, role.get(), source, yCompanyRelationSet, savedCompaniesRelations);
-
+                            extender.addCompanyRelation(person, company, role.get(), source);
 
                         if (!resp.isEmpty()) {
                             counter[0]++;
@@ -234,27 +228,27 @@ public class BaseCreatorEnricher implements Enricher {
                     UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
                     if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
 
-                        emnService.enrichYPersonPackageMonitoringNotification(personSet);
-                        if (!personSet.isEmpty())
-                            ypr.saveAll(personSet);
-
-                        if (!companySet.isEmpty())
+                        if (!companySet.isEmpty()) {
+                            log.info("Saving companies");
                             companyRepository.saveAll(companySet);
-
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                            emnService.enrichYCompanyMonitoringNotification(companySet);
                         }
 
-                        if (!yCompanyRelationSet.isEmpty())
-                            yCompanyRelationRepository.saveAll(yCompanyRelationSet);
+                        if (!personSet.isEmpty()) {
+                            emnService.enrichYPersonPackageMonitoringNotification(personSet);
+                            log.info("Saving people");
+                            ypr.saveAll(personSet);
+                            emnService.enrichYPersonMonitoringNotification(personSet);
+                        }
 
-                        emnService.enrichYPersonMonitoringNotification(personSet);
-                        emnService.enrichYCompanyMonitoringNotification(companySet);
+                        statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
+
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= page.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -275,8 +269,10 @@ public class BaseCreatorEnricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

@@ -83,6 +83,7 @@ public class StatusChanger {
             Utils.sendRabbitMQMessage(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(changer.statusObject));
             changer.changed = false;
             if (changer.completed) {
+                ServiceMonitor.removeJob(changer);
                 remove(changer);
             }
         }
@@ -132,7 +133,7 @@ public class StatusChanger {
         }
         this.name = name;
         statusObject.id = id;
-        statusObject.userName = userName;
+        statusObject.userName = userName + "." + ProcessHandle.current().pid();
         statusObject.setStartedDateTime(LocalDateTime.now());
         ServiceMonitor.addJob(this);
         task = add(period,this);
@@ -145,7 +146,7 @@ public class StatusChanger {
 
     @SuppressWarnings("unused")
     public StatusChanger(UUID id, String name, String userName) {
-        this(id, name, userName  + "." + ProcessHandle.current().pid(), defaultPeriod);
+        this(id, name, userName, defaultPeriod);
     }
 
     @SuppressWarnings("unused")
@@ -251,6 +252,7 @@ public class StatusChanger {
     }
 
     private synchronized void finalStatus(String status) {
+        if (completed) return;
         statusObject.setFinishedDateTime(LocalDateTime.now());
         statusObject.status = status;
         completed = true;
@@ -262,9 +264,18 @@ public class StatusChanger {
         finalStatus(status);
     }
 
+    public final void error(String status, Object...args) {
+        error(Utils.messageFormat(status, args));
+    }
+
     public synchronized final void complete(String status) {
+        if (completed) return;
         statusObject.name = name;
         doOnComplete();
         finalStatus(status);
+    }
+
+    public final boolean isCompleted() {
+        return completed;
     }
 }

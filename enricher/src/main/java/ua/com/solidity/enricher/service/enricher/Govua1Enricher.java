@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
@@ -78,8 +77,6 @@ public class Govua1Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -93,6 +90,7 @@ public class Govua1Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(GOVUA1);
@@ -100,7 +98,6 @@ public class Govua1Enricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, GOVUA1, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua1> onePage = govua1Repository.findAllByPortionId(portion, pageRequest);
@@ -108,7 +105,7 @@ public class Govua1Enricher implements Enricher {
             statusChanger.newStage(null, "enriching", count, null);
             String fileName = fileFormatUtil.getLogFileName(portion.toString());
             DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                                                               Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA1, portion));
+                    Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA1, portion));
 
             ImportSource source = isr.findImportSourceByName(GOVUA1);
 
@@ -123,20 +120,26 @@ public class Govua1Enricher implements Enricher {
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(p.getId());
-                        if (StringUtils.isNotBlank(p.getEdrpou()) && p.getEdrpou().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setInn(Long.parseLong(p.getEdrpou()));
-                        if (StringUtils.isNotBlank(p.getEdrpou()) && p.getEdrpou().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setEdrpou(Long.parseLong(p.getEdrpou()));
+                        if (StringUtils.isNotBlank(p.getEdrpou()) && p.getEdrpou().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String code = p.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setInn(Long.parseLong(code));
+                            entityProcessing.setEdrpou(Long.parseLong(code));
+                        }
+                        if (StringUtils.isNotBlank(p.getName()))
+                            entityProcessing.setCompanyHash(Objects.hashCode(UtilString.toUpperCase(p.getName().trim())));
                         return entityProcessing;
                     }).collect(Collectors.toList());
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Govua1> workPortion = page.parallelStream().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -152,18 +155,16 @@ public class Govua1Enricher implements Enricher {
                     Set<YCompany> savedCompanies = new HashSet<>();
 
                     workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getEdrpou()) && r.getEdrpou().matches(ALL_NUMBER_REGEX)) {
-                            codes.add(Long.parseLong(r.getEdrpou()));
+                        if (StringUtils.isNotBlank(r.getEdrpou()) && r.getEdrpou().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String code = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(code));
                         }
                     });
 
                     if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            inns.addAll(yinnRepository.findInns(new HashSet<>(list)));
-                            savedCompanies.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
-                            savedPersonSet.addAll(ypr.findPeopleInns(new HashSet<>(list)));
-                        }
+                        inns.addAll(yinnRepository.findInns(codes));
+                        savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
+                        savedCompanies.addAll(companyRepository.findByEdrpous(codes));
                     }
 
                     workPortion.forEach(r -> {
@@ -191,6 +192,7 @@ public class Govua1Enricher implements Enricher {
                                     }
                                 }
                                 counter[0]++;
+                                statusChanger.addProcessedVolume(1);
                             } else if (isValidInn(code, null)) {
                                 YPerson person = new YPerson();
 
@@ -231,14 +233,10 @@ public class Govua1Enricher implements Enricher {
                                             fio[i] = splitedList.get(i);
                                         }
                                     }
-
                                     lastName = UtilString.toUpperCase(fio[0]);
                                     firstName = UtilString.toUpperCase(fio[1]);
                                     patName = UtilString.toUpperCase(fio[2]);
-
                                 }
-
-
                                 person.setLastName(lastName);
                                 person.setFirstName(firstName);
                                 person.setPatName(patName);
@@ -258,14 +256,11 @@ public class Govua1Enricher implements Enricher {
                                     tagSet.add(yTag);
                                     extender.addTags(person, tagSet, source);
                                 }
+                                counter[0]++;
+                                statusChanger.addProcessedVolume(1);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
-                                wrongCounter[0]++;
                             }
-                        }
-                        if (!resp.isEmpty()) {
-                            counter[0]++;
-                            statusChanger.addProcessedVolume(1);
                         }
                     });
 
@@ -274,25 +269,25 @@ public class Govua1Enricher implements Enricher {
 
                         if (!people.isEmpty()) {
                             emnService.enrichYPersonPackageMonitoringNotification(people);
+                            log.info("Saving people");
                             ypr.saveAll(people);
+                            emnService.enrichYPersonMonitoringNotification(people);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
 
                         if (!companies.isEmpty()) {
                             emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                            log.info("Saving companies");
                             companyRepository.saveAll(companies);
+                            emnService.enrichYCompanyMonitoringNotification(companies);
                         }
 
-                        if (!this.resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, this.resp);
-                            this.resp.clear();
-                        }
-
-                        emnService.enrichYPersonMonitoringNotification(people);
-                        emnService.enrichYCompanyMonitoringNotification(companies);
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -313,8 +308,10 @@ public class Govua1Enricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

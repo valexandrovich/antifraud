@@ -35,7 +35,6 @@ public class YCompanyRelationCompany {
 
     @ManyToOne
     @JsonBackReference
-    @JoinColumn(name = "company_creator_id")
     private YCompany companyCreator;
 
     @Override

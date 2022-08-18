@@ -66,8 +66,6 @@ public class BaseDrfoEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -81,6 +79,7 @@ public class BaseDrfoEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(BASE_DRFO);
@@ -88,7 +87,6 @@ public class BaseDrfoEnricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, BASE_DRFO, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<BaseDrfo> onePage = bdr.findAllByPortionId(portion, pageRequest);
@@ -120,11 +118,14 @@ public class BaseDrfoEnricher implements Enricher {
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<BaseDrfo> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -142,11 +143,8 @@ public class BaseDrfoEnricher implements Enricher {
                     });
 
                     if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            inns.addAll(yinnRepository.findInns(new HashSet<>(list)));
-                            savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(new HashSet<>(list)));
-                        }
+                        inns.addAll(yinnRepository.findInns(codes));
+                        savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(codes));
                     }
 
                     Set<YPerson> people = new HashSet<>();
@@ -169,7 +167,6 @@ public class BaseDrfoEnricher implements Enricher {
                                 person = extender.addInn(inn, people, source, person, inns, savedPersonSet);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
-                                wrongCounter[0]++;
                             }
                         }
 
@@ -211,20 +208,20 @@ public class BaseDrfoEnricher implements Enricher {
                     UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
                     if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
 
-                        emnService.enrichYPersonPackageMonitoringNotification(people);
-
-                        ypr.saveAll(people);
-
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                        if (!people.isEmpty()) {
+                            emnService.enrichYPersonPackageMonitoringNotification(people);
+                            log.info("Saving people");
+                            ypr.saveAll(people);
+                            emnService.enrichYPersonMonitoringNotification(people);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
 
-                        emnService.enrichYPersonMonitoringNotification(people);
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -244,8 +241,10 @@ public class BaseDrfoEnricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

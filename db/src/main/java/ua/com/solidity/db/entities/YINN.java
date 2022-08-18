@@ -12,8 +12,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedAttributeNode;
-import javax.persistence.NamedEntityGraph;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -24,9 +22,6 @@ import ua.com.solidity.db.abstraction.Identifiable;
 @Getter
 @Setter
 @Entity
-@NamedEntityGraph(name = "yinn.sourcesAndPerson", attributeNodes = {
-        @NamedAttributeNode("importSources"),
-        @NamedAttributeNode("person")})
 @Table(name = "yinn")
 public class YINN implements Identifiable {
     @Id
@@ -47,7 +42,7 @@ public class YINN implements Identifiable {
     private Set<ImportSource> importSources = new HashSet<>();
 
     public void cleanAssociations() {
-        this.person.getInns().removeIf(inn -> id.equals(inn.getId()));
+        this.person.getInns().removeIf(code -> Objects.equals(id, code.getId()));
         this.importSources = new HashSet<>();
     }
 

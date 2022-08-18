@@ -110,9 +110,8 @@ public class YPersonService {
             }
             if (!specificationList.isEmpty()) {
                 gsDate = specificationList.get(0);
-                for (int i = 1; i < specificationList.size(); i++) {
+                for (int i = 1; i < specificationList.size(); i++)
                     gsDate = gsDate.or(specificationList.get(i));
-                }
             }
         }
 

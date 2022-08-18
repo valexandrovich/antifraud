@@ -27,45 +27,37 @@ public class Validator {
     }
 
     public static boolean isValidLocalPassport(String number, String serial,
-                                               long[] wrongCounter, long[] counter, DefaultErrorLogger logger) {
+                                               long[] counter, DefaultErrorLogger logger) {
         if (StringUtils.isBlank(number) || StringUtils.isBlank(serial)) {
             logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Empty serial or number");
-            wrongCounter[0]++;
         } else if (!transliterationToCyrillicLetters(serial).matches(DOMESTIC_SERIES_REGEX)
                 || !number.matches(PASS_NUMBER_REGEX)) {
             logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Wrong format passport serial or number");
-            wrongCounter[0]++;
         } else return true;
         return false;
     }
 
     public static boolean isValidForeignPassport(String number, String serial, String recordNumber,
-                                                 long[] wrongCounter, long[] counter, DefaultErrorLogger logger) {
+                                                 long[] counter, DefaultErrorLogger logger) {
         if (StringUtils.isBlank(number) || StringUtils.isBlank(serial)) {
             logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Empty serial or number");
-            wrongCounter[0]++;
         } else if (!transliterationToLatinLetters(serial).matches(FOREIGN_SERIES_REGEX)
                 || !number.matches(PASS_NUMBER_REGEX)) {
             logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Wrong format passport serial or number");
-            wrongCounter[0]++;
         } else if (!StringUtils.isBlank(recordNumber) && !recordNumber.matches(RECORD_NUMBER_REGEX)) {
             logError(logger, (counter[0] + 1L), "Record number: " + recordNumber, "Wrong format passport record number");
-            wrongCounter[0]++;
         } else return true;
         return false;
     }
 
     public static boolean isValidIdPassport(String number, String recordNumber,
-                                            long[] wrongCounter, long[] counter, DefaultErrorLogger logger) {
+                                            long[] counter, DefaultErrorLogger logger) {
         if (StringUtils.isBlank(number)) {
             logError(logger, (counter[0] + 1L), "Passport number: " + number, "Empty number");
-            wrongCounter[0]++;
         } else if (!number.matches(IDCARD_NUMBER_REGEX)) {
             logError(logger, (counter[0] + 1L), "Passport number: " + number, "Wrong format passport number");
-            wrongCounter[0]++;
         } else if (!StringUtils.isBlank(recordNumber) && !recordNumber.matches(RECORD_NUMBER_REGEX)) {
             logError(logger, (counter[0] + 1L), "Record number: " + recordNumber, "Wrong format passport record number");
-            wrongCounter[0]++;
         } else return true;
         return false;
     }

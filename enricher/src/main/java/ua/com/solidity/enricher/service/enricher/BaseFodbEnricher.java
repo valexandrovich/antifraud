@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
@@ -67,8 +66,6 @@ public class BaseFodbEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -82,6 +79,7 @@ public class BaseFodbEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(BASE_FODB);
@@ -89,7 +87,6 @@ public class BaseFodbEnricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, BASE_FODB, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<BaseFodb> onePage = bfr.findAllByPortionId(portion, pageRequest);
@@ -113,8 +110,10 @@ public class BaseFodbEnricher implements Enricher {
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(p.getId());
-                        if (StringUtils.isNotBlank(p.getInn()) && p.getInn().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setInn(Long.parseLong(p.getInn()));
+                        if (!StringUtils.isBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String inn = p.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setInn(Long.parseLong(inn));
+                        }
                         entityProcessing.setPersonHash(Objects.hash(UtilString.toUpperCase(p.getLastNameUa()), UtilString.toUpperCase(p.getFirstNameUa()), UtilString.toUpperCase(p.getMiddleNameUa()),
                                 p.getBirthdate()));
                         return entityProcessing;
@@ -122,11 +121,14 @@ public class BaseFodbEnricher implements Enricher {
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<BaseFodb> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -139,17 +141,15 @@ public class BaseFodbEnricher implements Enricher {
                     Set<YPerson> savedPersonSet = new HashSet<>();
 
                     workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getInn())) {
-                            codes.add(Long.parseLong(r.getInn()));
+                        if (!StringUtils.isBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(inn));
                         }
                     });
 
                     if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            inns.addAll(yinnRepository.findInns(new HashSet<>(list)));
-                            savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(new HashSet<>(list)));
-                        }
+                        inns.addAll(yinnRepository.findInns(codes));
+                        savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(codes));
                     }
 
                     workPortion.forEach(r -> {
@@ -169,7 +169,6 @@ public class BaseFodbEnricher implements Enricher {
                                 person = extender.addInn(Long.parseLong(inn), people, source, person, inns, savedPersonSet);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
-                                wrongCounter[0]++;
                             }
                         }
 
@@ -213,19 +212,19 @@ public class BaseFodbEnricher implements Enricher {
 
                         emnService.enrichYPersonPackageMonitoringNotification(people);
 
-                        if (!people.isEmpty())
+                        if (!people.isEmpty()) {
+                            log.info("Saving people");
                             ypr.saveAll(people);
-
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                            emnService.enrichYPersonMonitoringNotification(people);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
 
-                        emnService.enrichYPersonMonitoringNotification(people);
+                        deleteResp();
 
                         page = page.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -246,8 +245,10 @@ public class BaseFodbEnricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

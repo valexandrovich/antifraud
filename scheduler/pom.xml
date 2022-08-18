@@ -124,6 +124,7 @@
                 <includes>
                     <include>application.properties</include>
                     <include>scheduler.properties</include>
+                    <include>schedulerInit.json</include>
                 </includes>
             </resource>
         </resources>

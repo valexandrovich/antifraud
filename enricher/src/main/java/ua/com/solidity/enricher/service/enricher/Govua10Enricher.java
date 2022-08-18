@@ -85,6 +85,7 @@ public class Govua10Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(GOVUA10);
@@ -92,7 +93,6 @@ public class Govua10Enricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, GOVUA10, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             log.info("before PageRequest.");
@@ -125,11 +125,14 @@ public class Govua10Enricher implements Enricher {
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Govua10> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -168,7 +171,7 @@ public class Govua10Enricher implements Enricher {
                         if (StringUtils.isNotBlank(r.getSeries())) {
                             String passportNo = r.getNumber();
                             String passportSerial = r.getSeries();
-                            if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                            if (isValidLocalPassport(passportNo, passportSerial, counter, logger)) {
                                 passportSerial = transliterationToCyrillicLetters(passportSerial);
                                 int number = Integer.parseInt(passportNo);
                                 YPassport passport = new YPassport();
@@ -184,7 +187,7 @@ public class Govua10Enricher implements Enricher {
                             }
                         } else {
                             String passportNo = r.getNumber();
-                            if (isValidIdPassport(passportNo, null, wrongCounter, counter, logger)) {
+                            if (isValidIdPassport(passportNo, null, counter, logger)) {
                                 int number = Integer.parseInt(passportNo);
                                 YPassport passport = new YPassport();
                                 passport.setSeries(null);
@@ -220,19 +223,19 @@ public class Govua10Enricher implements Enricher {
 
                         emnService.enrichYPersonPackageMonitoringNotification(people);
 
-                        if (!people.isEmpty())
+                        if (!people.isEmpty()) {
+                            log.info("Saving people");
                             ypr.saveAll(people);
-
-                        emnService.enrichYPersonMonitoringNotification(people);
-
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                            emnService.enrichYPersonMonitoringNotification(people);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
+
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.setProcessedVolume(counter[0]);
                     }
                 }
@@ -253,8 +256,10 @@ public class Govua10Enricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

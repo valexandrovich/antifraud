@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.COMPANY_STATE_CRASH;
@@ -27,9 +26,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
-import io.micrometer.core.instrument.util.StringUtils;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +56,7 @@ import ua.com.solidity.enricher.util.FileFormatUtil;
 import ua.com.solidity.util.model.EntityProcessing;
 import ua.com.solidity.util.model.response.DispatcherResponse;
 
+@CustomLog
 @Service
 @RequiredArgsConstructor
 public class Govua5Enricher implements Enricher {
@@ -71,8 +72,6 @@ public class Govua5Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -87,6 +86,7 @@ public class Govua5Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(GOVUA5);
@@ -94,7 +94,6 @@ public class Govua5Enricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, GOVUA5, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua5> onePage = govua5Repository.findAllByPortionId(portion, pageRequest);
@@ -117,19 +116,25 @@ public class Govua5Enricher implements Enricher {
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(c.getId());
-                        if (StringUtils.isNotBlank(c.getEdrpou()) && c.getEdrpou().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setEdrpou(Long.parseLong(c.getEdrpou()));
-                        entityProcessing.setCompanyHash(Objects.hash(c.getName()));
+                        if (UtilString.matches(c.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                            String edrpou = c.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setEdrpou(Long.parseLong(edrpou));
+                        }
+                        if (StringUtils.isNotBlank(c.getName()))
+                            entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(c.getName().trim())));
                         return entityProcessing;
                     }).collect(Collectors.toList());
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> temp = response.getTemp();
                     List<UUID> respId = response.getRespId();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Govua5> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -141,16 +146,14 @@ public class Govua5Enricher implements Enricher {
 
                     Set<YCompany> savedCompanies = new HashSet<>();
                     workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getEdrpou()) && r.getEdrpou().matches(ALL_NUMBER_REGEX)) {
-                            codes.add(Long.parseLong(r.getEdrpou()));
+                        if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                            String edrpou = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(edrpou));
                         }
                     });
 
-                    if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray)
-                            savedCompanies.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
-                    }
+                    if (!codes.isEmpty())
+                        savedCompanies.addAll(companyRepository.findByEdrpous(codes));
 
                     Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
                     Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
@@ -177,7 +180,6 @@ public class Govua5Enricher implements Enricher {
                                 extender.addTags(company, tags, source);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
-                                wrongCounter[0]++;
                             }
                         }
                         if (!resp.isEmpty()) {
@@ -187,21 +189,21 @@ public class Govua5Enricher implements Enricher {
                     });
                     UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
                     if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
                         if (!companies.isEmpty()) {
                             emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                            log.info("Saving companies");
                             companyRepository.saveAll(companies);
+                            emnService.enrichYCompanyMonitoringNotification(companies);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
 
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
-                        }
-
-                        emnService.enrichYCompanyMonitoringNotification(companies);
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toSet());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -221,8 +223,10 @@ public class Govua5Enricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

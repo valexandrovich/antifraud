@@ -12,10 +12,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedAttributeNode;
-import javax.persistence.NamedEntityGraph;
-import javax.persistence.NamedEntityGraphs;
-import javax.persistence.NamedSubgraph;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -24,34 +20,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@NamedEntityGraphs({
-        @NamedEntityGraph(name = "ycompany.addressesAndAltCompaniesAndTagsAndEmailsAndImportSources",
-                subgraphs = {
-                        @NamedSubgraph(name = "importSources-subgraph",
-                                attributeNodes = {
-                                        @NamedAttributeNode("importSources")
-                                }
-                        ),
-                        @NamedSubgraph(name = "importSourcesAndTagType-subgraph",
-                                attributeNodes = {
-                                        @NamedAttributeNode("importSources"),
-                                        @NamedAttributeNode("tagType")
-                                })},
-                attributeNodes = {
-                        @NamedAttributeNode(value = "tags", subgraph = "importSourcesAndTagType-subgraph"),
-                        @NamedAttributeNode(value = "addresses", subgraph = "importSources-subgraph"),
-                        @NamedAttributeNode(value = "altCompanies", subgraph = "importSources-subgraph"),
-                        @NamedAttributeNode("state"),
-                        @NamedAttributeNode("importSources")}),
-        @NamedEntityGraph(name = "ycompany.tagsTagType",
-                subgraphs = {
-                        @NamedSubgraph(name = "tagType-subgraph",
-                                attributeNodes = {
-                                        @NamedAttributeNode("tagType")
-                                })},
-                attributeNodes = {
-                        @NamedAttributeNode(value = "tags", subgraph = "tagType-subgraph")})
-})
 @Entity
 @Table(name = "ycompany")
 public class YCompany {
@@ -85,6 +53,10 @@ public class YCompany {
     @JsonManagedReference
     private Set<YCTag> tags = new HashSet<>();
 
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "companyCreator")
+    @JsonManagedReference
+    private Set<YCompanyRelationCompany> companyRelationsWithCompanies = new HashSet<>();
+
     @ManyToMany
     @JoinTable(
             name = "users_ycompanies",
@@ -104,13 +76,13 @@ public class YCompany {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof YCompany)) return false;
         YCompany yCompany = (YCompany) o;
-        return Objects.equals(edrpou, yCompany.edrpou) && Objects.equals(pdv, yCompany.pdv) && Objects.equals(name, yCompany.name);
+        return Objects.equals(id, yCompany.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(edrpou, pdv, name);
+        return Objects.hash(id);
     }
 }

@@ -54,7 +54,8 @@ public class ServiceMonitorState {
              try {
                  synchronized(ServiceMonitor.class) {
                      ResultSet res = lookupStatement.executeQuery();
-                     Object obj = res.getObject(0);
+                     Object obj = res.getObject(1);
+                     res.close();
                      if (obj instanceof String) {
                          currentStateString = (String) obj;
                      } else {

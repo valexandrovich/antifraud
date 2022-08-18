@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
@@ -23,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +47,7 @@ import ua.com.solidity.enricher.util.FileFormatUtil;
 import ua.com.solidity.util.model.EntityProcessing;
 import ua.com.solidity.util.model.response.DispatcherResponse;
 
+@CustomLog
 @Service
 @RequiredArgsConstructor
 public class Govua20Enricher implements Enricher {
@@ -60,8 +61,6 @@ public class Govua20Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -75,6 +74,7 @@ public class Govua20Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(GOVUA20);
@@ -82,7 +82,6 @@ public class Govua20Enricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, GOVUA20, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua20> onePage = govua20Repository.findAllByPortionId(portion, pageRequest);
@@ -96,7 +95,6 @@ public class Govua20Enricher implements Enricher {
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
-                Set<YCompany> companySet = new HashSet<>();
                 List<Govua20> page = onePage.toList();
 
                 while (!page.isEmpty()) {
@@ -106,19 +104,25 @@ public class Govua20Enricher implements Enricher {
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(c.getId());
-                        if (StringUtils.isNotBlank(c.getPdv()) && c.getPdv().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setPdv(Long.parseLong(c.getPdv()));
-                        entityProcessing.setCompanyHash(Objects.hash(c.getName()));
+                        if (UtilString.matches(c.getPdv(), CONTAINS_NUMERAL_REGEX)) {
+                            String pdv = c.getPdv().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setPdv(Long.parseLong(pdv));
+                        }
+                        if (StringUtils.isNotBlank(c.getName()))
+                            entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(c.getName().trim())));
                         return entityProcessing;
                     }).collect(Collectors.toList());
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Govua20> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -130,16 +134,14 @@ public class Govua20Enricher implements Enricher {
 
                     Set<YCompany> savedCompanies = new HashSet<>();
                     workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getPdv()) && r.getPdv().matches(ALL_NUMBER_REGEX)) {
-                            codes.add(Long.parseLong(r.getPdv()));
+                        if (UtilString.matches(r.getPdv(), CONTAINS_NUMERAL_REGEX)) {
+                            String pdv = r.getPdv().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(pdv));
                         }
                     });
 
-                    if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray)
-                            savedCompanies.addAll(companyRepository.findWithPdvCompanies(new HashSet<>(list)));
-                    }
+                    if (!codes.isEmpty())
+                        savedCompanies.addAll(companyRepository.findWithPdvCompanies(codes));
 
                     workPortion.forEach(r -> {
 
@@ -149,7 +151,7 @@ public class Govua20Enricher implements Enricher {
                             if (isValidPdv(code)) {
                                 YCompany company = new YCompany();
                                 company.setPdv(Long.parseLong(code));
-                                company.setName(r.getName());
+                                company.setName(UtilString.toUpperCase(r.getName().trim()));
                                 extender.addCompany(companies, source, company, savedCompanies);
 
                                 if (!resp.isEmpty()) {
@@ -158,7 +160,6 @@ public class Govua20Enricher implements Enricher {
                                 }
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("PDV: {}", r.getPdv()), "Wrong PDV");
-                                wrongCounter[0]++;
                             }
                         }
 
@@ -166,22 +167,23 @@ public class Govua20Enricher implements Enricher {
                     });
                     UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
                     if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
-                        if (!companies.isEmpty())
-                            companyRepository.saveAll(companies);
-                        companySet.addAll(companies);
 
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                        if (!companies.isEmpty()) {
+                            log.info("Saving companies");
+                            companyRepository.saveAll(companies);
+                            emnService.enrichYCompanyMonitoringNotification(companies);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
+
+                        deleteResp();
 
                         page = page.stream().parallel().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
-                emnService.enrichYCompanyMonitoringNotification(companySet);
 
                 onePage = govua20Repository.findAllByPortionId(portion, pageRequest);
             }
@@ -199,8 +201,10 @@ public class Govua20Enricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

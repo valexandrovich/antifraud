@@ -90,8 +90,6 @@ public class ManualPersonEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -105,6 +103,7 @@ public class ManualPersonEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID revision) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(MANUAL_PERSON);
@@ -112,7 +111,6 @@ public class ManualPersonEnricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(revision, MANUAL_PERSON, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             FileDescription file = fileDescriptionRepository.findByUuid(revision).orElseThrow(() ->
@@ -140,12 +138,14 @@ public class ManualPersonEnricher implements Enricher {
                         UUID uuid = UUID.randomUUID();
                         uuidMap.put(p.getId(), uuid);
                         entityProcessing.setUuid(uuid);
-                        if (StringUtils.isNotBlank(p.getOkpo()) && p.getOkpo().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setInn(Long.parseLong(p.getOkpo()));
+                        if (!StringUtils.isBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String inn = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setInn(Long.parseLong(inn));
+                        }
                         if (StringUtils.isNotBlank(p.getPassLocalNum()) && p.getPassLocalNum().matches(ALL_NUMBER_REGEX))
                             entityProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getPassLocalSerial()), Integer.valueOf(p.getPassLocalNum())));
-                        if (StringUtils.isNotBlank(p.getLnameUk()) && StringUtils.isNotBlank(p.getFnameUk()) && StringUtils.isNotBlank(p.getPnameUk())
-                                && p.getBirthday() != null)
+                        if (StringUtils.isNotBlank(p.getLnameUk()) || StringUtils.isNotBlank(p.getFnameUk()) || StringUtils.isNotBlank(p.getPnameUk())
+                                || p.getBirthday() != null)
                             entityProcessing.setPersonHash(Objects.hash(UtilString.toUpperCase(p.getLnameUk()), UtilString.toUpperCase(p.getFnameUk()), UtilString.toUpperCase(p.getPnameUk()),
                                     p.getBirthday()));
                         return entityProcessing;
@@ -174,11 +174,14 @@ public class ManualPersonEnricher implements Enricher {
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", revision, entityProcessings.size());
                     String url = urlPost + "?id=" + revision;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<ManualPerson> workPortion = page.stream().parallel().filter(p -> respId.contains(uuidMap.get(p.getId())))
                             .collect(Collectors.toList());
@@ -194,7 +197,7 @@ public class ManualPersonEnricher implements Enricher {
                         if (StringUtils.isNotBlank(r.getPassLocalNum())) {
                             YPassport pass = new YPassport();
                             pass.setNumber(Integer.valueOf(r.getPassLocalNum()));
-                            pass.setSeries(r.getPassLocalSerial());
+                            pass.setSeries(transliterationToCyrillicLetters(r.getPassLocalSerial()));
                             passportSeriesWithNumber.add(pass);
                             passportNumbers.add(Integer.parseInt(r.getPassLocalNum()));
                         }
@@ -203,7 +206,7 @@ public class ManualPersonEnricher implements Enricher {
                             String passportSerial = r.getPassIntNum().substring(0, 2);
                             YPassport pass = new YPassport();
                             pass.setNumber(Integer.parseInt(passportNo));
-                            pass.setSeries(passportSerial);
+                            pass.setSeries(transliterationToLatinLetters(passportSerial));
                             passportSeriesWithNumber.add(pass);
                             passportNumbers.add(Integer.parseInt(passportNo));
                         }
@@ -214,8 +217,9 @@ public class ManualPersonEnricher implements Enricher {
                             passportSeriesWithNumber.add(pass);
                             passportNumbers.add(Integer.parseInt(r.getPassIdNum()));
                         }
-                        if (StringUtils.isNotBlank(r.getOkpo())) {
-                            codes.add(Long.parseLong(r.getOkpo()));
+                        if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(inn));
                         }
                     });
 
@@ -224,12 +228,10 @@ public class ManualPersonEnricher implements Enricher {
                     Set<YPerson> savedPersonSet = new HashSet<>();
 
                     if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            inns.addAll(yinnRepository.findInns(new HashSet<>(list)));
-                            savedPersonSet.addAll(ypr.findPeopleInns(new HashSet<>(list)));
-                        }
+                        inns.addAll(yinnRepository.findInns(codes));
+                        savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
                     }
+
                     if (!passportNumbers.isEmpty() && !passportSeriesWithNumber.isEmpty()) {
                         passports = passportRepository.findPassportsByNumber(passportNumbers);
                         passports = passports.parallelStream().filter(passportSeriesWithNumber::contains).collect(Collectors.toSet());
@@ -257,13 +259,12 @@ public class ManualPersonEnricher implements Enricher {
                                 person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getOkpo()), "Wrong INN");
-                                wrongCounter[0]++;
                             }
                         }
 
                         String passportNo = r.getPassLocalNum();
                         String passportSerial = r.getPassLocalSerial();
-                        if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                        if (isValidLocalPassport(passportNo, passportSerial, counter, logger)) {
                             passportSerial = transliterationToCyrillicLetters(passportSerial);
                             int number = Integer.parseInt(passportNo);
                             YPassport passport = new YPassport();
@@ -284,7 +285,7 @@ public class ManualPersonEnricher implements Enricher {
                             passportSerial = r.getPassIntNum().substring(0, 2);
                             passportRecNo = r.getPassIntRecNum();
                             if (isValidForeignPassport(passportNo, passportSerial, passportRecNo,
-                                    wrongCounter, counter, logger)) {
+                                    counter, logger)) {
                                 passportSerial = transliterationToLatinLetters(passportSerial);
                                 int number = Integer.parseInt(passportNo);
                                 YPassport passport = new YPassport();
@@ -302,7 +303,7 @@ public class ManualPersonEnricher implements Enricher {
 
                         passportNo = r.getPassIdNum();
                         passportRecNo = r.getPassIdRecNum();
-                        if (isValidIdPassport(passportNo, passportRecNo, wrongCounter, counter, logger)) {
+                        if (isValidIdPassport(passportNo, passportRecNo, counter, logger)) {
                             int number = Integer.parseInt(passportNo);
                             YPassport passport = new YPassport();
                             passport.setSeries(null);
@@ -374,21 +375,20 @@ public class ManualPersonEnricher implements Enricher {
                     UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
                     if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
 
-                        emnService.enrichYPersonPackageMonitoringNotification(personSet);
-
-                        if (!personSet.isEmpty())
+                        if (!personSet.isEmpty()) {
+                            emnService.enrichYPersonPackageMonitoringNotification(personSet);
+                            log.info("Saving people");
                             ypr.saveAll(personSet);
-
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
+                            emnService.enrichYPersonMonitoringNotification(personSet);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
 
-                        emnService.enrichYPersonMonitoringNotification(personSet);
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(uuidMap.get(p.getId()))).collect(Collectors.toList());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -409,8 +409,10 @@ public class ManualPersonEnricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

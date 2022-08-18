@@ -6,5 +6,6 @@ import ua.com.solidity.db.entities.ManualPerson;
 import ua.com.solidity.db.entities.ManualTag;
 
 public interface ManualTagRepository extends JpaRepository<ManualTag, Long> {
-     List<ManualTag> findByPerson(ManualPerson person);
+
+    List<ManualTag> findByPerson(ManualPerson person);
 }

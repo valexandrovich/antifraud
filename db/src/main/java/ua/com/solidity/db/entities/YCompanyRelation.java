@@ -36,13 +36,13 @@ public class YCompanyRelation {
 
 	@ManyToOne
 	@JsonBackReference
-	@JoinColumn(name = "person_id")
+	@JoinColumn(name = "person_id", referencedColumnName = "id")
 	private YPerson person;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof YCompanyRelation)) return false;
         YCompanyRelation that = (YCompanyRelation) o;
         return Objects.equals(company, that.company) && Objects.equals(role, that.role) && Objects.equals(person, that.person);
     }

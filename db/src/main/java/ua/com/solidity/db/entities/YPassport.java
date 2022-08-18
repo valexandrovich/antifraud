@@ -11,8 +11,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
-import javax.persistence.NamedAttributeNode;
-import javax.persistence.NamedEntityGraph;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -23,7 +21,6 @@ import ua.com.solidity.db.abstraction.Identifiable;
 @Getter
 @Setter
 @Entity
-@NamedEntityGraph(name="ypassport.sources", attributeNodes= @NamedAttributeNode("importSources"))
 @Table(name = "ypassport")
 public class YPassport implements Identifiable {
 	@Id

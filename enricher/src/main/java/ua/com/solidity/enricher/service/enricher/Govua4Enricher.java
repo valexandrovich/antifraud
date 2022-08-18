@@ -5,7 +5,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.COMPANY_STATE_CRASH;
@@ -27,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -44,12 +44,10 @@ import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.TagType;
 import ua.com.solidity.db.entities.YCTag;
 import ua.com.solidity.db.entities.YCompany;
-import ua.com.solidity.db.entities.YCompanyRelationCompany;
 import ua.com.solidity.db.entities.YCompanyRole;
 import ua.com.solidity.db.entities.YCompanyState;
 import ua.com.solidity.db.repositories.ImportSourceRepository;
 import ua.com.solidity.db.repositories.TagTypeRepository;
-import ua.com.solidity.db.repositories.YCompanyRelationCompanyRepository;
 import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YCompanyRoleRepository;
 import ua.com.solidity.db.repositories.YCompanyStateRepository;
@@ -60,6 +58,7 @@ import ua.com.solidity.enricher.util.FileFormatUtil;
 import ua.com.solidity.util.model.EntityProcessing;
 import ua.com.solidity.util.model.response.DispatcherResponse;
 
+@CustomLog
 @Service
 @RequiredArgsConstructor
 public class Govua4Enricher implements Enricher {
@@ -72,13 +71,10 @@ public class Govua4Enricher implements Enricher {
     private final Govua4Repository govua4Repository;
     private final YCompanyStateRepository companyStateRepository;
     private final YCompanyRoleRepository companyRoleRepository;
-    private final YCompanyRelationCompanyRepository companyRelationCompanyRepository;
     private final TagTypeRepository tagTypeRepository;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -93,6 +89,7 @@ public class Govua4Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(GOVUA4);
@@ -100,7 +97,6 @@ public class Govua4Enricher implements Enricher {
             StatusChanger statusChanger = new StatusChanger(portion, GOVUA4, ENRICHER);
 
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua4> onePage = govua4Repository.findAllByPortionId(portion, pageRequest);
@@ -123,30 +119,37 @@ public class Govua4Enricher implements Enricher {
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(c.getId());
-                        if (StringUtils.isNotBlank(c.getEdrpou()) && c.getEdrpou().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setEdrpou(Long.parseLong(c.getEdrpou()));
+                        if (UtilString.matches(c.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                            String edrpou = c.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setEdrpou(Long.parseLong(edrpou));
+                        }
                         if (StringUtils.isNotBlank(c.getName()))
-                            entityProcessing.setCompanyHash(Objects.hash(c.getName()));
+                            entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(c.getName().trim())));
                         return entityProcessing;
                     }).collect(Collectors.toList());
 
                     entityProcessings.addAll(page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(c.getId());
-                        if (StringUtils.isNotBlank(c.getSubEdrpou()) && c.getSubEdrpou().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setEdrpou(Long.parseLong(c.getSubEdrpou()));
+                        if (UtilString.matches(c.getSubEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                            String subEdrpou = c.getSubEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            entityProcessing.setEdrpou(Long.parseLong(subEdrpou));
+                        }
                         if (StringUtils.isNotBlank(c.getSubName()))
-                            entityProcessing.setCompanyHash(Objects.hash(c.getSubName()));
+                            entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(c.getSubName().trim())));
                         return entityProcessing;
                     }).collect(Collectors.toList()));
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Govua4> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
@@ -155,24 +158,21 @@ public class Govua4Enricher implements Enricher {
 
                     Set<Long> codes = new HashSet<>();
                     Set<YCompany> companies = new HashSet<>();
-                    Set<YCompanyRelationCompany> yCompanyRelationCompaniesSet = new HashSet<>();
-                    Set<YCompanyRelationCompany> savedCompanyRelationCompanies = new HashSet<>();
 
                     Set<YCompany> savedCompanies = new HashSet<>();
                     workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getEdrpou()) && r.getEdrpou().matches(ALL_NUMBER_REGEX))
-                            codes.add(Long.parseLong(r.getEdrpou()));
-                        if (StringUtils.isNotBlank(r.getSubEdrpou()) && r.getSubEdrpou().matches(ALL_NUMBER_REGEX))
-                            codes.add(Long.parseLong(r.getSubEdrpou()));
+                        if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                            String edrpou = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(edrpou));
+                        }
+                        if (UtilString.matches(r.getSubEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                            String subEdrpou = r.getSubEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.parseLong(subEdrpou));
+                        }
                     });
 
-                    if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            savedCompanies.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
-                            savedCompanyRelationCompanies.addAll(companyRelationCompanyRepository.findRelationByEdrpou(new HashSet<>(list)));
-                        }
-                    }
+                    if (!codes.isEmpty())
+                        savedCompanies.addAll(companyRepository.findByEdrpous(codes));
 
                     Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
                     Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
@@ -199,7 +199,6 @@ public class Govua4Enricher implements Enricher {
                                 extender.addTags(company, tags, source);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
-                                wrongCounter[0]++;
                             }
                         }
 
@@ -223,13 +222,12 @@ public class Govua4Enricher implements Enricher {
                                 extender.addTags(subCompany, tags, source);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getSubEdrpou()), "Wrong EDRPOU");
-                                wrongCounter[0]++;
                             }
                         }
 
                         Optional<YCompanyRole> role = companyRoleRepository.findByRole(UtilString.toUpperCase("CREATOR"));
                         if (company != null && subCompany != null && role.isPresent())
-                            extender.addCompanyRelation(company, subCompany, role.get(), source, yCompanyRelationCompaniesSet, savedCompanyRelationCompanies);
+                            extender.addCompanyRelation(company, subCompany, role.get(), source);
 
                         if (!resp.isEmpty()) {
                             counter[0]++;
@@ -241,22 +239,18 @@ public class Govua4Enricher implements Enricher {
 
                         if (!companies.isEmpty()) {
                             emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                            log.info("Saving companies");
                             companyRepository.saveAll(companies);
+                            emnService.enrichYCompanyMonitoringNotification(companies);
+                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
                         }
 
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
-                        }
-
-                        if (!yCompanyRelationCompaniesSet.isEmpty())
-                            companyRelationCompanyRepository.saveAll(yCompanyRelationCompaniesSet);
-
-                        emnService.enrichYCompanyMonitoringNotification(companies);
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toSet());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -278,8 +272,10 @@ public class Govua4Enricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

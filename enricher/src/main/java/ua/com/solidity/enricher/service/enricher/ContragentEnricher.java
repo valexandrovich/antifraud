@@ -7,7 +7,6 @@ import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
-import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCyrillicLetters;
@@ -93,8 +92,6 @@ public class ContragentEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.searchPortion}")
-    private Integer searchPortion;
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
@@ -108,13 +105,13 @@ public class ContragentEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
+        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
         try {
             logStart(CONTRAGENT);
 
             StatusChanger statusChanger = new StatusChanger(portion, CONTRAGENT, ENRICHER);
             long[] counter = new long[1];
-            long[] wrongCounter = new long[1];
 
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Contragent> onePage = cr.findAllByPortionId(portion, pageRequest);
@@ -123,7 +120,7 @@ public class ContragentEnricher implements Enricher {
             ImportSource source = isr.findImportSourceByName("dwh");
             String fileName = fileFormatUtil.getLogFileName(portion.toString());
             DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
-                                                               Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_PASSPORTS, portion));
+                    Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, BASE_PASSPORTS, portion));
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
@@ -141,25 +138,35 @@ public class ContragentEnricher implements Enricher {
 
                                 EntityProcessing entityProcessing = new EntityProcessing();
                                 entityProcessing.setUuid(p.getUuid());
-                                if (StringUtils.isNotBlank(p.getIdentifyCode()) && p.getIdentifyCode().matches(ALL_NUMBER_REGEX))
-                                    entityProcessing.setInn(Long.parseLong(p.getIdentifyCode()));
-                                if (StringUtils.isNotBlank(p.getPassportNo()) && p.getPassportNo().matches(ALL_NUMBER_REGEX))
-                                    entityProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getPassportSerial()), Integer.valueOf(p.getPassportNo())));
+                                if (!StringUtils.isBlank(p.getIdentifyCode()) && p.getIdentifyCode().matches(CONTAINS_NUMERAL_REGEX)) {
+                                    String inn = p.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                                    entityProcessing.setInn(Long.parseLong(inn));
+                                }
+                                if (!StringUtils.isBlank(p.getPassportNo()) && p.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
+                                    String passportNo = String.format("%06d", Integer.parseInt(p.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                                    String passportSerial = p.getPassportSerial();
+                                    entityProcessing.setPassHash(Objects.hash(passportSerial, Integer.valueOf(passportNo)));
+                                }
                                 entityProcessing.setPersonHash(Objects.hash(lastName, firstName, patName, p.getClientBirthday()));
-                                if (StringUtils.isNotBlank(p.getIdentifyCode()) && p.getIdentifyCode().matches(ALL_NUMBER_REGEX))
-                                    entityProcessing.setEdrpou(Long.parseLong(p.getIdentifyCode()));
+                                if (UtilString.matches(p.getIdentifyCode(), CONTAINS_NUMERAL_REGEX)) {
+                                    String edrpou = p.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                                    entityProcessing.setEdrpou(Long.parseLong(edrpou));
+                                }
                                 if (StringUtils.isNotBlank(p.getName()))
-                                    entityProcessing.setCompanyHash(Objects.hash(p.getName()));
+                                    entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(p.getName())));
                                 return entityProcessing;
                             }).collect(Collectors.toList());
 
                     UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
+                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
                     String url = urlPost + "?id=" + portion;
                     DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                     resp = new ArrayList<>(response.getResp());
                     List<UUID> respId = response.getRespId();
                     List<UUID> temp = response.getTemp();
+                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
+                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
 
                     List<Contragent> workPortion = page.parallelStream().filter(p -> respId.contains(p.getUuid()))
                             .collect(Collectors.toList());
@@ -178,25 +185,25 @@ public class ContragentEnricher implements Enricher {
 
                     workPortion.forEach(r -> {
 
-                        if (StringUtils.isNotBlank(r.getPassportNo()) && r.getPassportNo().matches(ALL_NUMBER_REGEX)) {
+                        if (!StringUtils.isBlank(r.getPassportNo()) && r.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                            String passportSerial = r.getPassportSerial();
                             YPassport pass = new YPassport();
-                            pass.setNumber(Integer.valueOf(r.getPassportNo()));
-                            pass.setSeries(r.getPassportSerial());
+                            pass.setNumber(Integer.valueOf(passportNo));
+                            pass.setSeries(passportSerial);
                             passportSeriesWithNumber.add(pass);
-                            passportNumbers.add(Integer.parseInt(r.getPassportNo()));
+                            passportNumbers.add(Integer.parseInt(passportNo));
                         }
-                        if (StringUtils.isNotBlank(r.getIdentifyCode()) && r.getIdentifyCode().matches(ALL_NUMBER_REGEX)) {
-                            codes.add(Long.parseLong(r.getIdentifyCode()));
+                        if (!StringUtils.isBlank(r.getIdentifyCode()) && r.getIdentifyCode().matches(CONTAINS_NUMERAL_REGEX)) {
+                            String code = r.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                            codes.add(Long.valueOf(code));
                         }
                     });
 
                     if (!codes.isEmpty()) {
-                        List<Long>[] codesListArray = extender.partition(new ArrayList<>(codes), searchPortion);
-                        for (List<Long> list : codesListArray) {
-                            inns.addAll(yir.findInns(new HashSet<>(list)));
-                            savedPersonSet.addAll(ypr.findPeopleInns(new HashSet<>(list)));
-                            savedCompanySet.addAll(companyRepository.finnByEdrpous(new HashSet<>(list)));
-                        }
+                        inns.addAll(yir.findInns(codes));
+                        savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
+                        savedCompanySet.addAll(companyRepository.findByEdrpous(codes));
                     }
                     if (!passportNumbers.isEmpty() && !passportSeriesWithNumber.isEmpty()) {
                         passports = yPassportRepository.findPassportsByNumber(passportNumbers);
@@ -227,14 +234,13 @@ public class ContragentEnricher implements Enricher {
                                     person = extender.addInn(Long.parseLong(inn), people, source, person, inns, savedPersonSet);
                                 } else {
                                     logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getIdentifyCode()), "Wrong INN");
-                                    wrongCounter[0]++;
                                 }
                             }
 
                             if (!StringUtils.isBlank(r.getPassportNo()) && r.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
                                 String passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
                                 String passportSerial = r.getPassportSerial();
-                                if (isValidLocalPassport(passportNo, passportSerial, wrongCounter, counter, logger)) {
+                                if (isValidLocalPassport(passportNo, passportSerial, counter, logger)) {
                                     passportSerial = transliterationToCyrillicLetters(passportSerial);
                                     int number = Integer.parseInt(passportNo);
                                     YPassport passport = new YPassport();
@@ -292,7 +298,7 @@ public class ContragentEnricher implements Enricher {
 
                             if (StringUtils.isNotBlank(r.getFirstNameLat()) || StringUtils.isNotBlank(r.getLastNameLat()))
                                 extender.addAltPerson(person, UtilString.toUpperCase(r.getLastNameLat()),
-                                                      UtilString.toUpperCase(r.getFirstNameLat()), null, "EN", source);
+                                        UtilString.toUpperCase(r.getFirstNameLat()), null, "EN", source);
 
                         } else if (StringUtils.isNotBlank(r.getContragentTypeId()) &&
                                 Objects.equals(r.getContragentTypeId().trim(), JURIDICAL_RESIDENT)) {
@@ -319,7 +325,7 @@ public class ContragentEnricher implements Enricher {
                                     extender.addCAddresses(company, cAddresses, source);
 
                                     if (StringUtils.isNotBlank(r.getAlternateName()))
-                                        extender.addAltCompany(company, UtilString.toUpperCase(r.getAlternateName()), "UA", source);
+                                        extender.addAltCompany(company, UtilString.toUpperCase(r.getAlternateName().trim()), "UA", source);
 
                                     Set<YCTag> cTags = new HashSet<>();
                                     YCTag cTag = new YCTag();
@@ -330,7 +336,6 @@ public class ContragentEnricher implements Enricher {
                                     extender.addTags(company, cTags, source);
                                 } else {
                                     logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getIdentifyCode()), "Wrong EDRPOU");
-                                    wrongCounter[0]++;
                                 }
                             }
                         }
@@ -345,26 +350,26 @@ public class ContragentEnricher implements Enricher {
 
                         if (!people.isEmpty()) {
                             emnService.enrichYPersonPackageMonitoringNotification(people);
+                            log.info("Saving people");
                             ypr.saveAll(people);
+                            emnService.enrichYPersonMonitoringNotification(people);
                         }
-
 
                         if (!companies.isEmpty()) {
                             emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                            log.info("Saving companies");
                             companyRepository.saveAll(companies);
+                            emnService.enrichYCompanyMonitoringNotification(companies);
                         }
 
-                        if (!resp.isEmpty()) {
-                            httpClient.post(urlDelete, Boolean.class, resp);
-                            resp.clear();
-                        }
+                        statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
 
-                        emnService.enrichYPersonMonitoringNotification(people);
-                        emnService.enrichYCompanyMonitoringNotification(companies);
+                        deleteResp();
 
                         page = page.parallelStream().filter(p -> temp.contains(p.getUuid())).collect(Collectors.toSet());
                     } else {
                         counter[0] -= resp.size();
+                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
                         statusChanger.addProcessedVolume(-resp.size());
                     }
                 }
@@ -383,8 +388,10 @@ public class ContragentEnricher implements Enricher {
     @PreDestroy
     public void deleteResp() {
         if (!resp.isEmpty()) {
+            log.info("Going to remove, count: {}", resp.size());
             httpClient.post(urlDelete, Boolean.class, resp);
             resp.clear();
+            log.info("Removed");
         }
     }
 }

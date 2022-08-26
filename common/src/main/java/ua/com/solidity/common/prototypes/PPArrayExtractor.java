@@ -11,7 +11,7 @@ import ua.com.solidity.pipeline.Prototype;
 
 @CustomLog
 public class PPArrayExtractor extends Prototype {
-    public static int DEFAULT_BATCH_SIZE = 16384;
+    public static int defaultBatchSize = 16384;
     public static final String INPUT = "input";
     public static final String EXTENSION = "ext";
     public static final String PATH = "path";
@@ -48,7 +48,7 @@ public class PPArrayExtractor extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        int batchSize = DEFAULT_BATCH_SIZE;
+        int batchSize = defaultBatchSize;
         JsonNode path;
 
         item.mapInputs(INPUT, DataBatch.class);
@@ -82,10 +82,13 @@ public class PPArrayExtractor extends Prototype {
         data.batch.put(obj);
     }
 
+
     private ErrorResult doHandleObject(Data data, DataObject obj) {
         if (obj != null) {
             DataField field = data.path.getField(obj);
-            if (field == null) return null;
+            if (field == null) {
+                return new ErrorResult();
+            }
             if (DataField.isArray(field)) {
                 DataArray dataArray = DataField.getArray(field);
                 if (dataArray != null) {
@@ -104,7 +107,7 @@ public class PPArrayExtractor extends Prototype {
 
     private void handleBatch(Data data) {
         if (data.inputBatch != null && !data.inputBatch.isEmpty()) {
-            data.inputBatch.handle((obj)->doHandleObject(data, obj), this::doHandleError);
+            data.inputBatch.handle(obj->doHandleObject(data, obj), this::doHandleError);
             data.batch.flush();
         }
     }
@@ -119,11 +122,9 @@ public class PPArrayExtractor extends Prototype {
             item.yieldBegin();
         }
 
-        if (!item.terminated()) {
-            if (input.hasData()) {
-                handleBatch(data);
-                item.stayUncompleted();
-            }
+        if (!item.terminated() && input.hasData()) {
+            handleBatch(data);
+            item.stayUncompleted();
         }
         return null;
     }

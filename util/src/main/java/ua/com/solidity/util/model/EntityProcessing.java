@@ -1,5 +1,6 @@
 package ua.com.solidity.util.model;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class EntityProcessing {
     private long edrpou = 0;
     private long pdv = 0;
     private int companyHash = 0;
+    private LocalDateTime addingTime;
 
     @Override
     public boolean equals(Object o) {

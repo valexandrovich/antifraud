@@ -145,7 +145,7 @@ services:
       args:
         - JAR_FILE=enricher/target/*.jar
     environment:
-      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=enricher.otp-etl -Ddispatcher.url.person=http://dispatcher:8090/dispatcher/person -Ddispatcher.url.person.delete=http://dispatcher:8090/dispatcher/person/delete -Ddispatcher.url.company=http://dispatcher:8090/dispatcher/company -Ddispatcher.url.company.delete=http://dispatcher:8090/dispatcher/company/delete
+      - JAVA_OPTS=-Dspring.datasource.url=jdbc:postgresql://db:5432/otp -Dspring.rabbitmq.host=queue -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -Dotel.traces.exporter=zipkin -Dotel.exporter.zipkin.endpoint=http://zipkin:9411/api/v2/spans -Dotel.resource.attributes=service.name=enricher.otp-etl -Ddispatcher.url=http://dispatcher:8090/dispatcher -Ddispatcher.url.delete=http://dispatcher:8090/dispatcher/delete
     image: otp-enricher:latest
     depends_on:
       - migration-k8s

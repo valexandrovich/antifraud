@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 import { NavLink, useHistory } from "react-router-dom";
 import SidebarData from "./SidebarData";
@@ -6,11 +6,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { IconContext } from "react-icons";
 import * as IoIcons from "react-icons/io";
 import { logoutUserThunk } from "../../store/reducers/AuthReducer";
-import { version as app_version } from "../../../package.json";
 
-const Aside = ({ build }) => {
+const Aside = () => {
   const userName = localStorage.getItem("userName");
-  const [buildDate, setBuildDate] = useState(false);
   const userRole = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
   const history = useHistory();
@@ -21,18 +19,7 @@ const Aside = ({ build }) => {
         <div className="navbar">
           <div className="d-flex col-sm-12 justify-content-between align-items-center">
             <div className={"d-flex align-items-center"}>
-              <h3 className="nav-title">
-                Антифрод
-                <span
-                  onClick={() => setBuildDate(!buildDate)}
-                  className={"ml-10 pointer"}
-                >
-                  {app_version}
-                </span>
-              </h3>
-              {buildDate && (
-                <small className={"ml-10 nav-title"}>{build}</small>
-              )}
+              <h3 className="nav-title">Антифрод</h3>
             </div>
             <span className="text-white p-2 user">
               {userName?.replace(/"/g, "")}

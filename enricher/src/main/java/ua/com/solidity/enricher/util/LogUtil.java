@@ -1,11 +1,13 @@
 package ua.com.solidity.enricher.util;
 
 import lombok.CustomLog;
+import lombok.NoArgsConstructor;
 import ua.com.solidity.common.DefaultErrorLogger;
 import ua.com.solidity.common.ErrorReport;
 
 @CustomLog
-public class LogUtil {
+public final class LogUtil {
+	private LogUtil() {}
 
 	public static void logError(DefaultErrorLogger logger, long row, String info, String clarification) {
 		if (logger != null)

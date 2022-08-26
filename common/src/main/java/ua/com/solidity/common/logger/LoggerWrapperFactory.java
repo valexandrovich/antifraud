@@ -29,7 +29,8 @@ public class LoggerWrapperFactory {
         if (optionsInitialized) return true;
         if (Utils.checkApplicationContext()) {
             includeOptionsByString(Utils.getContextProperty(LOGGER_OPTIONS_PROPERTY, ""));
-            return optionsInitialized = true;
+            optionsInitialized = true;
+            return true;
         }
         return false;
     }

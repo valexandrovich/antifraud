@@ -45,6 +45,18 @@ public class YPerson {
     @Column(name = "birthdate")
     private LocalDate birthdate;
 
+    @Column(name = "comment")
+    private String comment;
+
+    @Column(name = "sex", length = 1)
+    private String sex;
+
+    @Column(name = "country")
+    private String country;
+
+    @Column(name = "birth_place")
+    private String birthPlace;
+
     @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YPersonRelation> personRelations = new HashSet<>();

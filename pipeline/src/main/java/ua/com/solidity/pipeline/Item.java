@@ -181,21 +181,19 @@ public final class Item {
         return terminated();
     }
 
-    @SuppressWarnings("unused")
-    boolean tryToExecute() {
-        if (completed || visited || terminated()) return false;
+    boolean executionFailed() {
+        if (terminated()) return true;
+        if (completed || visited) return false;
 
         for (Input input : inputs) {
-            if (!input.isCompleted()) return false;
+            if (!input.isCompleted()) return true;
         }
 
         if (!isOpen) {
             prototype.open(this);
             isOpen = true;
-            if (terminated()) return false;
+            if (terminated()) return true;
         }
-
-        //resetDependencies();
 
         completed = true;
         try {
@@ -203,7 +201,7 @@ public final class Item {
         } catch (Exception e) {
             log.error("Error due execution of pipeline prototype {}", prototype.getClass().getSimpleName(), e);
             terminate();
-            return false;
+            return true;
         }
         if (!completed) {
             visited = true;
@@ -211,10 +209,10 @@ public final class Item {
             if ((flags & FLAG_ITERATOR) != 0) {
                 flags |= FLAG_EOF;
                 resetDependencies();
-                pipeline.doExecute(this, false);
+                return !pipeline.doExecute(this, false);
             }
         }
-        return true;
+        return false;
     }
 
     public void yieldBegin() {

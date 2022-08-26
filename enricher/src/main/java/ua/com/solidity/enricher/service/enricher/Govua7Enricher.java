@@ -1,5 +1,6 @@
 package ua.com.solidity.enricher.service.enricher;
 
+import static ua.com.solidity.enricher.util.Base.BASE_CREATOR;
 import static ua.com.solidity.enricher.util.Base.GOVUA7;
 import static ua.com.solidity.enricher.util.LogUtil.logError;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
@@ -75,7 +76,7 @@ public class Govua7Enricher implements Enricher {
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
-    private Long sleepTime;
+    private int sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
@@ -85,15 +86,15 @@ public class Govua7Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
-        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
+
+        logStart(GOVUA7);
+
+        StatusChanger statusChanger = new StatusChanger(portion, GOVUA7, ENRICHER);
+
+        long[] counter = new long[1];
+
         try {
-            logStart(GOVUA7);
-
-            StatusChanger statusChanger = new StatusChanger(portion, GOVUA7, ENRICHER);
-
-            long[] counter = new long[1];
-
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua7> onePage = govua7Repository.findAllByPortionId(portion, pageRequest);
             long count = govua7Repository.countAllByPortionId(portion);
@@ -110,8 +111,12 @@ public class Govua7Enricher implements Enricher {
 
                 while (!page.isEmpty()) {
                     Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime)
+                    if (duration.getSeconds() > timeOutTime) {
+                        statusChanger.setStatus(" Timeout after 25 minutes. Task has been rescheduled.");
+                        extender.sendMessageToQueue(GOVUA7, portion);
+
                         throw new TimeoutException("Time ran out for portion: " + portion);
+                    }
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(c.getId());
@@ -138,7 +143,7 @@ public class Govua7Enricher implements Enricher {
                     List<Govua7> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
 
-                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
+                    if (workPortion.isEmpty()) Utils.waitMs(sleepTime);
 
                     Set<Long> codes = new HashSet<>();
                     Set<YCompany> companies = new HashSet<>();
@@ -214,6 +219,8 @@ public class Govua7Enricher implements Enricher {
             logger.finish();
 
             statusChanger.complete(importedRecords(counter[0]));
+        } catch (Exception e) {
+            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
         } finally {
             deleteResp();
         }

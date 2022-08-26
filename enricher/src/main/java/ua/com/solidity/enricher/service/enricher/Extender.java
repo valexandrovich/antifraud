@@ -11,9 +11,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import ua.com.solidity.common.OtpExchange;
+import ua.com.solidity.common.Utils;
+import ua.com.solidity.common.model.EnricherPortionMessage;
 import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.YAddress;
 import ua.com.solidity.db.entities.YAltCompany;
@@ -32,13 +38,20 @@ import ua.com.solidity.db.entities.YPhone;
 import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
+import ua.com.solidity.enricher.service.HttpClient;
 
+@CustomLog
 @Component
 @RequiredArgsConstructor
 public class Extender {
 
     private final YPersonRepository ypr;
     private final YPassportRepository yPassportRepository;
+    private final AmqpTemplate template;
+    private final HttpClient httpClient;
+
+    @Value("${dispatcher.url}")
+    private String urlPost;
 
     public void addAltPerson(YPerson person, String lastName, String firstName,
                              String patName, String language,
@@ -95,9 +108,9 @@ public class Extender {
                 .filter(p -> p.getPassports().contains(ypassport))
                 .collect(Collectors.toList());
         yPersonList.addAll(savedPeople.parallelStream()
-                .filter(p -> p.getPassports()
-                        .contains(ypassport))
-                .collect(Collectors.toList()));
+                                   .filter(p -> p.getPassports()
+                                           .contains(ypassport))
+                                   .collect(Collectors.toList()));
 
         Optional<YPassport> optionalYPassport = yPersonList.parallelStream()
                 .flatMap(p -> p.getPassports().parallelStream())
@@ -322,7 +335,12 @@ public class Extender {
                 tag.setTagType(chooseNotNull(tag.getTagType(), t.getTagType()));
                 tag.setAsOf(chooseNotNull(tag.getAsOf(), t.getAsOf()));
                 tag.setUntil(chooseNotNull(tag.getUntil(), t.getUntil()));
+                if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
                 tag.setSource(chooseNotBlank(tag.getSource(), t.getSource()));
+                tag.setEventDate(chooseNotNull(tag.getEventDate(), t.getEventDate()));
+                tag.setDescription(chooseNotNull(tag.getDescription(), t.getDescription()));
+                tag.setTextValue(chooseNotNull(tag.getTextValue(), t.getTextValue()));
+                tag.setNumberValue(chooseNotNull(tag.getNumberValue(), t.getNumberValue()));
 
                 tag.setPerson(person);
                 person.getTags().add(tag);
@@ -344,6 +362,11 @@ public class Extender {
                 tag.setTagType(chooseNotNull(tag.getTagType(), t.getTagType()));
                 tag.setAsOf(chooseNotNull(tag.getAsOf(), t.getAsOf()));
                 tag.setUntil(chooseNotNull(tag.getUntil(), t.getUntil()));
+                if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
+                tag.setEventDate(chooseNotNull(tag.getEventDate(), t.getEventDate()));
+                tag.setDescription(chooseNotNull(tag.getDescription(), t.getDescription()));
+                tag.setTextValue(chooseNotNull(tag.getTextValue(), t.getTextValue()));
+                tag.setNumberValue(chooseNotNull(tag.getNumberValue(), t.getNumberValue()));
                 tag.setSource(chooseNotBlank(tag.getSource(), t.getSource()));
 
                 tag.setCompany(company);
@@ -370,7 +393,7 @@ public class Extender {
             }
             if (!find) {
                 List<YPerson> yPersonSavedList = ypr.findByLastNameAndFirstNameAndPatNameAndBirthdate(person.getLastName(),
-                        person.getFirstName(), person.getPatName(), person.getBirthdate());
+                                                                                                      person.getFirstName(), person.getPatName(), person.getBirthdate());
                 if (yPersonSavedList.size() == 1) {
                     if (fullUnload)
                         person = ypr.findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(yPersonSavedList.get(0).getId())
@@ -440,8 +463,8 @@ public class Extender {
         LocalDate localDate = null;
         if (!StringUtils.isBlank(date)) {
             localDate = LocalDate.of(Integer.parseInt(date.substring(6)),
-                    Integer.parseInt(date.substring(3, 5)),
-                    Integer.parseInt(date.substring(0, 2)));
+                                     Integer.parseInt(date.substring(3, 5)),
+                                     Integer.parseInt(date.substring(0, 2)));
         }
         return localDate;
     }
@@ -489,5 +512,10 @@ public class Extender {
             LocalDate birthDay = LocalDate.ofEpochDay(Long.parseLong(inn.substring(0, 5)) + START_DATE.toEpochDay() - 1L);
             person.setBirthdate(birthDay);
         }
+    }
+
+    public void sendMessageToQueue(String enricher, UUID portion) {
+        String jo = Utils.objectToJsonString(new EnricherPortionMessage(enricher, portion));
+        template.convertAndSend(OtpExchange.ENRICHER, jo);
     }
 }

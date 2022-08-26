@@ -73,11 +73,22 @@ public class RabbitMQListener {
     private final YPersonRepository personRepository;
     private final YCompanyRepository companyRepository;
 
-    private final static String FILE_HEADER = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">" +
+    private static final String FILE_HEADER = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">" +
             "<html>" +
             "<head>" +
             "</head>" +
             "<body>";
+    private static final String SENDING_LOG =  "Sending task to {}";
+    private static final String COULD_NOT_CONVERT_LOG =  "Couldn't convert json: {}";
+    private static final String TD_CENTER_OPED_HTML =  "<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"";
+    private static final String TD_OPED_HTML =  "<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">";
+    private static final String TD_CLOSE_HTML =  "</td>";
+    private static final String TR_OPEN_HTML =  "<tr>";
+    private static final String TR_CLOSE_HTML =  "</tr>";
+    private static final String BODY_CLOSE_HTML =  "</body>";
+    private static final String HTML_CLOSE_HTML =  "</html>";
+    private static final String TBODY_CLOSE_HTML =  "</tbody>";
+    private static final String TABLE_CLOSE_HTML =  "</table>";
 
     @RabbitListener(queues = "${report.rabbitmq.name}")
     public void processMyQueue() {
@@ -118,10 +129,10 @@ public class RabbitMQListener {
                 String jo;
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
-                    log.info("Sending task to {}", notificationQueue);
+                    log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
                 } catch (JsonProcessingException e) {
-                    log.error("Couldn't convert json: {}", e.getMessage());
+                    log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                 }
 
                 ypersonMonitoringNotificationList
@@ -219,54 +230,54 @@ public class RabbitMQListener {
 
                         });
 
-                        messageBuilder.append("<tr>");
-                        messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"").append(rowspan).append(">");
+                        messageBuilder.append(TR_OPEN_HTML);
+                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
                         if (!person.getInns().isEmpty()) {
                             YINN yinn = person.getInns().iterator().next();
                             messageBuilder.append(yinn.getInn());
                         }
-                        messageBuilder.append("</td>");
+                        messageBuilder.append(TD_CLOSE_HTML);
 
-                        messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"").append(rowspan).append(">");
+                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
                         if (personName.length() > 0) {
                             messageBuilder.append(personName);
                         }
-                        messageBuilder.append("</td>");
+                        messageBuilder.append(TD_CLOSE_HTML);
 
                         if (!codeList.isEmpty()) {
-                            messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">");
+                            messageBuilder.append(TD_OPED_HTML);
                             StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
                             if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
                                 tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
                             }
                             messageBuilder.append(tagTypeAsOfBuilder);
-                            messageBuilder.append("</td>");
+                            messageBuilder.append(TD_CLOSE_HTML);
                         }
-                        messageBuilder.append("</tr>");
+                        messageBuilder.append(TR_CLOSE_HTML);
 
                         for (int i = 1; i < codeList.size(); i++) {
-                            messageBuilder.append("<tr>");
+                            messageBuilder.append(TR_OPEN_HTML);
 
-                            messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">");
+                            messageBuilder.append(TD_OPED_HTML);
                             StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
                             if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
                                 tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
                             }
                             messageBuilder.append(tagTypeAsOfBuilder);
-                            messageBuilder.append("</td>");
+                            messageBuilder.append(TD_CLOSE_HTML);
 
-                            messageBuilder.append("</tr>");
+                            messageBuilder.append(TR_CLOSE_HTML);
                         }
 
                     });
 
-                    messageBuilder.append("</tbody>");
-                    messageBuilder.append("</table>");
+                    messageBuilder.append(TBODY_CLOSE_HTML);
+                    messageBuilder.append(TABLE_CLOSE_HTML);
 
                 }
             }
-            messageBuilder.append("</body>");
-            messageBuilder.append("</html>");
+            messageBuilder.append(BODY_CLOSE_HTML);
+            messageBuilder.append(HTML_CLOSE_HTML);
 
             if (built) {
                 SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
@@ -279,10 +290,10 @@ public class RabbitMQListener {
                 String jo;
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
-                    log.info("Sending task to {}", notificationQueue);
+                    log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
                 } catch (JsonProcessingException e) {
-                    log.error("Couldn't convert json: {}", e.getMessage());
+                    log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                 }
 
                 personPackageMonitoringNotifications
@@ -338,13 +349,6 @@ public class RabbitMQListener {
 
                     Map<YCompany, String> companyNamesMap = new HashMap<>();
                     companyList.forEach(company -> {
-//                        StringBuilder personName = new StringBuilder();
-//                        Stream.of(company.getLastName(), company.getFirstName(), company.getPatName())
-//                                .forEach(name -> {
-//                                    if (personName.length() > 0 && name != null) personName.append(" ");
-//                                    if (name != null) personName.append(name);
-//                                });
-
                         companyNamesMap.put(company, StringUtils.defaultString(company.getName(), ""));
                     });
                     Stream<Map.Entry<YCompany, String>> companyNamesStreamSorted = companyNamesMap.entrySet()
@@ -377,53 +381,53 @@ public class RabbitMQListener {
 
                         });
 
-                        messageBuilder.append("<tr>");
-                        messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"").append(rowspan).append(">");
+                        messageBuilder.append(TR_OPEN_HTML);
+                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
                         if (company.getEdrpou() != null){
                             messageBuilder.append(company.getEdrpou());
                         }
-                        messageBuilder.append("</td>");
+                        messageBuilder.append(TD_CLOSE_HTML);
 
-                        messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"").append(rowspan).append(">");
+                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
                         if (companyName.length() > 0) {
                             messageBuilder.append(companyName);
                         }
-                        messageBuilder.append("</td>");
+                        messageBuilder.append(TD_CLOSE_HTML);
 
                         if (!codeList.isEmpty()) {
-                            messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">");
+                            messageBuilder.append(TD_OPED_HTML);
                             StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
                             if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
                                 tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
                             }
                             messageBuilder.append(tagTypeAsOfBuilder);
-                            messageBuilder.append("</td>");
+                            messageBuilder.append(TD_CLOSE_HTML);
                         }
-                        messageBuilder.append("</tr>");
+                        messageBuilder.append(TR_CLOSE_HTML);
 
                         for (int i = 1; i < codeList.size(); i++) {
-                            messageBuilder.append("<tr>");
+                            messageBuilder.append(TR_OPEN_HTML);
 
-                            messageBuilder.append("<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">");
+                            messageBuilder.append(TD_OPED_HTML);
                             StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
                             if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
                                 tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
                             }
                             messageBuilder.append(tagTypeAsOfBuilder);
-                            messageBuilder.append("</td>");
+                            messageBuilder.append(TD_CLOSE_HTML);
 
-                            messageBuilder.append("</tr>");
+                            messageBuilder.append(TR_CLOSE_HTML);
                         }
 
                     });
 
-                    messageBuilder.append("</tbody>");
-                    messageBuilder.append("</table>");
+                    messageBuilder.append(TBODY_CLOSE_HTML);
+                    messageBuilder.append(TABLE_CLOSE_HTML);
 
                 }
             }
-            messageBuilder.append("</body>");
-            messageBuilder.append("</html>");
+            messageBuilder.append(BODY_CLOSE_HTML);
+            messageBuilder.append(HTML_CLOSE_HTML);
 
             if (built) {
                 SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
@@ -436,10 +440,10 @@ public class RabbitMQListener {
                 String jo;
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
-                    log.info("Sending task to {}", notificationQueue);
+                    log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
                 } catch (JsonProcessingException e) {
-                    log.error("Couldn't convert json: {}", e.getMessage());
+                    log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                 }
 
                 companyPackageMonitoringNotifications

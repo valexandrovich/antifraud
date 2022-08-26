@@ -134,8 +134,20 @@ const tagShema = Yup.object().shape({
 });
 
 const Tags = ({ data, onChange }) => {
-  const { asOf, until, source, importSources, tagType, id } = data;
+  const {
+    asOf,
+    until,
+    source,
+    importSources,
+    tagType,
+    id,
+    description,
+    eventDate,
+    numberValue,
+    textValue,
+  } = data;
   const [edit, setEdit] = useState(true);
+  const [sources, setSources] = useState(false);
   const userRole = useSelector((state) => state.auth.role);
   return (
     <>
@@ -150,17 +162,48 @@ const Tags = ({ data, onChange }) => {
               />
             </div>
           )}
-          <p>
+          <div className={"source-container ml-10 pb-16"}>
             <b className="mr-10">Тег:</b>
             {tagType.description}
             <span className="tag_name">({tagType.code})</span>
-            <span className="ml-10">
+            <span
+              onClick={() => setSources(!sources)}
+              onMouseLeave={() => setTimeout(() => setSources(false), 500)}
+              className="ml-10 pointer"
+            >
               {importSources && importSources.length > 0
                 ? `(${importSources.length} ${sourceName(importSources)})`
                 : ""}
             </span>
+            {((sources && userRole === "ADVANCED") ||
+              (sources && userRole === "ADMIN")) &&
+              importSources.map((s) => {
+                return (
+                  <ul className={"source_w"} key={s.id}>
+                    <li>{s.name}</li>
+                  </ul>
+                );
+              })}
+          </div>
+          <p className={"ml-10"}>
+            <b className="mr-10">Опис:</b>
+            {description}
           </p>
-          <div className="d-flex">
+          <p className={"ml-10"}>
+            <b className="mr-10">Дата події:</b>
+            {new DateObject(eventDate).format("DD.MM.YYYY")}
+          </p>
+          <div className="d-flex ml-10 pb-16">
+            <span className="mr-10">
+              <b className="mr-10">Текстове значення:</b>
+              {textValue}
+            </span>
+            <span className="mr-10">
+              <b className="mr-10">Числове значення:</b>
+              {numberValue}
+            </span>
+          </div>
+          <div className="d-flex ml-10">
             <span className="mr-10">
               <b className="mr-10">З:</b>
               {new DateObject(asOf).format("DD.MM.YYYY")}
@@ -172,7 +215,7 @@ const Tags = ({ data, onChange }) => {
                 : new DateObject(until).format("DD.MM.YYYY")}
             </span>
           </div>
-          <small>{source}</small>
+          <small className={"ml-10"}>{source}</small>
         </div>
       ) : (
         <div>

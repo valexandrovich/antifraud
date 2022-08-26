@@ -54,14 +54,16 @@ public class MonitoringNotificationService {
         people.forEach(person -> personMap.put(person.getId(), person));
         List<User> userList = ur.findAll();
 
-        userList.forEach(user -> user.getPersonSubscriptions().forEach(monitoredPerson -> {
-            YPerson cachedPerson = personMap.get(monitoredPerson.getId());
-            if (cachedPerson != null) {
+        userList.forEach(user -> {
+            for (YPerson monitoredPerson : user.getPersonSubscriptions()) {
+
+                YPerson cachedPerson = personMap.get(monitoredPerson.getId());
+                if (cachedPerson == null) continue;
 
                 StringBuilder personName = new StringBuilder();
                 Stream.of(cachedPerson.getLastName(), cachedPerson.getFirstName(), cachedPerson.getPatName())
                         .forEach(name -> {
-                            if (name != null) personName.append(" ").append(name);
+                            appendPersonName(personName, name);
                         });
                 StringBuilder messageBuilder = new StringBuilder("Person" + personName + " got new information:");
                 List<String> messagePieces = new ArrayList<>();
@@ -92,19 +94,19 @@ public class MonitoringNotificationService {
                 cachedPerson.getAltPeople().forEach(updatesIncrementer);
                 messagePiecesFiller.accept("alternate persons - ");
 
-                if (messagePieces.size() > 0) {
-                    for (int i = 0; i < messagePieces.size(); i++) {
-                        messageBuilder.append(" ").append(messagePieces.get(i));
-                        messageBuilder.append(i + 1 < messagePieces.size() ? ";" : ".");
-                    }
-                    YPersonMonitoringNotification notification = new YPersonMonitoringNotification();
-                    notification.setYpersonId(cachedPerson.getId());
-                    notification.setMessage(messageBuilder.toString());
-                    notification.setUser(user);
-                    personMonitoringNotificationRepository.save(notification);
+                if (messagePieces.size() <= 0) continue;
+
+                for (int i = 0; i < messagePieces.size(); i++) {
+                    messageBuilder.append(" ").append(messagePieces.get(i));
+                    messageBuilder.append(i + 1 < messagePieces.size() ? ";" : ".");
                 }
+                YPersonMonitoringNotification notification = new YPersonMonitoringNotification();
+                notification.setYpersonId(cachedPerson.getId());
+                notification.setMessage(messageBuilder.toString());
+                notification.setUser(user);
+                personMonitoringNotificationRepository.save(notification);
             }
-        }));
+        });
     }
 
     public void enrichYCompanyMonitoringNotification(Set<YCompany> companies) {
@@ -112,9 +114,10 @@ public class MonitoringNotificationService {
         companies.forEach(company -> companyMap.put(company.getId(), company));
         List<User> userList = ur.findAll();
 
-        userList.forEach(user -> user.getCompanies().forEach(monitoredCompany -> {
-            YCompany cachedCompany = companyMap.get(monitoredCompany.getId());
-            if (cachedCompany != null) {
+        userList.forEach(user -> {
+            for (YCompany monitoredCompany : user.getCompanies()) {
+                YCompany cachedCompany = companyMap.get(monitoredCompany.getId());
+                if (cachedCompany != null) continue;
 
                 StringBuilder messageBuilder = new StringBuilder("Company" + monitoredCompany.getName() + " got new information:");
                 List<String> messagePieces = new ArrayList<>();
@@ -139,19 +142,19 @@ public class MonitoringNotificationService {
                 cachedCompany.getAltCompanies().forEach(updatesIncrementer);
                 messagePiecesFiller.accept("alternate persons - ");
 
-                if (messagePieces.size() > 0) {
-                    for (int i = 0; i < messagePieces.size(); i++) {
-                        messageBuilder.append(" ").append(messagePieces.get(i));
-                        messageBuilder.append(i + 1 < messagePieces.size() ? ";" : ".");
-                    }
-                    YCompanyMonitoringNotification notification = new YCompanyMonitoringNotification();
-                    notification.setYcompanyId(monitoredCompany.getId());
-                    notification.setMessage(messageBuilder.toString());
-                    notification.setUser(user);
-                    companyMonitoringNotificationRepository.save(notification);
+                if (messagePieces.size() <= 0) continue;
+                for (int i = 0; i < messagePieces.size(); i++) {
+                    messageBuilder.append(" ").append(messagePieces.get(i));
+                    messageBuilder.append(i + 1 < messagePieces.size() ? ";" : ".");
                 }
+                YCompanyMonitoringNotification notification = new YCompanyMonitoringNotification();
+                notification.setYcompanyId(monitoredCompany.getId());
+                notification.setMessage(messageBuilder.toString());
+                notification.setUser(user);
+                companyMonitoringNotificationRepository.save(notification);
+
             }
-        }));
+        });
     }
 
     public void enrichYPersonPackageMonitoringNotification(Set<YPerson> people) {
@@ -160,12 +163,10 @@ public class MonitoringNotificationService {
         List<YPerson> peopleGlobalSaved = yPersonRepository.findAllInIds(people.stream()
                                                                                  .map(YPerson::getId)
                                                                                  .collect(Collectors.toList()));
-        people.forEach(person -> {
-            person.getTags()
-                    .forEach(tag -> {
-                        if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
-                    });
-        });
+        people.forEach(person -> person.getTags()
+                .forEach(tag -> {
+                    if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
+                }));
 
         List<YPerson> peopleLocalNew = new ArrayList<>();
         List<YPerson> peopleLocalSaved = new ArrayList<>();
@@ -189,26 +190,22 @@ public class MonitoringNotificationService {
             Set<NotificationPhysicalTagCondition> conditions = matching.getConditions();
 
             //new people
-            peopleLocalNew.forEach(person -> {
+            peopleLocalNew.forEach(person -> conditions.forEach(condition -> {
+                boolean hasCondition = condition.getTagTypes()
+                        .stream()
+                        .allMatch(tagType -> person.getTags()
+                                .stream()
+                                .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())
+                                        && tag.getUntil().isAfter(LocalDateTime.now().toLocalDate())));
 
-                conditions.forEach(condition -> {
-                    boolean hasCondition = condition.getTagTypes()
-                            .stream()
-                            .allMatch(tagType -> person.getTags()
-                                    .stream()
-                                    .anyMatch(tag -> tag.getTagType().getId().equals(tagType.getId())
-                                            && tag.getUntil().isAfter(LocalDateTime.now().toLocalDate())));
-
-                    if (hasCondition) {
-                        YPersonPackageMonitoringNotification notification = new YPersonPackageMonitoringNotification();
-                        notification.setYpersonId(person.getId());
-                        notification.setEmail(matching.getEmail());
-                        notification.setCondition(condition);
-                        personPackageMonitoringNotificationRepository.save(notification);
-                    }
-                });
-
-            });
+                if (hasCondition) {
+                    YPersonPackageMonitoringNotification notification = new YPersonPackageMonitoringNotification();
+                    notification.setYpersonId(person.getId());
+                    notification.setEmail(matching.getEmail());
+                    notification.setCondition(condition);
+                    personPackageMonitoringNotificationRepository.save(notification);
+                }
+            }));
 
             //existing people
             peopleLocalSaved.forEach(personLocalSaved -> {
@@ -248,8 +245,8 @@ public class MonitoringNotificationService {
         List<NotificationJuridicalTagMatching> matchingList = juridicalTagMatchingRepository.findAll();
 
         List<YCompany> companiesGlobalSaved = yCompanyRepository.findAllWithTagsInIds(companies.stream()
-                                                                                 .map(YCompany::getId)
-                                                                                 .collect(Collectors.toList()));
+                                                                                              .map(YCompany::getId)
+                                                                                              .collect(Collectors.toList()));
         companies.forEach(company -> {
             company.getTags()
                     .forEach(tag -> {
@@ -331,5 +328,9 @@ public class MonitoringNotificationService {
             });
 
         });
+    }
+
+    private void appendPersonName(StringBuilder builder, String name) {
+        if (name != null) builder.append(" ").append(name);
     }
 }

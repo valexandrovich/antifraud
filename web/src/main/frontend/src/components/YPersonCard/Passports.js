@@ -71,6 +71,7 @@ const Passports = ({ data, onChange, onClick }) => {
   const dispatch = useDispatch();
   const [edit, setEdit] = useState(true);
   const [confirmationRemove, setConfirmationRemove] = useState(null);
+  const [source, setSource] = useState(false);
   const userRole = useSelector((state) => state.auth.role);
   const update = (values) => {
     passportService.updatePassport(values).then((res) => {
@@ -667,15 +668,28 @@ const Passports = ({ data, onChange, onClick }) => {
     if (type === "UA_IDCARD") {
       return (
         <>
-          <p className={"ml-10"}>
+          <div className={"source-container ml-10 pb-16"}>
             <b className="mr-10">ID картка:</b>
             {pad(number, 9)}
-            <span className="ml-10">
+            <span
+              onClick={() => setSource(!source)}
+              onMouseLeave={() => setTimeout(() => setSource(false), 500)}
+              className="ml-10 pointer"
+            >
               {importSources && importSources.length > 0
                 ? `(${importSources.length} ${sourceName(importSources)})`
                 : ""}
             </span>
-          </p>
+            {((source && userRole === "ADVANCED") ||
+              (source && userRole === "ADMIN")) &&
+              importSources.map((s) => {
+                return (
+                  <ul className={"source_w"} key={s.id}>
+                    <li>{s.name}</li>
+                  </ul>
+                );
+              })}
+          </div>
           <p className={"ml-10"}>
             <b className="mr-10">Запис №:</b>
             {recordNumber}
@@ -686,16 +700,29 @@ const Passports = ({ data, onChange, onClick }) => {
     if (type === "UA_FOREIGN") {
       return (
         <>
-          <p className={"ml-10"}>
+          <div className={"source-container ml-10 pb-16"}>
             <b className="mr-10">Закордонний паспорт:</b>
             {series}
             {pad(number, 6)}
-            <span className="ml-10">
+            <span
+              onClick={() => setSource(!source)}
+              onMouseLeave={() => setTimeout(() => setSource(false), 500)}
+              className="ml-10 pointer"
+            >
               {importSources && importSources.length > 0
                 ? `(${importSources.length} ${sourceName(importSources)})`
                 : ""}
             </span>
-          </p>
+            {((source && userRole === "ADVANCED") ||
+              (source && userRole === "ADMIN")) &&
+              importSources.map((s) => {
+                return (
+                  <ul className={"source_w"} key={s.id}>
+                    <li>{s.name}</li>
+                  </ul>
+                );
+              })}
+          </div>
           <p className={"ml-10"}>
             <b className="mr-10">Запис №:</b>
             {recordNumber}
@@ -705,16 +732,29 @@ const Passports = ({ data, onChange, onClick }) => {
     }
     if (type === "UA_DOMESTIC") {
       return (
-        <p className={"ml-10"}>
+        <div className={"source-container ml-10 pb-16"}>
           <b className="mr-10">Паспорт:</b>
           {series}
           {pad(number, 6)}
-          <span className="ml-10">
+          <span
+            onClick={() => setSource(!source)}
+            onMouseLeave={() => setTimeout(() => setSource(false), 500)}
+            className="ml-10 pointer"
+          >
             {importSources && importSources.length > 0
               ? `(${importSources.length} ${sourceName(importSources)})`
               : ""}
           </span>
-        </p>
+          {((source && userRole === "ADVANCED") ||
+            (source && userRole === "ADMIN")) &&
+            importSources.map((s) => {
+              return (
+                <ul className={"source_w"} key={s.id}>
+                  <li>{s.name}</li>
+                </ul>
+              );
+            })}
+        </div>
       );
     }
   };

@@ -40,7 +40,7 @@ public class YAddress implements Identifiable {
     private Set<ImportSource> importSources = new HashSet<>();
 
     public void cleanAssociations() {
-        this.person.getAddresses().removeIf(address -> id.equals(address.getId()));
+        this.person.getAddresses().removeIf(yAddress -> id.equals(yAddress.getId()));
         this.importSources = new HashSet<>();
     }
 

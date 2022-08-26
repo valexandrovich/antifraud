@@ -104,9 +104,8 @@ public class YPersonController {
     public ResponseEntity<Void> joinToNewRelation(
             @ApiParam(value = "JoinToNewRelationRequest",
                     required = true)
-            @Valid @RequestBody JoinToNewRelationRequest joinToNewRelationRequest,
-            HttpServletRequest httpRequest) {
-        yPersonService.joinToNewRelation(joinToNewRelationRequest, httpRequest);
+            @Valid @RequestBody JoinToNewRelationRequest joinToNewRelationRequest) {
+        yPersonService.joinToNewRelation(joinToNewRelationRequest);
         return ResponseEntity.ok().build();
     }
 
@@ -118,9 +117,8 @@ public class YPersonController {
     public ResponseEntity<Void> joinToExistingRelation(
             @ApiParam(value = "JoinToExistingRelationRequest",
                     required = true)
-            @Valid @RequestBody JoinToExistingRelationRequest joinToExistingRelationRequest,
-            HttpServletRequest httpRequest) {
-        yPersonService.joinToExistingRelation(joinToExistingRelationRequest, httpRequest);
+            @Valid @RequestBody JoinToExistingRelationRequest joinToExistingRelationRequest) {
+        yPersonService.joinToExistingRelation(joinToExistingRelationRequest);
         return ResponseEntity.ok().build();
     }
 
@@ -135,9 +133,8 @@ public class YPersonController {
             @NotNull(message = "Не повинен бути пустий") @RequestParam UUID personId,
             @ApiParam(value = "relation group id",
                     required = true)
-            @NotNull(message = "Не повинен бути пустий") @RequestParam Long groupId,
-            HttpServletRequest httpRequest) {
-        yPersonService.removePersonFromRelation(personId, groupId, httpRequest);
+            @NotNull(message = "Не повинен бути пустий") @RequestParam Long groupId) {
+        yPersonService.removePersonFromRelation(personId, groupId);
         return ResponseEntity.ok().build();
     }
 }

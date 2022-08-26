@@ -24,7 +24,7 @@ public class OtpExchange {
 
     private static final Map<String, Map<String, Object>> queueParams = new HashMap<>();
 
-    private static final String queueParamsJson = ("{" +
+    private static final String QUEUE_PARAMS_JSON = ("{" +
 
             "'otp-etl.enricher': {'x-max-priority': 10}" +
 
@@ -41,6 +41,10 @@ public class OtpExchange {
         public Iterator<Map.Entry<String, JsonNode>> iterator() {
             return node.fields();
         }
+    }
+
+    private OtpExchange() {
+        // Nothing
     }
 
     private static Object getObjectFromNode(JsonNode node) {
@@ -62,7 +66,7 @@ public class OtpExchange {
     }
 
     private static Map<String, Object> getValues(JsonNode node) {
-        if (node == null || !node.isObject()) return null;
+        if (node == null || !node.isObject()) return Collections.emptyMap();
         Map<String, Object> res = new HashMap<>();
         ObjectNode values = (ObjectNode) node;
         JsonObjectIterable queueList = new JsonObjectIterable(values);
@@ -72,7 +76,7 @@ public class OtpExchange {
                 res.put(entry.getKey(), v);
             }
         }
-        return res.isEmpty() ? null : res;
+        return res;
     }
 
     public static Map<String, Object> getQueueParams(String queue) {
@@ -100,13 +104,13 @@ public class OtpExchange {
     }
 
     static {
-        JsonNode node = Utils.getJsonNode(queueParamsJson);
+        JsonNode node = Utils.getJsonNode(QUEUE_PARAMS_JSON);
         if (node != null && node.isObject()) {
             ObjectNode objectNode = (ObjectNode) node;
             JsonObjectIterable fields = new JsonObjectIterable(objectNode);
             for (var entry : fields) {
                 Map<String, Object> values = getValues(entry.getValue());
-                if (values == null) {
+                if (values.isEmpty()) {
                     queueParams.remove(entry.getKey());
                 } else {
                     queueParams.put(entry.getKey(), values);

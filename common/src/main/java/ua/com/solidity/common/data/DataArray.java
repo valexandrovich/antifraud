@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 @SuppressWarnings("unused")
 public abstract class DataArray {
@@ -39,8 +40,10 @@ public abstract class DataArray {
             }
 
             @Override
-            public DataField next() {
-                return index < getArrayLength() ? getItem(index++) : null;
+            public DataField next() throws NoSuchElementException {
+                if (index < getArrayLength()) {
+                    return getItem(index++);
+                } else throw new NoSuchElementException("DataArray.items");
             }
         };
     }

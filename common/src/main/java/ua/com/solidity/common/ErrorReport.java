@@ -12,7 +12,7 @@ import ua.com.solidity.common.data.DataObject;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ErrorReport {
-    public static String UNDEFINED_SOURCE = "(UNDEFINED)";
+    public static final String UNDEFINED_SOURCE = "(UNDEFINED)";
     private String source;
     private DataLocation location;
     private DataObject dataObject;

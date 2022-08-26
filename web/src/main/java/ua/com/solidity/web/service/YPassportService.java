@@ -16,7 +16,7 @@ import ua.com.solidity.db.entities.YPassport;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.web.dto.olap.YPassportDto;
 import ua.com.solidity.web.exception.EntityNotFoundException;
-import ua.com.solidity.web.exception.FieldException;
+import ua.com.solidity.web.exception.FieldError;
 import ua.com.solidity.web.exception.IllegalApiArgumentException;
 import ua.com.solidity.web.service.converter.YPassportConverter;
 import ua.com.solidity.web.service.validator.DataRegex;
@@ -26,14 +26,14 @@ import ua.com.solidity.web.service.validator.DataRegex;
 @Service
 public class YPassportService {
 
-    private final static String DOMESTIC_PASSPORT = "UA_DOMESTIC";
-    private final static String FOREIGN_PASSPORT = "UA_FOREIGN";
-    private final static String IDCARD_PASSPORT = "UA_IDCARD";
-    public final static String LATIN_LETTERS = "ABEKMHOPCTXY";
-    public final static String CYRILLIC_LETTERS = "АВЕКМНОРСТХУ";
-    public final static String NUMBER_FIELD = "number";
-    public final static String SERIES_FIELD = "series";
-    public final static String RECORD_NUMBER_FIELD = "recordNumber";
+    private static final String DOMESTIC_PASSPORT = "UA_DOMESTIC";
+    private static final String FOREIGN_PASSPORT = "UA_FOREIGN";
+    private static final String IDCARD_PASSPORT = "UA_IDCARD";
+    private static final String LATIN_LETTERS = "ABEKMHOPCTXY";
+    private static final String CYRILLIC_LETTERS = "АВЕКМНОРСТХУ";
+    private static final String NUMBER_FIELD = "number";
+    private static final String SERIES_FIELD = "series";
+    private static final String RECORD_NUMBER_FIELD = "recordNumber";
 
     private final YPassportRepository yPassportRepository;
     private final YPassportConverter converter;
@@ -99,19 +99,19 @@ public class YPassportService {
 
     private void validateDomesticPassport(Integer number, String serial) {
         String passportNo = String.format("%06d", number);
-        List<FieldException> fieldExceptions = new ArrayList<>();
+        List<FieldError> fieldErrors = new ArrayList<>();
         List<String> messages = new ArrayList<>();
 
         if (!passportNo.matches(DataRegex.PASSPORT_NUMBER.getRegex())) {
-            fieldExceptions.add(new FieldException(NUMBER_FIELD,
-                                                   DataRegex.PASSPORT_NUMBER.getMessage()));
+            fieldErrors.add(new FieldError(NUMBER_FIELD,
+                                           DataRegex.PASSPORT_NUMBER.getMessage()));
         }
         if (!transliterationToCyrillicLetters(serial).matches(DataRegex.DOMESTIC_PASSPORT_SERIES.getRegex())) {
-            fieldExceptions.add(new FieldException(SERIES_FIELD,
-                                                   DataRegex.DOMESTIC_PASSPORT_SERIES.getMessage()));
+            fieldErrors.add(new FieldError(SERIES_FIELD,
+                                           DataRegex.DOMESTIC_PASSPORT_SERIES.getMessage()));
         }
-        if (!fieldExceptions.isEmpty()) {
-            for (FieldException exception : fieldExceptions) {
+        if (!fieldErrors.isEmpty()) {
+            for (FieldError exception : fieldErrors) {
                 String field = exception.getField();
                 String message = exception.getMessage();
                 messages.add(field + ": " + message);
@@ -122,23 +122,23 @@ public class YPassportService {
 
     private void validateForeignPassport(Integer number, String serial, String recordNumber) {
         String passportNo = String.format("%06d", number);
-        List<FieldException> fieldExceptions = new ArrayList<>();
+        List<FieldError> fieldErrors = new ArrayList<>();
         List<String> messages = new ArrayList<>();
 
         if (!passportNo.matches(DataRegex.PASSPORT_NUMBER.getRegex())) {
-            fieldExceptions.add(new FieldException(NUMBER_FIELD,
-                                                   DataRegex.PASSPORT_NUMBER.getMessage()));
+            fieldErrors.add(new FieldError(NUMBER_FIELD,
+                                           DataRegex.PASSPORT_NUMBER.getMessage()));
         }
         if (!transliterationToCyrillicLetters(serial).matches(DataRegex.DOMESTIC_PASSPORT_SERIES.getRegex())) {
-            fieldExceptions.add(new FieldException(SERIES_FIELD,
-                                                   DataRegex.DOMESTIC_PASSPORT_SERIES.getMessage()));
+            fieldErrors.add(new FieldError(SERIES_FIELD,
+                                           DataRegex.DOMESTIC_PASSPORT_SERIES.getMessage()));
         }
         if (!StringUtils.isBlank(recordNumber) && !recordNumber.matches(DataRegex.FOREIGN_PASSPORT_RECORD_NUMBER.getRegex())) {
-            fieldExceptions.add(new FieldException(RECORD_NUMBER_FIELD,
-                                                   DataRegex.FOREIGN_PASSPORT_RECORD_NUMBER.getMessage()));
+            fieldErrors.add(new FieldError(RECORD_NUMBER_FIELD,
+                                           DataRegex.FOREIGN_PASSPORT_RECORD_NUMBER.getMessage()));
         }
-        if (!fieldExceptions.isEmpty()) {
-            for (FieldException exception : fieldExceptions) {
+        if (!fieldErrors.isEmpty()) {
+            for (FieldError exception : fieldErrors) {
                 String field = exception.getField();
                 String message = exception.getMessage();
                 messages.add(field + ": " + message);
@@ -149,19 +149,19 @@ public class YPassportService {
 
     private void validateIdPassport(Integer number, String recordNumber) {
         String passportNo = String.format("%09d", number);
-        List<FieldException> fieldExceptions = new ArrayList<>();
+        List<FieldError> fieldErrors = new ArrayList<>();
         List<String> messages = new ArrayList<>();
 
         if (!passportNo.matches(DataRegex.ID_PASSPORT_NUMBER.getRegex())) {
-            fieldExceptions.add(new FieldException(NUMBER_FIELD,
-                                                   DataRegex.ID_PASSPORT_NUMBER.getMessage()));
+            fieldErrors.add(new FieldError(NUMBER_FIELD,
+                                           DataRegex.ID_PASSPORT_NUMBER.getMessage()));
         }
         if (!StringUtils.isBlank(recordNumber) && !recordNumber.matches(DataRegex.FOREIGN_PASSPORT_RECORD_NUMBER.getRegex())) {
-            fieldExceptions.add(new FieldException(RECORD_NUMBER_FIELD,
-                                                   DataRegex.FOREIGN_PASSPORT_RECORD_NUMBER.getMessage()));
+            fieldErrors.add(new FieldError(RECORD_NUMBER_FIELD,
+                                           DataRegex.FOREIGN_PASSPORT_RECORD_NUMBER.getMessage()));
         }
-        if (!fieldExceptions.isEmpty()) {
-            for (FieldException exception : fieldExceptions) {
+        if (!fieldErrors.isEmpty()) {
+            for (FieldError exception : fieldErrors) {
                 String field = exception.getField();
                 String message = exception.getMessage();
                 messages.add(field + ": " + message);

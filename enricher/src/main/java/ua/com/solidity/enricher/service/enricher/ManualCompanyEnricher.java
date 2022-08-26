@@ -14,7 +14,6 @@ import static ua.com.solidity.util.validator.Validator.isValidInn;
 import static ua.com.solidity.util.validator.Validator.isValidPdv;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,7 +88,7 @@ public class ManualCompanyEnricher implements Enricher {
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
-    private Long sleepTime;
+    private int sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
@@ -99,15 +98,15 @@ public class ManualCompanyEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID revision) {
-        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
+
+        logStart(MANUAL_COMPANY);
+
+        StatusChanger statusChanger = new StatusChanger(revision, MANUAL_COMPANY, ENRICHER);
+
+        long[] counter = new long[1];
+
         try {
-            logStart(MANUAL_COMPANY);
-
-            StatusChanger statusChanger = new StatusChanger(revision, MANUAL_COMPANY, ENRICHER);
-
-            long[] counter = new long[1];
-
             Pageable pageRequest = PageRequest.of(0, pageSize);
             FileDescription file = fileDescriptionRepository.findByUuid(revision).orElseThrow(() ->
                     new RuntimeException("Can't find file with id = " + revision));
@@ -127,13 +126,20 @@ public class ManualCompanyEnricher implements Enricher {
 
                 while (!page.isEmpty()) {
                     Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime)
+                    if (duration.getSeconds() > timeOutTime) {
+                        statusChanger.setStatus(" Timeout after 25 minutes. Task has been rescheduled.");
+                        extender.sendMessageToQueue(MANUAL_COMPANY, revision);
+
                         throw new TimeoutException("Time ran out for portion: " + revision);
-                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
+                    }
+                    page.forEach(p -> {
                         UUID uuid = UUID.randomUUID();
                         uuidMap.put(p.getId(), uuid);
-                        entityProcessing.setUuid(uuid);
+                    });
+
+                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
+                        EntityProcessing entityProcessing = new EntityProcessing();
+                        entityProcessing.setUuid(uuidMap.get(p.getId()));
                         if (!StringUtils.isBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
                             String inn = p.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
                             entityProcessing.setInn(Long.parseLong(inn));
@@ -153,9 +159,7 @@ public class ManualCompanyEnricher implements Enricher {
 
                     entityProcessings.addAll(page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
-                        UUID uuid = UUID.randomUUID();
-                        uuidMap.put(c.getId(), uuid);
-                        entityProcessing.setUuid(uuid);
+                        entityProcessing.setUuid(uuidMap.get(c.getId()));
                         if (!StringUtils.isBlank(c.getEdrpouRelationCompany()) && c.getEdrpouRelationCompany().matches(CONTAINS_NUMERAL_REGEX)) {
                             String edrpou = c.getEdrpouRelationCompany().replaceAll(ALL_NOT_NUMBER_REGEX, "");
                             entityProcessing.setEdrpou(Long.parseLong(edrpou));
@@ -179,7 +183,7 @@ public class ManualCompanyEnricher implements Enricher {
                     List<ManualCompany> workPortion = page.parallelStream().filter(p -> respId.contains(uuidMap.get(p.getId())))
                             .collect(Collectors.toList());
 
-                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
+                    if (workPortion.isEmpty()) Utils.waitMs(sleepTime);
 
                     Set<YPerson> personSet = new HashSet<>();
                     Set<Long> innsSet = new HashSet<>();
@@ -287,7 +291,10 @@ public class ManualCompanyEnricher implements Enricher {
                                 tag.setAsOf(extender.stringToDate(t.getMkStart()));
                                 tag.setUntil(extender.stringToDate(t.getMkExpire()));
                                 tag.setSource(t.getMkSource());
-                                if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
+                                tag.setEventDate(extender.stringToDate(t.getMkEventDate()));
+                                tag.setNumberValue(t.getMkNumberValue());
+                                tag.setTextValue(t.getMkTextValue());
+                                tag.setDescription(t.getMkDescription());
                                 tags.add(tag);
                             });
                             extender.addTags(company, tags, source);
@@ -364,6 +371,8 @@ public class ManualCompanyEnricher implements Enricher {
             logger.finish();
 
             statusChanger.complete(importedRecords(counter[0]));
+        } catch (Exception e) {
+            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
         } finally {
             deleteResp();
         }

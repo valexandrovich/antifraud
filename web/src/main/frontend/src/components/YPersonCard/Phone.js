@@ -12,6 +12,7 @@ const phoneSchema = Yup.object().shape({
 const Phone = ({ data, onChange }) => {
   const { id, phone, importSources } = data;
   const [edit, setEdit] = useState(true);
+  const [source, setSource] = useState(false);
   const userRole = useSelector((state) => state.auth.role);
   return (
     <>
@@ -27,14 +28,27 @@ const Phone = ({ data, onChange }) => {
             </div>
           )}
 
-          <p className={"ml-10"}>
+          <p className={"source-container ml-10"}>
             <b className="mr-10">Телефон:</b>
             {phone}
-            <span className="ml-10">
+            <span
+              onClick={() => setSource(!source)}
+              onMouseLeave={() => setTimeout(() => setSource(false), 500)}
+              className="ml-10 pointer"
+            >
               {importSources && importSources.length > 0
                 ? `(${importSources.length} ${sourceName(importSources)})`
                 : ""}
             </span>
+            {((source && userRole === "ADVANCED") ||
+              (source && userRole === "ADMIN")) &&
+              importSources.map((s) => {
+                return (
+                  <ul className={"source_w"} key={s.id}>
+                    <li>{s.name}</li>
+                  </ul>
+                );
+              })}
           </p>
         </div>
       ) : (

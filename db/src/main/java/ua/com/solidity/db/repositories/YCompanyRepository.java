@@ -16,7 +16,7 @@ public interface YCompanyRepository extends JpaRepository<YCompany, Long>, JpaSp
 
     Page<YCompany> findByUsers(User user, Pageable pageable);
 
-    @Query("SELECT c FROM YCompany c " +
+    @Query("SELECT DISTINCT c FROM YCompany c " +
             "left join fetch c.addresses ad " +
             "left join fetch ad.importSources ad_i " +
             "left join fetch c.altCompanies alt " +
@@ -46,7 +46,7 @@ public interface YCompanyRepository extends JpaRepository<YCompany, Long>, JpaSp
             "where c.edrpou in (:edrpous)")
     Set<YCompany> findByEdrpous(Set<Long> edrpous);
 
-    @Query("SELECT c FROM YCompany c " +
+    @Query("SELECT DISTINCT c FROM YCompany c " +
             "left join fetch c.addresses ad " +
             "left join fetch ad.importSources ad_i " +
             "left join fetch c.altCompanies alt " +
@@ -60,13 +60,13 @@ public interface YCompanyRepository extends JpaRepository<YCompany, Long>, JpaSp
             "where c.pdv in (:pdvs)")
     Set<YCompany> findWithPdvCompanies(Set<Long> pdvs);
 
-    @Query("SELECT c FROM YCompany c " +
+    @Query("SELECT DISTINCT c FROM YCompany c " +
             "left join fetch c.tags t " +
             "left join fetch t.tagType t_t " +
             "where c.id in (:ids)")
     List<YCompany> findAllWithTagsInIds(List<UUID> ids);
 
-    @Query("SELECT c FROM YCompany c " +
+    @Query("SELECT DISTINCT c FROM YCompany c " +
             "left join fetch c.tags t " +
             "left join fetch t.tagType t_t " +
             "where c.id = :id")

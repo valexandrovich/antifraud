@@ -24,16 +24,6 @@ public class YPassportController {
 
     private final YPassportService yPassportService;
 
-//    @PutMapping(path = "/update")
-//    @PreAuthorize("hasAnyAuthority('ADMIN')")
-//    @ApiOperation(value = "Updates passport.",
-//            response = ResponseEntity.class,
-//            authorizations = @Authorization("Authorization"))
-//    public ResponseEntity<Void> update(@RequestBody YPassportDto dto) {
-//        yPassportService.update(dto);
-//        return ResponseEntity.ok().build();
-//    }
-
     @GetMapping(path = "/find/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','ADVANCED')")
     @ApiOperation(value = "Finds passport by specified id",
@@ -47,18 +37,4 @@ public class YPassportController {
         YPassportDto dto = yPassportService.findById(id);
         return ResponseEntity.ok(dto);
     }
-
-//    @DeleteMapping(path = "/delete/{id}")
-//    @PreAuthorize("hasAnyAuthority('ADMIN')")
-//    @ApiOperation(value = "Deletes passport by specified id",
-//            response = ResponseEntity.class,
-//            authorizations = @Authorization("Authorization"))
-//    public ResponseEntity<Void> delete(
-//            @ApiParam(value = "Passport id you need to delete",
-//                    required = true)
-//            @PathVariable Long id
-//    ) {
-//        yPassportService.delete(id);
-//        return ResponseEntity.noContent().build();
-//    }
 }

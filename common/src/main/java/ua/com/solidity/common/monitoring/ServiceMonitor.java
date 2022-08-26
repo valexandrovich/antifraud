@@ -30,26 +30,26 @@ public class ServiceMonitor {
     public static final long DEFAULT_UPDATE_DELAY = 1000; // 1s
     public static final long DEFAULT_CLEAN_DELAY = 120000; // 2m
 
-    public static long SCAN_DELAY = DEFAULT_SCAN_DELAY;
-    public static long UPDATE_DELAY = DEFAULT_UPDATE_DELAY;
-    public static long CLEAN_DELAY = DEFAULT_CLEAN_DELAY;
+    public static long scanDelay = DEFAULT_SCAN_DELAY;
+    public static long updateDelay = DEFAULT_UPDATE_DELAY;
+    public static long cleanDelay = DEFAULT_CLEAN_DELAY;
 
-    public static String SCAN_DELAY_PROP = "otp.service-monitor.scan";
-    public static String UPDATE_DELAY_PROP = "otp.service-monitor.update";
-    public static String CLEAN_DELAY_PROP = "otp.service-monitor.clean";
+    public static String scanDelayProp = "otp.service-monitor.scan";
+    public static String updateDelayProp = "otp.service-monitor.update";
+    public static String cleanDelayProp = "otp.service-monitor.clean";
 
-    public static String SERVICE_NAME = "otp.service.name";
-    public static String SERVICE_VERSION = "otp.service.version";
+    public static String serviceNameProp = "otp.service.name";
+    public static String serviceVersionProp = "otp.service.version";
 
-    public static String UNDEFINED_SERVICE_NAME = "(undefined)";
-    public static String UNDEFINED_SERVICE_VERSION = "(undefined)";
+    public static String undefinedServiceName = "(undefined)";
+    public static String undefinedServiceVersion = "(undefined)";
 
     static ServiceMonitor instance = null;
-    private static final UUID service_id = UUID.randomUUID();
-    static final Timer timer = new Timer("service-monitor");
-    private static final TimerTask flushTask = new ServiceFlushTask();
-    private static final TimerTask scanTask = new ServiceScanTask();
-    private static final List<StatusChanger> jobs = new ArrayList<>();
+    private static final UUID SERVICE_ID = UUID.randomUUID();
+    static final Timer TIMER = new Timer("service-monitor");
+    private static final TimerTask FLUSH_TASK = new ServiceFlushTask();
+    private static final TimerTask SCAN_TASK = new ServiceScanTask();
+    private static final List<StatusChanger> JOBS = new ArrayList<>();
 
     static Connection connection;
 
@@ -87,14 +87,14 @@ public class ServiceMonitor {
     }
 
     public static void addJob(StatusChanger changer) { // don't use directly
-        synchronized(jobs) {
-            jobs.add(changer);
+        synchronized(JOBS) {
+            JOBS.add(changer);
         }
     }
 
     public static void removeJob(StatusChanger changer) { // don't use directly
-        synchronized(jobs) {
-            jobs.remove(changer);
+        synchronized(JOBS) {
+            JOBS.remove(changer);
         }
     }
 
@@ -109,9 +109,9 @@ public class ServiceMonitor {
                 Utils.setApplicationContext(context);
             }
 
-            UPDATE_DELAY = Math.max(MIN_UPDATE_DELAY, Utils.getLongContextProperty(UPDATE_DELAY_PROP, DEFAULT_UPDATE_DELAY));
-            CLEAN_DELAY = Math.max(MIN_CLEAN_DELAY, Utils.getLongContextProperty(CLEAN_DELAY_PROP, DEFAULT_CLEAN_DELAY));
-            SCAN_DELAY = Math.min(UPDATE_DELAY, Utils.getLongContextProperty(SCAN_DELAY_PROP, DEFAULT_SCAN_DELAY));
+            updateDelay = Math.max(MIN_UPDATE_DELAY, Utils.getLongContextProperty(updateDelayProp, DEFAULT_UPDATE_DELAY));
+            cleanDelay = Math.max(MIN_CLEAN_DELAY, Utils.getLongContextProperty(cleanDelayProp, DEFAULT_CLEAN_DELAY));
+            scanDelay = Math.min(updateDelay, Utils.getLongContextProperty(scanDelayProp, DEFAULT_SCAN_DELAY));
 
             instance = new ServiceMonitor(Utils.getApplicationContext());
         }
@@ -148,11 +148,11 @@ public class ServiceMonitor {
 
     private ServiceMonitor(ApplicationContext context) {
         Environment env = context.getEnvironment();
-        String name = env.getProperty(SERVICE_NAME, UNDEFINED_SERVICE_NAME);
-        String version = env.getProperty(SERVICE_VERSION, UNDEFINED_SERVICE_VERSION);
+        String name = env.getProperty(serviceNameProp, undefinedServiceName);
+        String version = env.getProperty(serviceVersionProp, undefinedServiceVersion);
         serviceName = name + "/" + version;
 
-        log.info("==> ServiceMonitor started (name: {}, id:{}).", serviceName, service_id);
+        log.info("==> ServiceMonitor started (name: {}, id:{}).", serviceName, SERVICE_ID);
 
         collectCPUTime();
         memoryUsed = getStatistic("memory/used");
@@ -160,16 +160,16 @@ public class ServiceMonitor {
         if (threads.isThreadCpuTimeSupported()) {
             processorStats = getStatistic("CPU");
         }
-        schedule(flushTask, 0);  // for flush data
-        schedule(scanTask, 0);    // for scan memory and cpu
+        schedule(FLUSH_TASK, 0);  // for flush data
+        schedule(SCAN_TASK, 0);    // for scan memory and cpu
     }
 
     public static void schedule(TimerTask task, long delayAdd) {
         long delay = Instant.now().toEpochMilli() % 1000;
-        timer.schedule(task, (delay > 0 ? 1000 - delay: 0) + delayAdd, UPDATE_DELAY);
+        TIMER.schedule(task, (delay > 0 ? 1000 - delay: 0) + delayAdd, updateDelay);
     }
 
-    private void collectMemory() {
+    protected synchronized void collectMemory() {
         memoryUsed.putValue((double)memory.getHeapMemoryUsage().getUsed() / 1048576); // in Mb
         memoryCommitted.putValue((double)memory.getHeapMemoryUsage().getCommitted() / 1048576); // in Mb
     }
@@ -183,13 +183,13 @@ public class ServiceMonitor {
         cpuTimeCollected = cpuTime;
     }
 
-    private synchronized void collectCPU() {
+    protected synchronized void collectCPU() {
         if (processorStats == null) return;
         long oldCollected = cpuTimeCollected;
         long oldCollectedAt = cpuTimeCollectedAt;
         collectCPUTime();
         long deltaMs = cpuTimeCollectedAt - oldCollectedAt;
-        double deltaCPU = cpuTimeCollected - oldCollected;
+        double deltaCPU = (double) cpuTimeCollected - oldCollected;
         processorStats.putValue(deltaMs <= 0 ? 0 : deltaCPU / instance.processorCount / 1e6);
     }
 
@@ -198,17 +198,17 @@ public class ServiceMonitor {
         instance.processStatus = value == null || value.isBlank() ? null : value.trim();
     }
 
-    private static ArrayNode jobsFlush() {
-        synchronized(jobs) {
+    protected static ArrayNode jobsFlush() {
+        synchronized(JOBS) {
             ArrayNode res = JsonNodeFactory.instance.arrayNode();
-            for (var item: jobs) {
+            for (var item: JOBS) {
                 res.add(item.getJsonObject());
             }
             return res.isEmpty() ? null : res;
         }
     }
 
-    private synchronized void flush(ObjectNode stats, ArrayNode jobs) {
+    protected synchronized void flush(ObjectNode stats, ArrayNode jobs) {
         ObjectNode res = JsonNodeFactory.instance.objectNode();
         String state = "idle";
         if (stats == null && jobs == null && processStatus != null) {
@@ -233,7 +233,7 @@ public class ServiceMonitor {
         }
     }
 
-    private boolean updateStatementNeeded()  {
+    protected boolean updateStatementNeeded()  {
         synchronized (ServiceMonitor.class) {
             if (updateStatement != null) return true;
             if (connectionNeeded()) {
@@ -249,10 +249,10 @@ public class ServiceMonitor {
         }
     }
 
-    private void saveData(ObjectNode node) {
+    protected void saveData(ObjectNode node) {
         if (updateStatementNeeded()) {
             try {
-                updateStatement.setObject(1, service_id);
+                updateStatement.setObject(1, SERVICE_ID);
                 updateStatement.setString(2, serviceName);
                 updateStatement.setObject(3, node == null ? null : node.toString());
                 updateStatement.execute();

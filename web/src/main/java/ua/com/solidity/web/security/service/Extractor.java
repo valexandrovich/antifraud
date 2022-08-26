@@ -1,20 +1,19 @@
 package ua.com.solidity.web.security.service;
 
+import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Service;
 import ua.com.solidity.db.entities.User;
+import ua.com.solidity.db.repositories.UserRepository;
 import ua.com.solidity.web.entry.Person;
 import ua.com.solidity.web.exception.PersonNotFoundException;
 import ua.com.solidity.web.repositories.PersonRepository;
-import ua.com.solidity.db.repositories.UserRepository;
 import ua.com.solidity.web.security.RequestHeaders;
 import ua.com.solidity.web.security.token.JwtToken;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -25,7 +24,7 @@ public class Extractor {
 	private final PersonRepository personRepository;
 	private final JwtUtilService jwtUtilService;
 
-	public static String HEADER_PREFIX = "Bearer ";
+	public static final String HEADER_PREFIX = "Bearer ";
 
 	public String extractJwt(String header) {
 		if (StringUtils.isBlank(header)) {

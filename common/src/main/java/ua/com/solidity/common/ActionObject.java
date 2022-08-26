@@ -16,7 +16,7 @@ import java.util.Map;
 @CustomLog
 public abstract class ActionObject {
     private static final String KEY_ACTION = "action";
-    private static final Map<String, Class<? extends ActionObject>> registeredActions = new HashMap<>();
+    private static final Map<String, Class<? extends ActionObject>> REGISTERED_ACTIONS = new HashMap<>();
     protected String action;
     protected JsonNode node;
     private RabbitMQActionTask associatedTask;
@@ -24,7 +24,7 @@ public abstract class ActionObject {
     public static ActionObject getAction(JsonNode node) {
         Class<? extends ActionObject> clazz;
         if (node == null || node.isNull() || !node.isObject() || !node.hasNonNull(KEY_ACTION) ||
-                (clazz = registeredActions.getOrDefault(node.get(KEY_ACTION).asText(""),
+                (clazz = REGISTERED_ACTIONS.getOrDefault(node.get(KEY_ACTION).asText(""),
                         null)) == null) return null;
         ActionObject res = Utils.jsonToValue(node, clazz);
         res.node = node;
@@ -43,7 +43,7 @@ public abstract class ActionObject {
     public static void register(Class<? extends ActionObject> clazz, String ...actions) {
         for (var action : actions) {
             if (action != null && !action.isBlank() && clazz != null) {
-                registeredActions.put(action, clazz);
+                REGISTERED_ACTIONS.put(action, clazz);
             }
         }
     }

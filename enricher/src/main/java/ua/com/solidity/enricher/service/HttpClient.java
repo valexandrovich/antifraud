@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
+import ua.com.solidity.common.Utils;
 
 
 @CustomLog
@@ -17,7 +18,7 @@ import org.springframework.web.client.RestTemplate;
 public class HttpClient {
 
     @Value("${enricher.sleepTimeDispatcher}")
-    private Long sleepTime;
+    private int sleepTime;
     private boolean weHaveProblem = false;
 
     @SneakyThrows
@@ -36,7 +37,7 @@ public class HttpClient {
                     weHaveProblem = true;
                 }
             }
-            if (result == null) Thread.sleep(sleepTime);
+            if (result == null) Utils.waitMs(sleepTime);
             else if (weHaveProblem) {
                 weHaveProblem = false;
                 log.info("Dispatcher connection has been restored");
@@ -58,7 +59,7 @@ public class HttpClient {
                     weHaveProblem = true;
                 }
             }
-            if (result == null) Thread.sleep(sleepTime);
+            if (result == null) Utils.waitMs(sleepTime);
             else if (weHaveProblem) {
                 weHaveProblem = false;
                 log.info("Dispatcher connection has been restored");

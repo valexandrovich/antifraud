@@ -1,6 +1,7 @@
 package ua.com.solidity.enricher.util;
 
-public class Base {
+public final class Base {
+    private Base() {}
     public static final String BASE_DRFO = "base_drfo";
     public static final String BASE_CREATOR = "base_creator";
     public static final String BASE_DIRECTOR = "base_director";

@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class FieldException {
+public class FieldError {
     private String field;
     private String message;
 }

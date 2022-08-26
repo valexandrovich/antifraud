@@ -9,12 +9,12 @@ import ua.com.solidity.db.entities.YPassport;
 
 public interface YPassportRepository extends JpaRepository<YPassport, Long>, JpaSpecificationExecutor<YPassport> {
 
-    @Query("SELECT p FROM YPassport p " +
+    @Query("SELECT DISTINCT p FROM YPassport p " +
             "left join fetch p.importSources p_i " +
             "where p.id = :id")
     Optional<YPassport> findById(Long id);
 
-    @Query("SELECT p FROM YPassport p " +
+    @Query("SELECT DISTINCT p FROM YPassport p " +
             "left join fetch p.importSources p_i " +
             "where p.number in (:numbers)")
     Set<YPassport> findPassportsByNumber(Set<Integer> numbers);

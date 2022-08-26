@@ -1,11 +1,9 @@
 package ua.com.solidity.db.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
-import lombok.Setter;
-import ua.com.solidity.db.abstraction.Identifiable;
-
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -16,10 +14,11 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
+import ua.com.solidity.db.abstraction.Identifiable;
 
 @Getter
 @Setter
@@ -30,19 +29,37 @@ public class YCTag implements Identifiable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
+
 	@ManyToOne
 	@JoinColumn(name = "tag_type_id")
 	private TagType tagType;
+
 	@Column(name = "as_Of")
 	private LocalDate asOf;
+
 	@Column(name = "until")
 	private LocalDate until;
+
+    @Column(name = "event_date")
+    private LocalDate eventDate;
+
 	@Column(name = "source", length = 1100)
 	private String source;
+
+    @Column(name = "number_value")
+    private String numberValue;
+
+    @Column(name = "text_value")
+    private String textValue;
+
+    @Column(name = "description")
+    private String description;
+
 	@ManyToOne
 	@JsonBackReference
 	@JoinColumn(name = "company_id")
 	private YCompany company;
+
 	@ManyToMany
 	@JoinTable(
 			name = "yctag_import_source",

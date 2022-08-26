@@ -15,7 +15,7 @@ public class PPObjectExtractor extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-
+        // nothing yet
     }
 
     @Override
@@ -25,6 +25,6 @@ public class PPObjectExtractor extends Prototype {
 
     @Override
     protected void close(Item item) {
-
+        // nothing yet
     }
 }

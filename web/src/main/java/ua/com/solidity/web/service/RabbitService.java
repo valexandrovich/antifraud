@@ -32,20 +32,6 @@ public class RabbitService {
 	private final AmqpTemplate template;
 
 	public void send(String queue, String message) {
-
-//		List<String> queueList = List.of(schedulerQueue,
-//		                                 downloaderQueue,
-//		                                 dwhQueue,
-//		                                 reportQueue,
-//		                                 importerQueue,
-//		                                 notificationQueue,
-//		                                 statusloggerQueue,
-//		                                 enricherQueue);
-//		queueList.stream()
-//				.filter(queueName -> queueName.equals(queue))
-//				.findFirst()
-//				.ifPresentOrElse(queueName -> template.convertAndSend(queue, message),
-//				                 () -> {throw new IllegalApiArgumentException("Вказаної черги не існує");});
 		log.info("Sending task to {}", queue);
 		Utils.sendRabbitMQMessage(queue, message);
 	}

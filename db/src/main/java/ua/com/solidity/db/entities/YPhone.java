@@ -38,7 +38,7 @@ public class YPhone {
     private Set<ImportSource> importSources = new HashSet<>();
 
     public void cleanAssociations() {
-        this.person.getPhones().removeIf(phone -> id.equals(phone.getId()));
+        this.person.getPhones().removeIf(yPhone -> id.equals(yPhone.getId()));
         this.importSources = new HashSet<>();
     }
 

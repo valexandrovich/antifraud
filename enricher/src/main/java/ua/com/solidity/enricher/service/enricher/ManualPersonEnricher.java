@@ -1,5 +1,6 @@
 package ua.com.solidity.enricher.service.enricher;
 
+import static ua.com.solidity.common.UtilString.stringToDate;
 import static ua.com.solidity.enricher.service.validator.Validator.isValidForeignPassport;
 import static ua.com.solidity.enricher.service.validator.Validator.isValidIdPassport;
 import static ua.com.solidity.enricher.service.validator.Validator.isValidLocalPassport;
@@ -11,7 +12,6 @@ import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
-import static ua.com.solidity.enricher.util.StringFormatUtil.stringToDate;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCyrillicLetters;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToLatinLetters;
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
@@ -93,7 +93,7 @@ public class ManualPersonEnricher implements Enricher {
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
-    private Long sleepTime;
+    private int sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
@@ -103,15 +103,15 @@ public class ManualPersonEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID revision) {
-        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
+
+        logStart(MANUAL_PERSON);
+
+        StatusChanger statusChanger = new StatusChanger(revision, MANUAL_PERSON, ENRICHER);
+
+        long[] counter = new long[1];
+
         try {
-            logStart(MANUAL_PERSON);
-
-            StatusChanger statusChanger = new StatusChanger(revision, MANUAL_PERSON, ENRICHER);
-
-            long[] counter = new long[1];
-
             Pageable pageRequest = PageRequest.of(0, pageSize);
             FileDescription file = fileDescriptionRepository.findByUuid(revision).orElseThrow(() ->
                     new RuntimeException("Can't find file with id = " + revision));
@@ -131,13 +131,20 @@ public class ManualPersonEnricher implements Enricher {
 
                 while (!page.isEmpty()) {
                     Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime)
+                    if (duration.getSeconds() > timeOutTime) {
+                        statusChanger.setStatus(" Timeout after 25 minutes. Task has been rescheduled.");
+                        extender.sendMessageToQueue(MANUAL_PERSON, revision);
+
                         throw new TimeoutException("Time ran out for portion: " + revision);
-                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
+                    }
+                    page.forEach(p -> {
                         UUID uuid = UUID.randomUUID();
                         uuidMap.put(p.getId(), uuid);
-                        entityProcessing.setUuid(uuid);
+                    });
+
+                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
+                        EntityProcessing entityProcessing = new EntityProcessing();
+                        entityProcessing.setUuid(uuidMap.get(p.getId()));
                         if (!StringUtils.isBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
                             String inn = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
                             entityProcessing.setInn(Long.parseLong(inn));
@@ -152,18 +159,14 @@ public class ManualPersonEnricher implements Enricher {
                     }).collect(Collectors.toList());
                     entityProcessings.addAll(page.parallelStream().map(p -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
-                        UUID uuid = UUID.randomUUID();
-                        uuidMap.put(p.getId(), uuid);
-                        entityProcessing.setUuid(uuid);
+                        entityProcessing.setUuid(uuidMap.get(p.getId()));
                         if (StringUtils.isNotBlank(p.getPassIdNum()) && p.getPassIdNum().matches(ALL_NUMBER_REGEX))
                             entityProcessing.setPassHash(Objects.hash(Integer.valueOf(p.getPassIdNum())));
                         return entityProcessing;
                     }).collect(Collectors.toList()));
                     entityProcessings.addAll(page.parallelStream().map(p -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
-                        UUID uuid = UUID.randomUUID();
-                        uuidMap.put(p.getId(), uuid);
-                        entityProcessing.setUuid(uuid);
+                        entityProcessing.setUuid(uuidMap.get(p.getId()));
                         if (StringUtils.isNotBlank(p.getPassIntNum())) {
                             String passportNo = p.getPassIntNum().substring(2);
                             String passportSerial = p.getPassIntNum().substring(0, 2);
@@ -186,7 +189,7 @@ public class ManualPersonEnricher implements Enricher {
                     List<ManualPerson> workPortion = page.stream().parallel().filter(p -> respId.contains(uuidMap.get(p.getId())))
                             .collect(Collectors.toList());
 
-                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
+                    if (workPortion.isEmpty()) Utils.waitMs(sleepTime);
 
                     Set<YPerson> personSet = new HashSet<>();
                     Set<YPassport> passportSeriesWithNumber = new HashSet<>();
@@ -252,6 +255,14 @@ public class ManualPersonEnricher implements Enricher {
                         person.setFirstName(firstName);
                         person.setPatName(patName);
                         person.setBirthdate(birthday);
+                        if (StringUtils.isNotBlank(r.getSex()))
+                            person.setSex(r.getSex().trim().toUpperCase());
+                        if (StringUtils.isNotBlank(r.getCountry()))
+                            person.setCountry(r.getCountry().trim().toUpperCase());
+                        if (StringUtils.isNotBlank(r.getComment()))
+                            person.setComment(r.getComment().trim().toUpperCase());
+                        if (StringUtils.isNotBlank(r.getBirthPlace()))
+                            person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
 
                         if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
                             String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
@@ -351,7 +362,10 @@ public class ManualPersonEnricher implements Enricher {
                                     new RuntimeException("Not found tag with code: " + t.getMkId())));
                             tag.setAsOf(extender.stringToDate(t.getMkStart()));
                             tag.setUntil(extender.stringToDate(t.getMkExpire()));
-                            if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
+                            tag.setEventDate(extender.stringToDate(t.getMkEventDate()));
+                            tag.setNumberValue(t.getMkNumberValue());
+                            tag.setTextValue(t.getMkTextValue());
+                            tag.setDescription(t.getMkDescription());
                             tag.setSource(t.getMkSource());
                             tags.add(tag);
                         });
@@ -400,6 +414,8 @@ public class ManualPersonEnricher implements Enricher {
             logger.finish();
 
             statusChanger.complete(importedRecords(counter[0]));
+        } catch (Exception e) {
+            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
         } finally {
             deleteResp();
         }

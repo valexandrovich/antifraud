@@ -10,7 +10,7 @@ import java.util.*;
 
 public class DataBatch {
     public static final int DEFAULT_CAPACITY = 16384; // for objects
-    private static int LOADED_CAPACITY = -1;
+    private static int loadedCapacity = -1;
 
     public interface FlushHandler {
         void flush(DataBatch obj);
@@ -56,36 +56,44 @@ public class DataBatch {
     }
 
     private static int getDefaultCapacity() {
-        if (LOADED_CAPACITY < 1) {
+        if (loadedCapacity < 1) {
             int value = DEFAULT_CAPACITY;
             try {
                 value = Integer.parseInt(Utils.getContextProperty("importer.batch.size", String.valueOf(DEFAULT_CAPACITY)));
             } catch (Exception e) {
                 // nothing
             }
-            LOADED_CAPACITY = value;
+            loadedCapacity = value;
         }
-        return LOADED_CAPACITY;
+        return loadedCapacity;
+    }
+
+    private void doSetExtensionFactory(DataExtensionFactory factory) {
+        for (var instance: instances) {
+            if (instance instanceof DataObject) {
+                DataObject obj = (DataObject) instance;
+                DataExtension ext = factory.createExtension();
+                ext.setPortion(getPortion());
+                obj.setExtension(ext);
+            }
+        }
+    }
+
+    private void doSetExtensionFactoryToNull() {
+        for (var instance: instances) {
+            if (instance instanceof DataObject) {
+                DataObject obj = (DataObject) instance;
+                obj.setExtension(null);
+            }
+        }
     }
 
     public final void setExtensionFactory(DataExtensionFactory factory) {
         if (this.extensionFactory != factory) {
             if (factory != null) {
-                for (var instance: instances) {
-                    if (instance instanceof DataObject) {
-                        DataObject obj = (DataObject) instance;
-                        DataExtension ext = factory.createExtension();
-                        ext.setPortion(getPortion());
-                        obj.setExtension(ext);
-                    }
-                }
+                doSetExtensionFactory(factory);
             } else {
-                for (var instance: instances) {
-                    if (instance instanceof DataObject) {
-                        DataObject obj = (DataObject) instance;
-                        obj.setExtension(null);
-                    }
-                }
+                doSetExtensionFactoryToNull();
             }
         }
         this.extensionFactory = factory;

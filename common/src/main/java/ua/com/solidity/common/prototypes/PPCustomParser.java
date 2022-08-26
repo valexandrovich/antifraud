@@ -82,26 +82,25 @@ public abstract class PPCustomParser extends Prototype {
         InputStream stream = data.stream.getValue(InputStream.class);
         if (stream == null) {
             item.terminate();
-            return null;
-        }
+        } else {
+            data.batch.setExtensionFactory(data.extensionFactory != null ?
+                    data.extensionFactory.getValue(DataExtensionFactory.class) : null);
 
-        data.batch.setExtensionFactory(data.extensionFactory != null ?
-                data.extensionFactory.getValue(DataExtensionFactory.class) : null);
-
-        long count = 0;
-        item.yieldBegin();
-        if (data.parser.open(stream)) {
-            while (data.parser.hasData() && (data.limit < 0 || count < data.limit)) {
-                if (data.parser.isErrorReporting()) {
-                    data.batch.put(data.parser.getErrorReport());
-                } else {
-                    DataObject obj = data.parser.dataObject();
-                    data.batch.put(obj);
+            long count = 0;
+            item.yieldBegin();
+            if (data.parser.open(stream)) {
+                while (data.parser.hasData() && (data.limit < 0 || count < data.limit)) {
+                    if (data.parser.isErrorReporting()) {
+                        data.batch.put(data.parser.getErrorReport());
+                    } else {
+                        DataObject obj = data.parser.dataObject();
+                        data.batch.put(obj);
+                    }
+                    ++count;
+                    data.parser.next();
                 }
-                ++count;
-                data.parser.next();
+                data.batch.flush();
             }
-            data.batch.flush();
         }
 
         return null;

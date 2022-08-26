@@ -42,9 +42,6 @@ public class YInnService {
             throw new EntityNotFoundException(YPassport.class, id);
         }
     }
-    public void update(YINNDto dto) {
-
-    }
 
     public static boolean isValidInn(Long inn, LocalDate birthDay) {
         String innFormated = String.format("%010d", inn);

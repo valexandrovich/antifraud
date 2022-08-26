@@ -21,10 +21,13 @@ public class RabbitMQImmediateTask extends RabbitMQTask {
     }
 
     @Override
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     protected boolean rmqExecute() {
-        RabbitMQListener listener;
-        synchronized (listener = getListener()) {
-            return listener.receiver.prepareAndHandleInternalMessage(this);
+        if (listener != null) {
+            synchronized (listener) {
+                return listener.receiver.prepareAndHandleInternalMessage(this);
+            }
         }
+        return false;
     }
 }

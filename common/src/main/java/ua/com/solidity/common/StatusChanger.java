@@ -89,7 +89,7 @@ public class StatusChanger {
         }
     }
 
-    public synchronized final JsonNode getJsonObject() {
+    public final synchronized JsonNode getJsonObject() {
         return Utils.objectToJsonNode(statusObject);
     }
 
@@ -165,7 +165,7 @@ public class StatusChanger {
         }
     }
 
-    public synchronized final void update() {
+    public final synchronized void update() {
         if (!completed) {
             forceExecute(this);
         }
@@ -213,7 +213,7 @@ public class StatusChanger {
         statusObject.unit = "%";
     }
 
-    public synchronized final void stageComplete(String status) {
+    public final synchronized void stageComplete(String status) {
         synchronized (this) {
             doOnComplete();
             statusObject.status = status;
@@ -246,7 +246,7 @@ public class StatusChanger {
         }
     }
 
-    public synchronized final void addProcessedVolume(long volume) {
+    public final synchronized void addProcessedVolume(long volume) {
         if (volume == 0) return;
         setProcessedVolume(processedVolume + volume);
     }
@@ -268,7 +268,7 @@ public class StatusChanger {
         error(Utils.messageFormat(status, args));
     }
 
-    public synchronized final void complete(String status) {
+    public final synchronized void complete(String status) {
         if (completed) return;
         statusObject.name = name;
         doOnComplete();

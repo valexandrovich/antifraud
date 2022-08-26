@@ -1,5 +1,8 @@
 package ua.com.solidity.web.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +19,6 @@ import ua.com.solidity.web.exception.EntityNotFoundException;
 import ua.com.solidity.web.rabbitexchange.SchedulerExchange;
 import ua.com.solidity.web.service.converter.SchedulerConverter;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -32,6 +31,9 @@ public class SchedulerService {
 	private String schedulerQueue;
 	private final AmqpTemplate template;
 
+	private static final String AND_NAME = " та ім'ям ";
+	private static final String NO_SCHEDULE_MESSAGE = "не вдалося знайти розклад із групою ";
+
 	public List<SchedulerEntityDto> findAll() {
 		return schedulerRepository.findAll()
 				.stream()
@@ -42,7 +44,7 @@ public class SchedulerService {
 	public void update(SchedulerEntityDto dto) {
 		Optional<SchedulerEntity> scheduler = schedulerRepository.findById(new SchedulerEntityId(dto.getGroupName(), dto.getName()));
 		if (scheduler.isEmpty()) {
-			throw new EntityAlreadyExistException("не вдалося знайти розклад із групою " + dto.getGroupName() + " та ім'ям " + dto.getName());
+			throw new EntityAlreadyExistException(NO_SCHEDULE_MESSAGE + dto.getGroupName() + AND_NAME + dto.getName());
 		}
 
 		schedulerRepository.save(schedulerConverter.toEntity(dto));
@@ -51,13 +53,13 @@ public class SchedulerService {
 	public SchedulerEntityDto findById(String groupName, String name) {
 		SchedulerEntityId id = new SchedulerEntityId(groupName, name);
 		return schedulerConverter.toDto(schedulerRepository.findById(id)
-				                                .orElseThrow(() -> new EntityNotFoundException("не вдалося знайти розклад із групою " + groupName + " та ім'ям " + name)));
+				                                .orElseThrow(() -> new EntityNotFoundException(NO_SCHEDULE_MESSAGE + groupName + AND_NAME + name)));
 	}
 
 	public void create(SchedulerEntityDto dto) {
 		Optional<SchedulerEntity> scheduler = schedulerRepository.findById(new SchedulerEntityId(dto.getGroupName(), dto.getName()));
 		if (scheduler.isPresent())
-			throw new EntityAlreadyExistException("розклад із групою " + dto.getGroupName() + " та ім'ям " + dto.getName() + " вже існує");
+			throw new EntityAlreadyExistException("розклад із групою " + dto.getGroupName() + AND_NAME + dto.getName() + " вже існує");
 
 		schedulerRepository.save(schedulerConverter.toEntity(dto));
 	}

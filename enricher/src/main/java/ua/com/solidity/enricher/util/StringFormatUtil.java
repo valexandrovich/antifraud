@@ -1,12 +1,13 @@
 package ua.com.solidity.enricher.util;
 
-import org.apache.commons.lang3.StringUtils;
 import static ua.com.solidity.enricher.util.StringStorage.CYRILLIC_LETTERS;
 import static ua.com.solidity.enricher.util.StringStorage.LATIN_LETTERS;
 
-import java.time.LocalDate;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 public class StringFormatUtil {
+	private StringFormatUtil() {}
 
 	public static String transliterationToCyrillicLetters(String serial) {
 		StringBuilder cyrillicSerial = new StringBuilder();
@@ -31,15 +32,5 @@ public class StringFormatUtil {
 
 	public static String importedRecords(long num) {
 		return String.format("Imported %d records", num);
-	}
-
-	public static LocalDate stringToDate(String date) {
-		LocalDate localDate = null;
-		if (!StringUtils.isBlank(date)) {
-			localDate = LocalDate.of(Integer.parseInt(date.substring(6)),
-			                         Integer.parseInt(date.substring(3, 5)),
-			                         Integer.parseInt(date.substring(0, 2)));
-		}
-		return localDate;
 	}
 }

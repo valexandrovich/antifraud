@@ -1,16 +1,15 @@
 package ua.com.solidity.web.security.model;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.naming.Name;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import ua.com.solidity.web.entry.Person;
-
-import javax.naming.Name;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class UserDetailsImpl implements UserDetails {
 
@@ -47,7 +46,7 @@ public class UserDetailsImpl implements UserDetails {
     }
 
     public List<String> getRoles() {
-        return this.authorities.stream().map((s) -> toString()).collect(Collectors.toList());
+        return this.authorities.stream().map(s -> toString()).collect(Collectors.toList());
     }
 
     @Override

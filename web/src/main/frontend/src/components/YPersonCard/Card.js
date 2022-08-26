@@ -77,7 +77,16 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
     address,
     subscribe,
     compared,
+    sex,
+    country,
+    birthPlace,
+    comment,
   } = data;
+  const [sources, setSources] = useState({
+    passport: false,
+    inn: false,
+    address: false,
+  });
 
   const addToCompare = async (id) => {
     try {
@@ -148,13 +157,19 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
   return (
     <div className="row">
       <div className="col-md-4">
-        <div className="card m-3 search d-flex">
-          <div className="card_header d-flex align-items-center justify-content-between">
+        <div className="card m-3 search">
+          <div className="card_header d-flex align-items-center justify-content-between overflow-hidden">
             <IoIcons.IoMdPerson
-              style={{ width: 40, height: 40, fontWeight: "bold" }}
+              style={{
+                width: 40,
+                height: 40,
+                fontWeight: "bold",
+                marginLeft: "10px",
+              }}
             />
             <h6 className="text-center">
-              {lastName} {firstName} {patName}
+              {lastName} {firstName} {patName}{" "}
+              {sex && <span className={"ml-10"}>({sex})</span>}
             </h6>
 
             {(visible && userRole === "ADVANCED") ||
@@ -185,7 +200,7 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
             )}
           </div>
           <hr />
-          <div className="card-body">
+          <div className="card-body overflow-hidden">
             {birthdate && (
               <div className="d-flex ">
                 <b className="mr-10">Дата народження:</b>
@@ -194,47 +209,121 @@ const Card = ({ data, totalFiles, setTotalFiles }) => {
             )}
 
             {passport && (
-              <div className="d-flex ">
+              <div className="source-container">
                 <b className="mr-10">Паспорт:</b>
                 <p>{singlePassport(passport)}</p>
 
-                <span className="ml-10">
+                <span
+                  onClick={() =>
+                    setSources({
+                      passport: !sources.passport,
+                    })
+                  }
+                  onMouseLeave={() =>
+                    setTimeout(() => setSources({ passport: false }), 500)
+                  }
+                  className="ml-10 pointer"
+                >
                   {passport
                     ? `(${passport?.importSources.length} ${sourceName(
                         passport?.importSources
                       )})`
                     : ""}
                 </span>
+                {((sources.passport && userRole === "ADVANCED") ||
+                  (sources.passport && userRole === "ADMIN")) &&
+                  passport.importSources.map((s) => {
+                    return (
+                      <ul className={"source"} key={s.id}>
+                        <li>{s.name}</li>
+                      </ul>
+                    );
+                  })}
               </div>
             )}
 
             {inn && (
-              <div className="d-flex">
+              <div className="source-container">
                 <b className="mr-10">ІПН:</b>
                 <p>{singleInn(inn)}</p>
-                <span className="ml-10">
+
+                <span
+                  onClick={() =>
+                    setSources({
+                      inn: !sources.inn,
+                    })
+                  }
+                  onMouseLeave={() =>
+                    setTimeout(() => setSources({ inn: false }), 500)
+                  }
+                  className="ml-10 pointer"
+                >
                   {inn
                     ? `(${inn.importSources.length} ${sourceName(
                         inn.importSources
                       )})`
                     : null}
                 </span>
+                {((sources.inn && userRole === "ADVANCED") ||
+                  (sources.inn && userRole === "ADMIN")) &&
+                  inn.importSources.map((s) => {
+                    return (
+                      <ul className={"source"} key={s.id}>
+                        <li>{s.name}</li>
+                      </ul>
+                    );
+                  })}
               </div>
             )}
             {address && (
-              <div className="d-flex">
-                <b className="mr-10">Адреса:</b>
-                <p>{address ? address.address : ""}</p>
-                <span className="ml-10">
+              <div className="source-container">
+                <div className={"pb-16"}>
+                  <b className="mr-10">Адреса:</b>
+                  <span>{address ? address.address : ""}</span>
+                  {country && <span> &nbsp;{country}</span>}
+                </div>
+                <span
+                  onClick={() =>
+                    setSources({
+                      address: !sources.address,
+                    })
+                  }
+                  onMouseLeave={() =>
+                    setTimeout(() => setSources({ address: false }), 500)
+                  }
+                  className="ml-10"
+                >
                   {address
                     ? `(${address.importSources.length} ${sourceName(
                         address.importSources
                       )})`
                     : ""}
                 </span>
+                {((sources.address && userRole === "ADVANCED") ||
+                  (sources.address && userRole === "ADMIN")) &&
+                  address.importSources.map((s) => {
+                    return (
+                      <ul className={"source"} key={s.id}>
+                        <li>{s.name}</li>
+                      </ul>
+                    );
+                  })}
               </div>
             )}
+            {birthPlace && (
+              <p>
+                <b className="mr-10">Місце народження:</b>
+                <span>{birthPlace ? birthPlace : ""}</span>
+              </p>
+            )}
+            {comment && (
+              <p>
+                <b className="mr-10">Коментар:</b>
+                <span>{comment ? comment : ""}</span>
+              </p>
+            )}
           </div>
+
           <div className="card-footer d-flex justify-content-between align-items-center pointer">
             {userRole === "ADMIN" ? (
               <button

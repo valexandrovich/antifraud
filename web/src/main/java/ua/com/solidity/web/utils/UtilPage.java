@@ -1,13 +1,14 @@
 package ua.com.solidity.web.utils;
 
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import ua.com.solidity.web.dto.olap.YPersonDto;
 
-import java.util.List;
-
-public class UtilPage {
+public final class UtilPage {
+	private UtilPage() {
+	}
 
 	public static Page<YPersonDto> toPage(List<YPersonDto> list, int pageNo, int pageSize) {
 		int totalPages = list.size() / pageSize;

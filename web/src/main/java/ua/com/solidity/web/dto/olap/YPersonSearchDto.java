@@ -19,4 +19,8 @@ public class YPersonSearchDto {
     private YPassport passport;
     private boolean subscribe;
     private boolean compared;
+    private String comment;
+    private String sex;
+    private String country;
+    private String birthPlace;
 }

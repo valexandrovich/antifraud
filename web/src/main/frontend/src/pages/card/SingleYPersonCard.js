@@ -21,11 +21,19 @@ import {
 } from "../../components/YPersonCard/Card";
 import passportService from "../../api/YPassportApi";
 import { setAlertMessageThunk } from "../../store/reducers/actions/Actions";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Relations from "../../components/YPersonCard/Relations";
 
 const SingleYPersonCard = () => {
   let { id } = useParams();
+  const [source, setSource] = useState(false);
+
+  const userRole = useSelector((state) => state.auth.role);
+  const [sources, setSources] = useState({
+    passport: false,
+    inn: false,
+    address: false,
+  });
   const dispatch = useDispatch();
   const [personDetails, setPersonDetails] = useState(null);
   const [components, setComponents] = useState({
@@ -127,7 +135,8 @@ const SingleYPersonCard = () => {
                   <b>
                     {personDetails.lastName} {""}
                     {personDetails.firstName} {""}
-                    {personDetails.patName}
+                    {personDetails.patName}{" "}
+                    {personDetails.sex ? `(${personDetails.sex})` : ""}
                   </b>
                 </h5>
               </div>
@@ -141,21 +150,50 @@ const SingleYPersonCard = () => {
                     : null}
                 </p>
               </div>
-              <div className="d-flex">
+              <div className="source-container">
                 <b className="mr-10">ІПН:</b>
                 <p>{formatInn(personDetails.inns)}</p>
-                <span className="ml-10">
+                <span
+                  onClick={() =>
+                    setSources({
+                      inn: !sources.inn,
+                    })
+                  }
+                  onMouseLeave={() =>
+                    setTimeout(() => setSources({ inn: false }), 500)
+                  }
+                  className="ml-10 pointer"
+                >
                   {personDetails.inns && personDetails.inns.length > 0
                     ? `(${
                         personDetails.inns[0].importSources.length
                       } ${sourceName(personDetails.inns[0].importSources)})`
                     : ""}
                 </span>
+                {((sources.inn && userRole === "ADVANCED") ||
+                  (sources.inn && userRole === "ADMIN")) &&
+                  personDetails.inns[0].importSources.map((s) => {
+                    return (
+                      <ul className={"source_w"} key={s.id}>
+                        <li>{s.name}</li>
+                      </ul>
+                    );
+                  })}
               </div>
-              <div className="d-flex">
+              <div className="source-container">
                 <b className="mr-10">Паспорт:</b>
                 <p>{formatPassport(personDetails.passports)}</p>
-                <span className="ml-10">
+                <span
+                  onClick={() =>
+                    setSources({
+                      passport: !sources.passport,
+                    })
+                  }
+                  onMouseLeave={() =>
+                    setTimeout(() => setSources({ passport: false }), 500)
+                  }
+                  className="ml-10 pointer"
+                >
                   {personDetails.passports && personDetails.passports.length > 0
                     ? `(${
                         personDetails.passports[0].importSources.length
@@ -164,16 +202,37 @@ const SingleYPersonCard = () => {
                       )})`
                     : " "}
                 </span>
+                {((sources.passport && userRole === "ADVANCED") ||
+                  (sources.passport && userRole === "ADMIN")) &&
+                  personDetails.passports[0].importSources.map((s) => {
+                    return (
+                      <ul className={"source_w"} key={s.id}>
+                        <li>{s.name}</li>
+                      </ul>
+                    );
+                  })}
               </div>
 
-              <div className="d-flex">
+              <div className="source-container">
                 <b className="mr-10">Адреса:</b>
                 <p>
                   {personDetails.addresses && personDetails.addresses.length > 0
                     ? personDetails.addresses[0].address
-                    : " "}
+                    : " "}{" "}
+                  {""}
+                  {personDetails.country}
                 </p>
-                <span className="ml-10">
+                <span
+                  onClick={() =>
+                    setSources({
+                      address: !sources.address,
+                    })
+                  }
+                  onMouseLeave={() =>
+                    setTimeout(() => setSources({ address: false }), 500)
+                  }
+                  className="ml-10 pointer"
+                >
                   {personDetails.addresses && personDetails.addresses.length > 0
                     ? `(${
                         personDetails.addresses[0].importSources.length
@@ -182,6 +241,19 @@ const SingleYPersonCard = () => {
                       )})`
                     : ""}
                 </span>
+                {((sources.address && userRole === "ADVANCED") ||
+                  (sources.address && userRole === "ADMIN")) &&
+                  personDetails.addresses[0].importSources.map((s) => {
+                    return (
+                      <ul className={"source_w"} key={s.id}>
+                        <li>{s.name}</li>
+                      </ul>
+                    );
+                  })}
+              </div>
+              <div className="d-flex">
+                <b className="mr-10">Коментар:</b>
+                <p>{personDetails.comment ? personDetails.comment : null}</p>
               </div>
             </div>
           </div>
@@ -303,6 +375,8 @@ const SingleYPersonCard = () => {
                 personDetails.altPeople.map((alt) => (
                   <AltPerson
                     onChange={(e) => handleChange(e, "altPeople")}
+                    source={source}
+                    setSource={setSource}
                     key={alt.id}
                     data={alt}
                   />

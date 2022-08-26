@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.CustomLog;
@@ -66,31 +65,20 @@ public class DWHServiceImpl implements DWHService {
         UUID revision = UUID.randomUUID();
 
         Timestamp lastModified = updateDWHRequest != null
-                ? Optional.of(updateDWHRequest.getLastModified()).orElseGet(() -> null)
+                ? updateDWHRequest.getLastModified()
                 : null;
 
         ImportRevision importRevision = irr.findFirstBySource(SOURCE);
         Instant instant = importRevision != null
-                ? Optional.of(importRevision.getRevisionDate()).orElseGet(() -> null)
+                ? importRevision.getRevisionDate()
                 : null;
 
-        if (lastModified != null) {
-            if (lastModified.getTime() >= 0L) {
-                date = lastModified.toLocalDateTime().toLocalDate();
-            } else {
-                if (instant != null) {
-                    date = Timestamp.from(instant).toLocalDateTime().toLocalDate();
-                } else {
-                    date = new Timestamp(0L).toLocalDateTime().toLocalDate();
-                }
-            }
+        if (lastModified != null && lastModified.getTime() >= 0L) {
+            date = lastModified.toLocalDateTime().toLocalDate();
+        } else if (instant != null) {
+            date = Timestamp.from(instant).toLocalDateTime().toLocalDate();
         } else {
-            if (instant != null) {
-                date = Timestamp.from(instant).toLocalDateTime().toLocalDate();
-            } else {
-                date = new Timestamp(0L).toLocalDateTime().toLocalDate();
-            }
-
+            date = new Timestamp(0L).toLocalDateTime().toLocalDate();
         }
 
         log.info("Importing from DWH records archived after: {}", Timestamp.valueOf(date.atStartOfDay()));

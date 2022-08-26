@@ -566,6 +566,10 @@ datalist {
     white-space: nowrap
 }
 
+.pb-16 {
+    padding-bottom: 16px;
+}
+
 .custom-btn {
     color: var(--white);
     background-color: var(--green);
@@ -779,4 +783,33 @@ datalist {
     left: 5px;
     top: -3px;
     color: white;
+}
+
+.source-container {
+    position: relative;
+    display: flex;
+    max-width: 350px;
+    white-space: nowrap;
+    overflow: hidden ! important;
+    text-overflow: ellipsis;
+}
+
+.source {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    z-index: 20;
+    background-color: navajowhite;
+    padding: 5px 14px;
+    list-style: none;
+}
+
+.source_w {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    z-index: 20;
+    background-color: whitesmoke;
+    padding: 5px 14px;
+    list-style: none;
 }

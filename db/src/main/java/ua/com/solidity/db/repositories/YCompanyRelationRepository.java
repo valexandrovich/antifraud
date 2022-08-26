@@ -1,14 +1,9 @@
 package ua.com.solidity.db.repositories;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import ua.com.solidity.db.entities.YCompany;
 import ua.com.solidity.db.entities.YCompanyRelation;
-import ua.com.solidity.db.entities.YCompanyRole;
-import ua.com.solidity.db.entities.YPerson;
 
 public interface YCompanyRelationRepository extends JpaRepository<YCompanyRelation, Long> {
 

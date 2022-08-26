@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import packageJson from "../../package.json";
 import moment from "moment";
 
 export const getBuildDate = (epoch) => {
@@ -21,7 +20,7 @@ function withClearCache(Component) {
         .then((response) => response.json())
         .then((meta) => {
           const latestVersionDate = meta.buildDate;
-          const currentVersionDate = packageJson.buildDate;
+          const currentVersionDate = Math.floor(Date.now() / 1000);
           const shouldForceRefresh = buildDateGreaterThan(
             latestVersionDate,
             currentVersionDate
@@ -36,14 +35,6 @@ function withClearCache(Component) {
     }, []);
 
     const refreshCacheAndReload = () => {
-      if (caches) {
-        caches.keys().then((names) => {
-          for (const name of names) {
-            caches.delete(name);
-          }
-        });
-      }
-
       const location = window.location.href;
       window.location.replace(location);
       setIsLatestBuildDate(true);

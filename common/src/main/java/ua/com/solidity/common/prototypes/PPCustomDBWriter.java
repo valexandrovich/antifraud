@@ -42,7 +42,6 @@ public abstract class PPCustomDBWriter extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        //old variant: item.setLocalData(GROUP, node.hasNonNull(GROUP) && node.get(GROUP).isTextual() ? node.get(GROUP).asText() : DEFAULT_NAME);
         item.mapInputs(INPUT, getInputClass());
     }
 

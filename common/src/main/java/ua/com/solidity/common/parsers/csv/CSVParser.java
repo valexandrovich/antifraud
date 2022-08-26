@@ -408,15 +408,6 @@ public class CSVParser extends CustomParser {
             if (!quoted) {
                 field = data.params.matchNull(field);
             }
-
-            /* Old code:
-            if (field.length() == 0) {
-                if (quoted) {
-                    field = "";
-                } else {
-                    field = null;
-                }
-            } */
         }
         dataFields.add(field);
     }

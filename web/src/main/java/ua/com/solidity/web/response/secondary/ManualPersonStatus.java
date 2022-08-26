@@ -2,8 +2,10 @@ package ua.com.solidity.web.response.secondary;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @AllArgsConstructor
 public class ManualPersonStatus {
 

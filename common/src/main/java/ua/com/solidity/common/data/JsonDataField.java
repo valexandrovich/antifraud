@@ -91,9 +91,11 @@ public class JsonDataField extends DataField {
         obj = newObj;
         arr = newArr;
         if (parentNode.isObject()) {
-            ((ObjectNode) parentNode).set((String) index, node = value);
+            node = value;
+            ((ObjectNode) parentNode).set((String) index, node);
         } else if (parentNode.isArray()) {
-            ((ArrayNode) parentNode).set(((Number) index).intValue(), node = value);
+            node = value;
+            ((ArrayNode) parentNode).set(((Number) index).intValue(), node);
         } else return false;
         return true;
     }
@@ -150,35 +152,37 @@ public class JsonDataField extends DataField {
     protected void internalSetValue(DataFieldType type, Object value) {
         JsonNode parentNode = parent.getNode();
         if (parentNode == null) return;
+        boolean assigned = false;
         switch (type) {
             case NULL:
-                if (internalPut(parentNode, JsonNodeFactory.instance.nullNode())) return;
+                assigned = internalPut(parentNode, JsonNodeFactory.instance.nullNode());
                 break;
 
             case STRING:
-                if (internalPut(parentNode, JsonNodeFactory.instance.textNode((String) value))) return;
+                assigned = internalPut(parentNode, JsonNodeFactory.instance.textNode((String) value));
                 break;
 
             case NUMBER:
-                assert value instanceof Number;
-                if (internalPutNumber(parentNode, (Number) value)) return;
+                assigned = value instanceof Number && internalPutNumber(parentNode, (Number) value);
                 break;
 
             case BOOLEAN:
-                if (value instanceof Boolean &&
-                        internalPut(parentNode, JsonNodeFactory.instance.booleanNode((Boolean) value))) return;
+                assigned = value instanceof Boolean &&
+                        internalPut(parentNode, JsonNodeFactory.instance.booleanNode((Boolean) value));
                 break;
 
             case OBJECT:
                 DataObject dataObject = value instanceof DataObject ? (DataObject) value : null;
-                if (dataObject != null && internalPut(parentNode, dataObject.getNode(), dataObject, null)) return;
+                assigned = dataObject != null && internalPut(parentNode, dataObject.getNode(), dataObject, null);
                 break;
 
             case ARRAY:
                 DataArray dataArray = value instanceof DataArray ? (DataArray) value : null;
-                if (dataArray != null && internalPut(parentNode, dataArray.getNode(), null, dataArray)) return;
+                assigned = dataArray != null && internalPut(parentNode, dataArray.getNode(), null, dataArray);
                 break;
         }
-        super.internalSetValue(type, value);
+        if (!assigned) {
+            super.internalSetValue(type, value);
+        }
     }
 }

@@ -6,11 +6,11 @@ public class EntityAlreadyExistException extends RuntimeException {
         super(message);
     }
 
-    public EntityAlreadyExistException(Class type, Long id) {
+    public EntityAlreadyExistException(Class<?> type, Long id) {
         super(type.getSimpleName() + " with id " + id + " is already exists.");
     }
 
-    public EntityAlreadyExistException(Class type, String name) {
+    public EntityAlreadyExistException(Class<?> type, String name) {
         super(type.getSimpleName() + " with name " + name + " is already exists.");
     }
 

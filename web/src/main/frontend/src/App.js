@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import packageJson from "../package.json";
 import "bootstrap/dist/css/bootstrap.css";
 import "./styles/Style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,7 +24,7 @@ import { checkAutoLogin } from "./api/AuthApi";
 import NonFound from "./pages/NonFound";
 import SingleYCompanyCard from "./pages/card/SingleYCompanyCard";
 import Relations from "./pages/relations/Relations";
-import withClearCache, { getBuildDate } from "./common/ClearCache";
+import withClearCache from "./common/ClearCache";
 
 const logOutTimeout = { timeout: null };
 
@@ -36,12 +35,7 @@ const MainApp = () => {
   const userRole = useSelector((state) => state.auth.role);
   const history = useHistory();
   let location = useLocation();
-  const d = getBuildDate(packageJson.buildDate);
 
-  const build =
-    [d.getDate(), d.getMonth() + 1, d.getFullYear()].join(".") +
-    " " +
-    [d.getHours(), d.getMinutes(), d.getSeconds()].join(":");
   useEffect(() => {
     checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
     return checkAutoLogin(dispatch, history, logOutTimeout, location.pathname);
@@ -58,7 +52,7 @@ const MainApp = () => {
       )}
       {isAuth && userRole !== null ? (
         <>
-          <Aside build={build} />
+          <Aside />
           <Switch>
             <Route path="/error" component={ErrorPage} />
             <Route exact path="/">

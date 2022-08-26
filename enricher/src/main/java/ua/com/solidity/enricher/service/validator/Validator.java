@@ -13,7 +13,13 @@ import org.apache.commons.lang3.StringUtils;
 import ua.com.solidity.common.DefaultErrorLogger;
 import ua.com.solidity.db.entities.YPerson;
 
-public class Validator {
+public final class Validator {
+    private Validator() {
+    }
+
+    private final static String PASSPORT = "Passport: ";
+    private final static String RECORD_NUMBER = "Record number: ";
+    private final static String PASSPORT_NUMBER = "Passport number: ";
 
     public static boolean isEqualsPerson(YPerson person, YPerson newPerson) {
         return !(newPerson != null && person != null
@@ -29,10 +35,10 @@ public class Validator {
     public static boolean isValidLocalPassport(String number, String serial,
                                                long[] counter, DefaultErrorLogger logger) {
         if (StringUtils.isBlank(number) || StringUtils.isBlank(serial)) {
-            logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Empty serial or number");
+            logError(logger, (counter[0] + 1L), PASSPORT + serial + number, "Empty serial or number");
         } else if (!transliterationToCyrillicLetters(serial).matches(DOMESTIC_SERIES_REGEX)
                 || !number.matches(PASS_NUMBER_REGEX)) {
-            logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Wrong format passport serial or number");
+            logError(logger, (counter[0] + 1L), PASSPORT + serial + number, "Wrong format passport serial or number");
         } else return true;
         return false;
     }
@@ -40,12 +46,12 @@ public class Validator {
     public static boolean isValidForeignPassport(String number, String serial, String recordNumber,
                                                  long[] counter, DefaultErrorLogger logger) {
         if (StringUtils.isBlank(number) || StringUtils.isBlank(serial)) {
-            logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Empty serial or number");
+            logError(logger, (counter[0] + 1L), PASSPORT + serial + number, "Empty serial or number");
         } else if (!transliterationToLatinLetters(serial).matches(FOREIGN_SERIES_REGEX)
                 || !number.matches(PASS_NUMBER_REGEX)) {
-            logError(logger, (counter[0] + 1L), "Passport: " + serial + number, "Wrong format passport serial or number");
+            logError(logger, (counter[0] + 1L), PASSPORT + serial + number, "Wrong format passport serial or number");
         } else if (!StringUtils.isBlank(recordNumber) && !recordNumber.matches(RECORD_NUMBER_REGEX)) {
-            logError(logger, (counter[0] + 1L), "Record number: " + recordNumber, "Wrong format passport record number");
+            logError(logger, (counter[0] + 1L), RECORD_NUMBER + recordNumber, "Wrong format passport record number");
         } else return true;
         return false;
     }
@@ -53,11 +59,11 @@ public class Validator {
     public static boolean isValidIdPassport(String number, String recordNumber,
                                             long[] counter, DefaultErrorLogger logger) {
         if (StringUtils.isBlank(number)) {
-            logError(logger, (counter[0] + 1L), "Passport number: " + number, "Empty number");
+            logError(logger, (counter[0] + 1L), PASSPORT_NUMBER + number, "Empty number");
         } else if (!number.matches(IDCARD_NUMBER_REGEX)) {
-            logError(logger, (counter[0] + 1L), "Passport number: " + number, "Wrong format passport number");
+            logError(logger, (counter[0] + 1L), PASSPORT_NUMBER + number, "Wrong format passport number");
         } else if (!StringUtils.isBlank(recordNumber) && !recordNumber.matches(RECORD_NUMBER_REGEX)) {
-            logError(logger, (counter[0] + 1L), "Record number: " + recordNumber, "Wrong format passport record number");
+            logError(logger, (counter[0] + 1L), RECORD_NUMBER + recordNumber, "Wrong format passport record number");
         } else return true;
         return false;
     }

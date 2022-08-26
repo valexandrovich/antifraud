@@ -26,6 +26,7 @@ public class DownloaderApp {
     public final void run() {
         this.listener.start();
         log.info("=== Downloader started and waits for messages ===");
+        log.info("Downloader output folder: {}", Utils.getApplicationContext().getBean(Config.class).getDownloaderOutputFolder());
     }
 
     public static void main(String[] args) {

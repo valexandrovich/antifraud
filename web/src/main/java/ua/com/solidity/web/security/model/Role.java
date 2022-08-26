@@ -8,16 +8,16 @@ public enum Role {
     ADVANCED("Risk Stand Advanced"),
     BASIC("Risk Stand Basic");
 
-    private final String role;
+    private final String name;
 
-    Role(String role) {
-        this.role = role;
+    Role(String name) {
+        this.name = name;
     }
 
-    public String getRole() {return this.role;}
+    public String getName() {return this.name;}
 
     public static List<String> getAcceptedRoles() {
-       return  Arrays.stream(Role.values()).map(role ->  role.getRole()).collect(Collectors.toList());
+       return  Arrays.stream(Role.values()).map(Role::getName).collect(Collectors.toList());
     }
 
 

@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 @CustomLog
 @Getter
 public abstract class RabbitMQTask extends DeferrableTask {
-    private RabbitMQListener listener;
+    protected RabbitMQListener listener;
     private Delivery message;
     private String messageBody;
     private boolean acknowledgeSent = false;

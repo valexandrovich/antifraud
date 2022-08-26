@@ -1,6 +1,8 @@
 package ua.com.solidity.util.validator;
 
-public class Regex {
+public final class Regex {
+    private Regex() {}
+
     public static final String INN_REGEX = "^[\\d]{10}$";
     public static final String OKPO_REGEX = "^[\\d]{8,9}$";
     public static final String INN_FORMAT_REGEX = "%010d";

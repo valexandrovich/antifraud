@@ -9,6 +9,9 @@ import lombok.Setter;
 @Setter
 @CustomLog
 public abstract class DeferrableTask {
+    /**
+     * @param task This may be use for further computation in overriding classes
+     */
     protected DeferredAction compareWith(DeferrableTask task) {
         return DeferredAction.APPEND;
     }

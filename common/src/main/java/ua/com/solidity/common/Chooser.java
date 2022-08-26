@@ -1,11 +1,10 @@
-package ua.com.solidity.enricher.util;
+package ua.com.solidity.common;
 
 import org.apache.commons.lang3.StringUtils;
 
-public final class Chooser {
-	private Chooser() {}
+public class Chooser {
 
-	public static <T> T chooseNotNull(T first, T second) {
+	public static <T> T chooseSecondNotNull(T first, T second) {
 		return second != null ? second : first;
 	}
 

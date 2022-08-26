@@ -1,6 +1,9 @@
 package ua.com.solidity.web.configuration;
 
 public class TypeMapName {
+    private TypeMapName() {
+    }
+
     public static final String YPASSPORT_TO_UPPER_CASE = "ypassportToUpperCase";
     public static final String YINN_TO_UPPER_CASE = "yinnToUpperCase";
     public static final String YADDRESS_TO_UPPER_CASE = "yaddressToUpperCase";

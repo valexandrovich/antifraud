@@ -75,7 +75,7 @@ public class Govua5Enricher implements Enricher {
     @Value("${enricher.timeOutTime}")
     private Integer timeOutTime;
     @Value("${enricher.sleepTime}")
-    private Long sleepTime;
+    private int sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
@@ -86,15 +86,15 @@ public class Govua5Enricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
-        deleteResp();
         LocalDateTime startTime = LocalDateTime.now();
+
+        logStart(GOVUA5);
+
+        StatusChanger statusChanger = new StatusChanger(portion, GOVUA5, ENRICHER);
+
+        long[] counter = new long[1];
+
         try {
-            logStart(GOVUA5);
-
-            StatusChanger statusChanger = new StatusChanger(portion, GOVUA5, ENRICHER);
-
-            long[] counter = new long[1];
-
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua5> onePage = govua5Repository.findAllByPortionId(portion, pageRequest);
             long count = govua5Repository.countAllByPortionId(portion);
@@ -111,8 +111,12 @@ public class Govua5Enricher implements Enricher {
 
                 while (!page.isEmpty()) {
                     Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime)
+                    if (duration.getSeconds() > timeOutTime) {
+                        statusChanger.setStatus(" Timeout after 25 minutes. Task has been rescheduled.");
+                        extender.sendMessageToQueue(GOVUA5, portion);
+
                         throw new TimeoutException("Time ran out for portion: " + portion);
+                    }
                     List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
                         EntityProcessing entityProcessing = new EntityProcessing();
                         entityProcessing.setUuid(c.getId());
@@ -139,7 +143,7 @@ public class Govua5Enricher implements Enricher {
                     List<Govua5> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
                             .collect(Collectors.toList());
 
-                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
+                    if (workPortion.isEmpty()) Utils.waitMs(sleepTime);
 
                     Set<Long> codes = new HashSet<>();
                     Set<YCompany> companies = new HashSet<>();
@@ -214,6 +218,8 @@ public class Govua5Enricher implements Enricher {
             logFinish(GOVUA5, counter[0]);
             logger.finish();
             statusChanger.complete(importedRecords(counter[0]));
+        } catch (Exception e) {
+            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
         } finally {
             deleteResp();
         }

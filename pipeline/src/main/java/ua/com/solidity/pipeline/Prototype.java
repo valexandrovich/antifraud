@@ -22,8 +22,9 @@ public abstract class Prototype {
         // nothing
     }
 
+    @SuppressWarnings("unused")
     protected void open(Item item) {
-        // nothing
+        // nothing yet
     }
 
     protected abstract Object execute(@NonNull Item item);

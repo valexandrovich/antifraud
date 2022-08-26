@@ -263,13 +263,13 @@ public class SQLTable {
         return true;
     }
 
-    public static void executeStatement(PreparedStatement statement, DataBatch batch, String sourceName) {
+    public static void executeStatement(PreparedStatement preparedStatement, DataBatch batch, String sourceName) {
         try {
-            int[] res = statement.executeBatch();
+            int[] res = preparedStatement.executeBatch();
             int index = 0;
             for (DataObject obj : batch.validObjects()) {
                 long r = res[index++];
-                if (r != statement.SUCCESS_NO_INFO && r <= 0) {
+                if (r != preparedStatement.SUCCESS_NO_INFO && r <= 0) {
                     ErrorResult err = new ErrorResult();
                     err.add(obj, sourceName, "Database insert error.");
                     obj.setErrorResult(err);

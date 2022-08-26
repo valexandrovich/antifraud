@@ -65,29 +65,29 @@ public class Utils {
     public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS[XXX]";
     public static final String OUTPUT_DATE_FORMAT = "yyyy-MM-dd[XXX]";
     public static final String OUTPUT_TIME_FORMAT = "hh:mm:ss.SSS[XXX]";
-    public static int PRETTY_INDENT_SIZE = 4;
-    public static boolean PRETTY_ARRAY_INDENTATION = true;
+    public static int prettyIndentSize = 4;
+    public static boolean prettyArrayIndentation = true;
     private static final String RABBITMQ_LOG_ERROR_WITH_MESSAGE = "sendRabbitMQMessage: {} . ({}:{}) : {}";
     private static final String RABBITMQ_LOG_ERROR = "sendRabbitMQMessage: {} . ({}:{})";
     private static final String NFS_VARIABLE_PROPERTY = "otp.nfs.variable";
     private static final String NFS_FOLDER_PROPERTY = "otp.nfs.folder";
     private static final String DEFAULT_NFS_VARIABLE = "OTP_TEMP";
     private static final long TRY_TO_SEND_DELTA = 180000; // 3 min
-    private static final Timer timer = new Timer("Utils.timer");
-    private static final Map<String, Object> storedProperties = new HashMap<>();
+    private static final Timer TIMER = new Timer("Utils.timer");
+    private static final Map<String, Object> STORED_PROPERTIES = new HashMap<>();
     private static ApplicationContext context = null;
     private static com.rabbitmq.client.ConnectionFactory factory;
     private static Connection connection;
     private static Channel channel;
     private static ObjectMapper sortedMapper = null;
     private static XmlMapper xmlSortedMapper = null;
-    private static final Map<Integer, DefaultPrettyPrinter> printerCache = new HashMap<>();
+    private static final Map<Integer, DefaultPrettyPrinter> PRINTER_CACHE = new HashMap<>();
     private static ObjectMapper prettyMapper = null;
 
-    private static final char[] hexChars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-    private static final String HEX_DIGITS = new String(hexChars);
+    private static final char[] HEX_CHARS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    private static final String HEX_DIGITS = new String(HEX_CHARS);
 
-    private static final Set<String> topics = new HashSet<>();
+    private static final Set<String> TOPICS = new HashSet<>();
 
     private static class DeferredExecutionTimerTask extends TimerTask {
         Runnable runnable;
@@ -223,8 +223,8 @@ public class Utils {
             int j = 0;
             for (byte b : bytes) {
                 int v = Byte.toUnsignedInt(b);
-                chars[j++] = hexChars[v >> 4];
-                chars[j++] = hexChars[v & 0x0f];
+                chars[j++] = HEX_CHARS[v >> 4];
+                chars[j++] = HEX_CHARS[v & 0x0f];
             }
             return String.valueOf(chars);
         }
@@ -478,8 +478,8 @@ public class Utils {
     }
 
     public static synchronized String getContextProperty(String name, String defaultValue, boolean contextOnly) {
-        if (!contextOnly && storedProperties.containsKey(name)) {
-            Object value = storedProperties.get(name);
+        if (!contextOnly && STORED_PROPERTIES.containsKey(name)) {
+            Object value = STORED_PROPERTIES.get(name);
             return value == null ? defaultValue : value.toString();
         }
         return checkApplicationContext() ? context.getEnvironment().getProperty(name, defaultValue) : defaultValue;
@@ -542,9 +542,9 @@ public class Utils {
         }
 
         if (value == null || (value instanceof String && ((String) value).isBlank())) {
-            storedProperties.remove(name);
+            STORED_PROPERTIES.remove(name);
         } else {
-            storedProperties.put(name, value);
+            STORED_PROPERTIES.put(name, value);
         }
     }
 
@@ -592,6 +592,7 @@ public class Utils {
                 channel.addShutdownListener(Utils::channelShutdownListener);
             } catch (Exception e) {
                 log.error("RabbitMQ Channel creation error.", e);
+                channel = null;
             }
         }
         return channel;
@@ -654,11 +655,11 @@ public class Utils {
 
     public static synchronized boolean prepareRabbitMQQueue(String queue) {
         if (channelNeeded()) {
-            if (topics.contains(queue)) return true;
+            if (TOPICS.contains(queue)) return true;
             try {
                 channel.exchangeDeclare(queue, BuiltinExchangeType.TOPIC, true);
                 if (!queueDeclare(queue)) return false;
-                topics.add(queue);
+                TOPICS.add(queue);
                 return true;
             } catch (Exception e) {
                 rabbitMQLogError("Exchange creation failed", queue, queue, null, e);
@@ -694,13 +695,13 @@ public class Utils {
     @SuppressWarnings("all")
     public static synchronized TimerTask deferredExecute(long milliseconds, Runnable runnable) {
         TimerTask timerTask = new DeferredExecutionTimerTask(runnable);
-        timer.schedule(timerTask, milliseconds);
+        TIMER.schedule(timerTask, milliseconds);
         return timerTask;
     }
 
     public static synchronized TimerTask periodicExecute(long milliseconds, PeriodicTask task) {
         TimerTask res = new PeriodicExecutionTask(task, milliseconds);
-        timer.schedule(res, 0, milliseconds);
+        TIMER.schedule(res, 0, milliseconds);
         return res;
     }
 
@@ -757,7 +758,7 @@ public class Utils {
             setContextProperty(NFS_FOLDER_PROPERTY, folderValue);
         }
 
-        if (variableValue != null && variableValue.isBlank()) {
+        if (variableValue != null && !variableValue.isBlank()) {
             setContextProperty(NFS_VARIABLE_PROPERTY, variableValue);
         }
     }
@@ -871,7 +872,7 @@ public class Utils {
             id = -indent;
         }
 
-        DefaultPrettyPrinter printer = printerCache.getOrDefault(id, null);
+        DefaultPrettyPrinter printer = PRINTER_CACHE.getOrDefault(id, null);
 
         if (printer == null) {
             char[] indentArray = new char[indent];
@@ -885,14 +886,14 @@ public class Utils {
                 printer.indentArraysWith(indenter);
             }
 
-            printerCache.put(id, printer);
+            PRINTER_CACHE.put(id, printer);
         }
 
         return printer;
     }
 
     public static DefaultPrettyPrinter defaultPrettyPrinter() {
-        return getPrettyPrinter(PRETTY_INDENT_SIZE, PRETTY_ARRAY_INDENTATION);
+        return getPrettyPrinter(prettyIndentSize, prettyArrayIndentation);
     }
 
     public static ObjectMapper getPrettyMapper(DefaultPrettyPrinter printer) {
@@ -996,7 +997,7 @@ public class Utils {
 
     @SuppressWarnings("unused")
     public static boolean writeJsonNodeToFile(File file, JsonNode node) {
-        return writeJsonNodeToFile(file, node, PRETTY_INDENT_SIZE, PRETTY_ARRAY_INDENTATION);
+        return writeJsonNodeToFile(file, node, prettyIndentSize, prettyArrayIndentation);
     }
 
     public static byte[] complexDigest(JsonNode node) {
@@ -1032,5 +1033,13 @@ public class Utils {
     @SuppressWarnings("unsed")
     public static ActionObject getActionObject(String json) {
         return ActionObject.getAction(json);
+    }
+
+    public static void waitMs(int milliseconds) {
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

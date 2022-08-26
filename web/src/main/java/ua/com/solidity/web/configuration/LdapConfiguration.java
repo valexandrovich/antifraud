@@ -1,5 +1,6 @@
 package ua.com.solidity.web.configuration;
 
+import javax.naming.NamingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,8 +11,7 @@ import org.springframework.ldap.core.AuthenticatedLdapEntryContextMapper;
 import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
-
-import javax.naming.NamingException;
+import ua.com.solidity.web.exception.LdapEntryIdentificationLookupException;
 
 @Configuration
 @PropertySource({
@@ -47,7 +47,8 @@ public class LdapConfiguration {
             try {
                 return (DirContextOperations) dirContext.lookup(ldapEntryIdentification.getRelativeName());
             } catch (NamingException e) {
-                throw new RuntimeException("lookup failed for: " + ldapEntryIdentification.getRelativeName(), e);
+                throw new LdapEntryIdentificationLookupException(
+                        "lookup failed for: " + ldapEntryIdentification.getRelativeName(), e);
             }
         };
     }

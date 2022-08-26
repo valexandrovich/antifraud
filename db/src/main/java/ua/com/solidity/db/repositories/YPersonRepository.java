@@ -17,7 +17,7 @@ import ua.com.solidity.db.entities.YPerson;
 @Repository
 public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpecificationExecutor<YPerson> {
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "left join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "left join fetch p.passports pass " +
@@ -35,7 +35,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
     List<YPerson> findByLastNameAndFirstNameAndPatNameAndBirthdate(String lastName, String firstName,
                                                                    String patName, LocalDate birthDate);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "left join fetch p.tags t " +
             "left join fetch t.tagType t_t " +
             "where p.id in (:ids)")
@@ -47,19 +47,19 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
 
     Page<YPerson> findBySubscribedUsers(User user, Pageable pageable);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "join fetch p.personRelations r " +
             "join fetch r.relationGroup g " +
             "where g.id = :groupId")
     List<YPerson> findAllByRelationGroupId(Long groupId);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "join fetch p.personRelations r " +
             "join fetch r.relationGroup g " +
             "where g.id in (:groupIds)")
     List<YPerson> findAllInRelationGroupIds(Set<Long> groupIds);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "left join fetch i.person i_p " +
@@ -108,7 +108,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "where i.inn in (:inns)")
     Set<YPerson> findPeopleWithInns(Set<Long> inns);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "left join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "join fetch p.passports pass " +
@@ -146,7 +146,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "where pass.id in (:idsPass)")
     Set<YPerson> findPeoplePassportsForBaseEnricher(List<Long> idsPass);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "left join fetch p.passports pass " +
@@ -163,7 +163,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "where i.inn in (:inns)")
     Set<YPerson> findPeopleInnsForBaseEnricher(Set<Long> inns);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "left join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "left join fetch p.passports pass " +
@@ -180,7 +180,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "where p.id = :id")
     Optional<YPerson> findForBaseEnricherById(UUID id);
 
-    @Query("SELECT p FROM YPerson p " +
+    @Query("SELECT DISTINCT p FROM YPerson p " +
             "left join fetch p.inns i " +
             "left join fetch p.tags t " +
             "left join fetch t.tagType t_t " +

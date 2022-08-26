@@ -85,6 +85,10 @@ public class YPersonConverter {
         });
 
         dto.setRelationGroups(relationGroups);
+        dto.setComment(entity.getComment());
+        dto.setSex(entity.getSex());
+        dto.setCountry(entity.getCountry());
+        dto.setBirthPlace(entity.getBirthPlace());
 
         return dto;
     }
@@ -111,6 +115,11 @@ public class YPersonConverter {
                 .filter(comparedYPerson -> comparedYPerson.getId() == dto.getId())
                 .findAny()
                 .ifPresent(comparedYPerson -> dto.setCompared(true));
+
+        dto.setComment(entity.getComment());
+        dto.setSex(entity.getSex());
+        dto.setCountry(entity.getCountry());
+        dto.setBirthPlace(entity.getBirthPlace());
 
         return dto;
     }

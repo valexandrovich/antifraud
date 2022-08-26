@@ -7,11 +7,11 @@ public enum RevisionExtensionType {
 
     final int flags;
 
-    private static final int child_flag = 1;
-    private static final int extra_id_flag = 2;
+    private static final int CHILD_FLAG = 1;
+    private static final int EXTRA_ID_FLAG = 2;
 
-    private static final String child = "CHILD";
-    private static final String extraId = "EXTRA";
+    private static final String CHILD = "CHILD";
+    private static final String EXTRA_ID = "EXTRA";
 
     RevisionExtensionType(int flags) {
         this.flags = flags;
@@ -23,12 +23,12 @@ public enum RevisionExtensionType {
             String[] items = name.trim().toUpperCase().split("\\s*,\\s*");
             for (var item : items) {
                 switch(item) {
-                    case child:
-                        flags |= child_flag;
+                    case CHILD:
+                        flags |= CHILD_FLAG;
                         break;
 
-                    case extraId:
-                        flags |= child_flag | extra_id_flag;
+                    case EXTRA_ID:
+                        flags |= CHILD_FLAG | EXTRA_ID_FLAG;
                         break;
                     default:
                 }
@@ -52,7 +52,7 @@ public enum RevisionExtensionType {
     }
 
     public final boolean isChild() {
-        return (flags & child_flag) > 0;
+        return (flags & CHILD_FLAG) > 0;
     }
 
 }

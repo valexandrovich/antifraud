@@ -6,11 +6,17 @@ import static ua.com.solidity.util.validator.Regex.INN_REGEX;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public class Validator {
+public final class Validator {
+
+    private Validator() {
+    }
 
     public static final LocalDate START_DATE = LocalDate.of(1900, 1, 1);
 
     public static boolean isValidInn(String inn, LocalDate birthDay) {
+        if (inn == null || inn.isBlank()) return false;
+        inn = inn.replaceAll("[^0-9]", "");
+        if (!inn.matches("[0-9]+")) return false;
         inn = String.format(Regex.INN_FORMAT_REGEX, Long.parseLong(inn));
         if (inn.matches(INN_REGEX)) {
             boolean isValidBirthDateInn = birthDay == null ||

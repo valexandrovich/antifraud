@@ -5,5 +5,5 @@ import java.util.Set;
 import ua.com.solidity.util.model.EntityProcessing;
 
 public class EntityStorage {
-    public static final Set<EntityProcessing> peopleSet = new HashSet<>();
+    public static final Set<EntityProcessing> entitySet = new HashSet<>();
 }

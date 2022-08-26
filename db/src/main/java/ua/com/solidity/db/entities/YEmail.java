@@ -38,7 +38,7 @@ public class YEmail {
     private Set<ImportSource> importSources = new HashSet<>();
 
     public void cleanAssociations() {
-        this.person.getEmails().removeIf(email -> id.equals(email.getId()));
+        this.person.getEmails().removeIf(yEmail -> id.equals(yEmail.getId()));
         this.importSources = new HashSet<>();
     }
 

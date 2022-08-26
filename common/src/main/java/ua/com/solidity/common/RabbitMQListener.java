@@ -18,19 +18,14 @@ public class RabbitMQListener {
         }
 
         private void clearAllNotEqual(RabbitMQTask ignoredTask) {
-            tasks.forEach((task) -> {
+            tasks.forEach(task -> {
                 if (ignoredTask != task) {
                     RabbitMQTask rabbitMQTask = (RabbitMQTask) task;
                     rabbitMQTask.acknowledge(false);
                 }
             });
 
-            tasks.removeIf((task) -> task != ignoredTask);
-        }
-
-        @Override
-        public synchronized void clear() {
-            super.clear();
+            tasks.removeIf(task -> task != ignoredTask);
         }
 
         @Override
@@ -54,7 +49,7 @@ public class RabbitMQListener {
         protected void executeTasks(Collection<? extends DeferrableTask> collection) {
             if (collection == null || collection.isEmpty()) return;
             List<RabbitMQTask> taskList = new ArrayList<>();
-            collection.forEach((task)-> taskList.add((RabbitMQTask) task)); // must be rabbitMQTask only
+            collection.forEach(task-> taskList.add((RabbitMQTask) task)); // must be rabbitMQTask only
             listener.queueTasks(taskList);
         }
 
@@ -98,17 +93,14 @@ public class RabbitMQListener {
             if (!waiting || holder == null) return;
             task = holder;
 
-            // use waiting = false; before to return to base mode
             if (tasks != null) {
                 tasks.clear();
             }
-            // use task.acknowledge(true) to return to base mode;
-            // use cancelChannel() to return to base mode
         }
         log.info("$rmq$ -- before task execution on handleHoldenTask.");
         task.execute();
         log.info("$rmq$ -- after task execution on handleHoldenTask.");
-        // use waitForMessages() to return to base mode
+        // use waitForMessages method to return to base mode
         synchronized(this) {
             holder = null;
         }
@@ -154,7 +146,7 @@ public class RabbitMQListener {
         handleHoldenTask();
     }
 
-    public final synchronized boolean start() {
+    public synchronized final boolean start() {
         if (started || receiver == null) return false;
         if (channelNeeded()) {
             if (tasks != null) tasks.clear();
@@ -165,7 +157,7 @@ public class RabbitMQListener {
     }
 
     @SuppressWarnings("unused")
-    public synchronized final void finish() {
+    public final synchronized void finish() {
         if (!started) return;
         clear();
         if (channel != null && channel.isOpen()) {

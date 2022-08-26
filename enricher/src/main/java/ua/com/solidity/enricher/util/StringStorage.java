@@ -1,6 +1,8 @@
 package ua.com.solidity.enricher.util;
 
-public class StringStorage {
+public final class StringStorage {
+    private StringStorage() {}
+
     public static final String ENRICHER = "ENRICHER";
     public static final String PERCENT = "%";
     public static final String DOMESTIC_PASSPORT = "UA_DOMESTIC";

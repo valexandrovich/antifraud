@@ -167,7 +167,6 @@ const ErrCell = (props) => {
                   value={errValue}
                   onChange={(e) => setErrValue(e.target.value)}
                 >
-                  <option>{errValue}</option>
                   {tag &&
                     tag.map((el) => (
                       <option key={el.code} value={el.code}>

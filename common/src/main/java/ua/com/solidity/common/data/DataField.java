@@ -42,6 +42,9 @@ public class DataField {
     protected final void capabilityNotSupported(DataFieldType type) {
         log.error("Data Field: (class:{}, type:{}) Set value with type {} is not supported.", getClass().getName(), internalGetType(), type);
     }
+    /**
+     * @param value may be use for further computation in overriding classes
+     */
 
     protected void internalSetValue(DataFieldType type, Object value) {
         capabilityNotSupported(type);

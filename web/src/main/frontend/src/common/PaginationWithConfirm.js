@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import * as IoIcons from "react-icons/io";
 
 const PaginationWithConfirm = ({
@@ -35,10 +35,21 @@ const PaginationWithConfirm = ({
       Math.ceil(totalFiles / filesPerPage)
     );
   }
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setSearch(!search);
-  };
-
+  }, [search, setSearch]);
+  const keyPress = useCallback(
+    (e) => {
+      if (e.key === "Enter") {
+        handleSearch();
+      }
+    },
+    [handleSearch]
+  );
+  useEffect(() => {
+    document.addEventListener("keydown", keyPress);
+    return () => document.removeEventListener("keydown", keyPress);
+  }, [keyPress]);
   return (
     <nav
       style={{ marginTop: margin + "px" }}

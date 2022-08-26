@@ -2,7 +2,7 @@
   "name": "banned",
   "version": "4.5",
   "private": true,
-  "buildDate": 1659937304363,
+  "buildDate": 1660833101121,
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
@@ -40,7 +40,7 @@
     "build": "yarn build:cra && yarn build:move",
     "build:cra": "cross-env CI=false react-scripts build",
     "build:move": "rm -fr ../../../target/classes/static && cp -r ./build ../../../target/classes/static && mv ../../../target/classes/static/index.html ../../../target/classes/templates/index.html",
-    "build:version": "node ./update-build.js",
+    "v": "node ./update-build.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

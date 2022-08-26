@@ -25,6 +25,7 @@ public class StatsAction extends ActionObject {
     private String outputFile;
     private ArrayNode pipeline;
 
+
     @JsonIgnore
     private File input;
 

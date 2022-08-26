@@ -147,8 +147,7 @@ public class Pipeline {
 
     private boolean execList(Collection<? extends Item> items) {
         for (var a : items) {
-            if (terminated) return false;
-            a.tryToExecute();
+            if (a.executionFailed()) return false;
         }
         return !terminated;
     }
@@ -156,8 +155,7 @@ public class Pipeline {
     final boolean doExecute(Item item, boolean withItem) {
         if (terminated || item == null) return false;
         if (withItem) {
-            item.tryToExecute();
-            if (terminated) return false;
+            if (item.executionFailed()) return false;
         }
         return execList(item.depAncestors) && execList(item.directDependencies);
     }

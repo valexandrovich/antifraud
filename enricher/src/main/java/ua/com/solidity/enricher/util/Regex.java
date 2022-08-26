@@ -1,6 +1,10 @@
 package ua.com.solidity.enricher.util;
 
-public class Regex {
+import lombok.NoArgsConstructor;
+
+public final class Regex {
+    private Regex() {}
+
     public static final String CONTAINS_NUMERAL_REGEX = "[0-9]+";
     public static final String ALL_NOT_NUMBER_REGEX = "[^0-9]";
     public static final String ALL_NUMBER_REGEX = "^[\\d]+$";

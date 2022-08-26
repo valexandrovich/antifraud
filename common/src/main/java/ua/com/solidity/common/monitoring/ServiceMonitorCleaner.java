@@ -26,10 +26,9 @@ public class ServiceMonitorCleaner {
     }
 
     private ServiceMonitorCleaner() {
-        instance = this;
         TimerTask cleanTask = new ServiceMonitorCleanTask();
-        ServiceMonitor.timer.schedule(cleanTask, 0, ServiceMonitor.CLEAN_DELAY);
-        log.info("==> ServiceMonitor cleaner started vs delay = {}.", ServiceMonitor.CLEAN_DELAY);
+        ServiceMonitor.TIMER.schedule(cleanTask, 0, ServiceMonitor.cleanDelay);
+        log.info("==> ServiceMonitor cleaner started vs delay = {}.", ServiceMonitor.cleanDelay);
     }
 
     private boolean cleanStatementNeeded() {
@@ -46,7 +45,7 @@ public class ServiceMonitorCleaner {
         }
     }
 
-    private void cleanMonitor() {
+    protected final void cleanMonitor() {
         synchronized (ServiceMonitor.class) {
             if (cleanStatementNeeded()) {
                 try {

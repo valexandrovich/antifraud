@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="v051-0" author="Olha Tankevych">
+        <tagDatabase tag="v051-0"/>
+    </changeSet>
+    
+    <changeSet id="v051-1" author="Olha Tankevych">
+        <addColumn tableName="yperson">
+            <column name="birth_place" type="VARCHAR(255)"/>
+            <column name="comment" type="VARCHAR(255)"/>
+            <column name="country" type="VARCHAR(255)"/>
+            <column name="sex" type="VARCHAR(1)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="v051-2" author="Olha Tankevych">
+        <addColumn tableName="ytag">
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="event_date" type="DATE"/>
+            <column name="number_value" type="VARCHAR(255)"/>
+            <column name="text_value" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

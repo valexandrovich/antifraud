@@ -14,9 +14,7 @@ import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_ID;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +22,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import lombok.CustomLog;
@@ -79,10 +76,6 @@ public class BaseDirectorEnricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.timeOutTime}")
-    private Integer timeOutTime;
-    @Value("${enricher.sleepTime}")
-    private Long sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
@@ -92,17 +85,20 @@ public class BaseDirectorEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
-        deleteResp();
-        LocalDateTime startTime = LocalDateTime.now();
+
+        logStart(BASE_DIRECTOR);
+
+        StatusChanger statusChanger = new StatusChanger(portion, BASE_DIRECTOR, ENRICHER);
+
+        long[] counter = new long[1];
+
+
+        UUID newPortion = UUID.randomUUID();
+
         try {
-            logStart(BASE_DIRECTOR);
-
-            StatusChanger statusChanger = new StatusChanger(portion, BASE_DIRECTOR, ENRICHER);
-
-            long[] counter = new long[1];
-
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<BaseDirector> onePage = baseDirectorRepository.findAllByPortionId(portion, pageRequest);
+            if (onePage.isEmpty()) return;
             long count = baseDirectorRepository.countAllByPortionId(portion);
             statusChanger.newStage(null, "enriching", count, null);
             String fileName = fileFormatUtil.getLogFileName(portion.toString());
@@ -113,150 +109,157 @@ public class BaseDirectorEnricher implements Enricher {
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
-                List<BaseDirector> page = onePage.toList();
 
-                while (!page.isEmpty()) {
-                    Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime)
-                        throw new TimeoutException("Time ran out for portion: " + portion);
-                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
-                        entityProcessing.setUuid(p.getId());
-                        if (StringUtils.isNotBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String inn = p.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            entityProcessing.setInn(Long.parseLong(inn));
-                        }
-                        if (StringUtils.isNotBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String edrpou = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            entityProcessing.setEdrpou(Long.parseLong(edrpou));
-                        }
-                        return entityProcessing;
-                    }).collect(Collectors.toList());
+                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                    EntityProcessing entityProcessing = new EntityProcessing();
+                    entityProcessing.setUuid(p.getId());
+                    if (StringUtils.isNotBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String inn = p.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        entityProcessing.setInn(Long.parseLong(inn));
+                    }
+                    if (StringUtils.isNotBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String edrpou = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        entityProcessing.setEdrpou(Long.parseLong(edrpou));
+                    }
+                    return entityProcessing;
+                }).collect(Collectors.toList());
 
-                    UUID dispatcherId = httpClient.get(urlPost, UUID.class);
+                UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
-                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
-                    String url = urlPost + "?id=" + portion;
-                    DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
-                    resp = new ArrayList<>(response.getResp());
-                    List<UUID> respId = response.getRespId();
-                    List<UUID> temp = response.getTemp();
-                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
-                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
+                log.info("Passing {}, count: {}", portion, entityProcessings.size());
+                String url = urlPost + "?id=" + portion;
+                DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
+                resp = new ArrayList<>(response.getResp());
+                List<UUID> respId = response.getRespId();
+                log.info("To be processed: {}", resp.size());
+                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
-                    List<BaseDirector> workPortion = page.parallelStream().filter(p -> respId.contains(p.getId()))
-                            .collect(Collectors.toList());
+                if (respId.isEmpty()) {
+                    extender.sendMessageToQueue(BASE_DIRECTOR, portion);
+                    return;
+                }
 
-                    if (workPortion.isEmpty()) Thread.sleep(sleepTime);
+                List<BaseDirector> temp = new ArrayList<>();
+                List<BaseDirector> workPortion = new ArrayList<>();
+                onePage.stream().parallel().forEach(p -> {
+                    if (respId.contains(p.getId())) workPortion.add(p);
+                    else {
+                        p.setPortionId(newPortion);
+                        temp.add(p);
+                    }
+                });
 
-                    Set<Long> peopleCodes = new HashSet<>();
-                    Set<Long> companiesCodes = new HashSet<>();
-                    Set<YPerson> savedPersonSet = new HashSet<>();
+                Set<Long> peopleCodes = new HashSet<>();
+                Set<Long> companiesCodes = new HashSet<>();
+                Set<YPerson> savedPersonSet = new HashSet<>();
 
-                    Set<YINN> inns = new HashSet<>();
-                    Set<YCompany> companies = new HashSet<>();
+                Set<YINN> inns = new HashSet<>();
+                Set<YCompany> companies = new HashSet<>();
 
-                    workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            peopleCodes.add(Long.parseLong(inn));
-                        }
-
-                        if (StringUtils.isNotBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String edrpou = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            companiesCodes.add(Long.parseLong(edrpou));
-                        }
-                    });
-
-                    if (!peopleCodes.isEmpty()) {
-                        inns.addAll(yinnRepository.findInns(peopleCodes));
-                        savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(peopleCodes));
+                workPortion.forEach(r -> {
+                    if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        peopleCodes.add(Long.parseLong(inn));
                     }
 
-                    if (!companiesCodes.isEmpty())
-                        companies.addAll(companyRepository.findByEdrpous(companiesCodes));
-
-                    Set<YPerson> personSet = new HashSet<>();
-                    Set<YCompany> companySet = new HashSet<>();
-
-                    Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_ID);
-                    workPortion.forEach(r -> {
-                        YPerson person = null;
-                        if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            if (isValidInn(inn, null)) {
-                                person = new YPerson();
-                                person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
-                                person = extender.addPerson(personSet, person, source, false);
-
-                                Set<YTag> tags = new HashSet<>();
-                                YTag tag = new YTag();
-                                tagType.ifPresent(tag::setTagType);
-                                tag.setSource(DIRECTOR);
-                                tag.setUntil(LocalDate.of(3500, 1, 1));
-                                tags.add(tag);
-
-                                extender.addTags(person, tags, source);
-                            } else {
-                                logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
-                            }
-                        }
-                        YCompany company = null;
-                        if (StringUtils.isNotBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String edrpou = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            if (isValidEdrpou(edrpou)) {
-                                company = new YCompany();
-                                company.setEdrpou(Long.parseLong(edrpou));
-                                company = extender.addCompany(companySet, source, company, companies);
-                            } else {
-                                logError(logger, (counter[0] + 1L), Utils.messageFormat("OKPO: {}", r.getOkpo()), "Wrong OKPO");
-                            }
-                        }
-                        Optional<YCompanyRole> role = companyRoleRepository.findByRole(DIRECTOR);
-                        if (company != null && person != null && role.isPresent())
-                            extender.addCompanyRelation(person, company, role.get(), source);
-
-                        if (!resp.isEmpty()) {
-                            counter[0]++;
-                            statusChanger.addProcessedVolume(1);
-                        }
-                    });
-
-                    UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
-                    if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
-
-                        if (!companySet.isEmpty()) {
-                            log.info("Saving companies");
-                            companyRepository.saveAll(companySet);
-                            emnService.enrichYCompanyMonitoringNotification(companySet);
-                        }
-
-                        if (!personSet.isEmpty()) {
-                            emnService.enrichYPersonPackageMonitoringNotification(personSet);
-                            log.info("Saving people");
-                            ypr.saveAll(personSet);
-                            emnService.enrichYPersonMonitoringNotification(personSet);
-                        }
-
-                        statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
-
-                        deleteResp();
-
-                        page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toList());
-                    } else {
-                        counter[0] -= page.size();
-                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
-                        statusChanger.addProcessedVolume(-resp.size());
+                    if (StringUtils.isNotBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String edrpou = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        companiesCodes.add(Long.parseLong(edrpou));
                     }
+                });
+
+                if (!peopleCodes.isEmpty())
+                    inns.addAll(yinnRepository.findInns(peopleCodes));
+                List<Long> innsLong = inns.parallelStream().map(YINN::getInn).collect(Collectors.toList());
+
+                if (!companiesCodes.isEmpty())
+                    companies.addAll(companyRepository.findByEdrpous(companiesCodes));
+
+                Set<YPerson> personSet = new HashSet<>();
+                Set<YCompany> companySet = new HashSet<>();
+
+                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_ID);
+                workPortion.forEach(r -> {
+                    YPerson person = null;
+                    if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        if (isValidInn(inn, null) && !innsLong.contains(Long.parseLong(inn))) {
+                            person = new YPerson();
+                            person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
+                            person = extender.addPerson(personSet, person, source, false);
+
+                            Set<YTag> tags = new HashSet<>();
+                            YTag tag = new YTag();
+                            tagType.ifPresent(tag::setTagType);
+                            tag.setSource(DIRECTOR);
+                            tag.setUntil(LocalDate.of(3500, 1, 1));
+                            tags.add(tag);
+
+                            extender.addTags(person, tags, source);
+                        } else {
+                            logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
+                        }
+                    }
+                    YCompany company = null;
+                    if (StringUtils.isNotBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String edrpou = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        if (isValidEdrpou(edrpou)) {
+                            company = new YCompany();
+                            company.setEdrpou(Long.parseLong(edrpou));
+                            company = extender.addCompany(companySet, source, company, companies);
+                        } else {
+                            logError(logger, (counter[0] + 1L), Utils.messageFormat("OKPO: {}", r.getOkpo()), "Wrong OKPO");
+                        }
+                    }
+                    Optional<YCompanyRole> role = companyRoleRepository.findByRole(DIRECTOR);
+                    if (company != null && person != null && role.isPresent())
+                        extender.addCompanyRelation(person, company, role.get(), source);
+
+                    counter[0]++;
+                    statusChanger.addProcessedVolume(1);
+                });
+
+                UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
+                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                    if (!companySet.isEmpty()) {
+                        log.info("Saving companies");
+                        companyRepository.saveAll(companySet);
+                        emnService.enrichYCompanyMonitoringNotification(companySet);
+                    }
+
+                    if (!personSet.isEmpty()) {
+                        emnService.enrichYPersonPackageMonitoringNotification(personSet);
+                        log.info("Saving people");
+                        ypr.saveAll(personSet);
+                        emnService.enrichYPersonMonitoringNotification(personSet);
+                    }
+
+                    statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
+
+                    deleteResp();
+                } else {
+                    counter[0] = 0L;
+                    statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
+                    statusChanger.addProcessedVolume(0);
                 }
 
                 onePage = baseDirectorRepository.findAllByPortionId(portion, pageRequest);
+
+                if (!temp.isEmpty()) {
+                    baseDirectorRepository.saveAll(temp);
+                    extender.sendMessageToQueue(BASE_DIRECTOR, newPortion);
+                    log.info("Send message with uuid: {}, count: {}", newPortion, temp.size());
+                }
+
+                logFinish(BASE_DIRECTOR, counter[0]);
+                logger.finish();
+
+                statusChanger.complete(importedRecords(counter[0]));
             }
-
-            logFinish(BASE_DIRECTOR, counter[0]);
-            logger.finish();
-
-            statusChanger.complete(importedRecords(counter[0]));
+        } catch (Exception e) {
+            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            extender.sendMessageToQueue(BASE_DIRECTOR, portion);
         } finally {
             deleteResp();
         }

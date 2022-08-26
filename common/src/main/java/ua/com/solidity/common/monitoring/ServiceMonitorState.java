@@ -32,7 +32,7 @@ public class ServiceMonitorState {
 
     private ServiceMonitorState() {
         instance = this;
-        ServiceMonitor.schedule(lookupTask, ServiceMonitor.UPDATE_DELAY);
+        ServiceMonitor.schedule(lookupTask, ServiceMonitor.updateDelay);
         log.info("==> ServiceMonitor state getter started.");
     }
 

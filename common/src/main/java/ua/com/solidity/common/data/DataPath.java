@@ -61,4 +61,8 @@ public class DataPath {
         }
         return top;
     }
+
+    public final String toString() {
+        return String.join(".", names);
+    }
 }

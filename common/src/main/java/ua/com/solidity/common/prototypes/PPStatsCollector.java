@@ -76,8 +76,8 @@ public class PPStatsCollector extends Prototype {
     private void handleBatch(Data data) {
         DataBatch batch = data.input.getValue(DataBatch.class);
         if (batch != null) {
-            batch.handle((obj)->{data.collector.push(obj); return null;},
-                    (err)->{data.collector.pushError(); return true;});
+            batch.handle(obj->{data.collector.push(obj); return null;},
+                    err->{data.collector.pushError(); return true;});
         }
     }
 

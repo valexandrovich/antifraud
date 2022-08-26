@@ -2,11 +2,11 @@ package ua.com.solidity.web.utils;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
 
-@NoArgsConstructor
-public class MapperUtil {
+public final class MapperUtil {
+    private MapperUtil() {
+    }
 
     private static ModelMapper modelMapper;
 

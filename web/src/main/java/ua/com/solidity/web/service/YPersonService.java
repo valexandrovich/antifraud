@@ -71,6 +71,8 @@ public class YPersonService {
     private static final String PHONE = "phone";
     private static final String PHONES = "phones";
     boolean criteriaFound;
+    
+    private static final String NO_RELATION_MESSAGE = "У зазначеної людини немає таких стосунків";
 
 
     public Page<YPersonSearchDto> search(PaginationSearchRequest paginationSearchRequest,
@@ -240,7 +242,7 @@ public class YPersonService {
                 .collect(Collectors.toList());
     }
 
-    public void joinToNewRelation(JoinToNewRelationRequest joinToNewRelationRequest, HttpServletRequest httpRequest) {
+    public void joinToNewRelation(JoinToNewRelationRequest joinToNewRelationRequest) {
         Set<UUID> personIds = joinToNewRelationRequest.getPersonIds();
         Integer typeId = joinToNewRelationRequest.getTypeId();
 
@@ -296,7 +298,7 @@ public class YPersonService {
         ypr.saveAll(peopleToNewRelation);
     }
 
-    public void joinToExistingRelation(JoinToExistingRelationRequest joinToExistingRelationRequest, HttpServletRequest httpRequest) {
+    public void joinToExistingRelation(JoinToExistingRelationRequest joinToExistingRelationRequest) {
         Set<UUID> personIds = joinToExistingRelationRequest.getPersonIds();
         Long groupId = joinToExistingRelationRequest.getGroupId();
 
@@ -325,18 +327,18 @@ public class YPersonService {
         });
     }
 
-    public void removePersonFromRelation(UUID personId, Long groupId, HttpServletRequest httpRequest) {
+    public void removePersonFromRelation(UUID personId, Long groupId) {
         YPerson yPerson = ypr.findById(personId).orElseThrow(() -> new EntityNotFoundException(YPerson.class, personId));
 
         YPersonRelationGroup relationGroup = relationGroupRepository.findById(groupId)
                 .orElseThrow(() -> new EntityNotFoundException(YPersonRelationGroup.class, groupId));
         List<YPerson> allByRelationGroupId = ypr.findAllByRelationGroupId(groupId);
         YPersonRelation yPersonRelation = relationRepository.findByPersonAndRelationGroup(yPerson, relationGroup)
-                .orElseThrow(() -> new IllegalApiArgumentException("У зазначеної людини немає таких стосунків"));
+                .orElseThrow(() -> new IllegalApiArgumentException(NO_RELATION_MESSAGE));
         try {
             relationRepository.deleteById(yPersonRelation.getId());
         } catch (EmptyResultDataAccessException e) {
-            throw new IllegalApiArgumentException("У зазначеної людини немає таких стосунків");
+            throw new IllegalApiArgumentException(NO_RELATION_MESSAGE);
         }
 
         if (allByRelationGroupId.size() == 2) {
@@ -346,7 +348,7 @@ public class YPersonService {
 
             peopleToRemoveFromRelation.forEach(person -> {
                 YPersonRelation personRelation = relationRepository.findByPersonAndRelationGroup(person, relationGroup)
-                        .orElseThrow(() -> new IllegalApiArgumentException("У зазначеної людини немає таких стосунків"));
+                        .orElseThrow(() -> new IllegalApiArgumentException(NO_RELATION_MESSAGE));
                 try {
                     relationRepository.deleteById(personRelation.getId());
                 } catch (EmptyResultDataAccessException e) {

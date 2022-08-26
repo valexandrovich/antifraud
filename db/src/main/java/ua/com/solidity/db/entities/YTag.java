@@ -29,15 +29,32 @@ public class YTag implements Identifiable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
+
     @ManyToOne
     @JoinColumn(name = "tag_type_id")
     private TagType tagType;
+
 	@Column(name = "as_Of")
 	private LocalDate asOf;
+
 	@Column(name = "until")
 	private LocalDate until;
+
+    @Column(name = "event_date")
+    private LocalDate eventDate;
+
 	@Column(name = "source", length = 1100)
 	private String source;
+
+    @Column(name = "number_value")
+    private String numberValue;
+
+    @Column(name = "text_value")
+    private String textValue;
+
+    @Column(name = "description")
+    private String description;
+
 	@ManyToOne
 	@JsonBackReference
 	@JoinColumn(name = "person_id")

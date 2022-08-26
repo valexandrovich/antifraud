@@ -2,6 +2,7 @@ package ua.com.solidity.web.service.validator;
 
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -9,7 +10,10 @@ import ua.com.solidity.common.UtilString;
 import ua.com.solidity.db.entities.ManualPerson;
 import ua.com.solidity.web.response.secondary.ManualPersonStatus;
 
-public class PersonValidator {
+public final class PersonValidator {
+    private PersonValidator() {
+    }
+
     private static final String MESSAGE_LONG_VALUE = "Довжина поля перевищує 255 символів";
     private static final String MESSAGE_EMPTY_DATA = "Одне з полів має бути заповненим: прізвище, ІПН, паспорт";
     private static final String MESSAGE_PASS = "Обидва поля мають бути заповненими: серія та номер";
@@ -65,10 +69,23 @@ public class PersonValidator {
                 statusList.add(new ManualPersonStatus(person.getId(), 9, MESSAGE_LONG_VALUE));
             if (!valid(person.getPnameEn(), DataRegex.NAME_EN.getRegex()))
                 statusList.add(new ManualPersonStatus(person.getId(), 9, DataRegex.NAME_EN.getMessage()));
-            if (!valid(person.getBirthday(), DataRegex.DATE.getRegex()))
+
+            boolean birthDateError = false;
+            boolean innError = false;
+
+            LocalDate birthDate = UtilString.stringToDate(person.getBirthday());
+            if (!valid(person.getBirthday(), DataRegex.DATE.getRegex()) || birthDate == null) {
                 statusList.add(new ManualPersonStatus(person.getId(), 10, DataRegex.DATE.getMessage()));
-            if (!valid(person.getOkpo(), DataRegex.INN.getRegex()) || (StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), null)))
+                birthDateError = true;
+            }
+            if (!valid(person.getOkpo(), DataRegex.INN.getRegex()) || (StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), null))) {
                 statusList.add(new ManualPersonStatus(person.getId(), 11, DataRegex.INN.getMessage()));
+                innError = true;
+            }
+            if (!birthDateError && !innError && StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), birthDate)) {
+                statusList.add(new ManualPersonStatus(person.getId(), 10, "дата народження не відповідає іпн"));
+            }
+
             if (StringUtils.isNotBlank(person.getCountry()) && person.getCountry().length() == 255
                     && person.getLnameUk().contains("..."))
                 statusList.add(new ManualPersonStatus(person.getId(), 12, MESSAGE_LONG_VALUE));

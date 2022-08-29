@@ -4,3 +4,13 @@
     vaultAddress: "https://vault.otpbank.com.ua:443"
     vaultMountPath: "auth/kubernetes/"
     appPropertiesPath: "/vault/secrets/application.properties"
+
+
+
+  resources:
+    limits:
+      cpu: 3000m
+      memory: 6Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi

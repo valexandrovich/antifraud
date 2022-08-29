@@ -68,6 +68,7 @@ public class BaseDrfoEnricher implements Enricher {
     @Value("${dispatcher.url.delete}")
     private String urlDelete;
     private List<EntityProcessing> resp = new ArrayList<>();
+    private static final int START_INDEX_ADDRESS = 11;
 
     @SneakyThrows
     @Override
@@ -178,9 +179,9 @@ public class BaseDrfoEnricher implements Enricher {
                             address.setAddress(UtilString.toUpperCase(a));
                             addresses.add(address);
                         });
-                    if (StringUtils.isNotBlank(r.getResidenceAddress()) && r.getResidenceAddress().length() > 11) {
+                    if (StringUtils.isNotBlank(r.getResidenceAddress()) && r.getResidenceAddress().length() > START_INDEX_ADDRESS) {
                         YAddress address = new YAddress();
-                        address.setAddress(UtilString.toUpperCase(r.getResidenceAddress().substring(11)));
+                        address.setAddress(UtilString.toUpperCase(r.getResidenceAddress().substring(START_INDEX_ADDRESS)));
                         addresses.add(address);
                     }
                     if (StringUtils.isNotBlank(r.getAddress())) {
@@ -216,7 +217,6 @@ public class BaseDrfoEnricher implements Enricher {
                     }
 
                     deleteResp();
-
                 } else {
                     counter[0] = 0L;
                     statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);

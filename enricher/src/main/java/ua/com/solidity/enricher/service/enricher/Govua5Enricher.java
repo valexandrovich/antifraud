@@ -13,9 +13,7 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NBB1;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +21,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import lombok.CustomLog;
@@ -72,21 +69,15 @@ public class Govua5Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.timeOutTime}")
-    private Integer timeOutTime;
-    @Value("${enricher.sleepTime}")
-    private int sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
     private String urlDelete;
     private List<EntityProcessing> resp = new ArrayList<>();
 
-
     @SneakyThrows
     @Override
     public void enrich(UUID portion) {
-        LocalDateTime startTime = LocalDateTime.now();
 
         logStart(GOVUA5);
 
@@ -94,9 +85,12 @@ public class Govua5Enricher implements Enricher {
 
         long[] counter = new long[1];
 
+        UUID newPortion = UUID.randomUUID();
+
         try {
             Pageable pageRequest = PageRequest.of(0, pageSize);
             Page<Govua5> onePage = govua5Repository.findAllByPortionId(portion, pageRequest);
+            if (onePage.isEmpty()) return;
             long count = govua5Repository.countAllByPortionId(portion);
             statusChanger.newStage(null, "enriching", count, null);
             String fileName = fileFormatUtil.getLogFileName(portion.toString());
@@ -107,119 +101,123 @@ public class Govua5Enricher implements Enricher {
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
-                Set<Govua5> page = onePage.toSet();
 
-                while (!page.isEmpty()) {
-                    Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime) {
-                        statusChanger.setStatus(" Timeout after 25 minutes. Task has been rescheduled.");
-                        extender.sendMessageToQueue(GOVUA5, portion);
-
-                        throw new TimeoutException("Time ran out for portion: " + portion);
+                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(c -> {
+                    EntityProcessing entityProcessing = new EntityProcessing();
+                    entityProcessing.setUuid(c.getId());
+                    if (UtilString.matches(c.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                        String edrpou = c.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        entityProcessing.setEdrpou(Long.parseLong(edrpou));
                     }
-                    List<EntityProcessing> entityProcessings = page.parallelStream().map(c -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
-                        entityProcessing.setUuid(c.getId());
-                        if (UtilString.matches(c.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
-                            String edrpou = c.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            entityProcessing.setEdrpou(Long.parseLong(edrpou));
-                        }
-                        if (StringUtils.isNotBlank(c.getName()))
-                            entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(c.getName().trim())));
-                        return entityProcessing;
-                    }).collect(Collectors.toList());
+                    if (StringUtils.isNotBlank(c.getName()))
+                        entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(c.getName().trim())));
+                    return entityProcessing;
+                }).collect(Collectors.toList());
 
-                    UUID dispatcherId = httpClient.get(urlPost, UUID.class);
+                UUID dispatcherId = httpClient.get(urlPost, UUID.class);
 
-                    log.info("Passing {}, count: {}", portion, entityProcessings.size());
-                    String url = urlPost + "?id=" + portion;
-                    DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
-                    resp = new ArrayList<>(response.getResp());
-                    List<UUID> temp = response.getTemp();
-                    List<UUID> respId = response.getRespId();
-                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
-                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
+                log.info("Passing {}, count: {}", portion, entityProcessings.size());
+                String url = urlPost + "?id=" + portion;
+                DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
+                resp = new ArrayList<>(response.getResp());
+                List<UUID> respId = response.getRespId();
+                log.info("To be processed: {}", resp.size());
+                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
-                    List<Govua5> workPortion = page.stream().parallel().filter(p -> respId.contains(p.getId()))
-                            .collect(Collectors.toList());
+                if (respId.isEmpty()) {
+                    extender.sendMessageToQueue(GOVUA5, portion);
+                    return;
+                }
 
-                    if (workPortion.isEmpty()) Utils.waitMs(sleepTime);
-
-                    Set<Long> codes = new HashSet<>();
-                    Set<YCompany> companies = new HashSet<>();
-
-                    Set<YCompany> savedCompanies = new HashSet<>();
-                    workPortion.forEach(r -> {
-                        if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
-                            String edrpou = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            codes.add(Long.parseLong(edrpou));
-                        }
-                    });
-
-                    if (!codes.isEmpty())
-                        savedCompanies.addAll(companyRepository.findByEdrpous(codes));
-
-                    Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
-                    Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
-                    workPortion.forEach(r -> {
-                        YCompany company;
-
-                        if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
-                            String code = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-
-                            if (isValidEdrpou(code)) {
-                                company = new YCompany();
-                                company.setEdrpou(Long.parseLong(code));
-                                company.setName(UtilString.toUpperCase(r.getName()));
-                                state.ifPresent(company::setState);
-                                company = extender.addCompany(companies, source, company, savedCompanies);
-
-                                Set<YCTag> tags = new HashSet<>();
-                                YCTag tag = new YCTag();
-                                tagType.ifPresent(tag::setTagType);
-                                tag.setSource(GOVUA5);
-                                tag.setUntil(LocalDate.of(3500, 1, 1));
-                                tags.add(tag);
-
-                                extender.addTags(company, tags, source);
-                            } else {
-                                logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
-                            }
-                        }
-                        if (!resp.isEmpty()) {
-                            counter[0]++;
-                            statusChanger.addProcessedVolume(1);
-                        }
-                    });
-                    UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
-                    if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
-
-                        if (!companies.isEmpty()) {
-                            emnService.enrichYCompanyPackageMonitoringNotification(companies);
-                            log.info("Saving companies");
-                            companyRepository.saveAll(companies);
-                            emnService.enrichYCompanyMonitoringNotification(companies);
-                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
-                        }
-
-                        deleteResp();
-
-                        page = page.parallelStream().filter(p -> temp.contains(p.getId())).collect(Collectors.toSet());
-                    } else {
-                        counter[0] -= resp.size();
-                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
-                        statusChanger.addProcessedVolume(-resp.size());
+                List<Govua5> workPortion = new ArrayList<>();
+                List<Govua5> temp = new ArrayList<>();
+                onePage.stream().parallel().forEach(p -> {
+                    if (respId.contains(p.getId())) workPortion.add(p);
+                    else {
+                        p.setPortionId(newPortion);
+                        temp.add(p);
                     }
+                });
+
+                Set<Long> codes = new HashSet<>();
+                Set<YCompany> companies = new HashSet<>();
+
+                Set<YCompany> savedCompanies = new HashSet<>();
+                workPortion.forEach(r -> {
+                    if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                        String edrpou = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        codes.add(Long.parseLong(edrpou));
+                    }
+                });
+
+                if (!codes.isEmpty())
+                    savedCompanies.addAll(companyRepository.findByEdrpous(codes));
+
+                Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
+                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
+                workPortion.forEach(r -> {
+                    YCompany company;
+
+                    if (UtilString.matches(r.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
+                        String code = r.getEdrpou().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+
+                        if (isValidEdrpou(code)) {
+                            company = new YCompany();
+                            company.setEdrpou(Long.parseLong(code));
+                            company.setName(UtilString.toUpperCase(r.getName()));
+                            state.ifPresent(company::setState);
+                            company = extender.addCompany(companies, source, company, savedCompanies);
+
+                            Set<YCTag> tags = new HashSet<>();
+                            YCTag tag = new YCTag();
+                            tagType.ifPresent(tag::setTagType);
+                            tag.setSource(GOVUA5);
+                            tag.setUntil(LocalDate.of(3500, 1, 1));
+                            tags.add(tag);
+
+                            extender.addTags(company, tags, source);
+                        } else {
+                            logError(logger, (counter[0] + 1L), Utils.messageFormat("EDRPOU: {}", r.getEdrpou()), "Wrong EDRPOU");
+                        }
+                    }
+                    if (!resp.isEmpty()) {
+                        counter[0]++;
+                        statusChanger.addProcessedVolume(1);
+                    }
+                });
+                UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
+                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                    if (!companies.isEmpty()) {
+                        emnService.enrichYCompanyPackageMonitoringNotification(companies);
+                        log.info("Saving companies");
+                        companyRepository.saveAll(companies);
+                        emnService.enrichYCompanyMonitoringNotification(companies);
+                        statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
+                    }
+
+                    deleteResp();
+                } else {
+                    counter[0] = 0L;
+                    statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
+                    statusChanger.addProcessedVolume(0);
                 }
 
                 onePage = govua5Repository.findAllByPortionId(portion, pageRequest);
-            }
 
-            logFinish(GOVUA5, counter[0]);
-            logger.finish();
-            statusChanger.complete(importedRecords(counter[0]));
+                if (!temp.isEmpty()) {
+                    govua5Repository.saveAll(temp);
+                    extender.sendMessageToQueue(GOVUA5, newPortion);
+                    log.info("Send message with uuid: {}, count: {}", newPortion, temp.size());
+                }
+
+                logFinish(GOVUA5, counter[0]);
+                logger.finish();
+                statusChanger.complete(importedRecords(counter[0]));
+            }
         } catch (Exception e) {
             statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            extender.sendMessageToQueue(GOVUA5, portion);
         } finally {
             deleteResp();
         }

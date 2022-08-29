@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -147,7 +148,6 @@ public class BasePassportsEnricher implements Enricher {
 
                 Set<Long> codes = new HashSet<>();
                 Set<YPassport> passportSeriesWithNumber = new HashSet<>();
-                Set<Integer> passportNumbers = new HashSet<>();
                 Set<YPerson> people = new HashSet<>();
 
                 Set<YINN> inns = new HashSet<>();
@@ -162,7 +162,6 @@ public class BasePassportsEnricher implements Enricher {
                         pass.setNumber(Integer.valueOf(passportNo));
                         pass.setSeries(passportSerial);
                         passportSeriesWithNumber.add(pass);
-                        passportNumbers.add(Integer.parseInt(passportNo));
                     }
                     if (!StringUtils.isBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
@@ -174,15 +173,16 @@ public class BasePassportsEnricher implements Enricher {
                     inns.addAll(yinnRepository.findInns(codes));
                     savedPersonSet.addAll(ypr.findPeopleInnsForBaseEnricher(codes));
                 }
-                if (!passportNumbers.isEmpty() && !passportSeriesWithNumber.isEmpty()) {
-                    passports = passportRepository.findPassportsByNumber(passportNumbers);
-                    passports = passports.parallelStream().filter(passportSeriesWithNumber::contains).collect(Collectors.toSet());
+                if (!passportSeriesWithNumber.isEmpty()) {
+                    for (YPassport passport : passportSeriesWithNumber) {
+                        Optional<YPassport> newPass = passportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
+                        newPass.ifPresent(passports::add);
+                    }
                 }
 
                 if (!passports.isEmpty())
                     savedPersonSet.addAll(ypr.findPeoplePassportsForBaseEnricher(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList())));
 
-                Set<YPassport> finalPassports = passports;
                 workPortion.forEach(r -> {
                     String lastName = UtilString.toUpperCase(r.getLastName());
                     String firstName = UtilString.toUpperCase(r.getFirstName());
@@ -218,7 +218,7 @@ public class BasePassportsEnricher implements Enricher {
                             passport.setRecordNumber(null);
                             passport.setValidity(true);
                             passport.setType(DOMESTIC_PASSPORT);
-                            person = extender.addPassport(passport, people, source, person, savedPersonSet, finalPassports);
+                            person = extender.addPassport(passport, people, source, person, savedPersonSet, passports);
                         }
                     }
                     extender.addPerson(people, person, source, false);

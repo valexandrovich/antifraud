@@ -173,7 +173,6 @@ public class ContragentEnricher implements Enricher {
                 });
 
                 Set<Long> codes = new HashSet<>();
-                Set<Integer> passportNumbers = new HashSet<>();
                 Set<YPerson> people = new HashSet<>();
                 Set<YCompany> companies = new HashSet<>();
                 Set<YINN> inns = new HashSet<>();
@@ -191,7 +190,6 @@ public class ContragentEnricher implements Enricher {
                         pass.setNumber(Integer.valueOf(passportNo));
                         pass.setSeries(passportSerial);
                         passportSeriesWithNumber.add(pass);
-                        passportNumbers.add(Integer.parseInt(passportNo));
                     }
                     if (!StringUtils.isBlank(r.getIdentifyCode()) && r.getIdentifyCode().matches(CONTAINS_NUMERAL_REGEX)) {
                         String code = r.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
@@ -204,9 +202,11 @@ public class ContragentEnricher implements Enricher {
                     savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
                     savedCompanySet.addAll(companyRepository.findByEdrpous(codes));
                 }
-                if (!passportNumbers.isEmpty() && !passportSeriesWithNumber.isEmpty()) {
-                    passports = yPassportRepository.findPassportsByNumber(passportNumbers);
-                    passports = passports.parallelStream().filter(passportSeriesWithNumber::contains).collect(Collectors.toSet());
+                if (!passportSeriesWithNumber.isEmpty()) {
+                    for (YPassport passport : passportSeriesWithNumber) {
+                        Optional<YPassport> newPass = yPassportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
+                        newPass.ifPresent(passports::add);
+                    }
                 }
 
                 if (!passports.isEmpty())

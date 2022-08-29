@@ -21,18 +21,16 @@ import static ua.com.solidity.enricher.util.StringStorage.FOREIGN_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import lombok.CustomLog;
@@ -103,7 +101,6 @@ public class ManualPersonEnricher implements Enricher {
     @SneakyThrows
     @Override
     public void enrich(UUID revision) {
-        LocalDateTime startTime = LocalDateTime.now();
 
         logStart(MANUAL_PERSON);
 
@@ -111,11 +108,14 @@ public class ManualPersonEnricher implements Enricher {
 
         long[] counter = new long[1];
 
+        UUID newPortion = UUID.randomUUID();
+
         try {
             Pageable pageRequest = PageRequest.of(0, pageSize);
             FileDescription file = fileDescriptionRepository.findByUuid(revision).orElseThrow(() ->
                     new RuntimeException("Can't find file with id = " + revision));
             Page<ManualPerson> onePage = manualPersonRepository.findAllByUuid(file, pageRequest);
+            if (onePage.isEmpty()) return;
             long count = manualPersonRepository.countAllByUuid(file);
             statusChanger.newStage(null, "enriching", count, null);
             String fileName = fileFormatUtil.getLogFileName(revision.toString());
@@ -126,296 +126,299 @@ public class ManualPersonEnricher implements Enricher {
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
-                List<ManualPerson> page = onePage.toList();
                 Map<Long, UUID> uuidMap = new HashMap<>();
 
-                while (!page.isEmpty()) {
-                    Duration duration = Duration.between(startTime, LocalDateTime.now());
-                    if (duration.getSeconds() > timeOutTime) {
-                        statusChanger.setStatus(" Timeout after 25 minutes. Task has been rescheduled.");
-                        extender.sendMessageToQueue(MANUAL_PERSON, revision);
+                onePage.forEach(p -> {
+                    UUID uuid = UUID.randomUUID();
+                    uuidMap.put(p.getId(), uuid);
+                });
 
-                        throw new TimeoutException("Time ran out for portion: " + revision);
+                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                    EntityProcessing entityProcessing = new EntityProcessing();
+                    entityProcessing.setUuid(uuidMap.get(p.getId()));
+                    if (!StringUtils.isBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String inn = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        entityProcessing.setInn(Long.parseLong(inn));
                     }
-                    page.forEach(p -> {
-                        UUID uuid = UUID.randomUUID();
-                        uuidMap.put(p.getId(), uuid);
-                    });
+                    if (StringUtils.isNotBlank(p.getPassLocalNum()) && p.getPassLocalNum().matches(ALL_NUMBER_REGEX))
+                        entityProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getPassLocalSerial()), Integer.valueOf(p.getPassLocalNum())));
+                    if (StringUtils.isNotBlank(p.getLnameUk()) || StringUtils.isNotBlank(p.getFnameUk()) || StringUtils.isNotBlank(p.getPnameUk())
+                            || p.getBirthday() != null)
+                        entityProcessing.setPersonHash(Objects.hash(UtilString.toUpperCase(p.getLnameUk()), UtilString.toUpperCase(p.getFnameUk()), UtilString.toUpperCase(p.getPnameUk()),
+                                p.getBirthday()));
+                    return entityProcessing;
+                }).collect(Collectors.toList());
+                entityProcessings.addAll(onePage.stream().parallel().map(p -> {
+                    EntityProcessing entityProcessing = new EntityProcessing();
+                    entityProcessing.setUuid(uuidMap.get(p.getId()));
+                    if (StringUtils.isNotBlank(p.getPassIdNum()) && p.getPassIdNum().matches(ALL_NUMBER_REGEX))
+                        entityProcessing.setPassHash(Objects.hash(Integer.valueOf(p.getPassIdNum())));
+                    return entityProcessing;
+                }).collect(Collectors.toList()));
+                entityProcessings.addAll(onePage.stream().parallel().map(p -> {
+                    EntityProcessing entityProcessing = new EntityProcessing();
+                    entityProcessing.setUuid(uuidMap.get(p.getId()));
+                    if (StringUtils.isNotBlank(p.getPassIntNum())) {
+                        String passportNo = p.getPassIntNum().substring(2);
+                        String passportSerial = p.getPassIntNum().substring(0, 2);
+                        entityProcessing.setPassHash(Objects.hash(transliterationToLatinLetters(passportSerial), Integer.valueOf(passportNo)));
+                    }
+                    return entityProcessing;
+                }).collect(Collectors.toList()));
 
-                    List<EntityProcessing> entityProcessings = page.parallelStream().map(p -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
-                        entityProcessing.setUuid(uuidMap.get(p.getId()));
-                        if (!StringUtils.isBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String inn = p.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            entityProcessing.setInn(Long.parseLong(inn));
+                UUID dispatcherId = httpClient.get(urlPost, UUID.class);
+
+                log.info("Passing {}, count: {}", revision, entityProcessings.size());
+                String url = urlPost + "?id=" + revision;
+                DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
+                resp = new ArrayList<>(response.getResp());
+                List<UUID> respId = response.getRespId();
+                log.info("To be processed: {}", resp.size());
+                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
+
+                if (respId.isEmpty()) {
+                    extender.sendMessageToQueue(MANUAL_PERSON, revision);
+                    return;
+                }
+
+                List<ManualPerson> workPortion = new ArrayList<>();
+                List<ManualPerson> temp = new ArrayList<>();
+                FileDescription newFileDescription = new FileDescription();
+                newFileDescription.setUuid(newPortion);
+                onePage.stream().parallel().forEach(p -> {
+                    if (respId.contains(uuidMap.get(p.getId()))) workPortion.add(p);
+                    else {
+                        p.setUuid(newFileDescription);
+                        temp.add(p);
+                    }
+                });
+
+                Set<YPerson> personSet = new HashSet<>();
+                Set<YPassport> passportSeriesWithNumber = new HashSet<>();
+                Set<Long> codes = new HashSet<>();
+
+                workPortion.forEach(r -> {
+                    if (StringUtils.isNotBlank(r.getPassLocalNum())) {
+                        YPassport pass = new YPassport();
+                        pass.setNumber(Integer.valueOf(r.getPassLocalNum()));
+                        pass.setSeries(transliterationToCyrillicLetters(r.getPassLocalSerial()));
+                        passportSeriesWithNumber.add(pass);
+                    }
+                    if (StringUtils.isNotBlank(r.getPassIntNum())) {
+                        String passportNo = r.getPassIntNum().substring(2);
+                        String passportSerial = r.getPassIntNum().substring(0, 2);
+                        YPassport pass = new YPassport();
+                        pass.setNumber(Integer.parseInt(passportNo));
+                        pass.setSeries(transliterationToLatinLetters(passportSerial));
+                        passportSeriesWithNumber.add(pass);
+                    }
+                    if (StringUtils.isNotBlank(r.getPassIdNum())) {
+                        YPassport pass = new YPassport();
+                        pass.setNumber(Integer.valueOf(r.getPassIdNum()));
+                        pass.setSeries(null);
+                        passportSeriesWithNumber.add(pass);
+                    }
+                    if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        codes.add(Long.parseLong(inn));
+                    }
+                });
+
+                Set<YINN> inns = new HashSet<>();
+                Set<YPassport> passports = new HashSet<>();
+                Set<YPerson> savedPersonSet = new HashSet<>();
+
+                if (!codes.isEmpty()) {
+                    inns.addAll(yinnRepository.findInns(codes));
+                    savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
+                }
+
+                if (!passportSeriesWithNumber.isEmpty()) {
+                    for (YPassport passport : passportSeriesWithNumber) {
+                        Optional<YPassport> newPass = passportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
+                        newPass.ifPresent(passports::add);
+                    }
+                }
+
+                if (!passports.isEmpty())
+                    savedPersonSet.addAll(ypr.findPeoplePassports(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList())));
+
+                workPortion.forEach(r -> {
+                    String lastName = UtilString.toUpperCase(r.getLnameUk());
+                    String firstName = UtilString.toUpperCase(r.getFnameUk());
+                    String patName = UtilString.toUpperCase(r.getPnameUk());
+                    LocalDate birthday = stringToDate(r.getBirthday());
+
+                    YPerson person = new YPerson();
+                    person.setLastName(lastName);
+                    person.setFirstName(firstName);
+                    person.setPatName(patName);
+                    person.setBirthdate(birthday);
+                    if (StringUtils.isNotBlank(r.getSex()))
+                        person.setSex(r.getSex().trim().toUpperCase());
+                    if (StringUtils.isNotBlank(r.getCountry()))
+                        person.setCountry(r.getCountry().trim().toUpperCase());
+                    if (StringUtils.isNotBlank(r.getComment()))
+                        person.setComment(r.getComment().trim().toUpperCase());
+                    if (StringUtils.isNotBlank(r.getBirthPlace()))
+                        person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
+
+                    if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
+                        String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        if (isValidInn(inn, stringToDate(r.getBirthday()))) {
+                            person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
+                        } else {
+                            logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getOkpo()), "Wrong INN");
                         }
-                        if (StringUtils.isNotBlank(p.getPassLocalNum()) && p.getPassLocalNum().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setPassHash(Objects.hash(transliterationToCyrillicLetters(p.getPassLocalSerial()), Integer.valueOf(p.getPassLocalNum())));
-                        if (StringUtils.isNotBlank(p.getLnameUk()) || StringUtils.isNotBlank(p.getFnameUk()) || StringUtils.isNotBlank(p.getPnameUk())
-                                || p.getBirthday() != null)
-                            entityProcessing.setPersonHash(Objects.hash(UtilString.toUpperCase(p.getLnameUk()), UtilString.toUpperCase(p.getFnameUk()), UtilString.toUpperCase(p.getPnameUk()),
-                                    p.getBirthday()));
-                        return entityProcessing;
-                    }).collect(Collectors.toList());
-                    entityProcessings.addAll(page.parallelStream().map(p -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
-                        entityProcessing.setUuid(uuidMap.get(p.getId()));
-                        if (StringUtils.isNotBlank(p.getPassIdNum()) && p.getPassIdNum().matches(ALL_NUMBER_REGEX))
-                            entityProcessing.setPassHash(Objects.hash(Integer.valueOf(p.getPassIdNum())));
-                        return entityProcessing;
-                    }).collect(Collectors.toList()));
-                    entityProcessings.addAll(page.parallelStream().map(p -> {
-                        EntityProcessing entityProcessing = new EntityProcessing();
-                        entityProcessing.setUuid(uuidMap.get(p.getId()));
-                        if (StringUtils.isNotBlank(p.getPassIntNum())) {
-                            String passportNo = p.getPassIntNum().substring(2);
-                            String passportSerial = p.getPassIntNum().substring(0, 2);
-                            entityProcessing.setPassHash(Objects.hash(transliterationToLatinLetters(passportSerial), Integer.valueOf(passportNo)));
-                        }
-                        return entityProcessing;
-                    }).collect(Collectors.toList()));
-
-                    UUID dispatcherId = httpClient.get(urlPost, UUID.class);
-
-                    log.info("Passing {}, count: {}", revision, entityProcessings.size());
-                    String url = urlPost + "?id=" + revision;
-                    DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
-                    resp = new ArrayList<>(response.getResp());
-                    List<UUID> respId = response.getRespId();
-                    List<UUID> temp = response.getTemp();
-                    log.info("To be processed: {}, waiting: {}", resp.size(), temp.size());
-                    statusChanger.setStatus(Utils.messageFormat("Enriched: {}, to be processed: {}, waiting: {}", statusChanger.getProcessedVolume(), resp.size(), temp.size()));
-
-                    List<ManualPerson> workPortion = page.stream().parallel().filter(p -> respId.contains(uuidMap.get(p.getId())))
-                            .collect(Collectors.toList());
-
-                    if (workPortion.isEmpty()) Utils.waitMs(sleepTime);
-
-                    Set<YPerson> personSet = new HashSet<>();
-                    Set<YPassport> passportSeriesWithNumber = new HashSet<>();
-                    Set<Integer> passportNumbers = new HashSet<>();
-                    Set<Long> codes = new HashSet<>();
-
-                    workPortion.forEach(r -> {
-                        if (StringUtils.isNotBlank(r.getPassLocalNum())) {
-                            YPassport pass = new YPassport();
-                            pass.setNumber(Integer.valueOf(r.getPassLocalNum()));
-                            pass.setSeries(transliterationToCyrillicLetters(r.getPassLocalSerial()));
-                            passportSeriesWithNumber.add(pass);
-                            passportNumbers.add(Integer.parseInt(r.getPassLocalNum()));
-                        }
-                        if (StringUtils.isNotBlank(r.getPassIntNum())) {
-                            String passportNo = r.getPassIntNum().substring(2);
-                            String passportSerial = r.getPassIntNum().substring(0, 2);
-                            YPassport pass = new YPassport();
-                            pass.setNumber(Integer.parseInt(passportNo));
-                            pass.setSeries(transliterationToLatinLetters(passportSerial));
-                            passportSeriesWithNumber.add(pass);
-                            passportNumbers.add(Integer.parseInt(passportNo));
-                        }
-                        if (StringUtils.isNotBlank(r.getPassIdNum())) {
-                            YPassport pass = new YPassport();
-                            pass.setNumber(Integer.valueOf(r.getPassIdNum()));
-                            pass.setSeries(null);
-                            passportSeriesWithNumber.add(pass);
-                            passportNumbers.add(Integer.parseInt(r.getPassIdNum()));
-                        }
-                        if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            codes.add(Long.parseLong(inn));
-                        }
-                    });
-
-                    Set<YINN> inns = new HashSet<>();
-                    Set<YPassport> passports = new HashSet<>();
-                    Set<YPerson> savedPersonSet = new HashSet<>();
-
-                    if (!codes.isEmpty()) {
-                        inns.addAll(yinnRepository.findInns(codes));
-                        savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
                     }
 
-                    if (!passportNumbers.isEmpty() && !passportSeriesWithNumber.isEmpty()) {
-                        passports = passportRepository.findPassportsByNumber(passportNumbers);
-                        passports = passports.parallelStream().filter(passportSeriesWithNumber::contains).collect(Collectors.toSet());
+                    String passportNo = r.getPassLocalNum();
+                    String passportSerial = r.getPassLocalSerial();
+                    if (isValidLocalPassport(passportNo, passportSerial, counter, logger)) {
+                        passportSerial = transliterationToCyrillicLetters(passportSerial);
+                        int number = Integer.parseInt(passportNo);
+                        YPassport passport = new YPassport();
+                        passport.setSeries(passportSerial);
+                        passport.setNumber(number);
+                        passport.setAuthority(null);
+                        passport.setIssued(null);
+                        passport.setEndDate(null);
+                        passport.setRecordNumber(null);
+                        passport.setType(DOMESTIC_PASSPORT);
+                        passport.setValidity(true);
+                        person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
                     }
 
-                    if (!passports.isEmpty())
-                        savedPersonSet.addAll(ypr.findPeoplePassports(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList())));
-
-                    Set<YPassport> finalPassports = passports;
-                    workPortion.forEach(r -> {
-                        String lastName = UtilString.toUpperCase(r.getLnameUk());
-                        String firstName = UtilString.toUpperCase(r.getFnameUk());
-                        String patName = UtilString.toUpperCase(r.getPnameUk());
-                        LocalDate birthday = stringToDate(r.getBirthday());
-
-                        YPerson person = new YPerson();
-                        person.setLastName(lastName);
-                        person.setFirstName(firstName);
-                        person.setPatName(patName);
-                        person.setBirthdate(birthday);
-                        if (StringUtils.isNotBlank(r.getSex()))
-                            person.setSex(r.getSex().trim().toUpperCase());
-                        if (StringUtils.isNotBlank(r.getCountry()))
-                            person.setCountry(r.getCountry().trim().toUpperCase());
-                        if (StringUtils.isNotBlank(r.getComment()))
-                            person.setComment(r.getComment().trim().toUpperCase());
-                        if (StringUtils.isNotBlank(r.getBirthPlace()))
-                            person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
-
-                        if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            if (isValidInn(inn, stringToDate(r.getBirthday()))) {
-                                person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
-                            } else {
-                                logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getOkpo()), "Wrong INN");
-                            }
-                        }
-
-                        String passportNo = r.getPassLocalNum();
-                        String passportSerial = r.getPassLocalSerial();
-                        if (isValidLocalPassport(passportNo, passportSerial, counter, logger)) {
-                            passportSerial = transliterationToCyrillicLetters(passportSerial);
+                    String passportRecNo;
+                    if (StringUtils.isNotBlank(r.getPassIntNum())) {
+                        passportNo = r.getPassIntNum().substring(2);
+                        passportSerial = r.getPassIntNum().substring(0, 2);
+                        passportRecNo = r.getPassIntRecNum();
+                        if (isValidForeignPassport(passportNo, passportSerial, passportRecNo,
+                                counter, logger)) {
+                            passportSerial = transliterationToLatinLetters(passportSerial);
                             int number = Integer.parseInt(passportNo);
                             YPassport passport = new YPassport();
                             passport.setSeries(passportSerial);
                             passport.setNumber(number);
-                            passport.setAuthority(null);
-                            passport.setIssued(null);
+                            passport.setAuthority(r.getPassIntIssuer());
+                            passport.setIssued(stringToDate(r.getPassIntIssueDate()));
                             passport.setEndDate(null);
-                            passport.setRecordNumber(null);
-                            passport.setType(DOMESTIC_PASSPORT);
+                            passport.setRecordNumber(r.getPassIntRecNum());
+                            passport.setType(FOREIGN_PASSPORT);
                             passport.setValidity(true);
-                            person = extender.addPassport(passport, personSet, source, person, savedPersonSet, finalPassports);
+                            person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
                         }
-
-                        String passportRecNo;
-                        if (StringUtils.isNotBlank(r.getPassIntNum())) {
-                            passportNo = r.getPassIntNum().substring(2);
-                            passportSerial = r.getPassIntNum().substring(0, 2);
-                            passportRecNo = r.getPassIntRecNum();
-                            if (isValidForeignPassport(passportNo, passportSerial, passportRecNo,
-                                    counter, logger)) {
-                                passportSerial = transliterationToLatinLetters(passportSerial);
-                                int number = Integer.parseInt(passportNo);
-                                YPassport passport = new YPassport();
-                                passport.setSeries(passportSerial);
-                                passport.setNumber(number);
-                                passport.setAuthority(r.getPassIntIssuer());
-                                passport.setIssued(stringToDate(r.getPassIntIssueDate()));
-                                passport.setEndDate(null);
-                                passport.setRecordNumber(r.getPassIntRecNum());
-                                passport.setType(FOREIGN_PASSPORT);
-                                passport.setValidity(true);
-                                person = extender.addPassport(passport, personSet, source, person, savedPersonSet, finalPassports);
-                            }
-                        }
-
-                        passportNo = r.getPassIdNum();
-                        passportRecNo = r.getPassIdRecNum();
-                        if (isValidIdPassport(passportNo, passportRecNo, counter, logger)) {
-                            int number = Integer.parseInt(passportNo);
-                            YPassport passport = new YPassport();
-                            passport.setSeries(null);
-                            passport.setNumber(number);
-                            passport.setAuthority(r.getPassIdIssuer());
-                            passport.setIssued(stringToDate(r.getPassIdIssueDate()));
-                            passport.setEndDate(null);
-                            passport.setRecordNumber(r.getPassIdRecNum());
-                            passport.setType(IDCARD_PASSPORT);
-                            passport.setValidity(true);
-                            person = extender.addPassport(passport, personSet, source, person, savedPersonSet, finalPassports);
-                        }
-
-                        person = extender.addPerson(personSet, person, source, true);
-
-                        Set<YAddress> addresses = new HashSet<>();
-                        if (StringUtils.isNotBlank(r.getAddress())) {
-                            YAddress address = new YAddress();
-                            address.setAddress(r.getAddress().toUpperCase());
-                            addresses.add(address);
-                        }
-
-                        extender.addAddresses(person, addresses, source);
-
-                        Set<YPhone> phones = new HashSet<>();
-                        if (StringUtils.isNotBlank(r.getPhone())) {
-                            YPhone phone = new YPhone();
-                            phone.setPhone(r.getPhone().toUpperCase());
-                            phones.add(phone);
-                        }
-                        extender.addPhones(person, phones, source);
-
-                        Set<YEmail> emails = new HashSet<>();
-                        if (StringUtils.isNotBlank(r.getEmail())) {
-                            YEmail email = new YEmail();
-                            email.setEmail(r.getEmail().toUpperCase());
-                            emails.add(email);
-                        }
-                        extender.addEmails(person, emails, source);
-
-                        Set<YTag> tags = new HashSet<>();
-                        r.getTags().forEach(t -> {
-                            YTag tag = new YTag();
-                            tag.setTagType(tagTypeRepository.findByCode(t.getMkId().toUpperCase()).orElseThrow(() ->
-                                    new RuntimeException("Not found tag with code: " + t.getMkId())));
-                            tag.setAsOf(extender.stringToDate(t.getMkStart()));
-                            tag.setUntil(extender.stringToDate(t.getMkExpire()));
-                            tag.setEventDate(extender.stringToDate(t.getMkEventDate()));
-                            tag.setNumberValue(t.getMkNumberValue());
-                            tag.setTextValue(t.getMkTextValue());
-                            tag.setDescription(t.getMkDescription());
-                            tag.setSource(t.getMkSource());
-                            tags.add(tag);
-                        });
-                        extender.addTags(person, tags, source);
-
-                        if (StringUtils.isNotBlank(r.getLnameRu()) || StringUtils.isNotBlank(r.getFnameRu()) || StringUtils.isNotBlank(r.getPnameRu()))
-                            extender.addAltPerson(person, UtilString.toUpperCase(r.getLnameRu()),
-                                    UtilString.toUpperCase(r.getFnameRu()),
-                                    UtilString.toUpperCase(r.getPnameRu()), "RU", source);
-                        if (StringUtils.isNotBlank(r.getLnameEn()) || StringUtils.isNotBlank(r.getFnameEn()) || StringUtils.isNotBlank(r.getPnameEn()))
-                            extender.addAltPerson(person, UtilString.toUpperCase(r.getLnameEn()),
-                                    UtilString.toUpperCase(r.getFnameEn()),
-                                    UtilString.toUpperCase(r.getPnameEn()), "EN", source);
-
-                        if (!resp.isEmpty()) {
-                            counter[0]++;
-                            statusChanger.addProcessedVolume(1);
-                        }
-                    });
-
-                    UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
-                    if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
-
-                        if (!personSet.isEmpty()) {
-                            emnService.enrichYPersonPackageMonitoringNotification(personSet);
-                            log.info("Saving people");
-                            ypr.saveAll(personSet);
-                            emnService.enrichYPersonMonitoringNotification(personSet);
-                            statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
-                        }
-
-                        deleteResp();
-
-                        page = page.parallelStream().filter(p -> temp.contains(uuidMap.get(p.getId()))).collect(Collectors.toList());
-                    } else {
-                        counter[0] -= resp.size();
-                        statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
-                        statusChanger.addProcessedVolume(-resp.size());
                     }
+
+                    passportNo = r.getPassIdNum();
+                    passportRecNo = r.getPassIdRecNum();
+                    if (isValidIdPassport(passportNo, passportRecNo, counter, logger)) {
+                        int number = Integer.parseInt(passportNo);
+                        YPassport passport = new YPassport();
+                        passport.setSeries(null);
+                        passport.setNumber(number);
+                        passport.setAuthority(r.getPassIdIssuer());
+                        passport.setIssued(stringToDate(r.getPassIdIssueDate()));
+                        passport.setEndDate(null);
+                        passport.setRecordNumber(r.getPassIdRecNum());
+                        passport.setType(IDCARD_PASSPORT);
+                        passport.setValidity(true);
+                        person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
+                    }
+
+                    person = extender.addPerson(personSet, person, source, true);
+
+                    Set<YAddress> addresses = new HashSet<>();
+                    if (StringUtils.isNotBlank(r.getAddress())) {
+                        YAddress address = new YAddress();
+                        address.setAddress(r.getAddress().toUpperCase());
+                        addresses.add(address);
+                    }
+
+                    extender.addAddresses(person, addresses, source);
+
+                    Set<YPhone> phones = new HashSet<>();
+                    if (StringUtils.isNotBlank(r.getPhone())) {
+                        YPhone phone = new YPhone();
+                        phone.setPhone(r.getPhone().toUpperCase());
+                        phones.add(phone);
+                    }
+                    extender.addPhones(person, phones, source);
+
+                    Set<YEmail> emails = new HashSet<>();
+                    if (StringUtils.isNotBlank(r.getEmail())) {
+                        YEmail email = new YEmail();
+                        email.setEmail(r.getEmail().toUpperCase());
+                        emails.add(email);
+                    }
+                    extender.addEmails(person, emails, source);
+
+                    Set<YTag> tags = new HashSet<>();
+                    r.getTags().forEach(t -> {
+                        YTag tag = new YTag();
+                        tag.setTagType(tagTypeRepository.findByCode(t.getMkId().toUpperCase()).orElseThrow(() ->
+                                new RuntimeException("Not found tag with code: " + t.getMkId())));
+                        tag.setAsOf(extender.stringToDate(t.getMkStart()));
+                        tag.setUntil(extender.stringToDate(t.getMkExpire()));
+                        tag.setEventDate(extender.stringToDate(t.getMkEventDate()));
+                        tag.setNumberValue(t.getMkNumberValue());
+                        tag.setTextValue(t.getMkTextValue());
+                        tag.setDescription(t.getMkDescription());
+                        tag.setSource(t.getMkSource());
+                        tags.add(tag);
+                    });
+                    extender.addTags(person, tags, source);
+
+                    if (StringUtils.isNotBlank(r.getLnameRu()) || StringUtils.isNotBlank(r.getFnameRu()) || StringUtils.isNotBlank(r.getPnameRu()))
+                        extender.addAltPerson(person, UtilString.toUpperCase(r.getLnameRu()),
+                                UtilString.toUpperCase(r.getFnameRu()),
+                                UtilString.toUpperCase(r.getPnameRu()), "RU", source);
+                    if (StringUtils.isNotBlank(r.getLnameEn()) || StringUtils.isNotBlank(r.getFnameEn()) || StringUtils.isNotBlank(r.getPnameEn()))
+                        extender.addAltPerson(person, UtilString.toUpperCase(r.getLnameEn()),
+                                UtilString.toUpperCase(r.getFnameEn()),
+                                UtilString.toUpperCase(r.getPnameEn()), "EN", source);
+
+                    if (!resp.isEmpty()) {
+                        counter[0]++;
+                        statusChanger.addProcessedVolume(1);
+                    }
+                });
+
+                UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
+                if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
+
+                    if (!personSet.isEmpty()) {
+                        emnService.enrichYPersonPackageMonitoringNotification(personSet);
+                        log.info("Saving people");
+                        ypr.saveAll(personSet);
+                        emnService.enrichYPersonMonitoringNotification(personSet);
+                        statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));
+                    }
+
+                    deleteResp();
+                } else {
+                    counter[0] = 0L;
+                    statusChanger.newStage(null, "Restoring from dispatcher restart", count, null);
+                    statusChanger.addProcessedVolume(0);
                 }
 
                 onePage = manualPersonRepository.findAllByUuid(file, pageRequest);
+
+                if (!temp.isEmpty()) {
+                    manualPersonRepository.saveAll(temp);
+                    extender.sendMessageToQueue(MANUAL_PERSON, newPortion);
+                    log.info("Send message with uuid: {}, count: {}", newPortion, temp.size());
+                }
+
+                logFinish(MANUAL_PERSON, counter[0]);
+                logger.finish();
+
+                statusChanger.complete(importedRecords(counter[0]));
             }
-
-            logFinish(MANUAL_PERSON, counter[0]);
-            logger.finish();
-
-            statusChanger.complete(importedRecords(counter[0]));
         } catch (Exception e) {
             statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            extender.sendMessageToQueue(MANUAL_PERSON, revision);
         } finally {
             deleteResp();
         }

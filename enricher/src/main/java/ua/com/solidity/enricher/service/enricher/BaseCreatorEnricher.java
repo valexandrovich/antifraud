@@ -10,6 +10,7 @@ import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.CREATOR;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_IZ;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
@@ -130,23 +131,27 @@ public class BaseCreatorEnricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(BASE_CREATOR, portion);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
                 List<BaseCreator> temp = new ArrayList<>();
-                List<BaseCreator> workPortion = new ArrayList<>();
+                List<BaseCreator> finalWorkPortion = new ArrayList<>();
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(p.getId())) workPortion.add(p);
+                    if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);
                         temp.add(p);
                     }
                 });
+
+                List<BaseCreator> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 Set<Long> peopleCodes = new HashSet<>();
                 Set<Long> companiesCodes = new HashSet<>();
@@ -182,7 +187,7 @@ public class BaseCreatorEnricher implements Enricher {
                     YPerson person = null;
                     if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                        if (isValidInn(inn, null) && !innsLong.contains(Long.valueOf(inn))) {
+                        if (isValidInn(inn, null, null) && !innsLong.contains(Long.valueOf(inn))) {
                             person = new YPerson();
                             person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
                             person = extender.addPerson(personSet, person, source, false);
@@ -259,7 +264,8 @@ public class BaseCreatorEnricher implements Enricher {
                 statusChanger.complete(importedRecords(counter[0]));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(BASE_CREATOR, portion);
         } finally {
             deleteResp();

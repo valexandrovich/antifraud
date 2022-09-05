@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import ua.com.solidity.common.DBUtils;
@@ -30,19 +32,36 @@ public class ServiceMonitor {
     public static final long DEFAULT_UPDATE_DELAY = 1000; // 1s
     public static final long DEFAULT_CLEAN_DELAY = 120000; // 2m
 
-    public static long scanDelay = DEFAULT_SCAN_DELAY;
-    public static long updateDelay = DEFAULT_UPDATE_DELAY;
-    public static long cleanDelay = DEFAULT_CLEAN_DELAY;
-
-    public static String scanDelayProp = "otp.service-monitor.scan";
-    public static String updateDelayProp = "otp.service-monitor.update";
-    public static String cleanDelayProp = "otp.service-monitor.clean";
-
-    public static String serviceNameProp = "otp.service.name";
-    public static String serviceVersionProp = "otp.service.version";
-
-    public static String undefinedServiceName = "(undefined)";
-    public static String undefinedServiceVersion = "(undefined)";
+    @Getter
+    @Setter
+    private static long scanDelay = DEFAULT_SCAN_DELAY;
+    @Getter
+    @Setter
+    private static long updateDelay = DEFAULT_UPDATE_DELAY;
+    @Getter
+    @Setter
+    private static long cleanDelay = DEFAULT_CLEAN_DELAY;
+    @Getter
+    @Setter
+    private static String scanDelayProp = "otp.service-monitor.scan";
+    @Getter
+    @Setter
+    private static String updateDelayProp = "otp.service-monitor.update";
+    @Getter
+    @Setter
+    private static String cleanDelayProp = "otp.service-monitor.clean";
+    @Getter
+    @Setter
+    private static String serviceNameProp = "otp.service.name";
+    @Getter
+    @Setter
+    private static String serviceVersionProp = "otp.service.version";
+    @Getter
+    @Setter
+    private static String undefinedServiceName = "(undefined)";
+    @Getter
+    @Setter
+    private static String undefinedServiceVersion = "(undefined)";
 
     static ServiceMonitor instance = null;
     private static final UUID SERVICE_ID = UUID.randomUUID();

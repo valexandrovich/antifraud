@@ -20,6 +20,7 @@ public class StatsObject extends StatsItem {
         super(null);
     }
 
+    @Override
     protected void doClear() {
        fields.clear();
     }

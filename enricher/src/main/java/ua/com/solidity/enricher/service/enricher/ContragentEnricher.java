@@ -13,6 +13,7 @@ import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCy
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_RC;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
@@ -154,23 +155,27 @@ public class ContragentEnricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(CONTRAGENT, portion);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
                 List<Contragent> temp = new ArrayList<>();
-                List<Contragent> workPortion = new ArrayList<>();
+                List<Contragent> finalWorkPortion = new ArrayList<>();
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(p.getUuid())) workPortion.add(p);
+                    if (respId.contains(p.getUuid())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);
                         temp.add(p);
                     }
                 });
+
+                List<Contragent> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 Set<Long> codes = new HashSet<>();
                 Set<YPerson> people = new HashSet<>();
@@ -229,7 +234,7 @@ public class ContragentEnricher implements Enricher {
 
                         if (!StringUtils.isBlank(r.getIdentifyCode()) && r.getIdentifyCode().matches(CONTAINS_NUMERAL_REGEX)) {
                             String inn = r.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                            if (isValidInn(inn, r.getClientBirthday())) {
+                            if (isValidInn(inn, r.getClientBirthday(), null)) {
                                 person = extender.addInn(Long.parseLong(inn), people, source, person, inns, savedPersonSet);
                             } else {
                                 logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getIdentifyCode()), "Wrong INN");
@@ -382,7 +387,8 @@ public class ContragentEnricher implements Enricher {
                 statusChanger.complete(importedRecords(counter[0]));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(CONTRAGENT, portion);
         } finally {
             deleteResp();

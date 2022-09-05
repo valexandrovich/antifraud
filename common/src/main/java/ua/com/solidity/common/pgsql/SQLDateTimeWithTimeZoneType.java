@@ -29,13 +29,7 @@ public class SQLDateTimeWithTimeZoneType extends SQLType {
     protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
         ZonedDateTime value = getZonedDateTime(field);
         if (value == null) {
-            if (sqlField.isNullable()) {
-                try {
-                    ps.setNull(paramIndex, Types.TIMESTAMP_WITH_TIMEZONE);
-                } catch (Exception e) {
-                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
-                }
-            } else return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+            return putNullArgument(ps, paramIndex, sqlField, field, Types.TIMESTAMP_WITH_TIMEZONE);
         } else {
             try {
                 ps.setObject(paramIndex, Utils.zonedDateTimeToString(value));

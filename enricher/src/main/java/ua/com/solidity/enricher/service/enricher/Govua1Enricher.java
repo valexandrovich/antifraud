@@ -9,6 +9,7 @@ import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
@@ -127,23 +128,27 @@ public class Govua1Enricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA1, portion);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
-                List<Govua1> workPortion = new ArrayList<>();
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
+                List<Govua1> finalWorkPortion = new ArrayList<>();
                 List<Govua1> temp = new ArrayList<>();
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(p.getId())) workPortion.add(p);
+                    if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);
                         temp.add(p);
                     }
                 });
+
+                List<Govua1> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 Set<Long> codes = new HashSet<>();
                 Set<YINN> inns = new HashSet<>();
@@ -192,7 +197,7 @@ public class Govua1Enricher implements Enricher {
                             }
                             counter[0]++;
                             statusChanger.addProcessedVolume(1);
-                        } else if (isValidInn(code, null)) {
+                        } else if (isValidInn(code, null, null)) {
                             YPerson person = new YPerson();
 
                             String lastName = null;
@@ -302,7 +307,8 @@ public class Govua1Enricher implements Enricher {
                 statusChanger.complete(importedRecords(counter[0]));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(GOVUA1, portion);
         } finally {
             deleteResp();

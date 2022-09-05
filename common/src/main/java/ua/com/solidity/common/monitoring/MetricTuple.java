@@ -28,9 +28,15 @@ public class MetricTuple {
         clear();
     }
 
-    MetricTuple(String name, long startMs, long finishMs, double start, double finish, double min, double max, double avg) {
-        this(name);
-        assign(startMs, finishMs, start, finish, min, max, avg);
+    MetricTuple(String name, long startMs, long finishMs, double...args) {
+        this(name); // double start, double finish, double min, double max, double avg
+        assign(startMs, finishMs,
+                getValueAt(args, INDEX_START), getValueAt(args, INDEX_FINISH),
+                getValueAt(args, INDEX_MIN), getValueAt(args, INDEX_MAX), getValueAt(args, INDEX_AVG));
+    }
+
+    private double getValueAt(double[] data, int index) {
+        return data.length > index ? data[index] : 0d;
     }
 
     public final void clear() {

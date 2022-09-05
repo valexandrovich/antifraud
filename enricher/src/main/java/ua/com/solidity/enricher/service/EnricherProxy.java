@@ -11,6 +11,7 @@ import static ua.com.solidity.enricher.util.Base.GOVUA1;
 import static ua.com.solidity.enricher.util.Base.GOVUA10;
 import static ua.com.solidity.enricher.util.Base.GOVUA11;
 import static ua.com.solidity.enricher.util.Base.GOVUA17;
+import static ua.com.solidity.enricher.util.Base.GOVUA18;
 import static ua.com.solidity.enricher.util.Base.GOVUA2;
 import static ua.com.solidity.enricher.util.Base.GOVUA20;
 import static ua.com.solidity.enricher.util.Base.GOVUA4;
@@ -35,6 +36,7 @@ import ua.com.solidity.enricher.service.enricher.ContragentEnricher;
 import ua.com.solidity.enricher.service.enricher.Govua10Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua11Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua17Enricher;
+import ua.com.solidity.enricher.service.enricher.Govua18Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua1Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua20Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua2Enricher;
@@ -66,6 +68,7 @@ public class EnricherProxy {
     private final Govua7Enricher govua7Enricher;
     private final Govua11Enricher govua11Enricher;
     private final Govua17Enricher govua17Enricher;
+    private final Govua18Enricher govua18Enricher;
     private final Govua20Enricher govua20Enricher;
 
     public void direct(EnricherPortionRequest enricherRequest) {
@@ -89,7 +92,8 @@ public class EnricherProxy {
                         Map.entry(GOVUA7, () -> govua7Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA11, () -> govua11Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA20, () -> govua20Enricher.enrich(enricherRequest.getPortion())),
-                        Map.entry(GOVUA17, () -> govua17Enricher.enrich(enricherRequest.getPortion()))
+                        Map.entry(GOVUA17, () -> govua17Enricher.enrich(enricherRequest.getPortion())),
+                        Map.entry(GOVUA18, () -> govua18Enricher.enrich(enricherRequest.getPortion()))
                 );
 
         baseMap.entrySet()

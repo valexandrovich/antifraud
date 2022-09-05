@@ -6,7 +6,6 @@ import lombok.NonNull;
 import org.apache.commons.io.input.BOMInputStream;
 import ua.com.solidity.common.*;
 import ua.com.solidity.pipeline.Item;
-import ua.com.solidity.pipeline.Prototype;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -14,8 +13,7 @@ import java.io.InputStream;
 
 
 @CustomLog
-public class PPInputStream extends Prototype {
-    private static final String STREAM = "stream";
+public class PPInputStream extends PPCustomStream {
     private static final String SCHEMA = "schema";
     private static final String BOM = "bom";
     private static final String DATA = "data";
@@ -81,19 +79,5 @@ public class PPInputStream extends Prototype {
             item.terminate();
         }
         return null;
-    }
-
-    @Override
-    protected void close(Item item) {
-        InputStream stream = item.getLocalData(STREAM, InputStream.class);
-        if (stream != null) {
-            try {
-                stream.close();
-                log.info("InputStream closed.");
-            } catch (Exception e) {
-                log.warn("Can't close input stream.");
-            }
-        }
-        item.setLocalData(STREAM, null);
     }
 }

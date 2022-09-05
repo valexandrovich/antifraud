@@ -17,6 +17,7 @@ public final class Base {
     public static final String GOVUA10 = "govua_10";
     public static final String GOVUA11 = "govua_11";
     public static final String GOVUA17 = "govua_17_le";
+    public static final String GOVUA18 = "govua_18";
     public static final String GOVUA20 = "govua_20";
     public static final String MANUAL_COMPANY = "manual_company";
     public static final String MANUAL_PERSON = "manual_person";

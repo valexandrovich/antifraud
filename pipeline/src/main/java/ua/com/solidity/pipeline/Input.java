@@ -55,7 +55,7 @@ public class Input {
     }
 
     @SuppressWarnings("unused")
-    public final boolean isError() {
+    public final boolean hasErrors() {
         return inputItem != null && (inputItem.flags & Item.FLAG_ERROR) == Item.FLAG_ERROR;
     }
 

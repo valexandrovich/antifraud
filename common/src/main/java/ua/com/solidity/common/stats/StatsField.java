@@ -5,13 +5,12 @@ import lombok.Getter;
 import ua.com.solidity.common.data.DataField;
 import ua.com.solidity.common.data.DataFieldType;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 
 @Getter
 public class StatsField extends StatsItem {
     private final String name;
-    private final Map<DataFieldType, StatsValue> values = new HashMap<>();
+    private final EnumMap<DataFieldType, StatsValue> values = new EnumMap<>(DataFieldType.class);
 
     public StatsField(StatsValue value) {
         super(value);

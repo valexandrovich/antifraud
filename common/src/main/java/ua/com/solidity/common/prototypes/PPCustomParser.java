@@ -76,6 +76,27 @@ public abstract class PPCustomParser extends Prototype {
         batch.clear();
     }
 
+    private void doExecute(Item item, Data data, InputStream stream) {
+        data.batch.setExtensionFactory(data.extensionFactory != null ?
+                data.extensionFactory.getValue(DataExtensionFactory.class) : null);
+
+        long count = 0;
+        item.yieldBegin();
+        if (data.parser.open(stream)) {
+            while (data.parser.hasData() && (data.limit < 0 || count < data.limit)) {
+                if (data.parser.isErrorReporting()) {
+                    data.batch.put(data.parser.getErrorReport());
+                } else {
+                    DataObject obj = data.parser.dataObject();
+                    data.batch.put(obj);
+                }
+                ++count;
+                data.parser.next();
+            }
+            data.batch.flush();
+        }
+    }
+
     @Override
     protected Object execute(@NonNull Item item) {
         Data data = item.getInternalData(Data.class);
@@ -83,24 +104,7 @@ public abstract class PPCustomParser extends Prototype {
         if (stream == null) {
             item.terminate();
         } else {
-            data.batch.setExtensionFactory(data.extensionFactory != null ?
-                    data.extensionFactory.getValue(DataExtensionFactory.class) : null);
-
-            long count = 0;
-            item.yieldBegin();
-            if (data.parser.open(stream)) {
-                while (data.parser.hasData() && (data.limit < 0 || count < data.limit)) {
-                    if (data.parser.isErrorReporting()) {
-                        data.batch.put(data.parser.getErrorReport());
-                    } else {
-                        DataObject obj = data.parser.dataObject();
-                        data.batch.put(obj);
-                    }
-                    ++count;
-                    data.parser.next();
-                }
-                data.batch.flush();
-            }
+            doExecute(item, data, stream);
         }
 
         return null;

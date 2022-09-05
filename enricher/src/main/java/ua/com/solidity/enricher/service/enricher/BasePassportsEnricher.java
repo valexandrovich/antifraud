@@ -12,6 +12,7 @@ import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCy
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
 import java.util.ArrayList;
@@ -128,23 +129,27 @@ public class BasePassportsEnricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(BASE_PASSPORTS, portion);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
-                List<BasePassports> workPortion = new ArrayList<>();
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
+                List<BasePassports> finalWorkPortion = new ArrayList<>();
                 List<BasePassports> temp = new ArrayList<>();
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(p.getId())) workPortion.add(p);
+                    if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);
                         temp.add(p);
                     }
                 });
+
+                List<BasePassports> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 Set<Long> codes = new HashSet<>();
                 Set<YPassport> passportSeriesWithNumber = new HashSet<>();
@@ -196,7 +201,7 @@ public class BasePassportsEnricher implements Enricher {
 
                     if (!StringUtils.isBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                        if (isValidInn(inn, r.getBirthdate())) {
+                        if (isValidInn(inn, r.getBirthdate(), null)) {
                             person = extender.addInn(Long.parseLong(inn), people, source, person, inns, savedPersonSet);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getInn()), "Wrong INN");
@@ -260,7 +265,8 @@ public class BasePassportsEnricher implements Enricher {
                 statusChanger.complete(importedRecords(statusChanger.getProcessedVolume()));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(BASE_PASSPORTS, portion);
         } finally {
             deleteResp();

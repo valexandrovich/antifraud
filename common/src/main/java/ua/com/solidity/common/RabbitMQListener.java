@@ -146,7 +146,7 @@ public class RabbitMQListener {
         handleHoldenTask();
     }
 
-    public synchronized final boolean start() {
+    public final synchronized boolean start() {
         if (started || receiver == null) return false;
         if (channelNeeded()) {
             if (tasks != null) tasks.clear();

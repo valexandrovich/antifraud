@@ -17,6 +17,7 @@ import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToLa
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.FOREIGN_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
@@ -173,25 +174,29 @@ public class ManualPersonEnricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(MANUAL_PERSON, revision);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
-                List<ManualPerson> workPortion = new ArrayList<>();
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
+                List<ManualPerson> finalWorkPortion = new ArrayList<>();
                 List<ManualPerson> temp = new ArrayList<>();
                 FileDescription newFileDescription = new FileDescription();
                 newFileDescription.setUuid(newPortion);
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(uuidMap.get(p.getId()))) workPortion.add(p);
+                    if (respId.contains(uuidMap.get(p.getId()))) finalWorkPortion.add(p);
                     else {
                         p.setUuid(newFileDescription);
                         temp.add(p);
                     }
                 });
+
+                List<ManualPerson> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 Set<YPerson> personSet = new HashSet<>();
                 Set<YPassport> passportSeriesWithNumber = new HashSet<>();
@@ -265,7 +270,7 @@ public class ManualPersonEnricher implements Enricher {
 
                     if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                        if (isValidInn(inn, stringToDate(r.getBirthday()))) {
+                        if (isValidInn(inn, stringToDate(r.getBirthday()), UtilString.toUpperCase(r.getSex()).trim())) {
                             person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getOkpo()), "Wrong INN");
@@ -417,7 +422,8 @@ public class ManualPersonEnricher implements Enricher {
                 statusChanger.complete(importedRecords(counter[0]));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(MANUAL_PERSON, revision);
         } finally {
             deleteResp();

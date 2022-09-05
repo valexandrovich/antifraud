@@ -11,7 +11,6 @@ import ua.com.solidity.pipeline.Prototype;
 
 @CustomLog
 public class PPArrayExtractor extends Prototype {
-    public static int defaultBatchSize = 16384;
     public static final String INPUT = "input";
     public static final String EXTENSION = "ext";
     public static final String PATH = "path";
@@ -48,7 +47,7 @@ public class PPArrayExtractor extends Prototype {
 
     @Override
     protected void initialize(Item item, JsonNode node) {
-        int batchSize = defaultBatchSize;
+        int batchSize = DataBatch.getDefaultCapacity();
         JsonNode path;
 
         item.mapInputs(INPUT, DataBatch.class);

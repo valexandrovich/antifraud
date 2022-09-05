@@ -20,10 +20,11 @@ import java.text.MessageFormat;
 @CustomLog
 @NoArgsConstructor
 public class DataGovUaApiDumpAction extends ActionObject {
-    public static final String apiInfoFileName = "package_info.json";
-    public static final String apiRevisionsFileName = "resource_info.json";
-    public static final String apiSelectedData = "selected.json";
-    public static final String apiResourceFileNameWithoutExt = "data";
+
+    public static final String API_INFO_FILE_NAME = "package_info.json";
+    public static final String API_REVISION_FILE_NAME = "resource_info.json";
+    public static final String API_SELECTED_DATA = "selected.json";
+    public static final String API_RESOURCE_FILE_NAME_WITHOUT_EXT = "data";
     public static final String WRITE_MESSAGE = "Saving {}";
 
     private String apiKey;
@@ -67,8 +68,8 @@ public class DataGovUaApiDumpAction extends ActionObject {
             return false;
         }
 
-        File output = new File(targetFolder, apiInfoFileName);
-        log.info(WRITE_MESSAGE, apiInfoFileName);
+        File output = new File(targetFolder, API_INFO_FILE_NAME);
+        log.info(WRITE_MESSAGE, API_INFO_FILE_NAME);
         completed &= Utils.writeJsonNodeToFile(output, apiData, 4, true);
         completed &= handleApiInfo(apiData);
         if (!completed) {
@@ -88,12 +89,12 @@ public class DataGovUaApiDumpAction extends ActionObject {
         DataGovUaSourceInfo.handleResource(config, info);
         String folder = getResourceString();
         log.info("-- handling resource (id: {}, name: {}, description: {})", folder, info.getResourceName(), info.getResourceDescription());
-        String targetFile = folder + "/" + apiResourceFileNameWithoutExt + "." + info.data.getExtension();
+        String targetFile = folder + "/" + API_RESOURCE_FILE_NAME_WITHOUT_EXT + "." + info.data.getExtension();
         info.data.setFileName(targetFile);
-        String target = folder + "/" + apiRevisionsFileName;
+        String target = folder + "/" + API_REVISION_FILE_NAME;
         log.info(WRITE_MESSAGE, target);
         completed &= Utils.writeJsonNodeToFile(Utils.getFileFromFolder(targetFolder, target), info.revisions, 4, true);
-        target = folder + "/" + apiSelectedData;
+        target = folder + "/" + API_SELECTED_DATA;
         log.info(WRITE_MESSAGE, target);
         completed &= Utils.writeJsonNodeToFile(Utils.getFileFromFolder(targetFolder, target), Utils.getJsonNode(info.data), 4, true);
         log.info(WRITE_MESSAGE, targetFile);

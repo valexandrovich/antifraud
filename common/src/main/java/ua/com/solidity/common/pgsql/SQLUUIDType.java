@@ -31,13 +31,7 @@ public class SQLUUIDType extends SQLType {
     protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
         UUID value = getUUIDValue(field);
         if (value == null) {
-            if (sqlField.isNullable()) {
-                try {
-                    ps.setNull(paramIndex, Types.OTHER);
-                } catch (Exception e) {
-                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
-                }
-            } else return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+            return putNullArgument(ps, paramIndex, sqlField, field, Types.OTHER);
         } else {
             try {
                 ps.setObject(paramIndex, value);

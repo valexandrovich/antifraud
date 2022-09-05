@@ -9,6 +9,7 @@ import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 
 import java.util.ArrayList;
@@ -63,10 +64,6 @@ public class Govua17Enricher implements Enricher {
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
-    @Value("${enricher.timeOutTime}")
-    private Integer timeOutTime;
-    @Value("${enricher.sleepTime}")
-    private int sleepTime;
     @Value("${dispatcher.url}")
     private String urlPost;
     @Value("${dispatcher.url.delete}")
@@ -120,23 +117,27 @@ public class Govua17Enricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA17, portion);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
-                List<Govua17> workPortion = new ArrayList<>();
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
+                List<Govua17> finalWorkPortion = new ArrayList<>();
                 List<Govua17> temp = new ArrayList<>();
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(p.getId())) workPortion.add(p);
+                    if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);
                         temp.add(p);
                     }
                 });
+
+                List<Govua17> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 Set<Long> codes = new HashSet<>();
                 Set<YCompany> companies = new HashSet<>();
@@ -215,7 +216,8 @@ public class Govua17Enricher implements Enricher {
                 statusChanger.complete(importedRecords(counter[0]));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(GOVUA17, portion);
         } finally {
             deleteResp();

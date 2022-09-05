@@ -55,7 +55,7 @@ public class DataBatch {
         this.handler = handler;
     }
 
-    private static int getDefaultCapacity() {
+    public static int getDefaultCapacity() {
         if (loadedCapacity < 1) {
             int value = DEFAULT_CAPACITY;
             try {
@@ -279,17 +279,22 @@ public class DataBatch {
             private static final int OUT_OF_RANGE = -2;
             int index = UNINITIALIZED;
 
+            private boolean checkInstanceByIndex(int idx) {
+                Object obj = instances.get(idx);
+                if (obj instanceof DataObject) {
+                    DataObject dataObject = (DataObject) obj;
+                    ErrorResult res = dataObject.getErrorResult();
+                    if (res == null || !res.isErrorState()) {
+                        index = idx;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             private void findNextObject() {
                 for (int i = index + 1; i < size(); ++i) {
-                    Object obj = instances.get(i);
-                    if (obj instanceof DataObject) {
-                        DataObject dataObject = (DataObject) obj;
-                        ErrorResult res = dataObject.getErrorResult();
-                        if (res == null || !res.isErrorState()) {
-                            index = i;
-                            return;
-                        }
-                    }
+                    if (checkInstanceByIndex(i)) return;
                 }
                 index = OUT_OF_RANGE;
             }
@@ -303,13 +308,14 @@ public class DataBatch {
             }
 
             @Override
-            public DataObject next() {
+            public DataObject next() throws NoSuchElementException {
                 if (index >= 0) {
                     DataObject obj = (DataObject) instances.get(index);
                     findNextObject();
                     return obj;
+                } else {
+                    throw new NoSuchElementException();
                 }
-                return null;
             }
         };
     }

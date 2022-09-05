@@ -297,7 +297,7 @@ const FizFormSearch = () => {
                         <span className="text-danger">{errors.fio}</span>
                       ) : (
                         <label htmlFor={"fio"}>
-                          [Прізвище] [Ім'я] [По-батькові]
+                          Прізвище Ім'я По-батькові
                         </label>
                       )}
                     </span>

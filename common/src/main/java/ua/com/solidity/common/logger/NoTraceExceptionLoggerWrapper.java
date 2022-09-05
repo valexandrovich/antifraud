@@ -12,81 +12,93 @@ public class NoTraceExceptionLoggerWrapper extends FlexibleLoggerWrapper {
         super(logger, fqcn);
     }
 
+    private String getMessage(String msg) {
+        return msg.startsWith("$$") ? msg.substring(2) : msg;
+    }
+
+    private boolean isStackTraceEnabled(String msg) {
+        return msg.startsWith("$$");
+    }
+
     private String getExceptionMessage(String msg, Throwable t) {
         t = t.getCause() != null ? t.getCause() : t;
-        FormattingTuple tuple = MessageFormatter.arrayFormat(EXCEPTION_FORMAT, new Object[] {msg, t.getClass().getName(), t.getMessage()});
+        FormattingTuple tuple = MessageFormatter.arrayFormat(EXCEPTION_FORMAT, new Object[] {getMessage(msg), t.getClass().getName(), t.getMessage()});
         return tuple.getMessage();
+    }
+
+    private boolean isSoftMode(String msg) {
+        return !isDebugEnabled() && !isStackTraceEnabled(msg);
     }
 
     @Override
     public void trace(String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.trace(getExceptionMessage(msg, t));
         } else {
-            super.trace(msg, t);
+            super.trace(getMessage(msg), t);
         }
     }
 
     @Override
     public void trace(Marker marker, String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.trace(marker, getExceptionMessage(msg, t));
         } else {
-            super.trace(marker, msg, t);
+            super.trace(marker, getMessage(msg), t);
         }
     }
 
     @Override
     public void info(String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.info(msg, getExceptionMessage(msg, t));
         } else {
-            super.info(msg, t);
+            super.info(getMessage(msg), t);
         }
     }
 
     @Override
     public void info(Marker marker, String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.info(marker, getExceptionMessage(msg, t));
         } else {
-            super.info(msg, t);
+            super.info(getMessage(msg), t);
         }
     }
 
     @Override
     public void warn(String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.warn(getExceptionMessage(msg, t));
         } else {
-            super.warn(msg, t);
+            super.warn(getMessage(msg), t);
         }
     }
 
     @Override
     public void warn(Marker marker, String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.warn(marker, getExceptionMessage(msg, t));
         } else {
-            super.warn(msg, t);
+            super.warn(getMessage(msg), t);
         }
     }
 
     @Override
     public void error(String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.error(getExceptionMessage(msg, t));
         } else {
-            super.error(msg, t);
+            super.error(getMessage(msg), t);
         }
     }
 
     @Override
     public void error(Marker marker, String msg, Throwable t) {
-        if (!isDebugEnabled()) {
+        if (isSoftMode(msg)) {
             super.error(marker, getExceptionMessage(msg, t));
         } else {
-            super.error(marker, msg, t);
+            super.error(marker, getMessage(msg), t);
         }
     }
 }

@@ -5,6 +5,7 @@ import ua.com.solidity.common.ValueParser;
 import ua.com.solidity.common.data.DataField;
 
 import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.time.ZonedDateTime;
 
 public class SQLDateWithTimeZoneType extends SQLType {
@@ -28,13 +29,7 @@ public class SQLDateWithTimeZoneType extends SQLType {
     protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
         ZonedDateTime value = getZonedDateTime(field);
         if (value == null) {
-            if (sqlField.isNullable()) {
-                try {
-                    ps.setNull(paramIndex, java.sql.Types.DATE);
-                } catch (Exception e) {
-                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
-                }
-            } else return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+            return putNullArgument(ps, paramIndex, sqlField, field, Types.DATE);
         } else {
             try {
                 ps.setObject(paramIndex, Utils.zonedDateToString(value));

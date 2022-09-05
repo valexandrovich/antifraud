@@ -74,15 +74,16 @@ public final class PersonValidator {
             boolean innError = false;
 
             LocalDate birthDate = UtilString.stringToDate(person.getBirthday());
-            if (!valid(person.getBirthday(), DataRegex.DATE.getRegex()) || birthDate == null) {
+            if (!valid(person.getBirthday(), DataRegex.DATE.getRegex())) {
                 statusList.add(new ManualPersonStatus(person.getId(), 10, DataRegex.DATE.getMessage()));
                 birthDateError = true;
             }
-            if (!valid(person.getOkpo(), DataRegex.INN.getRegex()) || (StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), null))) {
+            if (!valid(person.getOkpo(), DataRegex.INN.getRegex()) || (StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), null, null))) {
                 statusList.add(new ManualPersonStatus(person.getId(), 11, DataRegex.INN.getMessage()));
                 innError = true;
             }
-            if (!birthDateError && !innError && StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), birthDate)) {
+            if (!birthDateError && !innError && StringUtils.isNotBlank(person.getOkpo())
+                    && person.getBirthday() != null && !isValidInn(person.getOkpo(), birthDate, null)) {
                 statusList.add(new ManualPersonStatus(person.getId(), 10, "дата народження не відповідає іпн"));
             }
 
@@ -100,8 +101,14 @@ public final class PersonValidator {
                 statusList.add(new ManualPersonStatus(person.getId(), 16, MESSAGE_LONG_VALUE));
             if (!valid(person.getBirthPlace(), DataRegex.UK_RU_EN_MULTIPLE.getRegex()))
                 statusList.add(new ManualPersonStatus(person.getId(), 16, DataRegex.UK_RU_EN_MULTIPLE.getMessage()));
-            if (!valid(person.getSex(), DataRegex.GENDER.getRegex()))
+            boolean sexError = false;
+            if (!valid(person.getSex(), DataRegex.GENDER.getRegex())) {
                 statusList.add(new ManualPersonStatus(person.getId(), 17, DataRegex.GENDER.getMessage()));
+                sexError = true;
+            }
+            if (!sexError && !innError && StringUtils.isNotBlank(person.getOkpo()) && !isValidInn(person.getOkpo(), null, person.getSex())) {
+                statusList.add(new ManualPersonStatus(person.getId(), 17, "стать не відповідає іпн"));
+            }
             if (StringUtils.isNotBlank(person.getComment()) && person.getComment().length() == 255
                     && person.getLnameUk().contains("..."))
                 statusList.add(new ManualPersonStatus(person.getId(), 18, MESSAGE_LONG_VALUE));

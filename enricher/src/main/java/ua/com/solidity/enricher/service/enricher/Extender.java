@@ -415,6 +415,7 @@ public class Extender {
         addSource(person.getImportSources(), source);
 
         if (!person.getInns().isEmpty() && person.getBirthdate() == null) addBirthdayByInn(person);
+        if (!person.getInns().isEmpty() && person.getSex() == null) addSexByInn(person);
 
         YPerson finalPerson = person;
         inns.forEach(i -> i.setPerson(finalPerson));
@@ -511,6 +512,15 @@ public class Extender {
             String inn = String.format(INN_FORMAT_REGEX, optionalYINN.get().getInn());
             LocalDate birthDay = LocalDate.ofEpochDay(Long.parseLong(inn.substring(0, 5)) + START_DATE.toEpochDay() - 1L);
             person.setBirthdate(birthDay);
+        }
+    }
+
+    private void addSexByInn(YPerson person) {
+        Optional<YINN> optionalYINN = person.getInns().parallelStream().findFirst();
+        if (optionalYINN.isPresent()) {
+            String inn = String.format(INN_FORMAT_REGEX, optionalYINN.get().getInn());
+            String findSex = Integer.parseInt(String.valueOf(inn.charAt(8))) % 2 == 0 ? "Ж" : "Ч";
+            person.setSex(findSex);
         }
     }
 

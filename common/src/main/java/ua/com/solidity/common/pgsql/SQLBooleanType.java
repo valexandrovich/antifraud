@@ -3,6 +3,7 @@ package ua.com.solidity.common.pgsql;
 import ua.com.solidity.common.data.DataField;
 
 import java.sql.PreparedStatement;
+import java.sql.Types;
 
 public class SQLBooleanType extends SQLType {
 
@@ -26,13 +27,7 @@ public class SQLBooleanType extends SQLType {
     protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
         Boolean value = getBooleanValue(sqlField.getMapping(), field);
         if (value == null) {
-            if (sqlField.isNullable()) {
-                try {
-                    ps.setNull(paramIndex, java.sql.Types.BOOLEAN);
-                } catch (Exception e) {
-                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
-                }
-            } else return null;
+            return putNullArgument(ps, paramIndex, sqlField, field, Types.BOOLEAN);
         } else {
             try {
                 ps.setBoolean(paramIndex, value);

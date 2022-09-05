@@ -27,8 +27,8 @@ public class ServiceMonitorCleaner {
 
     private ServiceMonitorCleaner() {
         TimerTask cleanTask = new ServiceMonitorCleanTask();
-        ServiceMonitor.TIMER.schedule(cleanTask, 0, ServiceMonitor.cleanDelay);
-        log.info("==> ServiceMonitor cleaner started vs delay = {}.", ServiceMonitor.cleanDelay);
+        ServiceMonitor.TIMER.schedule(cleanTask, 0, ServiceMonitor.getCleanDelay());
+        log.info("==> ServiceMonitor cleaner started vs delay = {}.", ServiceMonitor.getCleanDelay());
     }
 
     private boolean cleanStatementNeeded() {

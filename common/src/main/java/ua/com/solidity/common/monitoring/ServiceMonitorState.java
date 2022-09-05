@@ -11,33 +11,47 @@ import java.util.TimerTask;
 @CustomLog
 @SuppressWarnings("unused")
 public class ServiceMonitorState {
-    private static ServiceMonitorState instance = null;
+    private static boolean initialized = false;
     private static final TimerTask lookupTask = new ServiceMonitorLookupStateTask();
-    private PreparedStatement lookupStatement;
-    private String currentStateString = null;
+    private static PreparedStatement lookupStatement;
+    private static String currentStateString = null;
 
     private static class ServiceMonitorLookupStateTask extends TimerTask {
         @Override
         public void run() {
-            if (ServiceMonitor.instance != null && instance != null) instance.lookupState();
+            if (lookupStatementNeeded()) {
+                try {
+                    synchronized(ServiceMonitor.class) {
+                        ResultSet res = lookupStatement.executeQuery();
+                        Object obj = res.getObject(1);
+                        res.close();
+                        if (obj instanceof String) {
+                            currentStateString = (String) obj;
+                        } else {
+                            currentStateString = null;
+                        }
+                    }
+                    log.info("$monitor-state$Data:{}", currentStateString);
+                } catch (Exception e) {
+                    log.error("ServiceMonitor lookup state error.", e);
+                }
+            }
         }
-    }
-
-    public static boolean initialize() {
-        if (instance == null) {
-            instance = new ServiceMonitorState();
-        }
-        return true;
     }
 
     private ServiceMonitorState() {
-        instance = this;
-        ServiceMonitor.schedule(lookupTask, ServiceMonitor.updateDelay);
-        log.info("==> ServiceMonitor state getter started.");
+        // nothing
     }
 
-    private boolean lookupStatementNeeded() {
-        if (instance == null) return false;
+    public static boolean initialize() {
+        initialized = true;
+        ServiceMonitor.schedule(lookupTask, ServiceMonitor.getUpdateDelay());
+        log.info("==> ServiceMonitor state getter started.");
+        return true;
+    }
+
+    private static boolean lookupStatementNeeded() {
+        if (!initialized) return false;
         if (lookupStatement != null) return true;
         if (ServiceMonitor.connectionNeeded()) {
             try {
@@ -49,33 +63,13 @@ public class ServiceMonitorState {
         return true;
     }
 
-    private synchronized void lookupState() {
-        if (lookupStatementNeeded()) {
-             try {
-                 synchronized(ServiceMonitor.class) {
-                     ResultSet res = lookupStatement.executeQuery();
-                     Object obj = res.getObject(1);
-                     res.close();
-                     if (obj instanceof String) {
-                         currentStateString = (String) obj;
-                     } else {
-                         currentStateString = null;
-                     }
-                 }
-                 log.info("$monitor-state$Data:{}", currentStateString);
-             } catch (Exception e) {
-                 log.error("ServiceMonitor lookup state error.", e);
-             }
-        }
-    }
-
-    public final String getStateString() {
+    public static String getStateString() {
         synchronized(ServiceMonitor.class) {
             return currentStateString;
         }
     }
 
-    public final JsonNode getState() {
+    public static JsonNode getState() {
         synchronized(ServiceMonitor.class) {
             return Utils.getJsonNode(currentStateString);
         }

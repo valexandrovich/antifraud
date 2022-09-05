@@ -6,7 +6,6 @@ import lombok.NonNull;
 import org.apache.commons.io.input.BOMInputStream;
 import ua.com.solidity.common.Utils;
 import ua.com.solidity.pipeline.Item;
-import ua.com.solidity.pipeline.Prototype;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -18,7 +17,7 @@ import java.util.zip.ZipFile;
 
 
 @CustomLog
-public class PPZipInflaterStream extends Prototype {
+public class PPZipInflaterStream extends PPCustomStream {
     private static final String MATCH = "match";
     private static final String ZIP = "zip";
     private static final String STREAM = "stream";
@@ -121,17 +120,7 @@ public class PPZipInflaterStream extends Prototype {
 
     @Override
     protected void close(Item item) {
-        InputStream stream = item.getLocalData(STREAM, InputStream.class);
-        if (stream != null) {
-            try {
-                stream.close();
-                log.info("ZipInflaterStream closed.");
-            } catch (Exception e) {
-                log.warn("Can't close ZipInflaterStream.");
-            }
-            item.setLocalData(STREAM, null);
-        }
-
+        super.close(item);
         File file = item.getLocalData(FILE, File.class);
         if (file != null) {
             try {

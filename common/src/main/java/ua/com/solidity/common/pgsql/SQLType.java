@@ -10,6 +10,19 @@ public abstract class SQLType {
     protected abstract SQLError getValue(SQLField sqlField, DataField field, Object[] arguments, int position);
     protected abstract SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field);
     protected abstract SQLError putValue(InsertBatch batch, SQLField sqlField, DataField field);
+
+    @SuppressWarnings("unused")
+    protected final SQLError putNullArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field, int sqlType) {
+        if (sqlField.isNullable()) {
+            try {
+                ps.setNull(paramIndex, sqlType);
+            } catch (Exception e) {
+                return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
+            }
+        } else return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+        return null;
+    }
+
     protected String suffix() {
         return NO_SUFFIX;
     }

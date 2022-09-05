@@ -80,7 +80,7 @@ public class CompanyValidator {
             if (!valid(company.getPname(), DataRegex.NAME_UK.getRegex()))
                 statusList.add(new ManualCompanyStatus(company.getId(), 10, DataRegex.NAME_UK.getMessage()));
 
-            if (!valid(company.getInn(), DataRegex.INN.getRegex()) || (StringUtils.isNotBlank(company.getInn()) && !isValidInn(company.getInn(), null)))
+            if (!valid(company.getInn(), DataRegex.INN.getRegex()) || (StringUtils.isNotBlank(company.getInn()) && !isValidInn(company.getInn(), null, null)))
                 statusList.add(new ManualCompanyStatus(company.getId(), 11, DataRegex.INN.getMessage()));
 
             if (StringUtils.isNotBlank(company.getTypeRelationPerson()) && company.getTypeRelationPerson().length() == 255

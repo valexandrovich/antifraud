@@ -51,6 +51,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ShutdownSignalException;
 import lombok.CustomLog;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.context.ApplicationContext;
@@ -65,8 +66,12 @@ public class Utils {
     public static final String OUTPUT_DATETIME_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS[XXX]";
     public static final String OUTPUT_DATE_FORMAT = "yyyy-MM-dd[XXX]";
     public static final String OUTPUT_TIME_FORMAT = "hh:mm:ss.SSS[XXX]";
-    public static int prettyIndentSize = 4;
-    public static boolean prettyArrayIndentation = true;
+    @Getter
+    @Setter
+    private static int prettyIndentSize = 4;
+    @Getter
+    @Setter
+    private static boolean prettyArrayIndentation = true;
     private static final String RABBITMQ_LOG_ERROR_WITH_MESSAGE = "sendRabbitMQMessage: {} . ({}:{}) : {}";
     private static final String RABBITMQ_LOG_ERROR = "sendRabbitMQMessage: {} . ({}:{})";
     private static final String NFS_VARIABLE_PROPERTY = "otp.nfs.variable";
@@ -584,18 +589,18 @@ public class Utils {
     }
 
     static synchronized Channel createRabbitMQChannel() {
-        Channel channel = null;
+        Channel res = null;
         getRabbitMQConnection();
         if (connection != null) {
             try {
-                channel = connection.createChannel();
-                channel.addShutdownListener(Utils::channelShutdownListener);
+                res = connection.createChannel();
+                res.addShutdownListener(Utils::channelShutdownListener);
             } catch (Exception e) {
                 log.error("RabbitMQ Channel creation error.", e);
-                channel = null;
+                res = null;
             }
         }
-        return channel;
+        return res;
     }
 
      private static void channelShutdownListener(ShutdownSignalException e) {
@@ -1041,5 +1046,23 @@ public class Utils {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    public static String getExceptionString(Exception e) {
+        return getExceptionString(e, "/n");
+    }
+
+    public static String getExceptionString(Exception e, String delimiter) {
+        StringBuilder builder = new StringBuilder();
+        Throwable t = e;
+        while (t != null) {
+            if (builder.length() > 0) {
+                builder.append(delimiter);
+            }
+            builder.append(messageFormat("{}:{}", t.getClass().getName(), t.getMessage()));
+            t = t.getCause();
+        }
+
+        return builder.toString();
     }
 }

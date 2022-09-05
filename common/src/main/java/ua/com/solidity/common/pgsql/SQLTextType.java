@@ -22,13 +22,7 @@ public class SQLTextType extends SQLType {
     protected SQLError putArgument(PreparedStatement ps, int paramIndex, SQLField sqlField, DataField field) {
         String value = DataField.getString(field);
         if (value == null) {
-            if (sqlField.isNullable()) {
-                try {
-                    ps.setNull(paramIndex, Types.VARCHAR);
-                } catch (Exception e) {
-                    return SQLError.create(SQLAssignResult.EXCEPTION, sqlField, field, e);
-                }
-            } else return SQLError.create(SQLAssignResult.NULL_NOT_ALLOWED, sqlField, field, null);
+            return putNullArgument(ps, paramIndex, sqlField, field, Types.VARCHAR);
         } else {
             if (sqlField.getLength() > 0 && value.length() > sqlField.getLength()) {
                 return SQLError.create(SQLAssignResult.LENGTH_ERROR, sqlField, field, null);

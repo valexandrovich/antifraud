@@ -6,10 +6,12 @@ import static ua.com.solidity.enricher.util.Base.GOVUA10;
 import static ua.com.solidity.enricher.util.LogUtil.logFinish;
 import static ua.com.solidity.enricher.util.LogUtil.logStart;
 import static ua.com.solidity.enricher.util.Regex.ALL_NUMBER_REGEX;
+import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCyrillicLetters;
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NAL;
 
@@ -119,19 +121,20 @@ public class Govua10Enricher implements Enricher {
                 DispatcherResponse response = httpClient.post(url, DispatcherResponse.class, entityProcessings);
                 resp = new ArrayList<>(response.getResp());
                 List<UUID> respId = response.getRespId();
-                log.info("To be processed: {}", resp.size());
-                statusChanger.setStatus(Utils.messageFormat("To be processed: {}", resp.size()));
-
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA10, portion);
+                    statusChanger.error("All data is being processed. Portions sent to the queue.");
                     return;
                 }
 
-                List<Govua10> workPortion = new ArrayList<>();
+                log.info(ENRICHER_INFO_MESSAGE, resp.size());
+                statusChanger.setStatus(Utils.messageFormat(ENRICHER_INFO_MESSAGE, resp.size()));
+
                 List<Govua10> temp = new ArrayList<>();
+                List<Govua10> finalWorkPortion = new ArrayList<>();
                 onePage.stream().parallel().forEach(p -> {
-                    if (respId.contains(p.getId())) workPortion.add(p);
+                    if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);
                         temp.add(p);
@@ -141,6 +144,8 @@ public class Govua10Enricher implements Enricher {
                 Set<YPassport> passports = new HashSet<>();
                 Set<YPerson> people = new HashSet<>();
                 Set<YPassport> passportSeriesWithNumber = new HashSet<>();
+
+                List<Govua10> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
                 workPortion.forEach(r -> {
                     if (StringUtils.isNotBlank(r.getNumber()) && r.getNumber().matches(ALL_NUMBER_REGEX)) {
@@ -211,10 +216,8 @@ public class Govua10Enricher implements Enricher {
 
                     extender.addTags(person, tags, source);
 
-                    if (!resp.isEmpty()) {
-                        counter[0]++;
-                        statusChanger.addProcessedVolume(1);
-                    }
+                    counter[0]++;
+                    statusChanger.addProcessedVolume(1);
                 });
                 UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);
                 if (Objects.equals(dispatcherId, dispatcherIdFinish)) {
@@ -246,10 +249,11 @@ public class Govua10Enricher implements Enricher {
                 logFinish(GOVUA10, counter[0]);
                 logger.finish();
 
-                statusChanger.addProcessedVolume(-resp.size());
+                statusChanger.complete(importedRecords(counter[0]));
             }
         } catch (Exception e) {
-            statusChanger.error(Utils.messageFormat("ERROR: {}", e.getMessage()));
+            statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
+            log.error("$$Enrichment error.", e);
             extender.sendMessageToQueue(GOVUA10, portion);
         } finally {
             deleteResp();

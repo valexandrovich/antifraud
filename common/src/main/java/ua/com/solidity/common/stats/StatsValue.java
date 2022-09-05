@@ -123,7 +123,7 @@ public class StatsValue extends StatsItem {
     }
 
     protected void getExamples(ObjectNode target) {
-        if (examples.size() > 0) {
+        if (!examples.isEmpty()) {
             ArrayNode examplesNode = JsonNodeFactory.instance.arrayNode();
             for (var example : examples) {
                 examplesNode.add(example);

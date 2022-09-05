@@ -11,7 +11,7 @@ import java.util.*;
 @CustomLog
 @SuppressWarnings("unused")
 public class Metric {
-    public static final Map<String, Metric> items = new HashMap<>();
+    protected static final Map<String, Metric> items = new HashMap<>();
     private double value = 0;
     private double startValue = 0;
     private double minValue = 0;

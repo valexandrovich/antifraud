@@ -13,7 +13,7 @@ public final class Validator {
 
     public static final LocalDate START_DATE = LocalDate.of(1900, 1, 1);
 
-    public static boolean isValidInn(String inn, LocalDate birthDay) {
+    public static boolean isValidInn(String inn, LocalDate birthDay, String sex) {
         if (inn == null || inn.isBlank()) return false;
         inn = inn.replaceAll("[^0-9]", "");
         if (!inn.matches("[0-9]+")) return false;
@@ -22,6 +22,8 @@ public final class Validator {
             boolean isValidBirthDateInn = birthDay == null ||
                     Objects.equals(String.valueOf(birthDay.toEpochDay()
                             - START_DATE.toEpochDay() + 1L), inn.substring(0, 5));
+            String findSex = Integer.parseInt(String.valueOf(inn.charAt(8))) % 2 == 0 ? "Ж" : "Ч";
+            boolean isValidSexInn = sex == null || sex.isBlank() || Objects.equals(findSex, sex);
             int controlNumber = ((-1 * Integer.parseInt(String.valueOf(inn.charAt(0)))
                     + 5 * Integer.parseInt(String.valueOf(inn.charAt(1)))
                     + 7 * Integer.parseInt(String.valueOf(inn.charAt(2)))
@@ -32,7 +34,7 @@ public final class Validator {
                     + 5 * Integer.parseInt(String.valueOf(inn.charAt(7)))
                     + 7 * Integer.parseInt(String.valueOf(inn.charAt(8)))) % 11) % 10;
             return Objects.equals(Integer.parseInt(String.valueOf(inn.charAt(9))), controlNumber)
-                    && isValidBirthDateInn;
+                    && isValidBirthDateInn && isValidSexInn;
         }
         return false;
     }

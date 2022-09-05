@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
 @Component
 @PropertySource({"classpath:downloader.properties", "classpath:application.properties"})
 public class Config {
-    private static final String apiSuffix = "/api/3/action/package_show?id={0}";
-    private static final String resourceSuffix = "/api/3/action/resource_show?id={0}";
+    private static final String API_SUFFIX = "/api/3/action/package_show?id={0}";
+    private static final String RESOURCE_SUFFIX = "/api/3/action/resource_show?id={0}";
 
     @Value("${data.gov.ua.domain}")
     private String dataGovUaDomain;
@@ -49,11 +49,11 @@ public class Config {
     private StatusChanger statusChanger;
 
     public final String getDataGovUaApiUrl() {
-        return dataGovUaDomain + apiSuffix;
+        return dataGovUaDomain + API_SUFFIX;
     }
 
     public final String getDataGovUaResourceUrl() {
-        return dataGovUaDomain + resourceSuffix;
+        return dataGovUaDomain + RESOURCE_SUFFIX;
     }
 
     public final String getDownloaderOutputFolder() {

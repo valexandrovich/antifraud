@@ -59,6 +59,7 @@ public class YPersonService {
     private static final String PASSPORTS = "passports";
     private static final String NUMBER = "number";
     private static final String BIRTHDATE = "birthdate";
+    private static final String ID = "id";
     private static final String RECORD_NUMBER = "recordNumber";
     private static final String LAST_NAME = "lastName";
     private static final String FIRST_NAME = "firstName";
@@ -71,7 +72,7 @@ public class YPersonService {
     private static final String PHONE = "phone";
     private static final String PHONES = "phones";
     boolean criteriaFound;
-    
+
     private static final String NO_RELATION_MESSAGE = "У зазначеної людини немає таких стосунків";
 
 
@@ -84,6 +85,8 @@ public class YPersonService {
         criteriaFound = false;
 
         Specification<YPerson> gsName = searchByName(searchRequest);
+
+        Specification<YPerson> gsAltName = searchByAltName(searchRequest);
 
         String year = Objects.toString(searchRequest.getYear(), "");
         String month = Objects.toString(searchRequest.getMonth(), "");
@@ -147,6 +150,30 @@ public class YPersonService {
         PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
         if (criteriaFound) {
             User user = extractor.extractUser(httpServletRequest);
+
+            Set<YPerson> people;
+            if (!searchRequest.getName().isEmpty()
+                    && !searchRequest.getSurname().isEmpty()
+                    && !searchRequest.getPatronymic().isEmpty()) {
+                people = ypr.findAll(gsDate.and(gs).and(gsName)).parallelStream().collect(Collectors.toSet());
+                people.addAll(ypr.findAll(gsDate.and(gs).and(gsAltName)));
+
+                Specification<YPerson> gsId = new GenericSpecification<>();
+                List<Specification<YPerson>> specificationList = new ArrayList<>();
+                for (YPerson p : people) {
+                    specificationList.add(Specification.where((root, query, cb) ->
+                            cb.equal(root.get(ID), p.getId())));
+                }
+                if (!specificationList.isEmpty()) {
+                    gsId = specificationList.get(0);
+                    for (int i = 1; i < specificationList.size(); i++)
+                        gsId = gsId.or(specificationList.get(i));
+                }
+
+                return ypr.findAll(gsId, pageRequest)
+                        .map(entity -> yPersonConverter.toSearchDto(entity, user));
+            }
+
             return ypr.findAll(gsDate.and(gs).and(gsName), pageRequest)
                     .map(entity -> yPersonConverter.toSearchDto(entity, user));
         } else {
@@ -157,28 +184,47 @@ public class YPersonService {
     private Specification<YPerson> searchByName(SearchRequest searchRequest) {
         String firstName = Objects.toString(searchRequest.getName().toUpperCase().trim(), ""); // Protection from null
         GenericSpecification<YPerson> gs = new GenericSpecification<>();
-        GenericSpecification<YPerson> gsAltName = new GenericSpecification<>();
         if (!firstName.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(FIRST_NAME, firstName, null, SearchOperation.EQUALS));
-            gsAltName.add(new SearchCriteria(FIRST_NAME, firstName, ALT_PEOPLE, SearchOperation.EQUALS));
         }
 
         String surName = Objects.toString(searchRequest.getSurname().toUpperCase().trim(), "");
         if (!surName.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(LAST_NAME, surName, null, SearchOperation.EQUALS));
-            gsAltName.add(new SearchCriteria(LAST_NAME, surName, ALT_PEOPLE, SearchOperation.EQUALS));
         }
 
         String patName = Objects.toString(searchRequest.getPatronymic().toUpperCase().trim(), "");
         if (!patName.equals("")) {
             criteriaFound = true;
             gs.add(new SearchCriteria(PAT_NAME, patName, null, SearchOperation.EQUALS));
+        }
+        return gs;
+    }
+
+    private Specification<YPerson> searchByAltName(SearchRequest searchRequest) {
+        String firstName = Objects.toString(searchRequest.getName().toUpperCase().trim(), ""); // Protection from null
+        GenericSpecification<YPerson> gsAltName = new GenericSpecification<>();
+        if (!firstName.equals("")) {
+            criteriaFound = true;
+            gsAltName.add(new SearchCriteria(FIRST_NAME, firstName, ALT_PEOPLE, SearchOperation.EQUALS));
+        }
+
+        String surName = Objects.toString(searchRequest.getSurname().toUpperCase().trim(), "");
+        if (!surName.equals("")) {
+            criteriaFound = true;
+            gsAltName.add(new SearchCriteria(LAST_NAME, surName, ALT_PEOPLE, SearchOperation.EQUALS));
+        }
+
+        String patName = Objects.toString(searchRequest.getPatronymic().toUpperCase().trim(), "");
+        if (!patName.equals("")) {
+            criteriaFound = true;
             gsAltName.add(new SearchCriteria(PAT_NAME, patName, ALT_PEOPLE, SearchOperation.EQUALS));
         }
-        return Specification.where(gs.or(gsAltName));
+        return gsAltName;
     }
+
 
     private void searchByPassport(SearchRequest searchRequest, GenericSpecification<YPerson> gs) {
         String passportNumber = Objects.toString(searchRequest.getPassportNumber(), "");

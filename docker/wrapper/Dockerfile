@@ -2,7 +2,6 @@ FROM python:3.10-alpine
 ARG SETTINGS=""
 ENV ARG_SETTINGS=$SETTINGS
 WORKDIR /usr/src/wrapper
-VOLUME /usr/src/wrapper/files
 #COPY docker-config.ini ./config.ini
 COPY config.ini .
 COPY wrapper.py .

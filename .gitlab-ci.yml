@@ -1,6 +1,5 @@
 stages:
   - maven-package
-  - liquibase-update
   - kaniko-build
   - helm-package
 
@@ -22,6 +21,29 @@ variables:
     - if: $CI_JOB_NAME == "maven-package"
       when: manual
     - when: on_success
+
+
+.kaniko-build: &kaniko-build
+  stage: kaniko-build
+  image:
+    name: nexus.otpbank.com.ua:19443/repository/kaniko:debug
+    entrypoint: [""]
+  needs:
+    - maven-package
+  <<: *default-rules
+  before_script:
+    - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
+    - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
+    - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
+  script:
+    - >-
+      /kaniko/executor
+      --context .
+      --dockerfile $CI_PROJECT_DIR/Dockerfile-$SERVICE
+      --destination "$NEXUS_IMAGE_REPO/antifraud/$SERVICE:$PARENT_VERSION"
+      --build-arg http_proxy=$HTTP_PROXY
+      --build-arg https_proxy=$HTTPS_PROXY
+    - echo "Image $SERVICE:$PARENT_VERSION pushed!"
 
 
 maven-package:
@@ -58,18 +80,9 @@ maven-package:
     exclude:
       - enricher/target/*-exec.jar
 
-kaniko-build:
-  stage: kaniko-build
-  image:
-    name: nexus.otpbank.com.ua:19443/repository/kaniko:debug
-    entrypoint: [""]
-  needs:
-    - maven-package
-  <<: *default-rules
-  before_script:
-    - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
-    - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
-    - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
+
+services-build:
+  <<: *kaniko-build
   script:
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
@@ -87,13 +100,29 @@ kaniko-build:
       done
 
 
+wrapper-build:
+  <<: *kaniko-build
+  rules:
+    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == $CI_NEW_RELEASES_BRANCH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+      changes:
+        - docker/wrapper/*
+        - Dockerfile-wrapper
+      variables:
+        COMMIT_HASH_TAIL: ""
+    - when: on_success
+  script:
+    - >-
+      /kaniko/executor
+      --context .
+      --dockerfile $CI_PROJECT_DIR/Dockerfile-wrapper
+      --destination "$NEXUS_IMAGE_REPO/antifraud/wrapper:$PARENT_VERSION"
+      --build-arg http_proxy=$HTTP_PROXY
+      --build-arg https_proxy=$HTTPS_PROXY
+    - echo "Image wrapper:$PARENT_VERSION pushed!"
+
+
 liquibase-build:
-  stage: kaniko-build
-  image:
-    name: nexus.otpbank.com.ua:19443/repository/kaniko:debug
-    entrypoint: [""]
-  needs:
-    - maven-package
+  <<: *kaniko-build
   rules:
     - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == $CI_NEW_RELEASES_BRANCH && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
       changes:
@@ -102,10 +131,6 @@ liquibase-build:
       variables:
         COMMIT_HASH_TAIL: ""
     - when: on_success
-  before_script:
-    - echo "{\"auths\":{\"$NEXUS_IMAGE_REPO\":{\"auth\":\"$(printf "%s:%s" "$NEXUS_USER" "$NEXUS_PASS" | base64 | tr -d '\n')\"}}}" >> /kaniko/.docker/config.json
-    - echo "{\"proxies\":{\"default\":{\"httpProxy\":\"$HTTP_PROXY\",\"httpsProxy\":\"$HTTP_PROXY\",\"noProxy\":\"$NO_PROXY\"}}}"  >> /kaniko/.docker/config.json
-    - echo -n "$SSL_CHAIN" | base64 -d >> /kaniko/ssl/certs/ca-certificates.crt
   script:
     - >-
       /kaniko/executor
@@ -124,6 +149,7 @@ helm-package:
     - maven-package
   <<: *default-rules
   script:
+    # all microservices
     - >-
       for file in $(find . -type f -regex '.*target/.*\.jar'); do
         echo $file
@@ -134,10 +160,17 @@ helm-package:
         find . -name $app_name*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
         echo "Helm chart $app_name:$version pushed!"
       done
+    # wrapper
+    - 'sed -i "s/wrapper: version/wrapper: $PARENT_VERSION/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml'
+    - helm package $CI_PROJECT_DIR/helm/services/wrapper --app-version $PARENT_VERSION --version $PARENT_VERSION
+    - find . -name wrapper*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
+    - echo "Helm chart wrapper:$PARENT_VERSION pushed!"
+    # liquibase
+    - 'sed -i "s/liquibase: version/liquibase: $PARENT_VERSION/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml'
     - helm package $CI_PROJECT_DIR/helm/services/liquibase --app-version $PARENT_VERSION --version $PARENT_VERSION
     - find . -name liquibase*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
     - echo "Helm chart liquibase:$PARENT_VERSION pushed!"
-    - 'sed -i "s/liquibase: version/liquibase: $PARENT_VERSION/g" $CI_PROJECT_DIR/helm/antifraud/values.yaml'
+    # main parent chart
     - helm package $CI_PROJECT_DIR/helm/antifraud --version $PARENT_VERSION
     - find . -name antifraud*.tgz -exec curl -s -u $NEXUS_USER:$NEXUS_PASS $NEXUS_HELM_REPO --upload-file {} \;
     - echo "Helm chart antifraud:$PARENT_VERSION pushed!"

@@ -110,8 +110,15 @@ wrapper-build:
       variables:
         COMMIT_HASH_TAIL: ""
     - when: on_success
-  variables:
-    service: wrapper
+  script:
+    - >-
+      /kaniko/executor
+      --context .
+      --dockerfile $CI_PROJECT_DIR/Dockerfile-wrapper
+      --destination "$NEXUS_IMAGE_REPO/antifraud/wrapper:$PARENT_VERSION"
+      --build-arg http_proxy=$HTTP_PROXY
+      --build-arg https_proxy=$HTTPS_PROXY
+    - echo "Image wrapper:$PARENT_VERSION pushed!"
 
 
 liquibase-build:
@@ -124,8 +131,15 @@ liquibase-build:
       variables:
         COMMIT_HASH_TAIL: ""
     - when: on_success
-  variables:
-    service: liquibase
+  script:
+    - >-
+      /kaniko/executor
+      --context .
+      --dockerfile $CI_PROJECT_DIR/Dockerfile-liquibase
+      --destination "$NEXUS_IMAGE_REPO/antifraud/liquibase:$PARENT_VERSION"
+      --build-arg http_proxy=$HTTP_PROXY
+      --build-arg https_proxy=$HTTPS_PROXY
+    - echo "Image liquibase:$PARENT_VERSION pushed!"
 
 
 helm-package:

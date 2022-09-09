@@ -1,17 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "service.name" . }}
-  namespace: {{ .Values.namespace }}
+  name: {{ include "wrapper.fullname" . }}
   labels:
-    {{- include "service.labels" . | nindent 4 }}
+    {{- include "wrapper.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "service.selectorLabels" . | nindent 6 }}
+      {{- include "wrapper.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,20 +18,17 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "service.selectorLabels" . | nindent 8 }}
+        {{- include "wrapper.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "service.name" . }}
+      serviceAccountName: {{ include "wrapper.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          env:
-          - name: PATH_TO_PROPERTIES
-            value: {{ .Values.vault.appPropertiesPath | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"
@@ -59,4 +55,3 @@ spec:
       volumes:
         {{- toYaml . | nindent 6 }}
       {{- end }}
-

@@ -1,0 +1,27 @@
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/agent-pre-populate-only: "true"
+  vault.hashicorp.com/agent-init-first: "true"
+  vault.hashicorp.com/auth-path: "auth/kubernetes"
+  vault.hashicorp.com/agent-inject-secret-config.ini: "secret/data/antifraud/wrapper"
+  vault.hashicorp.com/agent-inject-template-config.ini: |
+    {{- with secret "secret/data/antifraud/wrapper" -}}
+    {{ .Data.data.config }}
+    {{- end }}
+  vault.hashicorp.com/role: "antifraud-wrapper"
+
+volumes:
+- name: source
+  nfs:
+    path: /zpool8t/antifraud/prod/wrapper/source
+    server: 10.244.14.30
+- name: files
+  nfs:
+    path: /zpool8t/antifraud/prod/wrapper/files
+    server: 10.244.14.30
+
+volumeMounts:
+- name: source
+  mountPath: /source
+- name: files
+  mountPath: /usr/src/wrapper/files

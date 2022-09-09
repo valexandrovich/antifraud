@@ -23,6 +23,7 @@ spec:
       enricher: version
       statuslogger: version
       report: version
+      wrapper: version
     name:
       downloader: downloader
       dispatcher: dispatcher
@@ -35,3 +36,4 @@ spec:
       enricher: enricher
       statuslogger: statuslogger
       report: report
+      wrapper: wrapper

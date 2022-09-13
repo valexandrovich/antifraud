@@ -33,6 +33,10 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Chart.AppVersion }}"
+          args: 
+          {{- with .Values.args }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
             {{- toYaml .Values.volumeMounts | nindent 12 }}

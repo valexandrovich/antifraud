@@ -8,6 +8,4 @@ WORKDIR /usr/src/wrapper
 COPY docker/wrapper/config.ini .
 COPY docker/wrapper/wrapper.py .
 
-RUN if [ -f /vault/secrets/config.ini ]; then   cp -f /vault/secrets/config.ini /usr/src/wrapper/config.ini; fi
-
-ENTRYPOINT ["python3",  "wrapper.py", "server.domain=wrapper", "${ARG_SETTINGS}"]
+CMD ["python3",  "wrapper.py", "${ARG_SETTINGS}"]

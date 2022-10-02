@@ -11,8 +11,10 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -88,37 +90,6 @@ public class YPersonService {
 
         Specification<YPerson> gsAltName = searchByAltName(searchRequest);
 
-        String year = Objects.toString(searchRequest.getYear(), "");
-        String month = Objects.toString(searchRequest.getMonth(), "");
-        String day = Objects.toString(searchRequest.getDay(), "");
-        Specification<YPerson> gsDate = new GenericSpecification<>();
-        if (!year.equals("") && !month.equals("") && !day.equals("")) {
-            criteriaFound = true;
-            gs.add(new SearchCriteria(BIRTHDATE,
-                    LocalDate.of(
-                            Integer.parseInt(year),
-                            Integer.parseInt(month),
-                            Integer.parseInt(day)),
-                    null,
-                    SearchOperation.EQUALS));
-        }
-        if (year.equals("") && !month.equals("") && !day.equals("")) {
-            criteriaFound = true;
-            List<Specification<YPerson>> specificationList = new ArrayList<>();
-            for (int i = 1900; i <= LocalDate.now().getYear(); i++) {
-                int finalI = i;
-                specificationList.add(Specification.where((root, query, cb) ->
-                        cb.equal(root.get(BIRTHDATE), LocalDate.of(
-                                finalI,
-                                Integer.parseInt(month),
-                                Integer.parseInt(day)))));
-            }
-            if (!specificationList.isEmpty()) {
-                gsDate = specificationList.get(0);
-                for (int i = 1; i < specificationList.size(); i++)
-                    gsDate = gsDate.or(specificationList.get(i));
-            }
-        }
 
         String inn = Objects.toString(searchRequest.getInn(), "");
         if (!inn.equals("")) {
@@ -147,38 +118,62 @@ public class YPersonService {
             gs.add(new SearchCriteria(PHONE, phone, PHONES, SearchOperation.MATCH));
         }
 
+        String year = Objects.toString(searchRequest.getYear(), "");
+        String month = Objects.toString(searchRequest.getMonth(), "");
+        String day = Objects.toString(searchRequest.getDay(), "");
+        Specification<YPerson> gsFull = gs;
+        if (!year.equals("") && !month.equals("") && !day.equals("")) {
+            criteriaFound = true;
+            gs.add(new SearchCriteria(BIRTHDATE,
+                    LocalDate.of(
+                            Integer.parseInt(year),
+                            Integer.parseInt(month),
+                            Integer.parseInt(day)),
+                    null,
+                    SearchOperation.EQUALS));
+        }
+        if (year.equals("") && !month.equals("") && !day.equals("")) {
+            criteriaFound = true;
+            List<Specification<YPerson>> specificationList = new ArrayList<>();
+            for (int i = 1900; i <= LocalDate.now().getYear(); i++) {
+                int finalI = i;
+                specificationList.add(Specification.where((root, query, cb) ->
+                        cb.equal(root.get(BIRTHDATE), LocalDate.of(
+                                finalI,
+                                Integer.parseInt(month),
+                                Integer.parseInt(day)))));
+            }
+
+            Specification<YPerson> gsDate;
+            if (!specificationList.isEmpty()) {
+                gsDate = specificationList.get(0);
+                for (int i = 1; i < specificationList.size(); i++)
+                    gsDate = gsDate.or(specificationList.get(i));
+
+                gsFull = gsDate.and(gs);
+            }
+        }
+
         PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);
         if (criteriaFound) {
             User user = extractor.extractUser(httpServletRequest);
 
-            Set<YPerson> people;
-            if (!searchRequest.getName().isEmpty()
-                    && !searchRequest.getSurname().isEmpty()
-                    && !searchRequest.getPatronymic().isEmpty()) {
-                people = ypr.findAll(gsDate.and(gs).and(gsName)).parallelStream().collect(Collectors.toSet());
-                people.addAll(ypr.findAll(gsDate.and(gs).and(gsAltName)));
+            if (StringUtils.isNotBlank(searchRequest.getSurname())) {
+                List<YPerson> people = ypr.findAll(gsFull.and(gsName));
+                people.addAll(ypr.findAll(gsFull.and(gsAltName)));
+                people = people.parallelStream()
+                        .distinct().collect(Collectors.toList());
 
-                Specification<YPerson> gsId = new GenericSpecification<>();
-                List<Specification<YPerson>> specificationList = new ArrayList<>();
-                for (YPerson p : people) {
-                    specificationList.add(Specification.where((root, query, cb) ->
-                            cb.equal(root.get(ID), p.getId())));
-                }
-                if (!specificationList.isEmpty()) {
-                    gsId = specificationList.get(0);
-                    for (int i = 1; i < specificationList.size(); i++)
-                        gsId = gsId.or(specificationList.get(i));
-                }
+                final int start = (int) pageRequest.getOffset();
+                final int end = Math.min((start + pageRequest.getPageSize()), people.size());
 
-                return ypr.findAll(gsId, pageRequest)
+                return new PageImpl<>(people.subList(start, end), pageRequest, people.size())
                         .map(entity -> yPersonConverter.toSearchDto(entity, user));
             }
 
-            return ypr.findAll(gsDate.and(gs).and(gsName), pageRequest)
+            return ypr.findAll(gsFull.and(gsName.or(gsAltName)), pageRequest)
                     .map(entity -> yPersonConverter.toSearchDto(entity, user));
-        } else {
-            return Page.empty(pageRequest);
-        }
+        } else return Page.empty(pageRequest);
     }
 
     private Specification<YPerson> searchByName(SearchRequest searchRequest) {

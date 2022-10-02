@@ -11,7 +11,7 @@ import static ua.com.solidity.enricher.util.StringStorage.COMPANY_STATE_CRASH;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
-import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NBB1;
+import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NGT;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 
 import java.time.LocalDate;
@@ -141,7 +141,7 @@ public class Govua4Enricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA4, portion);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 
@@ -179,7 +179,7 @@ public class Govua4Enricher implements Enricher {
                     savedCompanies.addAll(companyRepository.findByEdrpous(codes));
 
                 Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
-                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NBB1);
+                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NGT);
                 workPortion.forEach(r -> {
                     YCompany company = null;
 

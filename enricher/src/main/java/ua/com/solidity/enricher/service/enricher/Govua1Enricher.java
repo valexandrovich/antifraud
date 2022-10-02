@@ -131,7 +131,7 @@ public class Govua1Enricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA1, portion);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 
@@ -203,26 +203,22 @@ public class Govua1Enricher implements Enricher {
                             String lastName = null;
                             String firstName = null;
                             String patName = null;
-
                             List<String> splitedList;
                             String[] fio = new String[3];
                             Integer commaIndex = null;
-
                             if (StringUtils.isNotBlank(r.getName())) {
                                 splitedList = Arrays.stream(r.getName().split("[ .]+"))
                                         .filter(s -> StringUtils.isNotBlank(s) && !s.contains("»") && !s.contains("«"))
                                         .collect(Collectors.toList());
                                 int splitedSize = splitedList.size();
-
                                 if (splitedList.size() > 3) {
                                     for (int i = 0; i < splitedSize; i++) {
                                         if (splitedList.get(i).contains(",")) {
-                                            splitedList.add(i, splitedList.get(i).replaceAll(",", ""));
+                                            splitedList.add(i, splitedList.get(i).replace(",", ""));
                                             commaIndex = i;
                                             break;
                                         }
                                     }
-
                                     if (commaIndex != null && commaIndex >= 2) {
                                         fio[0] = splitedList.get(commaIndex - 2);
                                         fio[1] = splitedList.get(commaIndex - 1);

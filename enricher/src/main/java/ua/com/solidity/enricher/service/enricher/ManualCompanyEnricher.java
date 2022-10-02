@@ -166,7 +166,7 @@ public class ManualCompanyEnricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(MANUAL_COMPANY, revision);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 

@@ -11,7 +11,7 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.FOREIGN_PASSPORT;
-import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NAL;
+import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NA;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -119,7 +119,7 @@ public class Govua11Enricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA11, portion);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 
@@ -162,7 +162,7 @@ public class Govua11Enricher implements Enricher {
                 if (!passports.isEmpty())
                     savedPersonSet.addAll(new HashSet<>(ypr.findPeoplePassportsForBaseEnricher(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList()))));
 
-                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NAL);
+                Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NA);
                 workPortion.forEach(r -> {
                     YPerson person = new YPerson();
 

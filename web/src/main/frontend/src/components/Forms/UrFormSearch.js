@@ -81,7 +81,7 @@ const UrFormSearch = () => {
               <FloatInput
                 col={"col-md-6 mt-3"}
                 name={"name"}
-                label={"Ім'я"}
+                label={"Назва"}
                 val={urFormState.urForm.name}
                 errors={errors.name}
                 touched={touched.name}
@@ -122,7 +122,7 @@ const UrFormSearch = () => {
               <FloatInput
                 col={"col-md-3 mt-3"}
                 name={"pdv"}
-                label={"Код платника ПДВ"}
+                label={"Код ПДВ"}
                 val={urFormState.urForm.pdv}
                 errors={errors.pdv}
                 touched={touched.pdv}

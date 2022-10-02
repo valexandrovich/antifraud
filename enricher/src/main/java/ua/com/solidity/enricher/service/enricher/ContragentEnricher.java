@@ -121,7 +121,7 @@ public class ContragentEnricher implements Enricher {
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().filter(p -> Objects.equals(p.getContragentTypeId(), PHYSICAL_RESIDENT))
+                List<EntityProcessing> entityProcessings = onePage.stream().parallel()
                         .map(p -> {
                             String firstName = UtilString.toUpperCase(p.getClientName());
                             String patName = UtilString.toUpperCase(p.getClientPatronymicName());
@@ -158,7 +158,7 @@ public class ContragentEnricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(CONTRAGENT, portion);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 
@@ -217,7 +217,6 @@ public class ContragentEnricher implements Enricher {
                 if (!passports.isEmpty())
                     savedPersonSet.addAll(ypr.findPeoplePassports(passports.parallelStream().map(YPassport::getId).collect(Collectors.toList())));
 
-                Set<YPassport> finalPassports = passports;
                 Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_RC);
                 workPortion.forEach(r -> {
                     if (StringUtils.isNotBlank(r.getContragentTypeId()) &&
@@ -256,7 +255,7 @@ public class ContragentEnricher implements Enricher {
                                 passport.setRecordNumber(null);
                                 passport.setValidity(true);
                                 passport.setType(DOMESTIC_PASSPORT);
-                                person = extender.addPassport(passport, people, source, person, savedPersonSet, finalPassports);
+                                person = extender.addPassport(passport, people, source, person, savedPersonSet, passports);
                             }
                         }
                         person = extender.addPerson(people, person, source, false);
@@ -343,10 +342,8 @@ public class ContragentEnricher implements Enricher {
                             }
                         }
                     }
-                    if (!resp.isEmpty()) {
-                        counter[0]++;
-                        statusChanger.addProcessedVolume(1);
-                    }
+                    counter[0]++;
+                    statusChanger.addProcessedVolume(1);
                 });
 
                 UUID dispatcherIdFinish = httpClient.get(urlPost, UUID.class);

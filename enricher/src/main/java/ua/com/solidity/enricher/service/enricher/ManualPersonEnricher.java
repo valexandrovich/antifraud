@@ -177,7 +177,7 @@ public class ManualPersonEnricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(MANUAL_PERSON, revision);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 
@@ -259,14 +259,6 @@ public class ManualPersonEnricher implements Enricher {
                     person.setFirstName(firstName);
                     person.setPatName(patName);
                     person.setBirthdate(birthday);
-                    if (StringUtils.isNotBlank(r.getSex()))
-                        person.setSex(r.getSex().trim().toUpperCase());
-                    if (StringUtils.isNotBlank(r.getCountry()))
-                        person.setCountry(r.getCountry().trim().toUpperCase());
-                    if (StringUtils.isNotBlank(r.getComment()))
-                        person.setComment(r.getComment().trim().toUpperCase());
-                    if (StringUtils.isNotBlank(r.getBirthPlace()))
-                        person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
 
                     if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
@@ -331,6 +323,15 @@ public class ManualPersonEnricher implements Enricher {
                         passport.setValidity(true);
                         person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
                     }
+
+                    if (StringUtils.isNotBlank(r.getSex()))
+                        person.setSex(r.getSex().trim().toUpperCase());
+                    if (StringUtils.isNotBlank(r.getCountry()))
+                        person.setCountry(r.getCountry().trim().toUpperCase());
+                    if (StringUtils.isNotBlank(r.getComment()))
+                        person.setComment(r.getComment().trim().toUpperCase());
+                    if (StringUtils.isNotBlank(r.getBirthPlace()))
+                        person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
 
                     person = extender.addPerson(personSet, person, source, true);
 

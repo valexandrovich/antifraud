@@ -135,7 +135,7 @@ public class BaseDirectorEnricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(BASE_DIRECTOR, portion);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 

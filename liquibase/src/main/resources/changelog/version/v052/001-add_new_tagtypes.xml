@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v052-0" author="Olha Tankevych">
+        <tagDatabase tag="v052-0"/>
+    </changeSet>
+
+    <changeSet id="v052-1" author="Olha Tankevych">
+        <update tableName="tag_type">
+            <column name="juridical" value="true"/>
+            <where>code = 'RC' or code = 'NGC2'</where>
+        </update>
+
+        <rollback>
+            <update tableName="tag_type">
+                <column name="juridical" value="false"/>
+                <where>code = 'RC' or code = 'NGC2'</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v052-2" author="Olha Tankevych">
+        <insert tableName="tag_type">
+            <column name="code" value="NA"/>
+            <column name="description" value="Негатив / Блокировка / Недействительный паспорт (загран)"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NBW"/>
+            <column name="description" value="Негатив / Черный список / Розыск МВД"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NBL"/>
+            <column name="description" value="Негатив / Черный список / Реестр безвести пропавших"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NBC"/>
+            <column name="description" value="Негатив / Черный список / Реестр коррупционеров НАЗК"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NBLU"/>
+            <column name="description" value="Негатив / Черный список / Закон про люстрацию"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGP"/>
+            <column name="description" value="Негатив / Серый список / Должник пенсионного фонда"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGZ"/>
+            <column name="description" value="Негатив / Серый список / Должник по зарплате"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGT"/>
+            <column name="description" value="Негатив / Серый список / Налоговый долг"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGE"/>
+            <column name="description" value="Негатив / Серый список / Долг плательщика ЕСВ"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGI"/>
+            <column name="description" value="Негатив / Серый список / Исполнительное поручение"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGD"/>
+            <column name="description" value="Негатив / Серый список / Должник (реестр Мин.юст)"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="NGS"/>
+            <column name="description" value="Негатив / Серый список / Реестр судебных решений"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IL"/>
+            <column name="description" value="Справочная информация / Кредитный продукт / Агрофабрика"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IA"/>
+            <column name="description" value="Справочная информация / Главный бухгалтер компании"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IOC"/>
+            <column name="description" value="Справочная информация / Другой продукт / Corporate"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IOR"/>
+            <column name="description" value="Справочная информация / Другой продукт / РКО"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IODS"/>
+            <column name="description" value="Справочная информация / Другой продукт / Депозитарная ячейка"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IOP"/>
+            <column name="description" value="Справочная информация / Другой продукт / Поручитель"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="IOG"/>
+            <column name="description" value="Справочная информация / Другой продукт / Гарантер"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="tag_type">
+                <where>code = 'NA' or code = 'NBW' or code = 'NBL' or code = 'NBC' or code = 'NBLU'
+                    or code = 'NGP' or code = 'NGZ' or code = 'NGT' or code = 'NGE' or code = 'NGI'
+                    or code = 'NGD' or code = 'NGS' or code = 'IL' or code = 'IA' or code = 'IOC'
+                    or code = 'IOR' or code = 'IODS' or code = 'IOP' or code = 'IOG'
+                </where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v052-3" author="Olha Tankevych">
+        <update tableName="tag_type">
+            <column name="physical" value="true"/>
+            <where>code = 'NA' or code = 'NBW' or code = 'NBC' or code = 'NBL' or code = 'NBLU'
+                or code = 'IA'
+            </where>
+        </update>
+
+        <update tableName="tag_type">
+            <column name="juridical" value="true"/>
+            <where>code = 'NGP' or code = 'NGZ' or code = 'NGT' or code = 'IL'</where>
+        </update>
+
+        <update tableName="tag_type">
+            <column name="physical" value="true"/>
+            <column name="juridical" value="true"/>
+            <where>code = 'NGE' or code = 'NGI' or code = 'NGD' or code = 'NGS' or code = 'IOC'
+                or code = 'IOR' or code = 'IODS' or code = 'IOP' or code = 'IOG'
+            </where>
+        </update>
+
+        <rollback>
+            <update tableName="tag_type">
+                <column name="physical" value="false"/>
+                <where>code = 'NA' or code = 'NBW' or code = 'NBC' or code = 'NBL' or code = 'NBLU'
+                    or code = 'IA'
+                </where>
+            </update>
+
+            <update tableName="tag_type">
+                <column name="juridical" value="false"/>
+                <where>code = 'NGP' or code = 'NGZ' or code = 'NGT' or code = 'IL'</where>
+            </update>
+
+            <update tableName="tag_type">
+                <column name="physical" value="false"/>
+                <column name="juridical" value="false"/>
+                <where>code = 'NGE' or code = 'NGI' or code = 'NGD' or code = 'NGS' or code = 'IOC'
+                    or code = 'IOR' or code = 'IODS' or code = 'IOP' or code = 'IOG'
+                </where>
+            </update>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v052-4" author="Olha Tankevych">
+        <update tableName="tag_type">
+            <column name="description" value="Отношение к банку / Клиент"/>
+            <where>code = 'RC'</where>
+        </update>
+
+        <update tableName="tag_type">
+            <column name="code" value="RP"/>
+            <where>code = 'RP1'</where>
+        </update>
+
+        <rollback>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Клиент / Договор подряда"/>
+                <where>code = 'RC'</where>
+            </update>
+
+
+            <update tableName="tag_type">
+                <column name="code" value="RP1"/>
+                <where>code = 'RP'</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

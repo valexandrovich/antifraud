@@ -97,6 +97,7 @@ public final class Validator {
                     else controlNumber = (firstNum * 9 + secondNum * 3 + thirdNum * 4 + fourthNum * 5
                             + fifthNum * 6 + sixthNum * 7 + seventhNum * 8) % 11;
                 }
+                if (controlNumber == 10) controlNumber = 0;
                 result = (String.valueOf(edrpou.charAt(7)).equals(String.valueOf(controlNumber)));
             }
             if (edrpou.length() == 9 || !result) {

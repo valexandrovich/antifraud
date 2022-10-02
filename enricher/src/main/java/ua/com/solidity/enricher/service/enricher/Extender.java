@@ -81,7 +81,7 @@ public class Extender {
                               ImportSource source) {
         Optional<YAltCompany> altCompanyOptional = company.getAltCompanies()
                 .parallelStream()
-                .filter(p -> (Objects.equals(p.getCompany().getName(), name)))
+                .filter(p -> (Objects.equals(p.getName(), name)))
                 .findAny();
         YAltCompany altCompany = altCompanyOptional.orElseGet(YAltCompany::new);
         addSource(altCompany.getImportSources(), source);
@@ -108,9 +108,9 @@ public class Extender {
                 .filter(p -> p.getPassports().contains(ypassport))
                 .collect(Collectors.toList());
         yPersonList.addAll(savedPeople.parallelStream()
-                                   .filter(p -> p.getPassports()
-                                           .contains(ypassport))
-                                   .collect(Collectors.toList()));
+                .filter(p -> p.getPassports()
+                        .contains(ypassport))
+                .collect(Collectors.toList()));
 
         Optional<YPassport> optionalYPassport = yPersonList.parallelStream()
                 .flatMap(p -> p.getPassports().parallelStream())
@@ -393,7 +393,7 @@ public class Extender {
             }
             if (!find) {
                 List<YPerson> yPersonSavedList = ypr.findByLastNameAndFirstNameAndPatNameAndBirthdate(person.getLastName(),
-                                                                                                      person.getFirstName(), person.getPatName(), person.getBirthdate());
+                        person.getFirstName(), person.getPatName(), person.getBirthdate());
                 if (yPersonSavedList.size() == 1) {
                     if (fullUnload)
                         person = ypr.findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(yPersonSavedList.get(0).getId())
@@ -464,8 +464,8 @@ public class Extender {
         LocalDate localDate = null;
         if (!StringUtils.isBlank(date)) {
             localDate = LocalDate.of(Integer.parseInt(date.substring(6)),
-                                     Integer.parseInt(date.substring(3, 5)),
-                                     Integer.parseInt(date.substring(0, 2)));
+                    Integer.parseInt(date.substring(3, 5)),
+                    Integer.parseInt(date.substring(0, 2)));
         }
         return localDate;
     }
@@ -476,12 +476,16 @@ public class Extender {
                                Set<YCompany> companies) {
         YCompany yCompany;
         Optional<YCompany> optionalYCompany = companySet.parallelStream()
-                .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())
-                        || Objects.equals(c.getPdv(), company.getPdv())).findAny();
+                .filter(c -> (c.getEdrpou() != null && company.getEdrpou() != null
+                        && c.getEdrpou().equals(company.getEdrpou()))
+                        || (c.getPdv() != null && company.getPdv() != null
+                        && c.getPdv().equals(company.getPdv()))).findAny();
         if (optionalYCompany.isEmpty())
             optionalYCompany = companies.parallelStream()
-                    .filter(c -> Objects.equals(c.getEdrpou(), company.getEdrpou())
-                            || Objects.equals(c.getPdv(), company.getPdv())).findAny();
+                    .filter(c -> (c.getEdrpou() != null && company.getEdrpou() != null
+                            && c.getEdrpou().equals(company.getEdrpou()))
+                            || (c.getPdv() != null && company.getPdv() != null
+                            && c.getPdv().equals(company.getPdv()))).findAny();
 
         yCompany = optionalYCompany.orElseGet(YCompany::new);
         if (yCompany.getId() == null) yCompany.setId(UUID.randomUUID());
@@ -491,10 +495,10 @@ public class Extender {
 
         addSource(yCompany.getImportSources(), source);
 
-        yCompany.setEdrpou(chooseNotNull(yCompany.getEdrpou(), company.getEdrpou()));
-        yCompany.setPdv(chooseNotNull(yCompany.getPdv(), company.getPdv()));
-        yCompany.setName(chooseNotBlank(yCompany.getName(), company.getName()));
-        yCompany.setState(chooseNotNull(yCompany.getState(), company.getState()));
+        yCompany.setEdrpou(chooseNotNull(company.getEdrpou(), yCompany.getEdrpou()));
+        yCompany.setPdv(chooseNotNull(company.getPdv(), yCompany.getPdv()));
+        yCompany.setName(chooseNotBlank(company.getName(), yCompany.getName()));
+        yCompany.setState(chooseNotNull(company.getState(), yCompany.getState()));
 
         companySet.add(yCompany);
         return yCompany;

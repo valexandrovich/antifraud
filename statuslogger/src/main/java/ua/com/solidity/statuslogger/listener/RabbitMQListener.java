@@ -47,7 +47,8 @@ public class RabbitMQListener {
                 newStatusLogger.setName(statusLogger.getName());
                 newStatusLogger.setUserName(statusLogger.getUserName());
                 newStatusLogger.setFinished(statusLogger.getFinished());
-                newStatusLogger.setStatus(statusLogger.getStatus());
+                newStatusLogger.setStatus(statusLogger.getStatus().substring(0,
+                        Math.min(statusLogger.getStatus().length(), 255)));
                 repository.save(newStatusLogger);
                 return;
             }

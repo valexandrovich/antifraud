@@ -120,7 +120,7 @@ public class Govua17Enricher implements Enricher {
 
                 if (respId.isEmpty()) {
                     extender.sendMessageToQueue(GOVUA17, portion);
-                    statusChanger.error("All data is being processed. Portions sent to the queue.");
+                    statusChanger.newStage(null, "All data is being processed. Portions sent to the queue.", count, null);
                     return;
                 }
 

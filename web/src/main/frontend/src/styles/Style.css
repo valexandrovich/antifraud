@@ -788,7 +788,7 @@ datalist {
 .source-container {
     position: relative;
     display: flex;
-    max-width: 350px;
+    /*max-width: 350px;*/
     white-space: nowrap;
     overflow: hidden ! important;
     text-overflow: ellipsis;

@@ -15,9 +15,14 @@ public final class StringStorage {
     public static final String ENRICHER_ERROR_REPORT_MESSAGE = "Enricher error report for table: {} with revision: {}";
     public static final String COMPANY_STATE_CRASH = "ПОРУШЕНО СПРАВУ ПРО БАНКРОТСТВО";
     public static final String TAG_TYPE_NBB1 = "NBB1";
+    public static final String TAG_TYPE_NGT = "NGT";
+    public static final String TAG_TYPE_NGD = "NGD";
+    public static final String TAG_TYPE_NGE = "NGE";
+    public static final String TAG_TYPE_NGP = "NGP";
     public static final String TAG_TYPE_IZ = "IZ";
     public static final String TAG_TYPE_ID = "ID";
     public static final String TAG_TYPE_RC = "RC";
     public static final String TAG_TYPE_NAL = "NAL";
+    public static final String TAG_TYPE_NA = "NA";
     public static final String ENRICHER_INFO_MESSAGE = "To be processed: {}";
 }

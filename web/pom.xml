@@ -234,7 +234,7 @@
                             <goal>yarn</goal>
                         </goals>
                         <configuration>
-                            <arguments>install --strict-ssl=true</arguments>
+                            <arguments>install</arguments>
                         </configuration>
                     </execution>
                     <execution>

@@ -1,0 +1,11 @@
+FROM python:3.10-alpine
+
+ARG SETTINGS=""
+ENV ARG_SETTINGS=$SETTINGS
+
+WORKDIR /usr/src/wrapper
+
+COPY docker/wrapper/config.ini .
+COPY docker/wrapper/wrapper.py .
+
+CMD ["python3",  "wrapper.py", "${ARG_SETTINGS}"]

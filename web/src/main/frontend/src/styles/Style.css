@@ -788,8 +788,7 @@ datalist {
 .source-container {
     position: relative;
     display: flex;
-    /*max-width: 350px;*/
-    white-space: nowrap;
+    white-space: pre-wrap;
     overflow: hidden ! important;
     text-overflow: ellipsis;
 }
@@ -806,8 +805,8 @@ datalist {
 
 .source_w {
     position: absolute;
-    top: 20px;
-    left: 0;
+    top: 0;
+    right: 20px;
     z-index: 20;
     background-color: whitesmoke;
     padding: 5px 14px;

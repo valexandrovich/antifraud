@@ -253,6 +253,8 @@ public class ManualPersonEnricher implements Enricher {
                     String firstName = UtilString.toUpperCase(r.getFnameUk());
                     String patName = UtilString.toUpperCase(r.getPnameUk());
                     LocalDate birthday = stringToDate(r.getBirthday());
+                    String sex = UtilString.toUpperCase(r.getSex());
+                    if (StringUtils.isNotBlank(sex)) sex = sex.trim();
 
                     YPerson person = new YPerson();
                     person.setLastName(lastName);
@@ -262,7 +264,7 @@ public class ManualPersonEnricher implements Enricher {
 
                     if (!StringUtils.isBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                        if (isValidInn(inn, stringToDate(r.getBirthday()), UtilString.toUpperCase(r.getSex()).trim())) {
+                        if (isValidInn(inn, stringToDate(r.getBirthday()), sex)) {
                             person = extender.addInn(Long.parseLong(inn), personSet, source, person, inns, savedPersonSet);
                         } else {
                             logError(logger, (counter[0] + 1L), Utils.messageFormat("INN: {}", r.getOkpo()), "Wrong INN");

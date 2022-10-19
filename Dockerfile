@@ -1,10 +1,7 @@
 FROM nexus.otpbank.com.ua:19443/repository/openjdk:11-jre
 
-ENV JAVA_OPTS="-Xms256m -Xmx2G -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080 -Dhttp.nonProxyHosts=localhost^|127.0.0.1^|*.raiffeisenbank.com.ua^|*.otpbank.com.ua^|*.svc.cluster.local^|10.244.74.0/24^|rabbit*^|dispatcher*"
-ENV OTP_TEMP=/tmp
+ENV JAVA_OPTS="-Xms256m -Xmx2G -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom"
 ENV TZ=Europe/Kiev
-
-VOLUME /tmp
 
 COPY cert.crt cert.crt
 RUN keytool -importcert -file cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt

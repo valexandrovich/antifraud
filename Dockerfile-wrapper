@@ -5,6 +5,9 @@ ENV ARG_SETTINGS=$SETTINGS
 
 WORKDIR /usr/src/wrapper
 
+COPY cert.crt /usr/local/share/ca-certificates/cert.crt
+RUN update-ca-certificates
+
 COPY docker/wrapper/config.ini .
 COPY docker/wrapper/wrapper.py .
 

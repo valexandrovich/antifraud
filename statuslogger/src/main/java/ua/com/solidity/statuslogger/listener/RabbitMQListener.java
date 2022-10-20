@@ -37,6 +37,8 @@ public class RabbitMQListener {
         StatusLogger statusLogger;
         try {
             statusLogger = objectMapper.readerFor(StatusLogger.class).readValue(request);
+            trimStatus(statusLogger);
+
             Optional<StatusLogger> statusLoggerRecord = repository.findById(statusLogger.getId());
             if (statusLoggerRecord.isPresent()) {
                 log.debug("StatusLogger with revision {} already exist", statusLogger.getId());
@@ -47,8 +49,7 @@ public class RabbitMQListener {
                 newStatusLogger.setName(statusLogger.getName());
                 newStatusLogger.setUserName(statusLogger.getUserName());
                 newStatusLogger.setFinished(statusLogger.getFinished());
-                newStatusLogger.setStatus(statusLogger.getStatus().substring(0,
-                        Math.min(statusLogger.getStatus().length(), 255)));
+                newStatusLogger.setStatus(statusLogger.getStatus());
                 repository.save(newStatusLogger);
                 return;
             }
@@ -57,5 +58,11 @@ public class RabbitMQListener {
         } catch (JsonProcessingException e) {
             log.error("Couldn't read object from queue: {}", e.getMessage());
         }
+    }
+
+    public static void trimStatus(StatusLogger statusLogger) {
+        String status = statusLogger.getStatus();
+        if (status != null) statusLogger.setStatus(status.substring(0,
+                Math.min(statusLogger.getStatus().length(), 255)));
     }
 }

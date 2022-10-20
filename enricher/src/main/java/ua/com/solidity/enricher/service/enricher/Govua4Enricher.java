@@ -162,6 +162,7 @@ public class Govua4Enricher implements Enricher {
 
                 Set<Long> codes = new HashSet<>();
                 Set<YCompany> companies = new HashSet<>();
+                Set<YCompany> subCompanies = new HashSet<>();
 
                 Set<YCompany> savedCompanies = new HashSet<>();
                 workPortion.forEach(r -> {
@@ -217,6 +218,7 @@ public class Govua4Enricher implements Enricher {
                             subCompany.setName(UtilString.toUpperCase(r.getSubName()));
                             state.ifPresent(subCompany::setState);
                             subCompany = extender.addCompany(companies, source, subCompany, savedCompanies);
+                            subCompanies.add(subCompany);
 
                             Set<YCTag> tags = new HashSet<>();
                             YCTag tag = new YCTag();
@@ -244,6 +246,7 @@ public class Govua4Enricher implements Enricher {
                     if (!companies.isEmpty()) {
                         emnService.enrichYCompanyPackageMonitoringNotification(companies);
                         log.info("Saving companies");
+                        companyRepository.saveAll(subCompanies);
                         companyRepository.saveAll(companies);
                         emnService.enrichYCompanyMonitoringNotification(companies);
                         statusChanger.setStatus(Utils.messageFormat("Enriched {} rows", statusChanger.getProcessedVolume()));

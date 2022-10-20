@@ -5,11 +5,11 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>5.1.296</version>
+        <version>5.1.298</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <version>5.1.296</version>
+    <version>5.1.298</version>
 
     <artifactId>util</artifactId>
 

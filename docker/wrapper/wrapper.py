@@ -22,12 +22,11 @@ contentTypes = {
     'xml': 'text/xml'
 }
 
+DEBUG = "Debug |"
+
 def normalizePath(s, base):
     if (s):
         s = s.replace('\\', '/')
-        # if s.endswith('$$'):
-        #    s = s[:len(s) - 2]
-        #    base = True
 
         if not s.endswith('/'):
             s += '/'
@@ -38,7 +37,7 @@ def normalizePath(s, base):
     return s
 
 def init():
-    global cfg, revisionDate, packages, files, direct_links, address, domain, absolute, fullDomain, port, main_package_url, main_resource_url, https, proxies, url_path, path, env_var, env_var_append_wrapper
+    global cfg, revisionDate, packages, files, direct_links, address, domain, absolute, fullDomain, port, main_package_url, main_resource_url, https, proxies, url_path, path, env_var, env_var_append_wrapper, debug
     cfg = ConfigParser(allow_no_value=True)
     cfg.read('config.ini')
     handleArguments()
@@ -54,6 +53,7 @@ def init():
     path = cfg.get('server', 'path', fallback='')
     env_var = cfg.get('server', 'env_var', fallback='')
     env_var_append_wrapper = cfg.getboolean('server', 'env_var_append_wrapper', fallback=True)
+    debug = cfg.getboolean('server', 'debug', fallback=False)
 
     if not path:
         if env_var:
@@ -89,6 +89,19 @@ def init():
 
     if not url_path.startswith("/"):
         url_path = "/" + url_path
+
+    if debug:
+        print(f"{DEBUG} Wrapper service initialized with:")
+        print(f"{DEBUG} Path: {path}")
+        print(f"{DEBUG} Packages: {packages}")
+        print(f"{DEBUG} Files: {files}")
+        print(f"{DEBUG} Proxies: {proxies}")
+        print(f"{DEBUG} Direct Links: {direct_links}")
+        if proxies:
+            print(f"{DEBUG} Proxy Support: {proxy_support}")
+            print(f"{DEBUG} Opener: {opener}")
+        print(f"{DEBUG} Full Domain: {fullDomain}")
+        print(f"{DEBUG} URL path: {url_path}")
 
 def setCommandLineArgument(s):
     dotPosition = s.find('.')
@@ -146,6 +159,8 @@ def getUrlFileSize(url):
 class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
 
     def sendJson(self, obj):
+        if debug:
+            print(f"{DEBUG} sendJson: {obj}")
         data = json.dumps(obj, ensure_ascii=False, indent=4).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
@@ -154,6 +169,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def makePackageResource(self, resourceName, resourceId)->object:
+        if debug:
+            print(f"{DEBUG} makePackageResource: {resourceName}; id: {resourceId}")
         fileName = files[resourceId].lower()
         name, format, mimetype = getFormat(fileName)
 
@@ -168,6 +185,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         }
 
     def handlePackage(self, query):
+        if debug:
+            print(f"{DEBUG} handlePackage: {query}")
         if 'id' in query:
             id = query.get('id')[0]
         else:
@@ -200,6 +219,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         return True
 
     def handleResource(self, query):
+        if debug:
+            print(f"{DEBUG} handleResource: {query}")
         if 'id' in query:
             id = query.get('id')[0]
         else:
@@ -242,6 +263,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         return True
 
     def handleDownload(self, query):
+        if debug:
+            print(f"{DEBUG} handleDownload: {query}")
         if 'file' in query:
             file = query.get('file')[0]
             filePath = path + 'files/' + file;
@@ -263,6 +286,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         return True
 
     def do_GET(self):
+        if debug:
+            print(f"{DEBUG} do_GET")
         print('Request received: ', self.path, flush = True)
         urlData = urlparse(self.path.lower())
         query = parse_qs(urlData.query)

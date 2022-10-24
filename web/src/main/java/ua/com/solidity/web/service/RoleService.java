@@ -18,6 +18,7 @@ public class RoleService {
 	private final RoleMapRepository roleMapRepository;
 
 	public Role getRoleFromMemberOf(ArrayList<String> memberOf) {
+		System.out.println("Login attempt -> " + Arrays.toString(memberOf))
 		List<String> personGroups = memberOf
 				.stream()
 				.map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))

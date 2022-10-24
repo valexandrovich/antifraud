@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -240,8 +239,8 @@ public class ManualPersonEnricher implements Enricher {
 
                 if (!passportSeriesWithNumber.isEmpty()) {
                     for (YPassport passport : passportSeriesWithNumber) {
-                        Optional<YPassport> newPass = passportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
-                        newPass.ifPresent(passports::add);
+                        List<YPassport> passportList = passportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
+                        passports.addAll(passportList);
                     }
                 }
 

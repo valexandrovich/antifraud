@@ -1,6 +1,6 @@
 package ua.com.solidity.db.repositories;
 
-import java.util.Optional;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +11,6 @@ public interface YPassportRepository extends JpaRepository<YPassport, Long>, Jpa
     @Query("SELECT DISTINCT p FROM YPassport p " +
             "left join fetch p.importSources p_i " +
             "where p.number = :number and p.series = :series")
-    Optional<YPassport> findPassportsByNumberAndSeries(Integer number, String series);
+    List<YPassport> findPassportsByNumberAndSeries(Integer number, String series);
 }
 

@@ -209,8 +209,8 @@ public class ContragentEnricher implements Enricher {
                 }
                 if (!passportSeriesWithNumber.isEmpty()) {
                     for (YPassport passport : passportSeriesWithNumber) {
-                        Optional<YPassport> newPass = yPassportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
-                        newPass.ifPresent(passports::add);
+                        List<YPassport> passportList = yPassportRepository.findPassportsByNumberAndSeries(passport.getNumber(), passport.getSeries());
+                        passports.addAll(passportList);
                     }
                 }
 
@@ -258,7 +258,7 @@ public class ContragentEnricher implements Enricher {
                                 person = extender.addPassport(passport, people, source, person, savedPersonSet, passports);
                             }
                         }
-                        person = extender.addPerson(people, person, source, false);
+                        person = extender.addPerson(people, person, source, true);
 
                         Set<YAddress> addresses = new HashSet<>();
                         Stream.of(r.getAddress(), r.getBirthplace()).forEach(a -> {

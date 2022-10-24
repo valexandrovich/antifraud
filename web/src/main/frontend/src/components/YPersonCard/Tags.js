@@ -185,7 +185,7 @@ const Tags = ({ data, onChange }) => {
                 );
               })}
           </div>
-          <p className={"ml-10"}>
+          <p className={"source-container ml-10"}>
             <b className="mr-10">Опис:</b>
             {description}
           </p>
@@ -193,11 +193,13 @@ const Tags = ({ data, onChange }) => {
             <b className="mr-10">Дата події:</b>
             {new DateObject(eventDate).format("DD.MM.YYYY")}
           </p>
-          <div className="d-flex ml-10 pb-16">
+          <div className="source-container d-flex ml-10 pb-16">
             <span className="mr-10">
               <b className="mr-10">Текстове значення:</b>
               {textValue}
             </span>
+          </div>
+          <div className="source-container d-flex ml-10 pb-16">
             <span className="mr-10">
               <b className="mr-10">Числове значення:</b>
               {numberValue}

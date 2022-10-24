@@ -6,7 +6,7 @@ import ua.com.solidity.db.entities.Role;
 import ua.com.solidity.db.entities.RoleMap;
 import ua.com.solidity.db.repositories.RoleMapRepository;
 
-import java.util.Arrays;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -19,7 +19,7 @@ public class RoleService {
 	private final RoleMapRepository roleMapRepository;
 
 	public Role getRoleFromMemberOf(ArrayList<String> memberOf) {
-		System.out.println("Login attempt -> " + Arrays.toString(memberOf));
+		System.out.println("Login attempt -> " + memberOf.toString());
 		List<String> personGroups = memberOf
 				.stream()
 				.map((s) -> s.substring(s.indexOf("=") + 1, s.indexOf(",")))

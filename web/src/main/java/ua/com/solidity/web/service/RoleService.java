@@ -6,6 +6,7 @@ import ua.com.solidity.db.entities.Role;
 import ua.com.solidity.db.entities.RoleMap;
 import ua.com.solidity.db.repositories.RoleMapRepository;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;

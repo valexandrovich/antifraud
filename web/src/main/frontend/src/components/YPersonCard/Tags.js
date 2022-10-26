@@ -129,7 +129,7 @@ const tagOptions = [
 ];
 const tagShema = Yup.object().shape({
   tag: Yup.string().oneOf(
-    tagOptions.map((tag) => tag.code, "Не вірний тип тегу")
+    tagOptions.map((tag) => tag.code, "Невірний тип тегу")
   ),
 });
 
@@ -163,7 +163,7 @@ const Tags = ({ data, onChange }) => {
             </div>
           )}
           <div className={"source-container ml-10 pb-16"}>
-            <b className="mr-10">Тег:</b>
+            <b className="mr-10">Теґ:</b>
             {tagType.description}
             <span className="tag_name">({tagType.code})</span>
             <span
@@ -217,7 +217,7 @@ const Tags = ({ data, onChange }) => {
                 : new DateObject(until).format("DD.MM.YYYY")}
             </span>
           </div>
-          <small className={"ml-10"}>{source}</small>
+          <small className={"source-container ml-10"}>{source}</small>
         </div>
       ) : (
         <div>

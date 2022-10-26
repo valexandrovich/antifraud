@@ -1,5 +1,7 @@
 package ua.com.solidity.enricher.service.enricher;
 
+import static ua.com.solidity.enricher.service.validator.Validator.isValidForeignPassport;
+import static ua.com.solidity.enricher.service.validator.Validator.isValidIdPassport;
 import static ua.com.solidity.enricher.service.validator.Validator.isValidLocalPassport;
 import static ua.com.solidity.enricher.util.Base.BASE_PASSPORTS;
 import static ua.com.solidity.enricher.util.Base.CONTRAGENT;
@@ -10,10 +12,13 @@ import static ua.com.solidity.enricher.util.Regex.ALL_NOT_NUMBER_REGEX;
 import static ua.com.solidity.enricher.util.Regex.CONTAINS_NUMERAL_REGEX;
 import static ua.com.solidity.enricher.util.StringFormatUtil.importedRecords;
 import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToCyrillicLetters;
+import static ua.com.solidity.enricher.util.StringFormatUtil.transliterationToLatinLetters;
 import static ua.com.solidity.enricher.util.StringStorage.DOMESTIC_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
+import static ua.com.solidity.enricher.util.StringStorage.FOREIGN_PASSPORT;
+import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_RC;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
@@ -87,6 +92,10 @@ public class ContragentEnricher implements Enricher {
 
     private static final String PHYSICAL_RESIDENT = "5";
     private static final String JURIDICAL_RESIDENT = "3";
+    public static final long B2_FOREIGN_PASSPORT_1 = 2L;
+    public static final long B2_FOREIGN_PASSPORT_2 = 112L;
+    public static final long B2_IDCARD_PASSPORT = 6L;
+    public static final long B2_LOCAL_PASSPORT = 1L;
 
     @Value("${otp.enricher.page-size}")
     private Integer pageSize;
@@ -135,6 +144,8 @@ public class ContragentEnricher implements Enricher {
                             }
                             if (!StringUtils.isBlank(p.getPassportNo()) && p.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
                                 String passportNo = String.format("%06d", Integer.parseInt(p.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                                if (p.getPassportType() == B2_IDCARD_PASSPORT)
+                                    passportNo = String.format("%09d", Integer.parseInt(p.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
                                 String passportSerial = p.getPassportSerial();
                                 entityProcessing.setPassHash(Objects.hash(passportSerial, Integer.valueOf(passportNo)));
                             }
@@ -190,6 +201,8 @@ public class ContragentEnricher implements Enricher {
 
                     if (!StringUtils.isBlank(r.getPassportNo()) && r.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
                         String passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                        if (r.getPassportType() == B2_IDCARD_PASSPORT)
+                            passportNo = String.format("%09d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
                         String passportSerial = r.getPassportSerial();
                         YPassport pass = new YPassport();
                         pass.setNumber(Integer.valueOf(passportNo));
@@ -241,20 +254,40 @@ public class ContragentEnricher implements Enricher {
                         }
 
                         if (!StringUtils.isBlank(r.getPassportNo()) && r.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
                             String passportSerial = r.getPassportSerial();
-                            if (isValidLocalPassport(passportNo, passportSerial, counter, logger)) {
-                                passportSerial = transliterationToCyrillicLetters(passportSerial);
+                            String passportNo = "";
+                            String passportType = "";
+                            boolean isValidPassport = false;
+                            if (r.getPassportType() == B2_LOCAL_PASSPORT) {
+                                passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                                isValidPassport = isValidLocalPassport(passportNo, passportSerial, counter, logger);
+                                if (StringUtils.isNotBlank(passportSerial))
+                                    passportSerial = transliterationToCyrillicLetters(passportSerial);
+                                passportType = DOMESTIC_PASSPORT;
+                            }
+                            if (r.getPassportType() == B2_FOREIGN_PASSPORT_1 || r.getPassportType() == B2_FOREIGN_PASSPORT_2) {
+                                passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                                isValidPassport = isValidForeignPassport(passportNo, passportSerial, null, counter, logger);
+                                if (StringUtils.isNotBlank(passportSerial))
+                                    passportSerial = transliterationToLatinLetters(passportSerial);
+                                passportType = FOREIGN_PASSPORT;
+                            }
+                            if (r.getPassportType() == B2_IDCARD_PASSPORT) {
+                                passportNo = String.format("%09d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
+                                isValidPassport = isValidIdPassport(passportNo, null, counter, logger);
+                                passportType = IDCARD_PASSPORT;
+                            }
+                            if (isValidPassport) {
                                 int number = Integer.parseInt(passportNo);
                                 YPassport passport = new YPassport();
                                 passport.setSeries(passportSerial);
                                 passport.setNumber(number);
-                                passport.setAuthority(null);
-                                passport.setIssued(null);
-                                passport.setEndDate(null);
+                                passport.setAuthority(r.getPassportIssuePlace());
+                                passport.setIssued(r.getPassportIssueDate());
+                                passport.setEndDate(r.getPassportEndDate());
                                 passport.setRecordNumber(null);
                                 passport.setValidity(true);
-                                passport.setType(DOMESTIC_PASSPORT);
+                                passport.setType(passportType);
                                 person = extender.addPassport(passport, people, source, person, savedPersonSet, passports);
                             }
                         }
@@ -273,7 +306,7 @@ public class ContragentEnricher implements Enricher {
                         Set<YPhone> phones = new HashSet<>();
                         Stream.of(r.getPhones(), r.getMobilePhone(), r.getPhoneHome()).forEach(p -> {
                             if (p != null) {
-                                String phoneCleaned = p.replaceAll("[^0-9]+", "");
+                                String phoneCleaned = p.replaceAll(ALL_NOT_NUMBER_REGEX, "");
                                 if (StringUtils.isNotBlank(phoneCleaned)) {
                                     YPhone phone = new YPhone();
                                     phone.setPhone(p.toUpperCase());

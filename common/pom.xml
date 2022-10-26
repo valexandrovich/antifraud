@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>5.1.301</version>
+        <version>5.1.303</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>5.1.301</version>
+    <version>5.1.303</version>
 
     <artifactId>common</artifactId>
 
@@ -103,7 +103,7 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>pipeline</artifactId>
-            <version>5.1.301</version>
+            <version>5.1.303</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

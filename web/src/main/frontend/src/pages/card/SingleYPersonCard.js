@@ -149,6 +149,13 @@ const SingleYPersonCard = () => {
                       )
                     : null}
                 </p>
+                &nbsp;
+                <b className="mr-10">Місце народження:</b>
+                <p>
+                  {personDetails.birthPlace
+                    ? personDetails.birthPlace
+                    : ""}
+                </p>
               </div>
               <div className="source-container">
                 <b className="mr-10">ІПН:</b>
@@ -220,7 +227,6 @@ const SingleYPersonCard = () => {
                     ? personDetails.addresses[0].address
                     : " "}{" "}
                   {""}
-                  {personDetails.country}
                 </p>
                 <span
                   onClick={() =>
@@ -241,6 +247,9 @@ const SingleYPersonCard = () => {
                       )})`
                     : ""}
                 </span>
+                &nbsp;
+                <b className="mr-10">Громадянство:</b>
+                <p>{personDetails.country}</p>
                 {((sources.address && userRole === "ADVANCED") ||
                   (sources.address && userRole === "ADMIN")) &&
                   personDetails.addresses[0].importSources.map((s) => {

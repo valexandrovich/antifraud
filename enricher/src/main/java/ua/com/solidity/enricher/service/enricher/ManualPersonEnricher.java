@@ -20,6 +20,8 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.FOREIGN_PASSPORT;
 import static ua.com.solidity.enricher.util.StringStorage.IDCARD_PASSPORT;
+import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NA;
+import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NAL;
 import static ua.com.solidity.util.validator.Validator.isValidInn;
 
 import java.time.LocalDate;
@@ -49,6 +51,7 @@ import ua.com.solidity.common.Utils;
 import ua.com.solidity.db.entities.FileDescription;
 import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.ManualPerson;
+import ua.com.solidity.db.entities.ManualTag;
 import ua.com.solidity.db.entities.YAddress;
 import ua.com.solidity.db.entities.YEmail;
 import ua.com.solidity.db.entities.YINN;
@@ -278,12 +281,12 @@ public class ManualPersonEnricher implements Enricher {
                         YPassport passport = new YPassport();
                         passport.setSeries(passportSerial);
                         passport.setNumber(number);
-                        passport.setAuthority(null);
-                        passport.setIssued(null);
+                        passport.setAuthority(r.getPassLocalIssuer());
+                        passport.setIssued(stringToDate(r.getPassLocalIssueDate()));
                         passport.setEndDate(null);
                         passport.setRecordNumber(null);
                         passport.setType(DOMESTIC_PASSPORT);
-                        passport.setValidity(true);
+                        passport.setValidity(r.getTags().isEmpty() || !r.getTags().stream().map(ManualTag::getMkId).collect(Collectors.toSet()).contains(TAG_TYPE_NAL));
                         person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
                     }
 
@@ -304,7 +307,7 @@ public class ManualPersonEnricher implements Enricher {
                             passport.setEndDate(null);
                             passport.setRecordNumber(r.getPassIntRecNum());
                             passport.setType(FOREIGN_PASSPORT);
-                            passport.setValidity(true);
+                            passport.setValidity(r.getTags().isEmpty() || !r.getTags().stream().map(ManualTag::getMkId).collect(Collectors.toSet()).contains(TAG_TYPE_NA));
                             person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
                         }
                     }

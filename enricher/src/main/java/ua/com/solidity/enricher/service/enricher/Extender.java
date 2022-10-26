@@ -15,7 +15,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ua.com.solidity.common.OtpExchange;
 import ua.com.solidity.common.Utils;
@@ -38,7 +37,6 @@ import ua.com.solidity.db.entities.YPhone;
 import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.db.repositories.YPassportRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
-import ua.com.solidity.enricher.service.HttpClient;
 
 @CustomLog
 @Component
@@ -48,27 +46,25 @@ public class Extender {
     private final YPersonRepository ypr;
     private final YPassportRepository yPassportRepository;
     private final AmqpTemplate template;
-    private final HttpClient httpClient;
-
-    @Value("${dispatcher.url}")
-    private String urlPost;
 
     public void addAltPerson(YPerson person, String lastName, String firstName,
                              String patName, String language,
                              ImportSource source) {
+        YPerson newPerson = new YPerson();
+        newPerson.setLastName(lastName);
+        newPerson.setPatName(patName);
+        newPerson.setFirstName(firstName);
         Optional<YAltPerson> altPersonOptional = person.getAltPeople()
                 .parallelStream()
-                .filter(p -> (Objects.equals(p.getLastName(), lastName)
-                        && Objects.equals(p.getFirstName(), firstName)
-                        && Objects.equals(p.getPatName(), patName)))
+                .filter(p -> isEqualsPerson(p, newPerson))
                 .findAny();
         YAltPerson altPerson = altPersonOptional.orElseGet(YAltPerson::new);
         addSource(altPerson.getImportSources(), source);
 
-        altPerson.setFirstName(chooseNotNull(altPerson.getFirstName(), firstName));
-        altPerson.setLastName(chooseNotNull(altPerson.getLastName(), lastName));
-        altPerson.setPatName(chooseNotNull(altPerson.getPatName(), patName));
-        altPerson.setLanguage(chooseNotNull(altPerson.getLanguage(), language));
+        altPerson.setFirstName(chooseNotNull(firstName, altPerson.getFirstName()));
+        altPerson.setLastName(chooseNotNull(lastName, altPerson.getLastName()));
+        altPerson.setPatName(chooseNotNull(patName, altPerson.getPatName()));
+        altPerson.setLanguage(chooseNotNull(language, altPerson.getLanguage()));
 
         if (altPersonOptional.isEmpty()) {
             altPerson.setPerson(person);
@@ -200,19 +196,19 @@ public class Extender {
 
         if (findPerson.isPresent() && isEqualsPerson(findPerson.get(), person)) {
             YPerson oldPerson = findPerson.get();
-            oldPerson.setLastName(chooseNotNull(oldPerson.getLastName(), person.getLastName()));
-            oldPerson.setFirstName(chooseNotNull(oldPerson.getFirstName(), person.getFirstName()));
-            oldPerson.setPatName(chooseNotNull(oldPerson.getPatName(), person.getPatName()));
-            oldPerson.setBirthdate(chooseNotNull(oldPerson.getBirthdate(), person.getBirthdate()));
+            oldPerson.setLastName(chooseNotNull(person.getLastName(), oldPerson.getLastName()));
+            oldPerson.setFirstName(chooseNotNull(person.getFirstName(), oldPerson.getFirstName()));
+            oldPerson.setPatName(chooseNotNull(person.getPatName(), oldPerson.getPatName()));
+            oldPerson.setBirthdate(chooseNotNull(person.getBirthdate(), oldPerson.getBirthdate()));
 
             person = oldPerson;
         } else if (findPerson.isPresent()
-                && StringUtils.isNotBlank(person.getLastName())
-                && StringUtils.isNotBlank(person.getFirstName())
-                && StringUtils.isNotBlank(person.getPatName())
-                && StringUtils.isNotBlank(findPerson.get().getLastName())
-                && StringUtils.isNotBlank(findPerson.get().getFirstName())
-                && StringUtils.isNotBlank(findPerson.get().getPatName())) {
+                && (StringUtils.isNotBlank(person.getLastName())
+                || StringUtils.isNotBlank(person.getFirstName())
+                || StringUtils.isNotBlank(person.getPatName()))
+                && (StringUtils.isNotBlank(findPerson.get().getLastName())
+                || StringUtils.isNotBlank(findPerson.get().getFirstName())
+                || StringUtils.isNotBlank(findPerson.get().getPatName()))) {
             YPerson oldPerson = findPerson.get();
             addAltPerson(oldPerson, person.getLastName(), person.getFirstName(), person.getPatName(), "UA", source);
             person = oldPerson;
@@ -246,6 +242,26 @@ public class Extender {
                 && !person.getPatName().equals(newPerson.getPatName()))
                 || (person.getBirthdate() != null && newPerson.getBirthdate() != null
                 && !person.getBirthdate().equals(newPerson.getBirthdate()))));
+    }
+
+    public boolean isEqualsPerson(YAltPerson person, YPerson newPerson) {
+        if (StringUtils.isBlank(person.getLastName())
+                && StringUtils.isBlank(person.getFirstName())
+                && StringUtils.isBlank(person.getPatName())
+                && StringUtils.isBlank(newPerson.getLastName())
+                && StringUtils.isBlank(newPerson.getFirstName())
+                && StringUtils.isBlank(newPerson.getPatName()))
+            return false;
+        return !(newPerson != null
+                && ((StringUtils.isNotBlank(person.getLastName())
+                && StringUtils.isNotBlank(newPerson.getLastName())
+                && !person.getLastName().equals(newPerson.getLastName()))
+                || (StringUtils.isNotBlank(person.getFirstName())
+                && StringUtils.isNotBlank(newPerson.getFirstName())
+                && !person.getFirstName().equals(newPerson.getFirstName()))
+                || (StringUtils.isNotBlank(person.getPatName())
+                && StringUtils.isNotBlank(newPerson.getPatName())
+                && !person.getPatName().equals(newPerson.getPatName()))));
     }
 
     public boolean isEqualsPersonAndAltPerson(YAltPerson person, YPerson newPerson) {

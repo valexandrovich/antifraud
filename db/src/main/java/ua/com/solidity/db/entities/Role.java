@@ -17,6 +17,7 @@ import javax.persistence.Table;
 @Getter
 @Setter
 @NoArgsConstructor
+@ToString
 public class Role {
 
     @Id

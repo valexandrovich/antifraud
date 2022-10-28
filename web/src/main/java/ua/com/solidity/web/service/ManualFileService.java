@@ -613,7 +613,9 @@ public class ManualFileService {
 
     public ValidatedManualPersonResponse updateManualPerson(Long id, int index, String value) {
         ManualPerson person = manualPersonRepository.getById(id);
-        String finalValue = UtilString.toUpperCase(value).trim();
+        value = UtilString.toUpperCase(value).trim();
+        if (value.length() > 255) value = value.substring(0, 252) + "...";
+        String finalValue = value;
         List<Consumer<ManualPerson>> consumerList = List.of(
                 p -> p.setCnum(finalValue),
                 p -> p.setLnameUk(finalValue),
@@ -653,7 +655,9 @@ public class ManualFileService {
 
     public ValidatedManualCompanyResponse updateManualCompany(Long id, int index, String value) {
         ManualCompany company = manualCompanyRepository.getById(id);
-        String finalValue = UtilString.toUpperCase(value).trim();
+        value = UtilString.toUpperCase(value).trim();
+        if (value.length() > 255) value = value.substring(0, 252) + "...";
+        String finalValue = value;
         List<Consumer<ManualCompany>> consumerList = List.of(
                 p -> p.setCnum(finalValue),
                 p -> p.setName(finalValue),
@@ -678,7 +682,9 @@ public class ManualFileService {
 
     public ValidatedManualPersonResponse updateManualTag(Long id, int index, String value) {
         ManualTag tag = manualTagRepository.getById(id);
-        String finalValue = UtilString.toUpperCase(value).trim();
+        value = UtilString.toUpperCase(value).trim();
+        if (value.length() > 255) value = value.substring(0, 252) + "...";
+        String finalValue = value;
         List<Consumer<ManualTag>> consumerList = List.of(
                 t -> t.setMkId(finalValue),
                 t -> t.setMkEventDate(finalValue),
@@ -695,7 +701,9 @@ public class ManualFileService {
 
     public ValidatedManualCompanyResponse updateManualCTag(Long id, int index, String value) {
         ManualCTag tag = manualCTagRepository.getById(id);
-        String finalValue = UtilString.toUpperCase(value).trim();
+        value = UtilString.toUpperCase(value).trim();
+        if (value.length() > 255) value = value.substring(0, 252) + "...";
+        String finalValue = value;
         List<Consumer<ManualCTag>> consumerList = List.of(
                 t -> t.setMkId(finalValue),
                 t -> t.setMkEventDate(finalValue),

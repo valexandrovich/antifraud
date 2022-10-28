@@ -100,6 +100,10 @@ public final class PersonValidator {
             if (!valid(person.getCountry(), DataRegex.NAME_EN.getRegex()))
                 statusList.add(new ManualPersonStatus(person.getId(), 12, DataRegex.NAME_EN.getMessage()));
 
+            if (StringUtils.isNotBlank(person.getAddress()) && person.getAddress().length() == 255
+                    && person.getAddress().contains("..."))
+                statusList.add(new ManualPersonStatus(person.getId(), 13, MESSAGE_LONG_VALUE));
+
             if (!valid(person.getPhone(), DataRegex.PHONE_NUMBER.getRegex()))
                 statusList.add(new ManualPersonStatus(person.getId(), 14, DataRegex.PHONE_NUMBER.getMessage()));
 
@@ -109,8 +113,6 @@ public final class PersonValidator {
             if (StringUtils.isNotBlank(person.getBirthPlace()) && person.getBirthPlace().length() == 255
                     && person.getBirthPlace().contains("..."))
                 statusList.add(new ManualPersonStatus(person.getId(), 16, MESSAGE_LONG_VALUE));
-            if (!valid(person.getBirthPlace(), DataRegex.UK_RU_EN_MULTIPLE.getRegex()))
-                statusList.add(new ManualPersonStatus(person.getId(), 16, DataRegex.UK_RU_EN_MULTIPLE.getMessage()));
 
             boolean sexError = false;
             if (!valid(person.getSex(), DataRegex.GENDER.getRegex())) {

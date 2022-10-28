@@ -229,7 +229,11 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         r = tryRequest(main_resource_url.format_map({"id": id}))
 
         if not r:
+            if debug:
+                print(f"{DEBUG} * Request was not successful to: " + main_resource_url.format_map({"id": id}))
             if not id in files:
+                if debug:
+                    print(f"{DEBUG} * Id is not in files")
                 return False
 
             fileName = files[id].lower()
@@ -237,12 +241,18 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
 
             if id in direct_links and direct_links[id]:
                 url = direct_links[id]
+                if debug:
+                    print(f"{DEBUG} * Getting data from {url}")
                 fileSize = getUrlFileSize(url)
                 if not fileSize:
+                    if debug:
+                        print(f"{DEBUG} * Getting data was not successful")
                     return False
             else:
                 fileSize = getsize(path + 'files/' + fileName)
                 url = (fullDomain + url_path).format_map({"file": fileName})
+                if debug:
+                    print(f"{DEBUG} * Using preloaded data from {url}")
 
             self.sendJson({
                 "result": {
@@ -267,11 +277,17 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
             print(f"{DEBUG} handleDownload: {query}")
         if 'file' in query:
             file = query.get('file')[0]
-            filePath = path + 'files/' + file;
+            filePath = path + 'files/' + file
             file = pathlib.Path(file).name
+            if debug:
+                print(f"{DEBUG} * Using file path: {filePath}")
             if not exists(filePath):
+                if debug:
+                    print(f"{DEBUG} * File path does not exist")
                 return False
         else:
+            if debug:
+                print(f"{DEBUG} * File was not mentioned in query")
             return False
 
         size = getsize(filePath)
@@ -283,6 +299,8 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         with open(filePath, 'rb') as f:
             copy(f, self.wfile)
+            if debug:
+                print(f"{DEBUG} * File copied")
         return True
 
     def do_GET(self):

@@ -141,19 +141,27 @@ public class ContragentEnricher implements Enricher {
                             if (!StringUtils.isBlank(p.getIdentifyCode()) && p.getIdentifyCode().matches(CONTAINS_NUMERAL_REGEX)) {
                                 String inn = p.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
                                 entityProcessing.setInn(Long.parseLong(inn));
+                                entityProcessing.setEdrpou(Long.parseLong(inn));
                             }
+
                             if (!StringUtils.isBlank(p.getPassportNo()) && p.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
-                                String passportNo = String.format("%06d", Integer.parseInt(p.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                                if (p.getPassportType() == B2_IDCARD_PASSPORT)
-                                    passportNo = String.format("%09d", Integer.parseInt(p.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                                String passportSerial = p.getPassportSerial();
-                                entityProcessing.setPassHash(Objects.hash(passportSerial, Integer.valueOf(passportNo)));
+                                String passportNo = p.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                                String passportSerial = null;
+                                if (passportNo.length() < 10) {
+                                    int number = Integer.parseInt(passportNo);
+                                    if (p.getPassportType() == B2_LOCAL_PASSPORT)
+                                        passportSerial = transliterationToCyrillicLetters(p.getPassportSerial());
+                                    else if (p.getPassportType() == B2_FOREIGN_PASSPORT_1 || p.getPassportType() == B2_FOREIGN_PASSPORT_2) {
+                                        passportSerial = transliterationToLatinLetters(p.getPassportSerial());
+                                    }
+                                    entityProcessing.setPassHash(Objects.hash(passportSerial, number));
+                                } else log.warn("Passport type " + p.getPassportType()
+                                        + " has incorrect format: Series: " + p.getPassportSerial()
+                                        + ", Number: " + p.getPassportNo() + " - ignored");
                             }
+
                             entityProcessing.setPersonHash(Objects.hash(lastName, firstName, patName, p.getClientBirthday()));
-                            if (UtilString.matches(p.getIdentifyCode(), CONTAINS_NUMERAL_REGEX)) {
-                                String edrpou = p.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                                entityProcessing.setEdrpou(Long.parseLong(edrpou));
-                            }
+
                             if (StringUtils.isNotBlank(p.getName()))
                                 entityProcessing.setCompanyHash(Objects.hash(UtilString.toUpperCase(p.getName())));
                             return entityProcessing;
@@ -200,15 +208,21 @@ public class ContragentEnricher implements Enricher {
                 workPortion.forEach(r -> {
 
                     if (!StringUtils.isBlank(r.getPassportNo()) && r.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
-                        String passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                        if (r.getPassportType() == B2_IDCARD_PASSPORT)
-                            passportNo = String.format("%09d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                        String passportSerial = r.getPassportSerial();
-                        YPassport pass = new YPassport();
-                        pass.setNumber(Integer.valueOf(passportNo));
-                        pass.setSeries(passportSerial);
-                        passportSeriesWithNumber.add(pass);
+                        String passportNo = r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
+                        String passportSerial = null;
+                        if (passportNo.length() < 10) {
+                            int number = Integer.parseInt(passportNo);
+                            if (r.getPassportType() == B2_LOCAL_PASSPORT)
+                                passportSerial = transliterationToCyrillicLetters(r.getPassportSerial());
+                            else if (r.getPassportType() == B2_FOREIGN_PASSPORT_1 || r.getPassportType() == B2_FOREIGN_PASSPORT_2)
+                                passportSerial = transliterationToLatinLetters(r.getPassportSerial());
+                            YPassport pass = new YPassport();
+                            pass.setNumber(number);
+                            pass.setSeries(passportSerial);
+                            passportSeriesWithNumber.add(pass);
+                        }
                     }
+
                     if (!StringUtils.isBlank(r.getIdentifyCode()) && r.getIdentifyCode().matches(CONTAINS_NUMERAL_REGEX)) {
                         String code = r.getIdentifyCode().replaceAll(ALL_NOT_NUMBER_REGEX, "");
                         codes.add(Long.valueOf(code));
@@ -254,41 +268,38 @@ public class ContragentEnricher implements Enricher {
                         }
 
                         if (!StringUtils.isBlank(r.getPassportNo()) && r.getPassportNo().matches(CONTAINS_NUMERAL_REGEX)) {
-                            String passportSerial = r.getPassportSerial();
-                            String passportNo = "";
-                            String passportType = "";
+                            String passportSerial = null;
+                            String passportType = null;
+                            String passportNo = r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
                             boolean isValidPassport = false;
-                            if (r.getPassportType() == B2_LOCAL_PASSPORT) {
-                                passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                                isValidPassport = isValidLocalPassport(passportNo, passportSerial, counter, logger);
-                                if (StringUtils.isNotBlank(passportSerial))
-                                    passportSerial = transliterationToCyrillicLetters(passportSerial);
-                                passportType = DOMESTIC_PASSPORT;
-                            }
-                            if (r.getPassportType() == B2_FOREIGN_PASSPORT_1 || r.getPassportType() == B2_FOREIGN_PASSPORT_2) {
-                                passportNo = String.format("%06d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                                isValidPassport = isValidForeignPassport(passportNo, passportSerial, null, counter, logger);
-                                if (StringUtils.isNotBlank(passportSerial))
-                                    passportSerial = transliterationToLatinLetters(passportSerial);
-                                passportType = FOREIGN_PASSPORT;
-                            }
-                            if (r.getPassportType() == B2_IDCARD_PASSPORT) {
-                                passportNo = String.format("%09d", Integer.parseInt(r.getPassportNo().replaceAll(ALL_NOT_NUMBER_REGEX, "")));
-                                isValidPassport = isValidIdPassport(passportNo, null, counter, logger);
-                                passportType = IDCARD_PASSPORT;
-                            }
-                            if (isValidPassport) {
+                            if (passportNo.length() < 10) {
                                 int number = Integer.parseInt(passportNo);
-                                YPassport passport = new YPassport();
-                                passport.setSeries(passportSerial);
-                                passport.setNumber(number);
-                                passport.setAuthority(r.getPassportIssuePlace());
-                                passport.setIssued(r.getPassportIssueDate());
-                                passport.setEndDate(r.getPassportEndDate());
-                                passport.setRecordNumber(null);
-                                passport.setValidity(true);
-                                passport.setType(passportType);
-                                person = extender.addPassport(passport, people, source, person, savedPersonSet, passports);
+                                if (r.getPassportType() == B2_LOCAL_PASSPORT) {
+                                    isValidPassport = isValidLocalPassport(String.valueOf(number), passportSerial, counter, logger);
+                                    passportSerial = transliterationToCyrillicLetters(passportSerial);
+                                    passportType = DOMESTIC_PASSPORT;
+                                } else if (r.getPassportType() == B2_FOREIGN_PASSPORT_1 || r.getPassportType() == B2_FOREIGN_PASSPORT_2) {
+                                    isValidPassport = isValidForeignPassport(String.valueOf(number), passportSerial, null, counter, logger);
+                                    passportSerial = transliterationToLatinLetters(passportSerial);
+                                    passportType = FOREIGN_PASSPORT;
+                                } else if (r.getPassportType() == B2_IDCARD_PASSPORT) {
+                                    isValidPassport = isValidIdPassport(String.valueOf(number), null, counter, logger);
+                                    passportType = IDCARD_PASSPORT;
+                                } else log.warn("Identification document type " + r.getPassportType()
+                                        + ": Series: " + r.getPassportSerial()
+                                        + ", Number: " + r.getPassportNo() + " - ignored");
+                                if (isValidPassport) {
+                                    YPassport passport = new YPassport();
+                                    passport.setSeries(passportSerial);
+                                    passport.setNumber(number);
+                                    passport.setAuthority(r.getPassportIssuePlace());
+                                    passport.setIssued(r.getPassportIssueDate());
+                                    passport.setEndDate(r.getPassportEndDate());
+                                    passport.setRecordNumber(null);
+                                    passport.setValidity(true);
+                                    passport.setType(passportType);
+                                    person = extender.addPassport(passport, people, source, person, savedPersonSet, passports);
+                                }
                             }
                         }
                         person = extender.addPerson(people, person, source, true);
@@ -418,7 +429,7 @@ public class ContragentEnricher implements Enricher {
             }
         } catch (Exception e) {
             statusChanger.error(Utils.messageFormat("ERROR: {}", Utils.getExceptionString(e, ";")));
-            log.error("$$Enrichment error.", e);
+            log.debug("$$Enrichment error.", e);
             extender.sendMessageToQueue(CONTRAGENT, portion);
         } finally {
             deleteResp();

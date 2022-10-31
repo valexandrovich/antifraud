@@ -84,7 +84,7 @@ public class DWHServiceImpl implements DWHService {
         log.info("Importing from DWH records archived after: {}", Timestamp.valueOf(date.atStartOfDay()));
 
         StatusLogger statusLogger = new StatusLogger(revision, 0L, "%",
-                                                     AR_CONTRAGENT, DWH, startTime, null, null);
+                AR_CONTRAGENT, DWH, startTime, null, null);
         template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
         Pageable pageRequest = PageRequest.of(0, pageSize);
@@ -176,7 +176,7 @@ public class DWHServiceImpl implements DWHService {
                 cr.saveAll(contragentEntityList);
 
                 statusLogger = new StatusLogger(revision, counter[0], RECORDS,
-                                                AR_CONTRAGENT, DWH, startTime, null, null);
+                        AR_CONTRAGENT, DWH, startTime, null, null);
                 template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
                 log.debug("Sending task to otp-etl.enricher");
@@ -198,12 +198,15 @@ public class DWHServiceImpl implements DWHService {
             log.info("Imported {} records from DWH", counter[0]);
 
             statusLogger = new StatusLogger(revision, 100L, "%",
-                                            AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
-                                            importedRecords(counter[0], date));
-            template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
+                    AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
+                    importedRecords(counter[0], date));
         } else {
             log.info("No records to be imported from DWH");
+            statusLogger = new StatusLogger(revision, 100L, "%",
+                    AR_CONTRAGENT, DWH, startTime, LocalDateTime.now(),
+                    "No records to be imported from DWH after " + Timestamp.valueOf(date.atStartOfDay()));
         }
+        template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
     }
 
     private String handleString(String string) {

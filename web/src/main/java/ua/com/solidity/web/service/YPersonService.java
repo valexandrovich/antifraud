@@ -144,25 +144,6 @@ public class YPersonService {
                                 Integer.parseInt(month),
                                 Integer.parseInt(day)))));
             }
-        }
-
-        if (!year.equals("") && month.equals("") && day.equals("")) {
-            criteriaFound = true;
-            LocalDate startDate = LocalDate.of(Integer.parseInt(year), 01, 01);
-            while (!startDate.equals(LocalDate.of(Integer.parseInt(year), 6, 30))) {
-                LocalDate finalStartDate = startDate;
-                specificationList.add(Specification.where((root, query, cb) ->
-                        cb.equal(root.get(BIRTHDATE), finalStartDate)));
-                startDate = startDate.plusDays(1);
-            }
-            List<Specification<YPerson>> specificationSecondHalfYear = new ArrayList<>();
-            while (!startDate.equals(LocalDate.of(Integer.parseInt(year), 12, 31))) {
-                LocalDate finalStartDate = startDate;
-                specificationSecondHalfYear.add(Specification.where((root, query, cb) ->
-                        cb.equal(root.get(BIRTHDATE), finalStartDate)));
-                startDate = startDate.plusDays(1);
-            }
-
             Specification<YPerson> gsDate;
             if (!specificationList.isEmpty()) {
                 gsDate = specificationList.get(0);
@@ -170,13 +151,15 @@ public class YPersonService {
                     gsDate = gsDate.or(specificationList.get(i));
                 gsFull = gsDate.and(gs);
             }
+        }
 
-            if (!specificationSecondHalfYear.isEmpty()) {
-                gsDate = specificationSecondHalfYear.get(0);
-                for (int i = 1; i < specificationList.size(); i++)
-                    gsDate = gsDate.or(specificationSecondHalfYear.get(i));
-                gsFull = gsDate.and(gs);
-            }
+        if (!year.equals("") && month.equals("") && day.equals("")) {
+            criteriaFound = true;
+            LocalDate startDate = LocalDate.of(Integer.parseInt(year), 1, 1);
+            LocalDate finishDate = LocalDate.of(Integer.parseInt(year), 12, 31);
+            Specification<YPerson> gsDate = Specification.where((root, query, cb) ->
+                    cb.between(root.get(BIRTHDATE), startDate, finishDate));
+            gsFull = gsDate.and(gs);
         }
 
         PageRequest pageRequest = pageRequestFactory.getPageRequest(paginationRequest);

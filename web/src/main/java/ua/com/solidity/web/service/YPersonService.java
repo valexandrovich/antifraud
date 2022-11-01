@@ -144,20 +144,40 @@ public class YPersonService {
                                 Integer.parseInt(month),
                                 Integer.parseInt(day)))));
             }
-            Specification<YPerson> gsDate;
-            if (!specificationList.isEmpty()) {
-                gsDate = specificationList.get(0);
-                for (int i = 1; i < specificationList.size(); i++)
-                    gsDate = gsDate.or(specificationList.get(i));
-                gsFull = gsDate.and(gs);
+        }
+        if (!year.equals("") && month.equals("") && !day.equals("")) {
+            criteriaFound = true;
+            for (int i = 1; i <= 12; i++) {
+                int finalI = i;
+                specificationList.add(Specification.where((root, query, cb) ->
+                        cb.equal(root.get(BIRTHDATE), LocalDate.of(
+                                Integer.parseInt(year),
+                                finalI,
+                                Integer.parseInt(day)))));
             }
+        }
+        Specification<YPerson> gsDate;
+        if (!specificationList.isEmpty()) {
+            gsDate = specificationList.get(0);
+            for (int i = 1; i < specificationList.size(); i++)
+                gsDate = gsDate.or(specificationList.get(i));
+            gsFull = gsDate.and(gs);
         }
 
         if (!year.equals("") && month.equals("") && day.equals("")) {
             criteriaFound = true;
             LocalDate startDate = LocalDate.of(Integer.parseInt(year), 1, 1);
             LocalDate finishDate = LocalDate.of(Integer.parseInt(year), 12, 31);
-            Specification<YPerson> gsDate = Specification.where((root, query, cb) ->
+            gsDate = Specification.where((root, query, cb) ->
+                    cb.between(root.get(BIRTHDATE), startDate, finishDate));
+            gsFull = gsDate.and(gs);
+        }
+
+        if (!year.equals("") && !month.equals("") && day.equals("")) {
+            criteriaFound = true;
+            LocalDate startDate = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), 1);
+            LocalDate finishDate = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), 31);
+            gsDate = Specification.where((root, query, cb) ->
                     cb.between(root.get(BIRTHDATE), startDate, finishDate));
             gsFull = gsDate.and(gs);
         }

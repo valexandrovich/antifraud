@@ -5,6 +5,8 @@ ENV TZ=Europe/Kiev
 
 COPY cert.crt cert.crt
 RUN keytool -importcert -file cert.crt -alias ca_certs -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
+COPY data.crt data.crt
+RUN keytool -importcert -file data.crt -alias data_cert -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt
 
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar

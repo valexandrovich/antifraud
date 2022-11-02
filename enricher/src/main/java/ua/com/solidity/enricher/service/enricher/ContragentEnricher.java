@@ -94,7 +94,7 @@ public class ContragentEnricher implements Enricher {
     private static final String JURIDICAL_RESIDENT = "3";
     public static final long B2_FOREIGN_PASSPORT_1 = 2L;
     public static final long B2_FOREIGN_PASSPORT_2 = 112L;
-    public static final long B2_IDCARD_PASSPORT = 6L;
+    public static final long B2_IDCARD_PASSPORT = 29L;
     public static final long B2_LOCAL_PASSPORT = 1L;
 
     @Value("${otp.enricher.page-size}")

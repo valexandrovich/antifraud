@@ -1,7 +1,8 @@
+import socket
 from configparser import ConfigParser
 from datetime import datetime
+from http.client import HTTPException
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from operator import truediv
 import urllib
 from urllib.request import urlopen
 from urllib.parse import urlparse, parse_qs
@@ -11,7 +12,6 @@ import os
 import json
 import ssl
 import sys
-
 
 contentTypes = {
     'zip': 'application/zip',
@@ -24,23 +24,26 @@ contentTypes = {
 
 DEBUG = "Debug |"
 
-def normalizePath(s, base):
-    if (s):
+
+def normalize_path(s, base):
+    if s:
         s = s.replace('\\', '/')
 
         if not s.endswith('/'):
             s += '/'
     else:
         s = ''
-    if (not base):
+    if not base:
         s += 'wrapper/'
     return s
 
+
 def init():
-    global cfg, revisionDate, packages, files, direct_links, address, domain, absolute, fullDomain, port, main_package_url, main_resource_url, https, proxies, url_path, path, env_var, env_var_append_wrapper, debug
+    global cfg, revisionDate, packages, files, direct_links, address, domain, absolute, full_domain, port,\
+        main_package_url, main_resource_url, https, proxies, url_path, path, env_var, env_var_append_wrapper, debug
     cfg = ConfigParser(allow_no_value=True)
     cfg.read('config.ini')
-    handleArguments()
+    handle_arguments()
     address = cfg.get('server', 'address')
     domain = cfg.get('server', 'domain')
     absolute = cfg.getboolean('server', 'absolute', fallback=False)
@@ -59,15 +62,15 @@ def init():
         if env_var:
             try:
                 path = os.environ[env_var]
-            except Exception as e:
+            except Exception:
                 path = ""
 
-            if (path):
-                path = normalizePath(path, not env_var_append_wrapper)
+            if path:
+                path = normalize_path(path, not env_var_append_wrapper)
         else:
             path = ""
     else:
-        path = normalizePath(path, True)
+        path = normalize_path(path, True)
 
     packages = dict(cfg.items('packages'))
     files = dict(cfg.items('files'))
@@ -80,12 +83,12 @@ def init():
         urllib.request.install_opener(opener)
 
     if absolute:
-        fullDomain = domain
+        full_domain = domain
     else:
-        fullDomain = ("https://" if https else "http://") + domain + ":" + str(port)
+        full_domain = ("https://" if https else "http://") + domain + ":" + str(port)
 
-    if fullDomain.endswith("/"):
-        fullDomain = fullDomain[:len(fullDomain) - 1]
+    if full_domain.endswith("/"):
+        full_domain = full_domain[:len(full_domain) - 1]
 
     if not url_path.startswith("/"):
         url_path = "/" + url_path
@@ -97,32 +100,33 @@ def init():
         print(f"{DEBUG} Files: {files}")
         print(f"{DEBUG} Proxies: {proxies}")
         print(f"{DEBUG} Direct Links: {direct_links}")
-        if proxies:
-            print(f"{DEBUG} Proxy Support: {proxy_support}")
-            print(f"{DEBUG} Opener: {opener}")
-        print(f"{DEBUG} Full Domain: {fullDomain}")
+        print(f"{DEBUG} Full Domain: {full_domain}")
         print(f"{DEBUG} URL path: {url_path}")
 
-def setCommandLineArgument(s):
-    dotPosition = s.find('.')
-    if dotPosition >= 0:
-       section = s[:dotPosition]
-       s = s[dotPosition + 1:]
-       eqPosition = s.find('=')
-       if eqPosition >= 0:
-           name = s[:eqPosition]
-           value = s[eqPosition + 1:]
-           cfg.set(section, name, value)
 
-def handleArguments():
+def set_command_line_argument(s):
+    dot_position = s.find('.')
+    if dot_position >= 0:
+        section = s[:dot_position]
+        s = s[dot_position + 1:]
+        eq_position = s.find('=')
+        if eq_position >= 0:
+            name = s[:eq_position]
+            value = s[eq_position + 1:]
+            cfg.set(section, name, value)
+
+
+def handle_arguments():
     for _, arg in enumerate(sys.argv[1:]):
-        setCommandLineArgument(arg)
+        set_command_line_argument(arg)
 
-def getFormat(name):
-    name=name.lower()
+
+def get_format(name):
+    name = name.lower()
     suffix = pathlib.Path(name).suffix
-    format = suffix[1:]
-    return (name[0:-len(suffix)], format, contentTypes[format])
+    file_format = suffix[1:]
+    return name[0:-len(suffix)], file_format, contentTypes[file_format]
+
 
 def copy(source, dest):
     try:
@@ -136,14 +140,24 @@ def copy(source, dest):
     except Exception:
         pass
 
-def tryRequest(url):
+
+def try_request(url):
     try:
         r = urlopen(url)
         return r
-    except Exception as e:
-        return None
+    except urllib.error.HTTPError as e:
+        print(f"{DEBUG} + HTTPError: {e.code}, Reason: {e.reason}")
+    except urllib.error.URLError as e:
+        print(f"{DEBUG} + URLError: {e.reason}")
+    except (HTTPException, socket.error) as e:
+        print(f"{DEBUG} + HTTP/Socket Exception: {e}")
+    except Exception:
+        import traceback
+        print(f"{DEBUG} + Generic Exception: {traceback.format_exc()}")
+    return None
 
-def getUrlFileSize(url):
+
+def get_url_file_size(url):
     res = None
     try:
         u = urlopen(url)
@@ -151,116 +165,117 @@ def getUrlFileSize(url):
             res = u.headers['Content-length']
             u.close()
 
-    except Exception as e:
+    except Exception:
         pass
     return res
 
 
 class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
 
-    def sendJson(self, obj):
+    def send_json(self, obj):
         if debug:
             print(f"{DEBUG} sendJson: {obj}")
         data = json.dumps(obj, ensure_ascii=False, indent=4).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
-        self.send_header('Content-Length', memoryview(data).nbytes)
+        self.send_header('Content-Length', str(memoryview(data).nbytes))
         self.end_headers()
         self.wfile.write(data)
 
-    def makePackageResource(self, resourceName, resourceId)->object:
+    @staticmethod
+    def make_package_resource(resource_name, resource_id) -> object:
         if debug:
-            print(f"{DEBUG} makePackageResource: {resourceName}; id: {resourceId}")
-        fileName = files[resourceId].lower()
-        name, format, mimetype = getFormat(fileName)
+            print(f"{DEBUG} makePackageResource: {resource_name}; id: {resource_id}")
+        file_name = files[resource_id].lower()
+        name, file_format, mimetype = get_format(file_name)
 
-        if not resourceName:
-            resourceName = name
+        if not resource_name:
+            resource_name = name
 
         return {
-            "name": resourceName,
-            "id": resourceId,
-            "format": format,
+            "name": resource_name,
+            "id": resource_id,
+            "format": file_format,
             "mimetype": mimetype
         }
 
-    def handlePackage(self, query):
+    def handle_package(self, query):
         if debug:
             print(f"{DEBUG} handlePackage: {query}")
         if 'id' in query:
-            id = query.get('id')[0]
+            query_id = query.get('id')[0]
         else:
             return False
 
-        r = tryRequest(main_package_url.format_map({"id": id}))
+        r = try_request(main_package_url.format_map({"id": query_id}))
 
         if not r:
-            if not id in packages:
+            if query_id not in packages:
                 return False
 
-            resList = []
-            resourceId = packages[id].lower()
+            res_list = []
+            resource_id = packages[query_id].lower()
 
-            if resourceId.startswith('@'):
-                items = dict(cfg.items(resourceId[1:]))
+            if resource_id.startswith('@'):
+                items = dict(cfg.items(resource_id[1:]))
                 for i, (key, value) in enumerate(items.items()):
-                    resList.append(self.makePackageResource(key, value))
+                    res_list.append(self.make_package_resource(key, value))
             else:
-                resList.append(self.makePackageResource(None, resourceId))
+                res_list.append(self.make_package_resource(None, resource_id))
 
-            self.sendJson({
+            self.send_json({
                 "result": {
-                    "resources": resList
+                    "resources": res_list
                 }
             })
         else:
-            self.sendJson(json.loads(r.read().decode('utf-8')))
+            self.send_json(json.loads(r.read().decode('utf-8')))
 
         return True
 
-    def handleResource(self, query):
+    def handle_resource(self, query):
         if debug:
             print(f"{DEBUG} handleResource: {query}")
         if 'id' in query:
-            id = query.get('id')[0]
+            query_id = query.get('id')[0]
         else:
             return False
 
-        r = tryRequest(main_resource_url.format_map({"id": id}))
+        r = try_request(main_resource_url.format_map({"id": query_id}))
 
         if not r:
             if debug:
-                print(f"{DEBUG} * Request was not successful to: " + main_resource_url.format_map({"id": id}))
-            if not id in files:
+                print(f"{DEBUG} * Request was not successful to: " + main_resource_url.format_map({"id": query_id}))
+            if query_id not in files:
                 if debug:
                     print(f"{DEBUG} * Id is not in files")
                 return False
 
-            fileName = files[id].lower()
-            _, format, mimetype = getFormat(fileName)
+            file_name = files[query_id].lower()
+            _, file_format, mimetype = get_format(file_name)
 
-            if id in direct_links and direct_links[id]:
-                url = direct_links[id]
+            if query_id in direct_links and direct_links[query_id]:
+                url = direct_links[query_id]
                 if debug:
                     print(f"{DEBUG} * Getting data from {url}")
-                fileSize = getUrlFileSize(url)
-                if not fileSize:
+                file_size = get_url_file_size(url)
+                if not file_size:
                     if debug:
                         print(f"{DEBUG} * Getting data was not successful")
                     return False
             else:
-                fileSize = getsize(path + 'files/' + fileName)
-                url = (fullDomain + url_path).format_map({"file": fileName})
+                file_size = getsize(path + 'files/' + file_name)
+                url = (full_domain + url_path).format_map({"file": file_name})
                 if debug:
                     print(f"{DEBUG} * Using preloaded data from {url}")
 
-            self.sendJson({
+            self.send_json({
                 "result": {
                     "resource_revisions": [
                         {
                             "url": url,
-                            "size": fileSize,
-                            "format": format,
+                            "size": file_size,
+                            "format": file_format,
                             "mimetype": mimetype,
                             "resource_created": revisionDate.isoformat()
                         }
@@ -268,20 +283,20 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
                 }
             })
         else:
-            self.sendJson(json.loads(r.read().decode('utf-8')))
+            self.send_json(json.loads(r.read().decode('utf-8')))
 
         return True
 
-    def handleDownload(self, query):
+    def handle_download(self, query):
         if debug:
             print(f"{DEBUG} handleDownload: {query}")
         if 'file' in query:
-            file = query.get('file')[0]
-            filePath = path + 'files/' + file
-            file = pathlib.Path(file).name
+            query_file = query.get('file')[0]
+            file_path = path + 'files/' + query_file
+            query_file = pathlib.Path(query_file).name
             if debug:
-                print(f"{DEBUG} * Using file path: {filePath}")
-            if not exists(filePath):
+                print(f"{DEBUG} * Using file path: {file_path}")
+            if not exists(file_path):
                 if debug:
                     print(f"{DEBUG} * File path does not exist")
                 return False
@@ -290,14 +305,14 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
                 print(f"{DEBUG} * File was not mentioned in query")
             return False
 
-        size = getsize(filePath)
-        _, _, mimetype = getFormat(file)
+        size = getsize(file_path)
+        _, _, mimetype = get_format(query_file)
         self.send_response(200)
         self.send_header('Content-type', mimetype)
-        self.send_header('Content-Length', size)
-        self.send_header('Content-Disposition', 'attachment; filename="' + file + '"')
+        self.send_header('Content-Length', str(size))
+        self.send_header('Content-Disposition', 'attachment; filename="' + query_file + '"')
         self.end_headers()
-        with open(filePath, 'rb') as f:
+        with open(file_path, 'rb') as f:
             copy(f, self.wfile)
             if debug:
                 print(f"{DEBUG} * File copied")
@@ -306,40 +321,42 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if debug:
             print(f"{DEBUG} do_GET")
-        print('Request received: ', self.path, flush = True)
-        urlData = urlparse(self.path.lower())
-        query = parse_qs(urlData.query)
+        print('Request received: ', self.path, flush=True)
+        url_data = urlparse(self.path.lower())
+        query = parse_qs(url_data.query)
 
         handled = False
-        if urlData.path == '/api/3/action/package_show':
-            handled = self.handlePackage(query)
-        elif urlData.path == '/api/3/action/resource_show':
-            handled = self.handleResource(query)
-        elif urlData.path == '/api/3/action/download':
-            handled = self.handleDownload(query)
+        if url_data.path == '/api/3/action/package_show':
+            handled = self.handle_package(query)
+        elif url_data.path == '/api/3/action/resource_show':
+            handled = self.handle_resource(query)
+        elif url_data.path == '/api/3/action/download':
+            handled = self.handle_download(query)
 
         if not handled:
             self.send_response(404)
             self.end_headers()
 
-def runApp():
+
+def run_app():
     init()
-    print('Data.gov.ua wrapper v.1.0', flush = True)
-    print('Source folder:', path if path else '.', flush = True)
+    print('Data.gov.ua wrapper v.5.1.309', flush=True)
+    print('Source folder:', path if path else '.', flush=True)
 
     httpd = HTTPServer((address, port), GovUaProxyRequestHandler)
 
     if https:
-        print('https - is set', flush = True)
-        httpd.socket = ssl.wrap_socket (httpd.socket,
-            keyfile = path + '/ssl/key.pem',
-            certfile = path + '/ssl/cert.pem', server_side = True)
+        print('https - is set', flush=True)
+        httpd.socket = ssl.wrap_socket(httpd.socket,
+                                       keyfile=path + '/ssl/key.pem',
+                                       certfile=path + '/ssl/cert.pem', server_side=True)
     try:
-        print('Downloading file URL prefix:', fullDomain, flush = True)
-        print('Server on port', port, 'started...', flush = True)
+        print('Downloading file URL prefix:', full_domain, flush=True)
+        print('Server on port', port, 'started...', flush=True)
         httpd.serve_forever()
     except KeyboardInterrupt:
         httpd.server_close()
 
+
 if __name__ == '__main__':
-    runApp()
+    run_app()

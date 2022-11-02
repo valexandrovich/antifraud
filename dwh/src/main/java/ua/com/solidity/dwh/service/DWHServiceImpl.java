@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -49,8 +48,6 @@ public class DWHServiceImpl implements DWHService {
     @Value("${otp.dwh.page-size}")
     private Integer pageSize;
     private final AmqpTemplate template;
-
-    private final ObjectMapper objectMapper;
 
     private String importedRecords(long num, LocalDate date) {
         return String.format("Imported %d records archived after %s", num, Timestamp.valueOf(date.atStartOfDay()));
@@ -179,7 +176,7 @@ public class DWHServiceImpl implements DWHService {
                         AR_CONTRAGENT, DWH, startTime, null, null);
                 template.convertAndSend(OtpExchange.STATUS_LOGGER, Utils.objectToJsonString(statusLogger));
 
-                log.debug("Sending task to otp-etl.enricher");
+                log.debug("Sending task to " + OtpExchange.ENRICHER);
 
                 EnricherPortionMessage enricherMessage = new EnricherPortionMessage(CONTRAGENT, portion);
                 template.convertAndSend(OtpExchange.ENRICHER, Utils.objectToJsonString(enricherMessage));
@@ -210,6 +207,6 @@ public class DWHServiceImpl implements DWHService {
     }
 
     private String handleString(String string) {
-        return string == null ? "" : string.replaceAll("\u0000", "");
+        return string == null ? "" : string.replace("\u0000", "");
     }
 }

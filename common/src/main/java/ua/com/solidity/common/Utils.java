@@ -1,13 +1,7 @@
 package ua.com.solidity.common;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Writer;
+import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
@@ -15,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,16 +25,14 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -125,7 +118,7 @@ public class Utils {
     }
 
     private static class LimitedInputStream extends InputStream {
-        private static final String ERR_MSG = "Unexpected end of stream.";
+        private static final String ERR_MSG = "Unexpected end of stream";
         private long size;
         private long pos = 0;
         private InputStream stream;
@@ -138,8 +131,10 @@ public class Utils {
             if (file == null) return null;
             try(InputStream res = new FileInputStream(file)) {
                 return new LimitedInputStream(res, file.length());
-            } catch(Exception e) {
-                // nothing
+            } catch(FileNotFoundException e) {
+                log.error("[createFromFile] File not found: {}", file);
+            } catch(IOException e) {
+                log.error("[createFromFile] IO Exception: {}", e.getMessage());
             }
             return null;
         }
@@ -149,8 +144,8 @@ public class Utils {
             try {
                 u = new URL(url);
                 return createFromUrl(u);
-            } catch (Exception e) {
-                // nothing
+            } catch (MalformedURLException e) {
+                log.error("[createFromUrl] Malformed URL: {}", url);
             }
             return null;
         }
@@ -162,8 +157,8 @@ public class Utils {
                 URLConnection conn = url.openConnection();
                 size = conn.getContentLengthLong();
                 stream = conn.getInputStream();
-            } catch (Exception e) {
-                // nothing
+            } catch (IOException e) {
+                log.error("[createFromUrl] IO Exception: {}", e.getMessage());
             }
             return stream != null && size >= 0 ? new LimitedInputStream(stream, size) : null;
         }
@@ -193,8 +188,8 @@ public class Utils {
             if (stream != null) {
                 try {
                     stream.close();
-                } catch (Exception e) {
-                    // nothing
+                } catch (IOException e) {
+                    log.error("[close] Cannot close stream IO Exception: {}", e.getMessage());
                 }
                 stream = null;
             }
@@ -214,7 +209,7 @@ public class Utils {
 
     public static boolean checkApplicationContext() {
         if (context != null) return true;
-        log.error("Utils ApplicationContext not assigned. Use Utils.setApplicationContext(ApplicationContext) before.");
+        log.error("[checkApplicationContext] Utils ApplicationContext not assigned. Use Utils.setApplicationContext(ApplicationContext) before");
         return false;
     }
 
@@ -261,11 +256,7 @@ public class Utils {
     public static <T> T saveEntity(T entity, Class<? extends JpaRepository<T, ?>> repositoryType) {
         if (checkApplicationContext()) {
             JpaRepository<T, ?> repository = context.getBean(repositoryType);
-            try {
-                return repository.save(entity);
-            } catch (Exception e) {
-                log.error("Error on save data.", e);
-            }
+            return repository.save(entity);
         }
         return null;
     }
@@ -305,7 +296,7 @@ public class Utils {
     public static InputStream getStreamFromUrl(String url) {
         InputStream stream = LimitedInputStream.createFromUrl(url);
         if (stream == null) {
-            log.error("Can't read url {}", url);
+            log.error("[getStreamFromUrl] Can't read url {}", url);
         }
         return stream;
     }
@@ -314,8 +305,8 @@ public class Utils {
         ObjectMapper mapper = getSortedMapper();
         try {
             return mapper.valueToTree(value);
-        } catch (Exception e) {
-            log.error("JSON convert object to jsonNode error: {}", value, e);
+        } catch (IllegalArgumentException e) {
+            log.error("[getJsonNode] JSON convert object to jsonNode error: {}", value, e);
         }
         return null;
     }
@@ -324,8 +315,8 @@ public class Utils {
         ObjectMapper mapper = getSortedMapper();
         try {
             return mapper.readTree(value);
-        } catch (Exception e) {
-            log.error("JSON parse error: {}", value, e);
+        } catch (JsonProcessingException e) {
+            log.error("[getJsonNode] JSON processing error: {}", value, e);
         }
         return null;
     }
@@ -336,8 +327,8 @@ public class Utils {
                 Charset.availableCharsets().getOrDefault(encoding, StandardCharsets.UTF_8)));
         try {
             return mapper.readTree(reader);
-        } catch(Exception e) {
-            log.error("JSON load error.", e);
+        } catch(IOException e) {
+            log.error("[getJsonNode] JSON load error", e);
         }
         return null;
     }
@@ -361,8 +352,8 @@ public class Utils {
             ObjectMapper mapper = getSortedMapper();
             try {
                 return mapper.treeToValue(node, value);
-            } catch (Exception e) {
-                log.warn("Error on parsing object {}", value.getName(), e);
+            } catch (JsonProcessingException e) {
+                log.warn("[jsonToValue] Error on parsing object {}", value.getName(), e);
             }
         }
         return def;
@@ -404,8 +395,8 @@ public class Utils {
         ObjectWriter writer = getSortedMapper().writer().withDefaultPrettyPrinter();
         try {
             return writer.writeValueAsString(object);
-        } catch (Exception e) {
-            log.warn("Can't write object to JSON", e);
+        } catch (JsonProcessingException e) {
+            log.warn("[objectToJsonString] Can't write object to JSON", e);
         }
         return "";
     }
@@ -415,8 +406,8 @@ public class Utils {
         JsonNode res = null;
         try {
             res = mapper.valueToTree(object);
-        } catch (Exception e) {
-            log.error("Can't convert object to JsonNode.", e);
+        } catch (IllegalArgumentException e) {
+            log.error("[objectToJsonNode] Can't convert object to JsonNode", e);
         }
         return res;
     }
@@ -453,7 +444,8 @@ public class Utils {
         Path p = Path.of(folder);
         try {
             Files.createDirectories(p);
-        } catch (Exception e) {
+        } catch (IOException e) {
+            log.debug("[checkFolder] Can't create folder: {}", folder);
             return null;
         }
 
@@ -475,8 +467,8 @@ public class Utils {
                     status.addProcessedVolume(length);
                 }
             }
-        } catch (Exception e) {
-            log.error("Error due stream copy", e);
+        } catch (IOException e) {
+            log.error("[streamCopy] Error during stream copy", e);
             return false;
         }
         return true;
@@ -498,8 +490,8 @@ public class Utils {
         String value = getContextProperty(name, String.valueOf(defaultValue), contextOnly).trim();
         try {
             return Long.parseLong(value);
-        } catch (Exception e) {
-            // nothing
+        } catch (NumberFormatException e) {
+            log.error("[getLongContextProperty] Error parsing long {}", value);
         }
         return defaultValue;
     }
@@ -530,8 +522,8 @@ public class Utils {
         String value = getContextProperty(name, String.valueOf(defaultValue), contextOnly);
         try {
             return Double.parseDouble(value);
-        } catch (Exception e) {
-            // nothing
+        } catch (NumberFormatException e) {
+            log.error("[getFloatContextProperty] Error parsing double {}", value);
         }
         return defaultValue;
     }
@@ -571,7 +563,7 @@ public class Utils {
 
     private static void connectionShutdownListener(ShutdownSignalException e) {
         if (e != null) {
-            log.debug("(Utils) RabbitMQ connection error.", e);
+            log.debug("[connectionShutdownListener] (Utils) RabbitMQ connection error", e);
         }
         connection = null;
     }
@@ -582,8 +574,11 @@ public class Utils {
             try {
                 connection = factory.newConnection();
                 connection.addShutdownListener(Utils::connectionShutdownListener);
-            } catch (Exception e) {
-                log.error("RabbitMQ Connection creation error.", e);
+            } catch (IOException e) {
+                log.error("[getRabbitMQConnection] RabbitMQ IO Connection creation error", e);
+            }
+            catch (TimeoutException e) {
+                log.error("[getRabbitMQConnection] RabbitMQ Timeout Connection creation error", e);
             }
         }
     }
@@ -595,9 +590,8 @@ public class Utils {
             try {
                 res = connection.createChannel();
                 res.addShutdownListener(Utils::channelShutdownListener);
-            } catch (Exception e) {
-                log.error("RabbitMQ Channel creation error.", e);
-                res = null;
+            } catch (IOException e) {
+                log.error("[createRabbitMQChannel] RabbitMQ Channel creation error", e);
             }
         }
         return res;
@@ -605,7 +599,7 @@ public class Utils {
 
      private static void channelShutdownListener(ShutdownSignalException e) {
         if (e != null) {
-            log.debug("(Utils) RabbitMQ channel error.", e);
+            log.debug("[channelShutdownListener] (Utils) RabbitMQ channel error", e);
         }
         channel = null;
     }
@@ -636,13 +630,13 @@ public class Utils {
         if (channelNeeded()) {
             try {
                 channel.queueDeclare(queue, true, false, false, params);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 if (channelNeeded()) {
                     try {
                         channel.queuePurge(queue); // no messages
                         channel.queueDelete(queue);
                         channel.queueDeclare(queue, true, false, false, params);
-                    } catch (Exception e1) {
+                    } catch (IOException e1) {
                         channelNeeded();
                         return false;
                     }
@@ -650,7 +644,8 @@ public class Utils {
             }
             try {
                 channel.queueBind(queue, queue, queue);
-            } catch (Exception e) {
+            } catch (IOException e) {
+                log.debug("[queueDeclare] Channel is needed");
                 channelNeeded();
                 return false;
             }
@@ -666,8 +661,8 @@ public class Utils {
                 if (!queueDeclare(queue)) return false;
                 TOPICS.add(queue);
                 return true;
-            } catch (Exception e) {
-                rabbitMQLogError("Exchange creation failed", queue, queue, null, e);
+            } catch (IOException e) {
+                rabbitMQLogError("[prepareRabbitMQQueue] Exchange creation failed", queue, queue, null, e);
                 return false;
             }
         }
@@ -684,11 +679,11 @@ public class Utils {
                     props = new AMQP.BasicProperties.Builder().priority((int) priority).build();
                 }
                 channel.basicPublish(queue, queue, props, (message == null ? "" : message).getBytes(StandardCharsets.UTF_8));
-            } catch (Exception e) {
-                rabbitMQLogError("Can't send a message", queue, queue, message, e);
+            } catch (IOException e) {
+                rabbitMQLogError("[sendRabbitMQMessage] Can't send a message", queue, queue, message, e);
             }
         } else {
-            rabbitMQLogError("Can't send a message now, waiting.", queue, queue, message, null);
+            rabbitMQLogError("[sendRabbitMQMessage] Can't send a message now, waiting", queue, queue, message, null);
             deferredExecute(TRY_TO_SEND_DELTA, ()-> sendRabbitMQMessage(queue, message));
         }
     }
@@ -808,7 +803,8 @@ public class Utils {
         } else {
             try {
                 Files.createDirectories(parent);
-            } catch (Exception e) {
+            } catch (IOException e) {
+                log.debug("[getFileFromNFSFolder] Cannot create folder {}", parent);
                 return null;
             }
         }
@@ -825,7 +821,8 @@ public class Utils {
             }
             try {
                 Files.createDirectories(parent);
-            } catch(Exception e) {
+            } catch(IOException e) {
+                log.debug("[checkFolder] Cannot create folder {}", parent);
                 return null;
             }
             return parent.toFile();
@@ -837,7 +834,8 @@ public class Utils {
         Path parent = realPath.getParent();
         try {
             Files.createDirectories(parent);
-        } catch (Exception e) {
+        } catch (IOException e) {
+            log.debug("[getFileFromFolder] Cannot create folder {}", parent);
             return null;
         }
         return realPath.toFile();
@@ -854,7 +852,7 @@ public class Utils {
         }
 
         if (found.size() > 1) {
-            log.warn("Too many items in zip file matches for {}, first selected.", match);
+            log.warn("Too many items in zip file matches for {}, first selected", match);
         }
         return found.get(0);
     }
@@ -947,7 +945,7 @@ public class Utils {
             ObjectMapper sortedMapper = getSortedMapper();
             return sortedMapper.treeToValue(node, JsonNode.class);
         } catch (JsonProcessingException e) {
-            log.error("Can't resort node.", e);
+            log.error("[getSortedJsonNode] Can't resort node", e);
         }
         return null;
     }
@@ -957,7 +955,7 @@ public class Utils {
             ObjectMapper sortedMapper = getSortedMapper();
             return sortedMapper.writeValueAsBytes(node);
         } catch (JsonProcessingException e) {
-            log.error("Can't convert node to bytes.", e);
+            log.error("[getJsonNodeBytes] Can't convert node to bytes", e);
         }
         return new byte[0];
     }
@@ -966,7 +964,8 @@ public class Utils {
         ObjectMapper mapper = getPrettyMapper(printer);
         try {
             return mapper.writer().writeValueAsString(node);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
+            log.debug("[getJsonNodePrettyString] Can't write value as string", e);
             return null;
         }
     }
@@ -984,7 +983,7 @@ public class Utils {
             ObjectMapper sortedMapper = getSortedMapper();
             return sortedMapper.writeValueAsString(node);
         } catch (JsonProcessingException e) {
-            log.error("Can't convert node to Sorted String.", e);
+            log.error("[getJsonNodeUniqueString] Can't convert node to Sorted String", e);
         }
         return null;
     }
@@ -993,8 +992,8 @@ public class Utils {
         if (file == null || node == null) return false;
         try(Writer w = new FileWriterWithEncoding(file, StandardCharsets.UTF_8)) {
             w.write(getPrettyMapper(indent, arrayIndentation).writeValueAsString(node));
-        } catch (Exception e) {
-            log.error("File {} not saved.", file.getAbsolutePath());
+        } catch (IOException e) {
+            log.error("[writeJsonNodeToFile] File {} not saved", file.getAbsolutePath());
             return false;
         }
         return true;
@@ -1011,8 +1010,8 @@ public class Utils {
                 MessageDigest md = MessageDigest.getInstance("SHA3-384");
                 byte[] input = getJsonNodeBytes(node);
                 return md.digest(input);
-            } catch (Exception e) {
-                log.error("ComplexDigest error.", e);
+            } catch (NoSuchAlgorithmException e) {
+                log.error("[complexDigest] SHA3-384 algorithm is not supported", e);
             }
         }
         return new byte[0];

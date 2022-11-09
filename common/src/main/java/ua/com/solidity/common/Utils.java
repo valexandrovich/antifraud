@@ -155,6 +155,8 @@ public class Utils {
             InputStream stream = null;
             try {
                 URLConnection conn = url.openConnection();
+                conn.setReadTimeout(1800000);
+                conn.setConnectTimeout(1800000);
                 size = conn.getContentLengthLong();
                 stream = conn.getInputStream();
             } catch (IOException e) {

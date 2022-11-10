@@ -157,8 +157,8 @@ public class Utils {
 
                 URL utest = new URL("https://data.gov.ua");
                 HttpURLConnection ctest = (HttpURLConnection)utest.openConnection();
-                connection.setRequestMethod("GET");
-                connection.connect();
+                ctest.setRequestMethod("GET");
+                ctest.connect();
                 
                 log.info("Test connection code: " + ctest.getResponseCode());
                 // System.out.println();

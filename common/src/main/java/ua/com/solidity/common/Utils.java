@@ -154,6 +154,12 @@ public class Utils {
             long size = -1;
             InputStream stream = null;
             try {
+
+                URL utest = new URL("https://data.gov.ua");
+                URLConnection ctest = utest.openConnection();
+                InputStream streamTest = ctest.getInputStream();
+                System.out.println("Test connection: " + ctest.getResponseCode());
+
                 URLConnection conn = url.openConnection();
                 size = conn.getContentLengthLong();
                 stream = conn.getInputStream();

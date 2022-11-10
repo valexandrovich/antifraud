@@ -156,10 +156,13 @@ public class Utils {
             try {
 
                 URL utest = new URL("https://data.gov.ua");
-                URLConnection ctest = utest.openConnection();
-                InputStream streamTest = ctest.getInputStream();
-                System.out.println("Test connection length: " + ctest.getContentLengthLong());
-                System.out.println("Test connection timeout: " + ctest.getContent());
+                HttpURLConnection ctest = (HttpURLConnection)utest.openConnection();
+                connection.setRequestMethod("GET");
+                connection.connect();
+                
+                log.info("Test connection code: " + ctest.getResponseCode());
+                // System.out.println();
+                //System.out.println("Test connection timeout: " + ctest.getContent());
 
                 URLConnection conn = url.openConnection();
                 size = conn.getContentLengthLong();

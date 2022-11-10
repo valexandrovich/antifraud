@@ -155,8 +155,6 @@ public class Utils {
             InputStream stream = null;
             try {
                 URLConnection conn = url.openConnection();
-                conn.setReadTimeout(1800000);
-                conn.setConnectTimeout(1800000);
                 size = conn.getContentLengthLong();
                 stream = conn.getInputStream();
             } catch (IOException e) {
@@ -298,7 +296,7 @@ public class Utils {
     public static InputStream getStreamFromUrl(String url) {
         InputStream stream = LimitedInputStream.createFromUrl(url);
         if (stream == null) {
-            log.error("[getStreamFromUrl] Can't read url {}", url);
+            log.error("[getStreamFromUrl] Can't read from url {}", url);
         }
         return stream;
     }

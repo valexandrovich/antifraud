@@ -1,6 +1,6 @@
 FROM nexus.otpbank.com.ua:19443/repository/openjdk:11-jre
 
-ENV JAVA_OPTS="-Xms256m -Xmx2G -XX:+ExitOnOutOfMemoryError -Dhttp.proxyHost=chckproxy -Dhttp.proxyPort=8080 -Dhttps.proxyHost=chckproxy -Dhttps.proxyPort=8080 -Dhttp.nonProxyHosts="localhost|127.0.*|*.raiffeisenbank.com.ua|10.247.*|10.244.*|195.248.*|10.233.*|antifrauddbdev.raiffeisenbank.com.ua|*.svc.cluster.*|wrapper.antifraud.svc.cluster.local" -Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom"
+ENV JAVA_OPTS="-Xms256m -Xmx2G -XX:+ExitOnOutOfMemoryError -Dhttp.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttp.proxyPort=8080 -Dhttps.proxyHost=chckproxy.raiffeisenbank.com.ua -Dhttps.proxyPort=8080 -Dhttp.nonProxyHosts="localhost|127.0.*|*.raiffeisenbank.com.ua|10.247.*|10.244.*|195.248.*|10.233.*|antifrauddbdev.raiffeisenbank.com.ua|*.svc.cluster.*|wrapper.antifraud.svc.cluster.local|rabbitmq.antifraud-deps.svc.cluster.local" -Djava.security.egd=file:///dev/./urandom -Dsecurerandom.source=file:///dev/./urandom"
 ENV TZ=Europe/Kiev
 
 COPY cert.crt cert.crt

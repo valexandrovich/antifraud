@@ -1,4 +1,4 @@
-vault: 
+vault:
   vaultTemplate: '{{- with secret  "secret/data/antifraud/importer/" }}{{ .Data.data.properties }}{{ end }}'
   vaultRole: "antifraud-importer"
   vaultAddress: "https://vault.otpbank.com.ua:443"
@@ -12,4 +12,4 @@ volumes:
     server: 10.244.14.30
 volumeMounts:
 - name: antifraud
-  mountPath: /tmp
+  mountPath: /opt

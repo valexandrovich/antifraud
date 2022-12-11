@@ -1,5 +1,8 @@
 package ua.com.solidity.report.listener;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -8,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +50,8 @@ import ua.com.solidity.db.repositories.YPersonPackageMonitoringNotificationRepos
 import ua.com.solidity.db.repositories.YPersonRepository;
 import ua.com.solidity.report.model.SendEmailRequest;
 
+import static ua.com.solidity.report.utils.Utils.randomPath;
+
 @Slf4j
 @EnableRabbit
 @Component
@@ -58,6 +64,8 @@ public class RabbitMQListener {
     private String reportQueue;
     @Value("${notification.rabbitmq.name}")
     private String notificationQueue;
+    @Value("${otp.nfs.folder}")
+    private String mountPoint;
     private final AmqpTemplate template;
 
     private final UserRepository userRepository;
@@ -73,22 +81,24 @@ public class RabbitMQListener {
     private final YPersonRepository personRepository;
     private final YCompanyRepository companyRepository;
 
+    private static final String PHYSICAL_MESSAGE_SUBJ = "Сповіщення пакетного моніторингу фізичних осіб про зміни тегів на основі умови моніторингу тегів";
+    private static final String JURIDICAL_MESSAGE_SUBJ = "Сповіщення пакетного моніторингу юридичних осіб про зміни тегів на основі умови моніторингу тегів";
     private static final String FILE_HEADER = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">" +
             "<html>" +
             "<head>" +
             "</head>" +
             "<body>";
-    private static final String SENDING_LOG =  "Sending task to {}";
-    private static final String COULD_NOT_CONVERT_LOG =  "Couldn't convert json: {}";
-    private static final String TD_CENTER_OPED_HTML =  "<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"";
-    private static final String TD_OPED_HTML =  "<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">";
-    private static final String TD_CLOSE_HTML =  "</td>";
-    private static final String TR_OPEN_HTML =  "<tr>";
-    private static final String TR_CLOSE_HTML =  "</tr>";
-    private static final String BODY_CLOSE_HTML =  "</body>";
-    private static final String HTML_CLOSE_HTML =  "</html>";
-    private static final String TBODY_CLOSE_HTML =  "</tbody>";
-    private static final String TABLE_CLOSE_HTML =  "</table>";
+    private static final String SENDING_LOG = "Sending task to {}";
+    private static final String COULD_NOT_CONVERT_LOG = "Couldn't convert json: {}";
+    private static final String TD_CENTER_OPEN_HTML = "<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;text-align:center;\"";
+    private static final String TD_OPEN_HTML = "<td style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px\">";
+    private static final String TD_CLOSE_HTML = "</td>";
+    private static final String TR_OPEN_HTML = "<tr>";
+    private static final String TR_CLOSE_HTML = "</tr>";
+    private static final String BODY_CLOSE_HTML = "</body>";
+    private static final String HTML_CLOSE_HTML = "</html>";
+    private static final String TBODY_CLOSE_HTML = "</tbody>";
+    private static final String TABLE_CLOSE_HTML = "</table>";
 
     @RabbitListener(queues = "${report.rabbitmq.name}")
     public void processMyQueue() {
@@ -165,141 +175,153 @@ public class RabbitMQListener {
                 if (yPerson != null) conditionMap.get(notification.getCondition()).add(yPerson);
             });
 
-            StringBuilder messageBuilder = new StringBuilder();
+            String reportPath = randomPath() + ".html";
+            File file = new File(mountPoint, reportPath);
+            file.getParentFile().mkdirs();
             boolean built = false;
-            messageBuilder.append(FILE_HEADER);
+            try (FileWriter writer = new FileWriter(file)) {
+                try {
+                    writer.write(FILE_HEADER);
 
-            for (Map.Entry<NotificationPhysicalTagCondition, List<YPerson>> entry : conditionMap.entrySet()) {
-                NotificationPhysicalTagCondition condition = entry.getKey();
-                List<YPerson> personList = entry.getValue();
+                    for (Map.Entry<NotificationPhysicalTagCondition, List<YPerson>> entry : conditionMap.entrySet()) {
+                        NotificationPhysicalTagCondition condition = entry.getKey();
+                        List<YPerson> personList = entry.getValue();
 
-                if (!personList.isEmpty()) {
-                    built = true;
-                    List<String> codeList = condition.getTagTypes().stream()
-                            .map(TagType::getCode)
-                            .collect(Collectors.toList());
-                    StringBuilder codesInString = new StringBuilder(condition.getDescription());
-                    codesInString.append(" [");
-                    codesInString.append(codeList.get(0));
-                    for (int i = 1; i < codeList.size(); i++) {
-                        codesInString.append(" &amp; ").append(codeList.get(i));
-                    }
-                    codesInString.append("]");
-
-                    String rowspan = codeList.size() > 1 ? " rowspan=\"" + codeList.size() + "\"" : "";
-
-                    messageBuilder.append(tableCaption(codesInString.toString(), Entity.PERSON));
-
-                    Map<YPerson, String> personNamesMap = new HashMap<>();
-                    personList.forEach(person -> {
-                        StringBuilder personName = new StringBuilder();
-                        Stream.of(person.getLastName(), person.getFirstName(), person.getPatName())
-                                .forEach(name -> {
-                                    if (personName.length() > 0 && name != null) personName.append(" ");
-                                    if (name != null) personName.append(name);
-                                });
-                        personNamesMap.put(person, personName.toString());
-                    });
-                    Stream<Map.Entry<YPerson, String>> personNamesStreamSorted = personNamesMap.entrySet()
-                            .stream()
-                            .sorted(Map.Entry.comparingByValue());
-
-                    personNamesStreamSorted.forEach(entryPersonName -> {
-                        YPerson person = entryPersonName.getKey();
-                        String personName = entryPersonName.getValue();
-
-                        Map<String, String> tagAsOfDatesMap = new HashMap<>();
-                        codeList.forEach(code -> {
-                            List<String> tagAsOfDatesList = new ArrayList<>();
-                            List<YTag> collect = person.getTags()
-                                    .stream()
-                                    .filter(tag -> tag.getTagType().getCode().equals(code))
-                                    .sorted(Comparator.comparing(YTag::getAsOf))
+                        if (!personList.isEmpty()) {
+                            built = true;
+                            List<String> codeList = condition.getTagTypes().stream()
+                                    .map(TagType::getCode)
                                     .collect(Collectors.toList());
-                            collect.forEach(tag -> {
-                                if (tag.getAsOf() != null) {
-                                    tagAsOfDatesList.add(tag.getAsOf().toString());
+                            StringBuilder codesInString = new StringBuilder(condition.getDescription());
+                            codesInString.append(" [");
+                            codesInString.append(codeList.get(0));
+                            for (int i = 1; i < codeList.size(); i++) {
+                                codesInString.append(" &amp; ").append(codeList.get(i));
+                            }
+                            codesInString.append("]");
+
+                            String rowspan = codeList.size() > 1 ? " rowspan=\"" + codeList.size() + "\"" : "";
+
+                            writer.write(tableCaption(codesInString.toString(), Entity.PERSON));
+
+                            Map<YPerson, String> personNamesMap = new HashMap<>();
+                            personList.forEach(person -> {
+                                StringBuilder personName = new StringBuilder();
+                                Stream.of(person.getLastName(), person.getFirstName(), person.getPatName())
+                                        .forEach(name -> {
+                                            if (personName.length() > 0 && name != null) personName.append(" ");
+                                            if (name != null) personName.append(name);
+                                        });
+                                personNamesMap.put(person, personName.toString());
+                            });
+                            Stream<Map.Entry<YPerson, String>> personNamesStreamSorted = personNamesMap.entrySet()
+                                    .stream()
+                                    .sorted(Map.Entry.comparingByValue());
+
+                            personNamesStreamSorted.forEach(entryPersonName -> {
+                                YPerson person = entryPersonName.getKey();
+                                String personName = entryPersonName.getValue();
+
+                                Map<String, String> tagAsOfDatesMap = new HashMap<>();
+                                codeList.forEach(code -> {
+                                    List<String> tagAsOfDatesList = new ArrayList<>();
+                                    List<YTag> collect = person.getTags()
+                                            .stream()
+                                            .filter(tag -> tag.getTagType().getCode().equals(code))
+                                            .sorted(Comparator.comparing(YTag::getAsOf))
+                                            .collect(Collectors.toList());
+                                    collect.forEach(tag -> {
+                                        if (tag.getAsOf() != null) {
+                                            tagAsOfDatesList.add(tag.getAsOf().toString());
+                                        }
+                                    });
+                                    if (!tagAsOfDatesList.isEmpty()) {
+                                        String tagAsOfDatesListInString = tagAsOfDatesList.toString();
+                                        tagAsOfDatesMap.put(code, tagAsOfDatesListInString.substring(1, tagAsOfDatesListInString.length() - 1));
+                                    } else {
+                                        tagAsOfDatesMap.put(code, "");
+                                    }
+
+                                });
+
+                                try {
+                                    writer.write(TR_OPEN_HTML);
+                                    writer.write(TD_CENTER_OPEN_HTML + rowspan + ">");
+                                    if (!person.getInns().isEmpty()) {
+                                        YINN yinn = person.getInns().iterator().next();
+                                        writer.write(Math.toIntExact(yinn.getInn()));
+                                    }
+                                    writer.write(TD_CLOSE_HTML);
+
+                                    writer.write(TD_CENTER_OPEN_HTML + rowspan + ">");
+                                    if (personName.length() > 0) {
+                                        writer.write(personName);
+                                    }
+                                    writer.write(TD_CLOSE_HTML);
+
+                                    if (!codeList.isEmpty()) {
+                                        writer.write(TD_OPEN_HTML);
+                                        StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
+                                        if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
+                                            tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
+                                        }
+                                        writer.write(String.valueOf(tagTypeAsOfBuilder));
+                                        writer.write(TD_CLOSE_HTML);
+                                    }
+                                    writer.write(TR_CLOSE_HTML);
+
+                                    for (int i = 1; i < codeList.size(); i++) {
+                                        writer.write(TR_OPEN_HTML);
+                                        writer.write(TD_OPEN_HTML);
+                                        StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
+                                        if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
+                                            tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
+                                        }
+                                        writer.write(tagTypeAsOfBuilder.toString());
+                                        writer.write(TD_CLOSE_HTML);
+                                        writer.write(TR_CLOSE_HTML);
+                                    }
+                                } catch (IOException e) {
+                                    log.error("[physicalPackageMonitoringReport-c]", e);
                                 }
                             });
-                            if (!tagAsOfDatesList.isEmpty()) {
-                                String tagAsOfDatesListInString = tagAsOfDatesList.toString();
-                                tagAsOfDatesMap.put(code, tagAsOfDatesListInString.substring(1, tagAsOfDatesListInString.length() - 1));
-                            } else {
-                                tagAsOfDatesMap.put(code, "");
-                            }
 
-                        });
-
-                        messageBuilder.append(TR_OPEN_HTML);
-                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
-                        if (!person.getInns().isEmpty()) {
-                            YINN yinn = person.getInns().iterator().next();
-                            messageBuilder.append(yinn.getInn());
+                            writer.write(TBODY_CLOSE_HTML);
+                            writer.write(TABLE_CLOSE_HTML);
                         }
-                        messageBuilder.append(TD_CLOSE_HTML);
-
-                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
-                        if (personName.length() > 0) {
-                            messageBuilder.append(personName);
-                        }
-                        messageBuilder.append(TD_CLOSE_HTML);
-
-                        if (!codeList.isEmpty()) {
-                            messageBuilder.append(TD_OPED_HTML);
-                            StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
-                            if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
-                                tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
-                            }
-                            messageBuilder.append(tagTypeAsOfBuilder);
-                            messageBuilder.append(TD_CLOSE_HTML);
-                        }
-                        messageBuilder.append(TR_CLOSE_HTML);
-
-                        for (int i = 1; i < codeList.size(); i++) {
-                            messageBuilder.append(TR_OPEN_HTML);
-
-                            messageBuilder.append(TD_OPED_HTML);
-                            StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
-                            if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
-                                tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
-                            }
-                            messageBuilder.append(tagTypeAsOfBuilder);
-                            messageBuilder.append(TD_CLOSE_HTML);
-
-                            messageBuilder.append(TR_CLOSE_HTML);
-                        }
-
-                    });
-
-                    messageBuilder.append(TBODY_CLOSE_HTML);
-                    messageBuilder.append(TABLE_CLOSE_HTML);
-
-                }
-            }
-            messageBuilder.append(BODY_CLOSE_HTML);
-            messageBuilder.append(HTML_CLOSE_HTML);
-
-            if (built) {
-                SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
-                        .to(matching.getEmail())
-                        .subject("Сповіщення пакетного моніторингу фізичних осіб про зміни тегів на основі умови моніторингу тегів")
-                        .body(messageBuilder.toString())
-                        .retries(2)
-                        .build();
-
-                String jo;
-                try {
-                    jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
-                    log.info(SENDING_LOG, notificationQueue);
-                    template.convertAndSend(notificationQueue, jo);
-                } catch (JsonProcessingException e) {
-                    log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    }
+                    writer.write(BODY_CLOSE_HTML);
+                    writer.write(HTML_CLOSE_HTML);
+                } catch (IOException e) {
+                    log.error("[physicalPackageMonitoringReport-b]", e);
                 }
 
-                personPackageMonitoringNotifications
-                        .forEach(personPackageMonitoringNotification -> personPackageMonitoringNotification.setSent(true));
-                if (!personPackageMonitoringNotifications.isEmpty())
-                    personPackageMonitoringNotificationRepository.saveAll(personPackageMonitoringNotifications);
+                if (built) {
+                    SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
+                            .to(matching.getEmail())
+                            .subject(PHYSICAL_MESSAGE_SUBJ)
+                            // Skip body for now as report attached as eternal file
+//                            .body("")
+                            .filePath(reportPath)
+                            .retries(2)
+                            .build();
+
+                    String jo;
+                    try {
+                        jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
+                        log.info(SENDING_LOG, notificationQueue);
+                        template.convertAndSend(notificationQueue, jo);
+                    } catch (JsonProcessingException e) {
+                        log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    }
+
+                    personPackageMonitoringNotifications
+                            .forEach(personPackageMonitoringNotification -> personPackageMonitoringNotification.setSent(true));
+                    if (!personPackageMonitoringNotifications.isEmpty())
+                        personPackageMonitoringNotificationRepository.saveAll(personPackageMonitoringNotifications);
+                }
+            } catch (IOException e) {
+                log.error("[physicalPackageMonitoringReport-a]", e);
             }
         });
     }
@@ -348,9 +370,7 @@ public class RabbitMQListener {
                     messageBuilder.append(tableCaption(codesInString.toString(), Entity.COMPANY));
 
                     Map<YCompany, String> companyNamesMap = new HashMap<>();
-                    companyList.forEach(company -> {
-                        companyNamesMap.put(company, StringUtils.defaultString(company.getName(), ""));
-                    });
+                    companyList.forEach(company -> companyNamesMap.put(company, StringUtils.defaultString(company.getName(), "")));
                     Stream<Map.Entry<YCompany, String>> companyNamesStreamSorted = companyNamesMap.entrySet()
                             .stream()
                             .sorted(Map.Entry.comparingByValue());
@@ -382,20 +402,20 @@ public class RabbitMQListener {
                         });
 
                         messageBuilder.append(TR_OPEN_HTML);
-                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
-                        if (company.getEdrpou() != null){
+                        messageBuilder.append(TD_CENTER_OPEN_HTML).append(rowspan).append(">");
+                        if (company.getEdrpou() != null) {
                             messageBuilder.append(company.getEdrpou());
                         }
                         messageBuilder.append(TD_CLOSE_HTML);
 
-                        messageBuilder.append(TD_CENTER_OPED_HTML).append(rowspan).append(">");
+                        messageBuilder.append(TD_CENTER_OPEN_HTML).append(rowspan).append(">");
                         if (companyName.length() > 0) {
                             messageBuilder.append(companyName);
                         }
                         messageBuilder.append(TD_CLOSE_HTML);
 
                         if (!codeList.isEmpty()) {
-                            messageBuilder.append(TD_OPED_HTML);
+                            messageBuilder.append(TD_OPEN_HTML);
                             StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
                             if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
                                 tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
@@ -408,7 +428,7 @@ public class RabbitMQListener {
                         for (int i = 1; i < codeList.size(); i++) {
                             messageBuilder.append(TR_OPEN_HTML);
 
-                            messageBuilder.append(TD_OPED_HTML);
+                            messageBuilder.append(TD_OPEN_HTML);
                             StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
                             if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
                                 tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
@@ -432,7 +452,7 @@ public class RabbitMQListener {
             if (built) {
                 SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
                         .to(matching.getEmail())
-                        .subject("Сповіщення пакетного моніторингу юридичних осіб про зміни тегів на основі умови моніторингу тегів")
+                        .subject(JURIDICAL_MESSAGE_SUBJ)
                         .body(messageBuilder.toString())
                         .retries(2)
                         .build();
@@ -462,7 +482,7 @@ public class RabbitMQListener {
                 "<th scope=\"col\" style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;\">" + entity.identifier + "</th>" +
                 "<th scope=\"col\" style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;\">" + entity.name + "</th>" +
                 "<th scope=\"col\" style=\"border:1px solid rgb(190, 190, 190);padding:5px 10px;\">Мітки</th>" +
-                "</tr>" +
+                TR_CLOSE_HTML +
                 "</thead>" +
                 "<tbody style=\"background-color:#e4f0f5;\">";
     }
@@ -472,20 +492,12 @@ public class RabbitMQListener {
         PERSON("ІНН", "Прізвище, Ім'я, по-батькові"),
         COMPANY("ЄДРПОУ", "Назва компанії");
 
-        private String identifier;
-        private String name;
+        private final String identifier;
+        private final String name;
 
         Entity(String identifier, String name) {
             this.identifier = identifier;
             this.name = name;
-        }
-
-        public String getIdentifier() {
-            return identifier;
-        }
-
-        public String getName() {
-            return name;
         }
     }
 }

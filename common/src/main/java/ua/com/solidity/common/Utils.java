@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -155,16 +154,6 @@ public class Utils {
             long size = -1;
             InputStream stream = null;
             try {
-
-                URL utest = new URL("https://data.gov.ua");
-                HttpURLConnection ctest = (HttpURLConnection)utest.openConnection();
-                ctest.setRequestMethod("GET");
-                ctest.connect();
-                
-                log.info("Test connection code: " + ctest.getResponseCode());
-                // System.out.println();
-                //System.out.println("Test connection timeout: " + ctest.getContent());
-
                 URLConnection conn = url.openConnection();
                 size = conn.getContentLengthLong();
                 stream = conn.getInputStream();

@@ -340,7 +340,7 @@ class GovUaProxyRequestHandler(BaseHTTPRequestHandler):
 
 def run_app():
     init()
-    print('Data.gov.ua wrapper v.5.1.311', flush=True)
+    print('Data.gov.ua wrapper v.5.1.309', flush=True)
     print('Source folder:', path if path else '.', flush=True)
 
     httpd = HTTPServer((address, port), GovUaProxyRequestHandler)

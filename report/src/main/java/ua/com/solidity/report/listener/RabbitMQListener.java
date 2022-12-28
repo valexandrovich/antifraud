@@ -102,12 +102,11 @@ public class RabbitMQListener {
 
     @RabbitListener(queues = "${report.rabbitmq.name}")
     public void processMyQueue() {
-        log.debug("Receive task from " + reportQueue);
+        log.debug("Received task from " + reportQueue);
 
         notifySubscribers();
         physicalPackageMonitoringReport();
         juridicalPackageMonitoringReport();
-
     }
 
     private void notifySubscribers() {
@@ -158,26 +157,37 @@ public class RabbitMQListener {
     }
 
     private void physicalPackageMonitoringReport() {
-        List<NotificationPhysicalTagMatching> matchings = physicalTagMatchingRepository.findAll();
+        log.debug("[physicalPackageMonitoringReport] Getting matchings");
+        Stream<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingStream = physicalTagMatchingRepository.streamAllBy();
 
-        matchings.forEach(matching -> {
+        log.debug("[physicalPackageMonitoringReport] Iterating through matchings");
+        notificationPhysicalTagMatchingStream.forEach(tagMatching -> {
+            log.debug("[physicalPackageMonitoringReport] Get list of people to be notified");
+            Stream<YPersonPackageMonitoringNotification> personPackageMonitoringNotifications =
+                    personPackageMonitoringNotificationRepository.findByEmailAndSent(tagMatching.getEmail(), false);
 
-            List<YPersonPackageMonitoringNotification> personPackageMonitoringNotifications =
-                    personPackageMonitoringNotificationRepository.findByEmailAndSent(matching.getEmail(), false);
-
+            log.debug("[physicalPackageMonitoringReport] Create condition map");
             Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap = new LinkedHashMap<>();
 
+            log.debug("[physicalPackageMonitoringReport] Mapping conditions to people to be notified");
             personPackageMonitoringNotifications.forEach(notification -> {
                 YPerson yPerson = personRepository.findWithInnsAndTagsById(notification.getYpersonId())
                         .orElse(null);
 
                 conditionMap.computeIfAbsent(notification.getCondition(), k -> new ArrayList<>());
                 if (yPerson != null) conditionMap.get(notification.getCondition()).add(yPerson);
+
+                notification.setSent(true);
+                personPackageMonitoringNotificationRepository.save(notification);
             });
 
+            log.debug("[physicalPackageMonitoringReport] Preparing report file");
             String reportPath = randomPath() + ".html";
+            log.debug("[physicalPackageMonitoringReport] Report file path to be used: {}", reportPath);
             File file = new File(mountPoint, reportPath);
-            file.getParentFile().mkdirs();
+            if (file.getParentFile().mkdirs()) {
+                log.debug("[physicalPackageMonitoringReport] Folder(s) created");
+            }
             boolean built = false;
             try (FileWriter writer = new FileWriter(file)) {
                 try {
@@ -298,10 +308,9 @@ public class RabbitMQListener {
 
                 if (built) {
                     SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
-                            .to(matching.getEmail())
+                            .to(tagMatching.getEmail())
                             .subject(PHYSICAL_MESSAGE_SUBJ)
-                            // Skip body for now as report attached as eternal file
-//                            .body("")
+                            .body("See attached")
                             .filePath(reportPath)
                             .retries(2)
                             .build();
@@ -314,16 +323,12 @@ public class RabbitMQListener {
                     } catch (JsonProcessingException e) {
                         log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                     }
-
-                    personPackageMonitoringNotifications
-                            .forEach(personPackageMonitoringNotification -> personPackageMonitoringNotification.setSent(true));
-                    if (!personPackageMonitoringNotifications.isEmpty())
-                        personPackageMonitoringNotificationRepository.saveAll(personPackageMonitoringNotifications);
                 }
             } catch (IOException e) {
                 log.error("[physicalPackageMonitoringReport-a]", e);
             }
         });
+        notificationPhysicalTagMatchingStream.close();
     }
 
     private void juridicalPackageMonitoringReport() {

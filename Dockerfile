@@ -11,5 +11,5 @@ RUN keytool -importcert -file data.crt -alias data_cert -keystore $JAVA_HOME/lib
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
 COPY docker/opentelemetry/opentelemetry-javaagent.jar opentelemetry-javaagent.jar
-#ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar ${0} ${@}"]
+#ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar ${0} ${@}"]#
 ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar --spring.config.name=application --spring.config.location=$PATH_TO_PROPERTIES ${0} ${@}"]

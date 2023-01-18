@@ -13,3 +13,6 @@
     requests:
       cpu: 200m
       memory: 512Mi
+
+  namespace: antifraud
+  project: antifraud

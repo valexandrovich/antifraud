@@ -19,3 +19,6 @@ ingress:
   - hosts:
     - antifraud-uat.otpbank.com.ua
     secretName: antifraud-tls
+
+namespace: antifrauduat
+project: antifrauduat

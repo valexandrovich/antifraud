@@ -19,3 +19,6 @@ ingress:
   - hosts:
     - antifraud-prod.otpbank.com.ua
     secretName: antifraud-tls
+
+namespace: antifraud
+project: antifraud

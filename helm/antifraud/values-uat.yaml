@@ -1,2 +1,5 @@
 valueFiles:
   - values-uat.yaml
+
+spec:
+  project: antifrauduat

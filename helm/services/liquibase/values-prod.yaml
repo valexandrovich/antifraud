@@ -4,3 +4,6 @@ vault:
   vaultAddress: "https://vault.otpbank.com.ua:443"
   vaultMountPath: "auth/kubernetes/"
   appPropertiesPath: "/vault/secrets/liquibase.properties"
+
+namespace: antifraud
+project: antifraud

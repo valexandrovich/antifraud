@@ -1,2 +1,5 @@
 valueFiles:
   - values-prod.yaml
+
+spec:
+  project: antifraud

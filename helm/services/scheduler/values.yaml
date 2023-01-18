@@ -4,9 +4,6 @@ image:
   repository: nexus.otpbank.com.ua:19443/repository/antifraud
   pullPolicy: IfNotPresent
 
-namespace: antifraud
-project: antifraud 
-
 imagePullSecrets: 
   - name: "antifraud-secret"
 

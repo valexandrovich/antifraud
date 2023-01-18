@@ -13,3 +13,6 @@ volumes:
 volumeMounts:
 - name: antifraud
   mountPath: /opt
+
+namespace: antifrauduat
+project: antifrauduat

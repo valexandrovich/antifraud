@@ -25,3 +25,6 @@ volumeMounts:
   mountPath: /source
 - name: files
   mountPath: /usr/src/wrapper/files
+
+namespace: antifraud
+project: antifraud

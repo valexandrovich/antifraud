@@ -4,3 +4,6 @@ vault:
   vaultAddress: "https://vaulttest.otpbank.com.ua:443"
   vaultMountPath: "auth/uat-cluster/"
   appPropertiesPath: "/vault/secrets/liquibase.properties"
+
+namespace: antifrauduat
+project: antifrauduat

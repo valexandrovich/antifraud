@@ -8,7 +8,6 @@ spec:
     server: "https://kubernetes.default.svc"
   namespace: default
   rootnamespace: argocd
-  project: antifraud
   repourl: "https://nexus.otpbank.com.ua:8443/repository/it-operations-helm"
   source:
     targetrevision:

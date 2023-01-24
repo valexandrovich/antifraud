@@ -4,3 +4,6 @@
     vaultAddress: "https://vaulttest.otpbank.com.ua:443"
     vaultMountPath: "auth/test-cluster/"
     appPropertiesPath: "/vault/secrets/application.properties"
+
+  namespace: antifrauddev
+  project: antifrauddev

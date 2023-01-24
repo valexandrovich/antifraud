@@ -2,4 +2,4 @@ valueFiles:
   - values-dev.yaml
 
 spec:
-  project: antifraud
+  project: antifrauddev

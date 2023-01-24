@@ -5,5 +5,5 @@
     vaultMountPath: "auth/test-cluster/"
     appPropertiesPath: "/vault/secrets/application.properties"
 
-  namespace: antifraud
-  project: antifraud
+  namespace: antifrauddev
+  project: antifrauddev

@@ -27,6 +27,7 @@ public class GenericSpecification<T> implements Specification<T> {
     @Override
     public Predicate toPredicate(@NotNull Root<T> root, @NotNull CriteriaQuery<?> query, @NotNull CriteriaBuilder builder) {
         List<Predicate> predicates = new ArrayList<>();
+        query.distinct(true);
 
         for (SearchCriteria criteria : list) {
             Path<T> path = root;

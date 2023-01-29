@@ -90,7 +90,7 @@ public class BaseElectionsEnricher implements Enricher {
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                List<EntityProcessing> entityProcessings = onePage.stream().map(p -> {
                     String[] fio = null;
                     String firstName = "";
                     String lastName = "";
@@ -125,7 +125,7 @@ public class BaseElectionsEnricher implements Enricher {
 
                 List<BaseElections> temp = new ArrayList<>();
                 List<BaseElections> finalWorkPortion = new ArrayList<>();
-                onePage.stream().parallel().forEach(p -> {
+                onePage.stream().forEach(p -> {
                     if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);

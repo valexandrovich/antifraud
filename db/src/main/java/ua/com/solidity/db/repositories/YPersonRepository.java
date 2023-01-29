@@ -38,6 +38,26 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
     @Query("SELECT DISTINCT p FROM YPerson p " +
             "left join fetch p.tags t " +
             "left join fetch t.tagType t_t " +
+            "left join fetch t.importSources t_i " +
+            "left join fetch p.altPeople alt " +
+            "left join fetch alt.importSources alt_i " +
+            "left join fetch p.importSources im " +
+            "where p.lastName = :lastName and p.firstName = :firstName and p.patName = :patName")
+    List<YPerson> findByLastNameAndFirstNameAndPatName(String lastName, String firstName, String patName);
+
+    @Query("SELECT DISTINCT p FROM YPerson p " +
+            "left join fetch p.tags t " +
+            "left join fetch t.tagType t_t " +
+            "left join fetch t.importSources t_i " +
+            "left join fetch p.altPeople alt " +
+            "left join fetch alt.importSources alt_i " +
+            "left join fetch p.importSources im " +
+            "where alt.lastName = :lastName and alt.firstName = :firstName and alt.patName = :patName")
+    List<YPerson> findByAltPeople(String lastName, String firstName, String patName);
+
+    @Query("SELECT DISTINCT p FROM YPerson p " +
+            "left join fetch p.tags t " +
+            "left join fetch t.tagType t_t " +
             "where p.id in (:ids)")
     List<YPerson> findAllInIds(List<UUID> ids);
 

@@ -17,6 +17,8 @@ import static ua.com.solidity.enricher.util.Base.GOVUA20;
 import static ua.com.solidity.enricher.util.Base.GOVUA4;
 import static ua.com.solidity.enricher.util.Base.GOVUA5;
 import static ua.com.solidity.enricher.util.Base.GOVUA7;
+import static ua.com.solidity.enricher.util.Base.GOVUA8;
+import static ua.com.solidity.enricher.util.Base.GOVUA9;
 import static ua.com.solidity.enricher.util.Base.MANUAL_COMPANY;
 import static ua.com.solidity.enricher.util.Base.MANUAL_PERSON;
 
@@ -43,6 +45,8 @@ import ua.com.solidity.enricher.service.enricher.Govua2Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua4Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua5Enricher;
 import ua.com.solidity.enricher.service.enricher.Govua7Enricher;
+import ua.com.solidity.enricher.service.enricher.Govua8Enricher;
+import ua.com.solidity.enricher.service.enricher.Govua9Enricher;
 import ua.com.solidity.enricher.service.enricher.ManualCompanyEnricher;
 import ua.com.solidity.enricher.service.enricher.ManualPersonEnricher;
 
@@ -66,6 +70,8 @@ public class EnricherProxy {
     private final Govua4Enricher govua4Enricher;
     private final Govua5Enricher govua5Enricher;
     private final Govua7Enricher govua7Enricher;
+    private final Govua8Enricher govua8Enricher;
+    private final Govua9Enricher govua9Enricher;
     private final Govua11Enricher govua11Enricher;
     private final Govua17Enricher govua17Enricher;
     private final Govua18Enricher govua18Enricher;
@@ -90,6 +96,8 @@ public class EnricherProxy {
                         Map.entry(GOVUA4, () -> govua4Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA5, () -> govua5Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA7, () -> govua7Enricher.enrich(enricherRequest.getPortion())),
+                        Map.entry(GOVUA8, () -> govua8Enricher.enrich(enricherRequest.getPortion())),
+                        Map.entry(GOVUA9, () -> govua9Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA11, () -> govua11Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA20, () -> govua20Enricher.enrich(enricherRequest.getPortion())),
                         Map.entry(GOVUA17, () -> govua17Enricher.enrich(enricherRequest.getPortion())),

@@ -60,6 +60,7 @@ import ua.com.solidity.util.model.response.DispatcherResponse;
 @Service
 @RequiredArgsConstructor
 public class Govua4Enricher implements Enricher {
+    private static final String SOURCE_NAME = "govua4";
     private final Extender extender;
     private final FileFormatUtil fileFormatUtil;
     private final MonitoringNotificationService emnService;
@@ -102,12 +103,12 @@ public class Govua4Enricher implements Enricher {
             DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
                     Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, GOVUA4, portion));
 
-            ImportSource source = isr.findImportSourceByName(GOVUA4);
+            ImportSource source = isr.findImportSourceByName(SOURCE_NAME);
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(c -> {
+                List<EntityProcessing> entityProcessings = onePage.stream().map(c -> {
                     EntityProcessing entityProcessing = new EntityProcessing();
                     entityProcessing.setUuid(c.getId());
                     if (UtilString.matches(c.getEdrpou(), CONTAINS_NUMERAL_REGEX)) {
@@ -150,7 +151,7 @@ public class Govua4Enricher implements Enricher {
 
                 List<Govua4> finalWorkPortion = new ArrayList<>();
                 List<Govua4> temp = new ArrayList<>();
-                onePage.stream().parallel().forEach(p -> {
+                onePage.stream().forEach(p -> {
                     if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);

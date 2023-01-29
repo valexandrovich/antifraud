@@ -111,7 +111,7 @@ public class BaseDirectorEnricher implements Enricher {
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                List<EntityProcessing> entityProcessings = onePage.stream().map(p -> {
                     EntityProcessing entityProcessing = new EntityProcessing();
                     entityProcessing.setUuid(p.getId());
                     if (StringUtils.isNotBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
@@ -144,7 +144,7 @@ public class BaseDirectorEnricher implements Enricher {
 
                 List<BaseDirector> temp = new ArrayList<>();
                 List<BaseDirector> finalWorkPortion = new ArrayList<>();
-                onePage.stream().parallel().forEach(p -> {
+                onePage.stream().forEach(p -> {
                     if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);

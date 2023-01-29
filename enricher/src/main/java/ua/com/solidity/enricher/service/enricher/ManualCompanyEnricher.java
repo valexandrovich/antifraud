@@ -67,6 +67,7 @@ import ua.com.solidity.util.model.response.DispatcherResponse;
 @Service
 @RequiredArgsConstructor
 public class ManualCompanyEnricher implements Enricher {
+    private static final String SOURCE_NAME = "manual";
     private final Extender extender;
     private final FileFormatUtil fileFormatUtil;
     private final YPersonRepository ypr;
@@ -113,7 +114,7 @@ public class ManualCompanyEnricher implements Enricher {
             DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
                     Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, MANUAL_COMPANY, revision));
 
-            ImportSource source = isr.findImportSourceByName(MANUAL_COMPANY);
+            ImportSource source = isr.findImportSourceByName(SOURCE_NAME);
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
@@ -124,7 +125,7 @@ public class ManualCompanyEnricher implements Enricher {
                     uuidMap.put(p.getId(), uuid);
                 });
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                List<EntityProcessing> entityProcessings = onePage.stream().map(p -> {
                     EntityProcessing entityProcessing = new EntityProcessing();
                     entityProcessing.setUuid(uuidMap.get(p.getId()));
                     if (!StringUtils.isBlank(p.getInn()) && p.getInn().matches(CONTAINS_NUMERAL_REGEX)) {

@@ -76,7 +76,7 @@ import ua.com.solidity.util.model.response.DispatcherResponse;
 @Service
 @RequiredArgsConstructor
 public class ManualPersonEnricher implements Enricher {
-
+    private static final String SOURCE_NAME = "manual";
     private final Extender extender;
     private final FileFormatUtil fileFormatUtil;
     private final YPersonRepository ypr;
@@ -125,7 +125,7 @@ public class ManualPersonEnricher implements Enricher {
             DefaultErrorLogger logger = new DefaultErrorLogger(fileName, fileFormatUtil.getDefaultMailTo(), fileFormatUtil.getDefaultLogLimit(),
                     Utils.messageFormat(ENRICHER_ERROR_REPORT_MESSAGE, MANUAL_PERSON, revision));
 
-            ImportSource source = isr.findImportSourceByName("manual");
+            ImportSource source = isr.findImportSourceByName(SOURCE_NAME);
 
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
@@ -136,7 +136,7 @@ public class ManualPersonEnricher implements Enricher {
                     uuidMap.put(p.getId(), uuid);
                 });
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                List<EntityProcessing> entityProcessings = onePage.stream().map(p -> {
                     EntityProcessing entityProcessing = new EntityProcessing();
                     entityProcessing.setUuid(uuidMap.get(p.getId()));
                     if (!StringUtils.isBlank(p.getOkpo()) && p.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
@@ -190,7 +190,7 @@ public class ManualPersonEnricher implements Enricher {
                 List<ManualPerson> temp = new ArrayList<>();
                 FileDescription newFileDescription = new FileDescription();
                 newFileDescription.setUuid(newPortion);
-                onePage.stream().parallel().forEach(p -> {
+                onePage.stream().forEach(p -> {
                     if (respId.contains(uuidMap.get(p.getId()))) finalWorkPortion.add(p);
                     else {
                         p.setUuid(newFileDescription);

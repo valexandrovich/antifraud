@@ -2,6 +2,8 @@ package ua.com.solidity.db.repositories;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import ua.com.solidity.db.entities.YPersonPackageMonitoringNotification;
@@ -13,5 +15,5 @@ public interface YPersonPackageMonitoringNotificationRepository extends JpaRepos
 
 	List<YPersonPackageMonitoringNotification> findBySent(Boolean sent);
 
-	List<YPersonPackageMonitoringNotification> findByEmailAndSent(String email, Boolean sent);
+	Stream<YPersonPackageMonitoringNotification> findByEmailAndSent(String email, Boolean sent);
 }

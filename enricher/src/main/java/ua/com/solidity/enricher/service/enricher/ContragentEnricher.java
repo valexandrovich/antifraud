@@ -130,7 +130,7 @@ public class ContragentEnricher implements Enricher {
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel()
+                List<EntityProcessing> entityProcessings = onePage.stream()
                         .map(p -> {
                             String firstName = UtilString.toUpperCase(p.getClientName());
                             String patName = UtilString.toUpperCase(p.getClientPatronymicName());
@@ -186,7 +186,7 @@ public class ContragentEnricher implements Enricher {
 
                 List<Contragent> temp = new ArrayList<>();
                 List<Contragent> finalWorkPortion = new ArrayList<>();
-                onePage.stream().parallel().forEach(p -> {
+                onePage.stream().forEach(p -> {
                     if (respId.contains(p.getUuid())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);

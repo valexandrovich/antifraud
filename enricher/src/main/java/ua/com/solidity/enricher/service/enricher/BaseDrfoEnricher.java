@@ -98,7 +98,7 @@ public class BaseDrfoEnricher implements Enricher {
             while (!onePage.isEmpty()) {
                 pageRequest = pageRequest.next();
 
-                List<EntityProcessing> entityProcessings = onePage.stream().parallel().map(p -> {
+                List<EntityProcessing> entityProcessings = onePage.stream().map(p -> {
                     EntityProcessing personProcessing = new EntityProcessing();
                     personProcessing.setUuid(p.getId());
                     if (p.getInn() != null)
@@ -127,7 +127,7 @@ public class BaseDrfoEnricher implements Enricher {
 
                 List<BaseDrfo> temp = new ArrayList<>();
                 List<BaseDrfo> finalWorkPortion = new ArrayList<>();
-                onePage.stream().parallel().forEach(p -> {
+                onePage.stream().forEach(p -> {
                     if (respId.contains(p.getId())) finalWorkPortion.add(p);
                     else {
                         p.setPortionId(newPortion);

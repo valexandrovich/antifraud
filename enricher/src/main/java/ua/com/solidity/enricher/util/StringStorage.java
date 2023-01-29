@@ -24,5 +24,7 @@ public final class StringStorage {
     public static final String TAG_TYPE_RC = "RC";
     public static final String TAG_TYPE_NAL = "NAL";
     public static final String TAG_TYPE_NA = "NA";
+    public static final String TAG_TYPE_NBW = "NBW";
+    public static final String TAG_TYPE_NBL = "NBL";
     public static final String ENRICHER_INFO_MESSAGE = "To be processed: {}";
 }

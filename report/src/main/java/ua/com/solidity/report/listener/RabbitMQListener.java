@@ -303,7 +303,7 @@ public class RabbitMQListener {
                             writer.write(TD_CENTER_OPEN_HTML + rowspan + ">");
                             if (!person.getInns().isEmpty()) {
                                 YINN yinn = person.getInns().iterator().next();
-                                writer.write(Math.toIntExact(yinn.getInn()));
+                                writer.write(String.valueOf(yinn.getInn()));
                             }
                             writer.write(TD_CLOSE_HTML);
 

@@ -217,6 +217,8 @@ public class RabbitMQListener {
                         doSend(sendEmailRequest);
                     }
                 } catch (IOException e) {
+                    System.out.println("!!!!Catch on physicalPackageMonitoringReport");
+                    System.out.println(e.getMessage().toString());
                     log.error("[physicalPackageMonitoringReport-a]", e);
                 }
             });

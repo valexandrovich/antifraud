@@ -106,6 +106,7 @@ public class RabbitMQListener {
     @Transactional
     public void processMyQueue() {
         log.info("Received task from {}", reportQueue);
+        System.out.println("Received task from {" + reportQueue.toString() + "}");
 
         notifySubscribers();
         log.info("Subscribers notified");
@@ -166,7 +167,10 @@ public class RabbitMQListener {
 
     @Transactional
     public void physicalPackageMonitoringReport() {
+        System.out.println("physicalPackageMonitoringReport()");
+        
         log.debug("[physicalPackageMonitoringReport] Getting matchings");
+        
         try (Stream<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingStream = physicalTagMatchingRepository.streamAllBy()) {
 
             log.debug("[physicalPackageMonitoringReport] Iterating through matchings");
@@ -221,18 +225,22 @@ public class RabbitMQListener {
 
     @Transactional
     public void doSend(SendEmailRequest sendEmailRequest) {
+         System.out.println("doSend()");
         String jo;
         try {
+            System.out.println("trying objectMapper()");
             jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
             log.info(SENDING_LOG, notificationQueue);
             template.convertAndSend(notificationQueue, jo);
         } catch (JsonProcessingException e) {
+            System.out.println("catch objectMapper()");
             log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
         }
     }
 
     @Transactional
     public boolean processPhysicalReport(FileWriter writer, Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap) {
+        System.out.println("processPhysicalReport()");
         boolean built = false;
         try {
             writer.write(FILE_HEADER);

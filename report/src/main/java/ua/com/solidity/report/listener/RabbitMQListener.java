@@ -223,7 +223,7 @@ public class RabbitMQListener {
                 }
             });
         } catch (Exception e){
-            log.info("Catch" + e)
+            log.info("Catch" + e);
             System.out.println("!!! Catch " + e.getMessage().toString());
         }
     }

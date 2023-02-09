@@ -87,8 +87,7 @@ public class RabbitMQListener {
     private static final String JURIDICAL_MESSAGE_SUBJ = "Сповіщення пакетного моніторингу юридичних осіб про зміни тегів на основі умови моніторингу тегів";
     private static final String FILE_HEADER = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">" +
             "<html>" +
-            "<head>" +
-            "</head>" +
+            "<head><meta charset=\"utf-8\"></head>" +
             "<body>";
     private static final String SENDING_LOG = "Sending task to {}";
     private static final String COULD_NOT_CONVERT_LOG = "Couldn't convert json: {}";
@@ -106,7 +105,6 @@ public class RabbitMQListener {
     @Transactional
     public void processMyQueue() {
         log.info("Received task from {}", reportQueue);
-        System.out.println("Received task from {" + reportQueue.toString() + "}");
 
         notifySubscribers();
         log.info("Subscribers notified");
@@ -150,7 +148,7 @@ public class RabbitMQListener {
                     log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
                 } catch (JsonProcessingException e) {
-                    log.info(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                 }
 
                 ypersonMonitoringNotificationList
@@ -167,22 +165,19 @@ public class RabbitMQListener {
 
     @Transactional
     public void physicalPackageMonitoringReport() {
-        System.out.println("physicalPackageMonitoringReport()");
-        
-        log.info("[physicalPackageMonitoringReport] Getting matchings");
-        
+        log.debug("[physicalPackageMonitoringReport] Getting matchings");
         try (Stream<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingStream = physicalTagMatchingRepository.streamAllBy()) {
 
-            log.info("[physicalPackageMonitoringReport] Iterating through matchings");
+            log.debug("[physicalPackageMonitoringReport] Iterating through matchings");
             notificationPhysicalTagMatchingStream.forEach(tagMatching -> {
-                log.info("[physicalPackageMonitoringReport] Get list of people to be notified");
+                log.debug("[physicalPackageMonitoringReport] Get list of people to be notified");
                 Stream<YPersonPackageMonitoringNotification> personPackageMonitoringNotifications =
                         personPackageMonitoringNotificationRepository.findByEmailAndSent(tagMatching.getEmail(), false);
 
-                log.info("[physicalPackageMonitoringReport] Create condition map");
+                log.debug("[physicalPackageMonitoringReport] Create condition map");
                 Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap = new LinkedHashMap<>();
 
-                log.info("[physicalPackageMonitoringReport] Mapping conditions to people to be notified");
+                log.debug("[physicalPackageMonitoringReport] Mapping conditions to people to be notified");
                 personPackageMonitoringNotifications.forEach(notification -> {
                     YPerson yPerson = personRepository.findWithInnsAndTagsById(notification.getYpersonId())
                             .orElse(null);
@@ -194,12 +189,12 @@ public class RabbitMQListener {
                     personPackageMonitoringNotificationRepository.save(notification);
                 });
 
-                log.info("[physicalPackageMonitoringReport] Preparing report file");
+                log.debug("[physicalPackageMonitoringReport] Preparing report file");
                 String reportPath = randomPath() + ".html";
-                log.info("[physicalPackageMonitoringReport] Report file path to be used: {}", reportPath);
+                log.debug("[physicalPackageMonitoringReport] Report file path to be used: {}", reportPath);
                 File file = new File(mountPoint, reportPath);
                 if (file.getParentFile().mkdirs()) {
-                    log.info("[physicalPackageMonitoringReport] Folder(s) created");
+                    log.debug("[physicalPackageMonitoringReport] Folder(s) created");
                 }
                 boolean built;
                 try (FileWriter writer = new FileWriter(file)) {
@@ -217,35 +212,26 @@ public class RabbitMQListener {
                         doSend(sendEmailRequest);
                     }
                 } catch (IOException e) {
-                    System.out.println("!!!!Catch on physicalPackageMonitoringReport");
-                    System.out.println(e.getMessage().toString());
-                    log.info("[physicalPackageMonitoringReport-a]", e);
+                    log.error("[physicalPackageMonitoringReport-a]", e);
                 }
             });
-        } catch (Exception e){
-            log.info("Catch" + e);
-            System.out.println("!!! Catch " + e.getMessage().toString());
         }
     }
 
     @Transactional
     public void doSend(SendEmailRequest sendEmailRequest) {
-         System.out.println("doSend()");
         String jo;
         try {
-            System.out.println("trying objectMapper()");
             jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
             log.info(SENDING_LOG, notificationQueue);
             template.convertAndSend(notificationQueue, jo);
         } catch (JsonProcessingException e) {
-            System.out.println("catch objectMapper()");
-            log.info(COULD_NOT_CONVERT_LOG, e.getMessage());
+            log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
         }
     }
 
     @Transactional
     public boolean processPhysicalReport(FileWriter writer, Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap) {
-        System.out.println("processPhysicalReport()");
         boolean built = false;
         try {
             writer.write(FILE_HEADER);
@@ -349,7 +335,7 @@ public class RabbitMQListener {
                                 writer.write(TR_CLOSE_HTML);
                             }
                         } catch (IOException e) {
-                            log.info("[physicalPackageMonitoringReport-c]", e);
+                            log.error("[physicalPackageMonitoringReport-c]", e);
                         }
                     });
 
@@ -360,7 +346,7 @@ public class RabbitMQListener {
             writer.write(BODY_CLOSE_HTML);
             writer.write(HTML_CLOSE_HTML);
         } catch (IOException e) {
-            log.info("[physicalPackageMonitoringReport-b]", e);
+            log.error("[physicalPackageMonitoringReport-b]", e);
         }
         return built;
     }
@@ -502,7 +488,7 @@ public class RabbitMQListener {
                     log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
                 } catch (JsonProcessingException e) {
-                    log.info(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                 }
 
                 companyPackageMonitoringNotifications

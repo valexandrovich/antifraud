@@ -18,7 +18,7 @@ public class Receiver extends RabbitMQReceiver {
 
     @Override
     public void handleMessage(String queue, String message) {
-        log.info("Receive from " + queue + ": {}", message);
+        log.info("Received from " + queue + ": {}", message);
         SendEmailRequest sendEmailRequest = Utils.jsonToValue(message, SendEmailRequest.class);
         if (sendEmailRequest == null) return;
 

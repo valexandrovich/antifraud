@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 @Slf4j
@@ -23,7 +25,7 @@ import java.util.Objects;
 public class EmailServiceImpl implements EmailService {
 
     @Value("${noreply.address}")
-    private String NOREPLY_ADDRESS;
+    private String noReplyAddress;
 
     private final JavaMailSender emailSender;
 
@@ -36,7 +38,7 @@ public class EmailServiceImpl implements EmailService {
             retriesCount++;
             try {
                 SimpleMailMessage message = new SimpleMailMessage();
-                message.setFrom(NOREPLY_ADDRESS);
+                message.setFrom(noReplyAddress);
                 message.setTo(to);
                 message.setSubject(subject);
                 message.setText(text);
@@ -75,13 +77,15 @@ public class EmailServiceImpl implements EmailService {
                 // pass 'true' to the constructor to create a multipart message
                 MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-                helper.setFrom(NOREPLY_ADDRESS);
+                helper.setFrom(noReplyAddress);
                 helper.setTo(to);
                 helper.setSubject(subject);
                 helper.setText(text);
 
                 FileSystemResource file = new FileSystemResource(new File(pathToAttachment));
-                helper.addAttachment("Attachment", file);
+
+                Path path = Paths.get(pathToAttachment);
+                helper.addAttachment(path.getFileName().toString(), file);
 
                 emailSender.send(message);
                 retries = 0;

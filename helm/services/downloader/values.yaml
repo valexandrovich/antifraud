@@ -36,6 +36,10 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+  runAsGroup: 0
+  runAsUser: 0
+  privileged: true
+
 container:
   ports:
     - name: http

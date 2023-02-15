@@ -16,3 +16,8 @@ volumeMounts:
 
 namespace: antifrauduat
 project: antifrauduat
+
+securityContext:
+  runAsGroup: 0
+  runAsUser: 0
+  privileged: true

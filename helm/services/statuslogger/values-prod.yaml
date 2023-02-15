@@ -5,5 +5,5 @@
     vaultMountPath: "auth/kubernetes/"
     appPropertiesPath: "/vault/secrets/application.properties"
 
-  namespace: antifraudprod
-  project: antifraudprod
+  namespace: antifraud
+  project: antifraud

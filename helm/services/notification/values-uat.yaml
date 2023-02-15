@@ -5,5 +5,15 @@
     vaultMountPath: "auth/uat-cluster/"
     appPropertiesPath: "/vault/secrets/application.properties"
 
+  volumes:
+  - name: antifraud
+    nfs:
+      path: /zpool8t/antifraud/uat/report
+      server: 10.244.14.30
+  
+  volumeMounts:
+  - name: antifraud
+    mountPath: /report/folder
+
   namespace: antifrauduat
   project: antifrauduat

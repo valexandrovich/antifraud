@@ -15,5 +15,5 @@
       cpu: 200m
       memory: 512Mi
 
-  namespace: antifraudprod
-  project: antifraudprod
+  namespace: antifraud
+  project: antifraud

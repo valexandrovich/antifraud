@@ -5,5 +5,5 @@ vault:
   vaultMountPath: "auth/kubernetes/"
   appPropertiesPath: "/vault/secrets/liquibase.properties"
 
-namespace: antifraudprod
-project: antifraudprod
+namespace: antifraud
+project: antifraud

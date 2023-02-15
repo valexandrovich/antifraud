@@ -8,12 +8,12 @@
   volumes:
   - name: antifraud
     nfs:
-      path: /zpool8t/antifraud/uat/report
+      path: /zpool8t/antifraud/uat/report/folder
       server: 10.244.14.30
   
   volumeMounts:
   - name: antifraud
-    mountPath: /report/folder
+    mountPath: /opt
 
   namespace: antifrauduat
   project: antifrauduat

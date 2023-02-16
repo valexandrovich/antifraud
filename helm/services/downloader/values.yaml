@@ -26,11 +26,11 @@ podAnnotations:
   vault.hashicorp.com/tls-skip-verify: "true"
   vault.hashicorp.com/agent-init-first: "true"
 
-podSecurityContext: 
+podSecurityContext: {} 
   # fsGroup: 2000
-  runAsGroup: 0
-  runAsUser: 0
-  privileged: true
+  #runAsGroup: 0
+  #runAsUser: 0
+  #privileged: true
 
 securityContext:
   # capabilities:
@@ -39,9 +39,9 @@ securityContext:
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
-  runAsGroup: 0
-  runAsUser: 0
-  privileged: true
+  #runAsGroup: 0
+  #runAsUser: 0
+  #privileged: true
 
 container:
   ports:

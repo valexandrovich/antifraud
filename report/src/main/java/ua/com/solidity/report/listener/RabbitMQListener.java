@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Component;
+import ua.com.solidity.db.entities.ImportSource;
 import ua.com.solidity.db.entities.NotificationJuridicalTagCondition;
 import ua.com.solidity.db.entities.NotificationJuridicalTagMatching;
 import ua.com.solidity.db.entities.NotificationPhysicalTagCondition;
@@ -48,7 +50,9 @@ import ua.com.solidity.db.repositories.YCompanyRepository;
 import ua.com.solidity.db.repositories.YPersonMonitoringNotificationRepository;
 import ua.com.solidity.db.repositories.YPersonPackageMonitoringNotificationRepository;
 import ua.com.solidity.db.repositories.YPersonRepository;
+import ua.com.solidity.report.model.DocumentData;
 import ua.com.solidity.report.model.SendEmailRequest;
+import ua.com.solidity.report.service.DocumentService;
 
 import javax.transaction.Transactional;
 
@@ -83,6 +87,8 @@ public class RabbitMQListener {
     private final YPersonRepository personRepository;
     private final YCompanyRepository companyRepository;
 
+    private final DocumentService documentService;
+
     private static final String PHYSICAL_MESSAGE_SUBJ = "Сповіщення пакетного моніторингу фізичних осіб про зміни тегів на основі умови моніторингу тегів";
     private static final String JURIDICAL_MESSAGE_SUBJ = "Сповіщення пакетного моніторингу юридичних осіб про зміни тегів на основі умови моніторингу тегів";
     private static final String FILE_HEADER = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">" +
@@ -109,10 +115,12 @@ public class RabbitMQListener {
         notifySubscribers();
         log.info("Subscribers notified");
 
-        physicalPackageMonitoringReport();
+//        physicalPackageMonitoringReport();
+        physicalPackageMonitoringReportExcel();
         log.info("Package monitoring finished: Physical");
 
-        juridicalPackageMonitoringReport();
+//        juridicalPackageMonitoringReport();
+        juridicalPackageMonitoringReportExcel();
         log.info("Package monitoring finished: Juridical");
     }
 
@@ -161,6 +169,134 @@ public class RabbitMQListener {
                     companyMonitoringNotificationRepository.saveAll(ycompanyMonitoringNotificationList);
             }
         });
+    }
+
+    @Transactional
+    public void physicalPackageMonitoringReportExcel() {
+        List<NotificationPhysicalTagMatching> tagMatchingList = physicalTagMatchingRepository.findAll();
+        for (NotificationPhysicalTagMatching tagMatching : tagMatchingList) {
+
+            List<DocumentData> documentDataList = new ArrayList<>();
+            try (Stream<YPersonPackageMonitoringNotification> notificationListToSent =
+                         personPackageMonitoringNotificationRepository.findByEmailAndSent(tagMatching.getEmail(), false)) {
+
+                notificationListToSent.forEach(notification -> {
+                    YPerson person = personRepository.findWithInnsAndTagsById(notification.getYpersonId())
+                            .orElseThrow(null);
+
+                    if (person != null) {
+                        Set<TagType> notificationTagTypes = notification.getCondition().getTagTypes();
+                        Set<YTag> requiredTags = person.getTags().stream()
+                                .filter(yTag -> notificationTagTypes.contains(yTag.getTagType()))
+                                .collect(Collectors.toSet());
+
+                        DocumentData documentData = buildDocumentDataForPhysical(person, requiredTags);
+
+                        documentDataList.add(documentData);
+                    }
+                    notification.setSent(true);
+                });
+            }
+//            if (!documentDataList.isEmpty()) //TODO що робити у випадку пустих даних
+            String filePath = documentService.createDocument(documentDataList);
+
+            SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
+                    .to(tagMatching.getEmail())
+                    .subject(PHYSICAL_MESSAGE_SUBJ)
+                    .body("See attached")
+                    .filePath(filePath)
+                    .retries(2)
+                    .build();
+
+            doSend(sendEmailRequest);
+        }
+    }
+
+    private DocumentData buildDocumentDataForPhysical(YPerson person, Set<YTag> requiredTags) {
+        return DocumentData.builder()
+                .name(person.getLastName() + " " + person.getFirstName() + " " + person.getPatName())
+                .uniqueIdentifier(person.getInns().stream()
+                        .map(yinn -> yinn.getInn().toString())
+                        .collect(Collectors.joining(", ")))
+                .link("https://antifraud.otpbank.com.ua/#/yperson/" + person.getId()) //TODO extract to prop file
+                .tagInformationList(requiredTags.stream()
+                        .map(yTag -> DocumentData.TagInformation.builder()
+                                .tagTypeCode(yTag.getTagType().getCode())
+                                .eventDate(yTag.getEventDate().toString())
+                                .startDate(yTag.getAsOf().toString())
+                                .endDate(yTag.getUntil().toString())
+                                .numberValue(yTag.getNumberValue())
+                                .textValue(yTag.getTextValue())
+                                .description(yTag.getDescription())
+                                .source(yTag.getImportSources().stream()
+                                        .map(ImportSource::getName)
+                                        .collect(Collectors.joining(", ")))
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+    }
+
+    @Transactional
+    public void juridicalPackageMonitoringReportExcel() {
+        List<NotificationJuridicalTagMatching> tagMatchingList = juridicalTagMatchingRepository.findAll();
+        for (NotificationJuridicalTagMatching tagMatching : tagMatchingList) {
+
+            List<DocumentData> documentDataList = new ArrayList<>();
+            try (Stream<YCompanyPackageMonitoringNotification> notificationListToSent =
+                         companyPackageMonitoringNotificationRepository.findByEmailAndSent(tagMatching.getEmail(), false)) {
+
+                notificationListToSent.forEach(notification -> {
+                    YCompany company = companyRepository.findWithTagsById(notification.getYcompanyId())
+                            .orElseThrow(null);
+
+                    if (company != null) {
+                        Set<TagType> notificationTagTypes = notification.getCondition().getTagTypes();
+                        Set<YCTag> requiredTags = company.getTags().stream()
+                                .filter(yTag -> notificationTagTypes.contains(yTag.getTagType()))
+                                .collect(Collectors.toSet());
+
+                        DocumentData documentData = buildDocumentDataForJuridical(company, requiredTags);
+
+                        documentDataList.add(documentData);
+                    }
+                    notification.setSent(true); //TODO на якому етапі проставляти sent
+                });
+            }
+//            if (!documentDataList.isEmpty()) //TODO що робити у випадку пустих даних
+            String filePath = documentService.createDocument(documentDataList);
+
+            SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
+                    .to(tagMatching.getEmail())
+                    .subject(PHYSICAL_MESSAGE_SUBJ)
+                    .body("See attached")
+                    .filePath(filePath)
+                    .retries(2)
+                    .build();
+
+            doSend(sendEmailRequest);
+        }
+    }
+
+    private DocumentData buildDocumentDataForJuridical(YCompany company, Set<YCTag> requiredTags) {
+        return DocumentData.builder()
+                .name(company.getName())
+                .uniqueIdentifier(String.valueOf(company.getEdrpou()))
+                .link("https://antifraud.otpbank.com.ua/#/ycompany/" + company.getId()) //TODO extract to prop file
+                .tagInformationList(requiredTags.stream()
+                        .map(yTag -> DocumentData.TagInformation.builder()
+                                .tagTypeCode(yTag.getTagType().getCode())
+                                .eventDate(yTag.getEventDate().toString())
+                                .startDate(yTag.getAsOf().toString())
+                                .endDate(yTag.getUntil().toString())
+                                .numberValue(yTag.getNumberValue())
+                                .textValue(yTag.getTextValue())
+                                .description(yTag.getDescription())
+                                .source(yTag.getImportSources().stream()
+                                        .map(ImportSource::getName)
+                                        .collect(Collectors.joining(", ")))
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
     }
 
     @Transactional
@@ -356,7 +492,7 @@ public class RabbitMQListener {
 
         matchings.forEach(matching -> {
 
-            List<YCompanyPackageMonitoringNotification> companyPackageMonitoringNotifications =
+            Stream<YCompanyPackageMonitoringNotification> companyPackageMonitoringNotifications =
                     companyPackageMonitoringNotificationRepository.findByEmailAndSent(matching.getEmail(), false);
 
             Map<NotificationJuridicalTagCondition, List<YCompany>> conditionMap = new LinkedHashMap<>();
@@ -491,10 +627,10 @@ public class RabbitMQListener {
                     log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                 }
 
-                companyPackageMonitoringNotifications
-                        .forEach(personPackageMonitoringNotification -> personPackageMonitoringNotification.setSent(true));
-                if (!companyPackageMonitoringNotifications.isEmpty())
-                    companyPackageMonitoringNotificationRepository.saveAll(companyPackageMonitoringNotifications);
+//                companyPackageMonitoringNotifications
+//                        .forEach(personPackageMonitoringNotification -> personPackageMonitoringNotification.setSent(true));
+//                if (!companyPackageMonitoringNotifications.isEmpty())
+//                    companyPackageMonitoringNotificationRepository.saveAll(companyPackageMonitoringNotifications);
             }
         });
     }

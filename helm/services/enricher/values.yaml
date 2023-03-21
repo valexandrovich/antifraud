@@ -1,4 +1,4 @@
-replicaCount: 4
+replicaCount: 1
 
 image:
   repository: nexus.otpbank.com.ua:19443/repository/antifraud

@@ -461,8 +461,7 @@ public class Utils {
         byte[] buf = new byte[8192];
         int length;
         try {
-            // Change according lo AS
-            while ((length = source.read(buf)) >= 0) {
+            while ((length = source.read(buf)) > 0) {
                 target.write(buf, 0, length);
                 if (status != null) {
                     status.addProcessedVolume(length);

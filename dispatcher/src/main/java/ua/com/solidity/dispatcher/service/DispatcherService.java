@@ -18,7 +18,7 @@ import ua.com.solidity.util.model.response.DispatcherResponse;
 public class DispatcherService {
 
     public DispatcherResponse dispatch(List<EntityProcessing> people, String id) {
-        LocalDateTime timeLimit = LocalDateTime.now().minusMinutes(3);
+        LocalDateTime timeLimit = LocalDateTime.now().minusMinutes(30);
         log.info("Started processing id: {}, size: {}, current cache size: {}", id, people.size(), EntityStorage.entitySet.size());
         Set<EntityProcessing> resp = new HashSet<>();
         List<UUID> temp = new ArrayList<>();

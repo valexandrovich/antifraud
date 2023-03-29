@@ -10,17 +10,17 @@ import org.springframework.stereotype.Component;
 import ua.com.solidity.db.entities.User;
 import ua.com.solidity.db.entities.YPerson;
 import ua.com.solidity.db.entities.YPersonRelation;
+import ua.com.solidity.db.entities.YTag;
 import ua.com.solidity.db.repositories.YPersonRepository;
 import ua.com.solidity.web.dto.addition.RelationGroup;
-import ua.com.solidity.web.dto.olap.RelationGroupDto;
-import ua.com.solidity.web.dto.olap.YPersonCompareDto;
-import ua.com.solidity.web.dto.olap.YPersonDto;
-import ua.com.solidity.web.dto.olap.YPersonSearchDto;
+import ua.com.solidity.web.dto.olap.*;
 
 @Component
 @AllArgsConstructor
 public class YPersonConverter {
     private final YPersonRepository ypr;
+
+    private final YTagConverter yTagConverter;
 
     public YPerson toEntity(YPersonDto dto) {
         YPerson entity = new YPerson();
@@ -33,7 +33,11 @@ public class YPersonConverter {
         entity.setAddresses(dto.getAddresses());
         entity.setAltPeople(dto.getAltPeople());
         entity.setPassports(dto.getPassports());
-        entity.setTags(dto.getTags());
+        Set<YTag> tags = new HashSet<>();
+        dto.getTags().forEach(tag ->{
+            tags.add(yTagConverter.toEntity(tag));
+        });
+        entity.setTags(tags);
         entity.setEmails(dto.getEmails());
         entity.setPhones(dto.getPhones());
         entity.setImportSources(dto.getSources());
@@ -56,7 +60,11 @@ public class YPersonConverter {
         dto.setAddresses(entity.getAddresses());
         dto.setAltPeople(entity.getAltPeople());
         dto.setPassports(entity.getPassports());
-        dto.setTags(entity.getTags());
+        Set<YTagDto> tags = new HashSet<>();
+        entity.getTags().forEach(tag -> {
+            tags.add(yTagConverter.toDto(tag));
+        });
+        dto.setTags(tags);
         dto.setEmails(entity.getEmails());
         dto.setPhones(entity.getPhones());
         dto.setSources(entity.getImportSources());

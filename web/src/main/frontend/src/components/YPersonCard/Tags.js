@@ -185,26 +185,34 @@ const Tags = ({ data, onChange }) => {
                 );
               })}
           </div>
-          <p className={"source-container ml-10"}>
-            <b className="mr-10">Опис:</b>
-            {description}
-          </p>
+
+          {(userRole === "ADMIN" || userRole === "ADVANCED") && (
+            <p className={"source-container ml-10"}>
+              <b className="mr-10">Опис:</b>
+              {description}
+            </p>
+          )}
+
           <p className={"ml-10"}>
             <b className="mr-10">Дата події:</b>
             {new DateObject(eventDate).format("DD.MM.YYYY")}
           </p>
-          <div className="source-container d-flex ml-10 pb-16">
-            <span className="mr-10">
-              <b className="mr-10">Текстове значення:</b>
-              {textValue}
-            </span>
-          </div>
-          <div className="source-container d-flex ml-10 pb-16">
-            <span className="mr-10">
-              <b className="mr-10">Числове значення:</b>
-              {numberValue}
-            </span>
-          </div>
+          {(userRole === "ADMIN" || userRole === "ADVANCED") && (
+            <div className="source-container d-flex ml-10 pb-16">
+              <span className="mr-10">
+                <b className="mr-10">Текстове значення:</b>
+                {textValue}
+              </span>
+            </div>
+          )}
+          {(userRole === "ADMIN" || userRole === "ADVANCED") && (
+            <div className="source-container d-flex ml-10 pb-16">
+              <span className="mr-10">
+                <b className="mr-10">Числове значення:</b>
+                {numberValue}
+              </span>
+            </div>
+          )}
           <div className="d-flex ml-10">
             <span className="mr-10">
               <b className="mr-10">З:</b>
@@ -217,7 +225,10 @@ const Tags = ({ data, onChange }) => {
                 : new DateObject(until).format("DD.MM.YYYY")}
             </span>
           </div>
-          <small className={"source-container ml-10"}>{source}</small>
+
+          {(userRole === "ADMIN" ||  userRole === "ADVANCED" )&& (
+            <small className={"source-container ml-10"}>{source}</small>
+          )}
         </div>
       ) : (
         <div>
@@ -267,9 +278,8 @@ const Tags = ({ data, onChange }) => {
                       <select
                         name="tag"
                         id={id}
-                        className={`form-select ${
-                          touched.tag && errors.tag ? "is-invalid" : ""
-                        }`}
+                        className={`form-select ${touched.tag && errors.tag ? "is-invalid" : ""
+                          }`}
                         value={values.tag}
                         onChange={(e) => {
                           onChange(e);

@@ -27,7 +27,7 @@ public class YPersonDto {
 	private Set<YAddress> addresses;
 	private Set<YAltPerson> altPeople;
 	private Set<YPassport> passports;
-	private Set<YTag> tags;
+	private Set<YTagDto> tags;
 	private Set<YEmail> emails;
 	private Set<YPhone> phones;
 	private Set<ImportSource> sources;

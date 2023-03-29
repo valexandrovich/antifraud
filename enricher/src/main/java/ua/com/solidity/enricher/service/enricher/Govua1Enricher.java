@@ -167,7 +167,6 @@ public class Govua1Enricher implements Enricher {
 
                 if (!codes.isEmpty()) {
                     inns.addAll(yinnRepository.findInns(codes));
-                    log.info("codes: {}", codes);
                     savedPersonSet.addAll(ypr.findPeopleWithInns(codes));
                     savedCompanies.addAll(companyRepository.findByEdrpous(codes));
                 }

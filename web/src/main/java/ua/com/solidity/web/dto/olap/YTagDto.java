@@ -15,6 +15,10 @@ public class YTagDto {
     private TagType tagType;
     private LocalDate asOf;
     private LocalDate until;
+    private LocalDate eventDate;
+    private String numberValue;
+    private String textValue;
+    private String description;
     private String source;
     private Set<ImportSource> importSources =  new HashSet<>();
 }

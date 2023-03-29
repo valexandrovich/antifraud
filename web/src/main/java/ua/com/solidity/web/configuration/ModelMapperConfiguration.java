@@ -5,24 +5,16 @@ import org.modelmapper.Condition;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.modelmapper.spi.MappingContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import ua.com.solidity.db.entities.TagType;
-import ua.com.solidity.db.entities.YAddress;
-import ua.com.solidity.db.entities.YAltPerson;
-import ua.com.solidity.db.entities.YEmail;
-import ua.com.solidity.db.entities.YINN;
-import ua.com.solidity.db.entities.YPassport;
-import ua.com.solidity.db.entities.YPhone;
-import ua.com.solidity.db.entities.YTag;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import ua.com.solidity.db.entities.*;
 import ua.com.solidity.db.repositories.TagTypeRepository;
-import ua.com.solidity.web.dto.olap.YAddressDto;
-import ua.com.solidity.web.dto.olap.YAltPersonDto;
-import ua.com.solidity.web.dto.olap.YEmailDto;
-import ua.com.solidity.web.dto.olap.YINNDto;
-import ua.com.solidity.web.dto.olap.YPassportDto;
-import ua.com.solidity.web.dto.olap.YPhoneDto;
-import ua.com.solidity.web.dto.olap.YTagDto;
+import ua.com.solidity.web.dto.olap.*;
+import ua.com.solidity.web.utils.RoleName;
 
 @Configuration
 @RequiredArgsConstructor
@@ -42,6 +34,7 @@ public class ModelMapperConfiguration {
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+
 
         modelMapper.createTypeMap(YPassportDto.class, YPassport.class, TypeMapName.YPASSPORT_TO_UPPER_CASE)
                 .addMappings(mapper -> mapper.skip(YPassport::setId))
@@ -82,6 +75,24 @@ public class ModelMapperConfiguration {
 //                             YTag::setTagType))
                 .addMappings(mapper -> mapper.skip(YTag::setImportSources));
 
+        Condition<?, ?> isNotBasic = new Condition<Object, Object>() {
+            @Override
+            public boolean applies(MappingContext<Object, Object> mappingContext) {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                return !(auth != null && auth.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.BASIC)));
+            }
+        };
+
+        modelMapper.createTypeMap(YTag.class, YTagDto.class)
+                .addMappings(mapper -> {
+                    mapper.when(isNotBasic).map(YTag::getSource, YTagDto::setSource);
+                    mapper.when(isNotBasic).map(YTag::getDescription, YTagDto::setDescription);
+                    mapper.when(isNotBasic).map(YTag::getNumberValue, YTagDto::setNumberValue);
+                    mapper.when(isNotBasic).map(YTag::getTextValue, YTagDto::setTextValue);
+                    mapper.when(isNotBasic).map(YTag::getImportSources, YTagDto::setImportSources);
+                });
+
         return modelMapper;
     }
+
 }

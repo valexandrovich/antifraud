@@ -20,5 +20,5 @@ ingress:
     - antifraud.otpbank.com.ua
     secretName: antifraud-tls
 
-namespace: antifraud
-project: antifraud
+namespace: antifraudprod
+project: antifraudprod

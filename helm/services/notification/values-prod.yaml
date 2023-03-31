@@ -15,5 +15,5 @@
   - name: antifraud
     mountPath: /opt
 
-  namespace: antifraud
-  project: antifraud
+  namespace: antifraudprod
+  project: antifraudprod

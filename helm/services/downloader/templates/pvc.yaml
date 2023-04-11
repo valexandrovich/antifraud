@@ -7,6 +7,7 @@ spec:
     requests:
       storage: {{ .Values.persistentVolumeClaim.storage }}
   volumeName: {{ .Values.persistentVolume.name }}
+  namespace: {{ .Values.persistentVolume.namespace }}
   storageClassName: {{ .Values.persistentVolumeClaim.storageClassName }}
   {{- with .Values.persistentVolumeClaim.accessModes }}   
   accessModes:

@@ -16,7 +16,7 @@ vault:
 
 persistentVolume:
   name: antifraud-downloader
-#  storage: 5Gi
+  storage: 10Gi
   storageClassName: default
   accessModes:
     - ReadWriteMany
@@ -32,7 +32,7 @@ persistentVolume:
 
 persistentVolumeClaim:
   name: antifraud-downloader
-#  storage: 5Gi
+  storage: 10Gi
   storageClassName: default
   accessModes:
     - ReadWriteMany

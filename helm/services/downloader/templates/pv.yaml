@@ -4,6 +4,8 @@ metadata:
   name: {{ .Values.persistentVolume.name }}
 spec:
   storageClassName: {{ .Values.persistentVolume.storageClassName }}
+  capacity:
+    storage: {{ .Values.persistentVolume.storage }}
   {{- with .Values.persistentVolume.csi }}   
   csi:
      {{- toYaml . | nindent 4 }}

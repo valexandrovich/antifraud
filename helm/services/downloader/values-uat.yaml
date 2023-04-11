@@ -34,6 +34,7 @@ persistentVolumeClaim:
   name: antifraud-downloader
   storage: 10Gi
   storageClassName: default
+  namespace: antifrauduat
   accessModes:
     - ReadWriteMany
 

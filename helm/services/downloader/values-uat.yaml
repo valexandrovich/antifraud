@@ -47,5 +47,9 @@ volumes:
   persistentVolumeClaim:
     claimName: antifraud-downloader
 
+storageClass:
+  source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat"
+  name: antifraud-downloader
+
 namespace: antifrauduat
 project: antifrauduat

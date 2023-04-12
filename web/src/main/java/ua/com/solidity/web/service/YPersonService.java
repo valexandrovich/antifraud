@@ -252,10 +252,12 @@ public class YPersonService {
     private void searchByPassport(SearchRequest searchRequest, GenericSpecification<YPerson> gs) {
         String passportNumber = Objects.toString(searchRequest.getPassportNumber(), "");
         String passportSeries = Objects.toString(searchRequest.getPassportSeria(), "");
-        if (!passportNumber.equals("") && !passportSeries.equals("")) {
+        if (!passportNumber.equals("")){
             criteriaFound = true;
             gs.add(new SearchCriteria(NUMBER, passportNumber, PASSPORTS, SearchOperation.EQUALS));
-            gs.add(new SearchCriteria(SERIES, passportSeries.toUpperCase(), PASSPORTS, SearchOperation.EQUALS));
+            if (!passportSeries.equals("")) {
+                gs.add(new SearchCriteria(SERIES, passportSeries.toUpperCase(), PASSPORTS, SearchOperation.EQUALS));
+            }
         }
 
         String idPassportNumber = Objects.toString(searchRequest.getId_documentNumber(), "");

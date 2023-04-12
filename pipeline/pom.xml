@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>5.3.0</version>
+        <version>5.0.256-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>5.3.0</version>
+    <version>5.0.256-SNAPSHOT</version>
 
     <artifactId>pipeline</artifactId>
     <dependencies>

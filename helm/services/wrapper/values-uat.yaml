@@ -10,21 +10,84 @@ podAnnotations:
     {{- end }}
   vault.hashicorp.com/role: "antifraud-wrapper"
 
-volumes:
-- name: source
-  nfs:
-    path: /zpool8t/antifraud/uat/wrapper/source
-    server: 10.244.14.30
-- name: files
-  nfs:
-    path: /zpool8t/antifraud/uat/wrapper/files
-    server: 10.244.14.30
+#volumes:
+#- name: source
+#  nfs:
+#    path: /zpool8t/antifraud/uat/wrapper/source
+#    server: 10.244.14.30
+#- name: files
+#  nfs:
+#    path: /zpool8t/antifraud/uat/wrapper/files
+#    server: 10.244.14.30
+#
+#volumeMounts:
+#- name: source
+#  mountPath: /source
+#- name: files
+#  mountPath: /usr/src/wrapper/files
+
+persistentVolume:
+  name: antifraud-wrapper-source
+  storage: 20Gi
+  storageClassName: default
+  namespace: antifrauduat
+  accessModes:
+    - ReadWriteMany
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeHandle: antifraud-wrapper-source
+    volumeAttributes:
+      source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat/wrapper/source"
+    nodeStageSecretRef:
+      name: antifraud-volume
+      namespace: antifrauduat
+
+persistentVolumeClaim:
+  name: antifraud-wrapper-files
+  storage: 20Gi
+  storageClassName: default
+  namespace: antifrauduat
+  accessModes:
+    - ReadWriteMany
+
+persistentVolume:
+  name: antifraud-wrapper-files
+  storage: 20Gi
+  storageClassName: default
+  namespace: antifrauduat
+  accessModes:
+    - ReadWriteMany
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeHandle: antifraud-wrapper-files
+    volumeAttributes:
+      source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat/wrapper/files"
+    nodeStageSecretRef:
+      name: antifraud-volume
+      namespace: antifrauduat
+
+persistentVolumeClaim:
+  name: antifraud-wrapper-files
+  storage: 20Gi
+  storageClassName: default
+  namespace: antifrauduat
+  accessModes:
+    - ReadWriteMany
 
 volumeMounts:
-- name: source
+- name: antifraud-wrapper-source
   mountPath: /source
-- name: files
+- name: antifraud-wrapper-files
   mountPath: /usr/src/wrapper/files
+volumes: 
+- name: antifraud-wrapper-source
+  persistentVolumeClaim:
+    claimName: antifraud-wrapper-source
+- name: antifraud-wrapper-files
+  persistentVolumeClaim:
+    claimName: antifraud-wrapper-files
 
 namespace: antifrauduat
 project: antifrauduat

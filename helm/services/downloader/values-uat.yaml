@@ -17,7 +17,7 @@ vault:
 persistentVolume:
   name: antifraud-downloader
   storage: 10Gi
-  storageClassName: antifraud-downloader
+  storageClassName: default
   namespace: antifrauduat
   accessModes:
     - ReadWriteMany
@@ -34,7 +34,7 @@ persistentVolume:
 persistentVolumeClaim:
   name: antifraud-downloader
   storage: 10Gi
-  storageClassName: antifraud-downloader
+  storageClassName: default
   namespace: antifrauduat
   accessModes:
     - ReadWriteMany
@@ -47,9 +47,9 @@ volumes:
   persistentVolumeClaim:
     claimName: antifraud-downloader
 
-storageClass:
-  source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat"
-  name: antifraud-downloader
+#storageClass:
+#  source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat"
+#  name: antifraud-downloader
 
 namespace: antifrauduat
 project: antifrauduat

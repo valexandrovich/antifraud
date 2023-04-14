@@ -1,9 +1,9 @@
-  vault:
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/dispatcher/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-dispatcher"
-    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/uat-cluster/"
-    appPropertiesPath: "/vault/secrets/application.properties"
+vault:
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/dispatcher/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-dispatcher"
+  vaultAddress: "https://vaulttest.otpbank.com.ua:443"
+  vaultMountPath: "auth/uat-cluster/"
+  appPropertiesPath: "/vault/secrets/application.properties"
 
-  namespace: antifrauduat
-  project: antifrauduat
+namespace: antifrauduat
+project: antifrauduat

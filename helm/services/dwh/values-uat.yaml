@@ -1,9 +1,8 @@
-  vault:
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/dwh/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-dwh"
-    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/uat-cluster/"
-    appPropertiesPath: "/vault/secrets/application.properties"
-
-  namespace: antifrauduat
-  project: antifrauduat
+vault:
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/uat/dwh/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-dwh"
+  vaultAddress: "https://vaulttest.otpbank.com.ua:443"
+  vaultMountPath: "auth/uat-cluster/"
+  appPropertiesPath: "/vault/secrets/application.properties"
+namespace: antifrauduat
+project: antifrauduat

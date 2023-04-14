@@ -27,54 +27,50 @@ podAnnotations:
 #  mountPath: /usr/src/wrapper/files
 
 persistentVolume:
-  name: antifraud-wrapper-source
-  storage: 20Gi
-  storageClassName: default
-  namespace: antifrauduat
-  accessModes:
-    - ReadWriteMany
-  csi:
-    driver: smb.csi.k8s.io
-    readOnly: false
-    volumeHandle: antifraud-wrapper-source
-    volumeAttributes:
-      source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat/wrapper/source"
-    nodeStageSecretRef:
-      name: antifraud-volume
-      namespace: antifrauduat
+  -  name: antifraud-wrapper-source
+     storage: 20Gi
+     storageClassName: default
+     namespace: antifrauduat
+     accessModes:
+       - ReadWriteMany
+     csi:
+       driver: smb.csi.k8s.io
+       readOnly: false
+       volumeHandle: antifraud-wrapper-source
+       volumeAttributes:
+         source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat/wrapper/source"
+       nodeStageSecretRef:
+         name: antifraud-volume
+         namespace: antifrauduat
+  -  name: antifraud-wrapper-files
+     storage: 20Gi
+     storageClassName: default
+     namespace: antifrauduat
+     accessModes:
+       - ReadWriteMany
+     csi:
+       driver: smb.csi.k8s.io
+       readOnly: false
+       volumeHandle: antifraud-wrapper-files
+       volumeAttributes:
+         source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat/wrapper/files"
+       nodeStageSecretRef:
+         name: antifraud-volume
+         namespace: antifrauduat
 
 persistentVolumeClaim:
-  name: antifraud-wrapper-files
-  storage: 20Gi
-  storageClassName: default
-  namespace: antifrauduat
-  accessModes:
-    - ReadWriteMany
-
-persistentVolume:
-  name: antifraud-wrapper-files
-  storage: 20Gi
-  storageClassName: default
-  namespace: antifrauduat
-  accessModes:
-    - ReadWriteMany
-  csi:
-    driver: smb.csi.k8s.io
-    readOnly: false
-    volumeHandle: antifraud-wrapper-files
-    volumeAttributes:
-      source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/uat/wrapper/files"
-    nodeStageSecretRef:
-      name: antifraud-volume
-      namespace: antifrauduat
-
-persistentVolumeClaim:
-  name: antifraud-wrapper-files
-  storage: 20Gi
-  storageClassName: default
-  namespace: antifrauduat
-  accessModes:
-    - ReadWriteMany
+  -  name: antifraud-wrapper-source
+     storage: 20Gi
+     storageClassName: default
+     namespace: antifrauduat
+     accessModes:
+       - ReadWriteMany
+  -  name: antifraud-wrapper-files
+     storage: 20Gi
+     storageClassName: default
+     namespace: antifrauduat
+     accessModes:
+       - ReadWriteMany
 
 volumeMounts:
 - name: antifraud-wrapper-source

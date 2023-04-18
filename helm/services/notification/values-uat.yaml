@@ -48,5 +48,5 @@ volumes:
   persistentVolumeClaim:
     claimName: antifraud-notification
 
-  namespace: antifrauduat
-  project: antifrauduat
+namespace: antifrauduat
+project: antifrauduat

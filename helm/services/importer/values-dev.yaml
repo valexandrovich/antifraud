@@ -5,14 +5,47 @@ vault:
   vaultMountPath: "auth/test-cluster/"
   appPropertiesPath: "/vault/secrets/application.properties"
 
-volumes:
-- name: antifraud
-  nfs:
-    path: /zpool8t/antifraud/dev3
-    server: 10.244.14.30
+#volumes:
+#- name: antifraud
+#  nfs:
+#    path: /zpool8t/antifraud/dev3
+#    server: 10.244.14.30
+#volumeMounts:
+#- name: antifraud
+#  mountPath: /opt
+
+persistentVolume:
+  name: antifraud-importer
+  storage: 200Gi
+  storageClassName: default
+  namespace: antifrauddev
+  accessModes:
+    - ReadWriteMany
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeHandle: antifraud-importer
+    volumeAttributes:
+      source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/dev"
+    nodeStageSecretRef:
+      name: antifraud-volume
+      namespace: antifrauddev
+
+persistentVolumeClaim:
+  name: antifraud-importer
+  storage: 200Gi
+  storageClassName: default
+  namespace: antifrauddev
+  accessModes:
+    - ReadWriteMany
+
 volumeMounts:
-- name: antifraud
+- name: antifraud-importer
   mountPath: /opt
+volumes: 
+- name: antifraud-importer
+  persistentVolumeClaim:
+    claimName: antifraud-importer
 
 namespace: antifrauddev
 project: antifrauddev

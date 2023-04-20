@@ -1,19 +1,52 @@
-  vault: 
-    vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/notification/" }}{{ .Data.data.properties }}{{ end }}'
-    vaultRole: "antifraud-notification"
-    vaultAddress: "https://vaulttest.otpbank.com.ua:443"
-    vaultMountPath: "auth/test-cluster/"
-    appPropertiesPath: "/vault/secrets/application.properties"
+vault: 
+  vaultTemplate: '{{- with secret  "secret/data/antifraud/dev3/notification/" }}{{ .Data.data.properties }}{{ end }}'
+  vaultRole: "antifraud-notification"
+  vaultAddress: "https://vaulttest.otpbank.com.ua:443"
+  vaultMountPath: "auth/test-cluster/"
+  appPropertiesPath: "/vault/secrets/application.properties"
 
-  volumes:
-  - name: antifraud
-    nfs:
-      path: /zpool8t/antifraud/dev3/report
-      server: 10.244.14.30
-    
-  volumeMounts:
-  - name: antifraud
-    mountPath: /opt
+#volumes:
+#- name: antifraud
+#  nfs:
+#    path: /zpool8t/antifraud/dev3/report
+#    server: 10.244.14.30
+#  
+#volumeMounts:
+#- name: antifraud
+#  mountPath: /opt
 
+persistentVolume:
+  name: antifraud-notification
+  storage: 200Gi
+  storageClassName: default
   namespace: antifrauddev
-  project: antifrauddev
+  accessModes:
+    - ReadWriteMany
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeHandle: antifraud-notification
+    volumeAttributes:
+      source: "//uaatssrv02.raiffeisenbank.com.ua/antifraud/dev"
+    nodeStageSecretRef:
+      name: antifraud-volume
+      namespace: antifrauddev
+
+persistentVolumeClaim:
+  name: antifraud-notification
+  storage: 200Gi
+  storageClassName: default
+  namespace: antifrauddev
+  accessModes:
+    - ReadWriteMany
+
+volumeMounts:
+- name: antifraud-notification
+  mountPath: /opt
+volumes: 
+- name: antifraud-notification
+  persistentVolumeClaim:
+    claimName: antifraud-notification
+
+namespace: antifrauddev
+project: antifrauddev

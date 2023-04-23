@@ -10,21 +10,81 @@ podAnnotations:
     {{- end }}
   vault.hashicorp.com/role: "antifraud-wrapper"
 
-volumes:
-- name: source
-  nfs:
-    path: /zpool8t/antifraud/prod/wrapper/source
-    server: 10.244.14.30
-- name: files
-  nfs:
-    path: /zpool8t/antifraud/prod/wrapper/files
-    server: 10.244.14.30
+#volumes:
+#- name: source
+#  nfs:
+#    path: /zpool8t/antifraud/prod/wrapper/source
+#    server: 10.244.14.30
+#- name: files
+#  nfs:
+#    path: /zpool8t/antifraud/prod/wrapper/files
+#    server: 10.244.14.30
+#
+#volumeMounts:
+#- name: source
+#  mountPath: /source
+#- name: files
+#  mountPath: /usr/src/wrapper/files
+
+persistentVolume:
+  -  name: antifraud-wrapper-source
+     storage: 500Gi
+     storageClassName: default
+     namespace: antifraudprod
+     accessModes:
+       - ReadWriteMany
+     csi:
+       driver: smb.csi.k8s.io
+       readOnly: false
+       volumeHandle: antifraud-wrapper-source
+       volumeAttributes:
+         source: "//uaafis01.raiffeisenbank.com.ua/antifraud/prod/wrapper/source"
+       nodeStageSecretRef:
+         name: antifraud-volume
+         namespace: antifraudprod
+  -  name: antifraud-wrapper-files
+     storage: 500Gi
+     storageClassName: default
+     namespace: antifraudprod
+     accessModes:
+       - ReadWriteMany
+     csi:
+       driver: smb.csi.k8s.io
+       readOnly: false
+       volumeHandle: antifraud-wrapper-files
+       volumeAttributes:
+         source: "//uaafis01.raiffeisenbank.com.ua/antifraud/prod/wrapper/files"
+       nodeStageSecretRef:
+         name: antifraud-volume
+         namespace: antifraudprod
+
+persistentVolumeClaim:
+  -  name: antifraud-wrapper-source
+     storage: 500Gi
+     storageClassName: default
+     namespace: antifraudprod
+     accessModes:
+       - ReadWriteMany
+  -  name: antifraud-wrapper-files
+     storage: 500Gi
+     storageClassName: default
+     namespace: antifraudprod
+     accessModes:
+       - ReadWriteMany
 
 volumeMounts:
-- name: source
+- name: antifraud-wrapper-source
   mountPath: /source
-- name: files
+- name: antifraud-wrapper-files
   mountPath: /usr/src/wrapper/files
+volumes: 
+- name: antifraud-wrapper-source
+  persistentVolumeClaim:
+    claimName: antifraud-wrapper-source
+- name: antifraud-wrapper-files
+  persistentVolumeClaim:
+    claimName: antifraud-wrapper-files
+
 
 namespace: antifraudprod
 project: antifraudprod

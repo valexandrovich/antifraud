@@ -12,8 +12,7 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_ID;
-import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
-import static ua.com.solidity.util.validator.Validator.isValidInn;
+import static ua.com.solidity.util.validator.Validator.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -164,12 +163,16 @@ public class BaseDirectorEnricher implements Enricher {
                 workPortion.forEach(r -> {
                     if (StringUtils.isNotBlank(r.getInn()) && r.getInn().matches(CONTAINS_NUMERAL_REGEX)) {
                         String inn = r.getInn().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                        peopleCodes.add(Long.parseLong(inn));
+                        if (!isAllZeroChar(inn)) {
+                            peopleCodes.add(Long.parseLong(inn));
+                        }
                     }
 
                     if (StringUtils.isNotBlank(r.getOkpo()) && r.getOkpo().matches(CONTAINS_NUMERAL_REGEX)) {
                         String edrpou = r.getOkpo().replaceAll(ALL_NOT_NUMBER_REGEX, "");
-                        companiesCodes.add(Long.parseLong(edrpou));
+                        if (!isAllZeroChar(edrpou)) {
+                            companiesCodes.add(Long.parseLong(edrpou));
+                        }
                     }
                 });
 

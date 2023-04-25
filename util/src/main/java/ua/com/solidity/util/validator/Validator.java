@@ -16,7 +16,7 @@ public final class Validator {
     public static boolean isValidInn(String inn, LocalDate birthDay, String sex) {
         if (inn == null || inn.isBlank()) return false;
         inn = inn.replaceAll("[^0-9]", "");
-        if (!inn.matches("[0-9]+")) return false;
+        if (isAllZeroChar(inn)) return false;
         inn = String.format(Regex.INN_FORMAT_REGEX, Long.parseLong(inn));
         if (inn.matches(INN_REGEX)) {
             boolean isValidBirthDateInn = birthDay == null ||
@@ -77,6 +77,7 @@ public final class Validator {
         if (edrpou.matches(Regex.OKPO_REGEX)) {
             int controlNumber;
             int code = Integer.parseInt(edrpou);
+            if (code == 0) return false;
             if (edrpou.length() == 8) {
                 int firstNum = Integer.parseInt(String.valueOf(edrpou.charAt(0)));
                 int secondNum = Integer.parseInt(String.valueOf(edrpou.charAt(1)));
@@ -120,5 +121,9 @@ public final class Validator {
             }
         }
         return result;
+    }
+
+    public static boolean isAllZeroChar(String s) {
+        return s.matches("^0+$");
     }
 }

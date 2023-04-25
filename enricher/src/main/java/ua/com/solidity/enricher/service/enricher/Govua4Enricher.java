@@ -12,6 +12,7 @@ import static ua.com.solidity.enricher.util.StringStorage.ENRICHER;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_ERROR_REPORT_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.ENRICHER_INFO_MESSAGE;
 import static ua.com.solidity.enricher.util.StringStorage.TAG_TYPE_NGT;
+import static ua.com.solidity.util.validator.Validator.isAllZeroChar;
 import static ua.com.solidity.util.validator.Validator.isValidEdrpou;
 
 import java.time.LocalDate;
@@ -159,7 +160,8 @@ public class Govua4Enricher implements Enricher {
                     }
                 });
 
-                List<Govua4> workPortion = finalWorkPortion.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
+                List<Govua4> workPortion = finalWorkPortion.parallelStream()
+                        .filter(govua -> govua != null && !isAllZeroChar(govua.getEdrpou())).collect(Collectors.toList());
 
                 Set<Long> codes = new HashSet<>();
                 Set<YCompany> companies = new HashSet<>();

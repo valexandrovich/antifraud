@@ -203,7 +203,7 @@ public class Govua8Enricher implements Enricher {
 
                             people.add(person);
                         } else {
-                            peopleWithoutBirthday.forEach(findPerson -> {
+                            peopleWithEqualBirthday.forEach(findPerson -> {
                                 findPerson.setSex(sex);
                                 if (StringUtils.isNotBlank(lastNameRu) || StringUtils.isNotBlank(firstNameRu) || StringUtils.isNotBlank(patNameRu))
                                     extender.addAltPerson(findPerson, lastNameRu, firstNameRu, patNameRu, "RU", source);

@@ -328,16 +328,21 @@ public class ManualPersonEnricher implements Enricher {
                         person = extender.addPassport(passport, personSet, source, person, savedPersonSet, passports);
                     }
 
-                    if (StringUtils.isNotBlank(r.getSex()))
-                        person.setSex(r.getSex().trim().toUpperCase());
-                    if (StringUtils.isNotBlank(r.getCountry()))
-                        person.setCountry(r.getCountry().trim().toUpperCase());
-                    if (StringUtils.isNotBlank(r.getComment()))
-                        person.setComment(r.getComment().trim().toUpperCase());
-                    if (StringUtils.isNotBlank(r.getBirthPlace()))
-                        person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
-
                     person = extender.addPerson(personSet, person, source, true);
+
+                    if (StringUtils.isNotBlank(r.getSex())) {
+                        person.setSex(r.getSex().trim().toUpperCase());
+                    }
+                    if (StringUtils.isNotBlank(r.getCountry())) {
+                        person.setCountry(r.getCountry().trim().toUpperCase());
+                    }
+                    if (StringUtils.isNotBlank(r.getComment())) {
+                        person.setComment(r.getComment().trim().toUpperCase());
+                    }
+
+                    if (StringUtils.isNotBlank(r.getBirthPlace())) {
+                        person.setBirthPlace(r.getBirthPlace().trim().toUpperCase());
+                    }
 
                     Set<YAddress> addresses = new HashSet<>();
                     if (StringUtils.isNotBlank(r.getAddress())) {

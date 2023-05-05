@@ -200,6 +200,7 @@ public class Govua4Enricher implements Enricher {
                             Set<YCTag> tags = new HashSet<>();
                             YCTag tag = new YCTag();
                             tagType.ifPresent(tag::setTagType);
+                            tag.setEventDate(r.getDate());
                             tag.setSource(GOVUA4);
                             tag.setUntil(LocalDate.of(3500, 1, 1));
                             tags.add(tag);
@@ -226,6 +227,9 @@ public class Govua4Enricher implements Enricher {
                             Set<YCTag> tags = new HashSet<>();
                             YCTag tag = new YCTag();
                             tagType.ifPresent(tag::setTagType);
+                            tag.setEventDate(r.getDate());
+                            tag.setSource(GOVUA4);
+                            tag.setUntil(LocalDate.of(3500, 1, 1));
                             tags.add(tag);
 
                             extender.addTags(subCompany, tags, source);

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v055-0" author="Roman Bozhok">
+        <tagDatabase tag="v055-0"/>
+    </changeSet>
+
+    <changeSet id="v055-1" author="Roman Bozhok">
+        <insert tableName="tag_type">
+            <column name="code" value="RPO"/>
+            <column name="description" value="Отношение к банку / Партнер / Субъект оценочной деятельности"/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="RPC"/>
+            <column name="description" value="Отношение к банку / Партнер / Критически важный "/>
+        </insert>
+
+        <insert tableName="tag_type">
+            <column name="code" value="REBM"/>
+            <column name="description" value="Отношение к банку / Руководство Банка"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="tag_type">
+                <where>code = 'RPO' or code = 'RPC' or code = 'REBM'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v055-2" author="Roman Bozhok">
+        <update tableName="tag_type">
+            <column name="physical" value="true"/>
+            <column name="juridical" value="true"/>
+            <where>code = 'RPO' or code = 'RPC' or code = 'REBM'</where>
+        </update>
+
+        <rollback>
+            <update tableName="tag_type">
+                <column name="physical" value="false"/>
+                <column name="juridical" value="false"/>
+                <where>code = 'RPO' or code = 'RPC' or code = 'REBM'</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

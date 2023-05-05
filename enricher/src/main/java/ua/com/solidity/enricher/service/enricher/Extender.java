@@ -1,7 +1,6 @@
 package ua.com.solidity.enricher.service.enricher;
 
-import static ua.com.solidity.enricher.util.Chooser.chooseNotBlank;
-import static ua.com.solidity.enricher.util.Chooser.chooseNotNull;
+import static ua.com.solidity.enricher.util.Chooser.*;
 import static ua.com.solidity.enricher.util.Regex.INN_FORMAT_REGEX;
 
 import java.time.LocalDate;
@@ -349,11 +348,11 @@ public class Extender {
 
             if (t.getTagType() != null) {
                 tag.setTagType(chooseNotNull(tag.getTagType(), t.getTagType()));
-                tag.setAsOf(chooseNotNull(tag.getAsOf(), t.getAsOf()));
+                tag.setAsOf(chooseNotNullOrDateNow(tag.getAsOf(), t.getAsOf()));
                 tag.setUntil(chooseNotNull(tag.getUntil(), t.getUntil()));
                 if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
                 tag.setSource(chooseNotBlank(tag.getSource(), t.getSource()));
-                tag.setEventDate(chooseNotNull(tag.getEventDate(), t.getEventDate()));
+                tag.setEventDate(chooseNotNullOrDateNow(tag.getEventDate(), t.getEventDate()));
                 tag.setDescription(chooseNotNull(tag.getDescription(), t.getDescription()));
                 tag.setTextValue(chooseNotNull(tag.getTextValue(), t.getTextValue()));
                 tag.setNumberValue(chooseNotNull(tag.getNumberValue(), t.getNumberValue()));
@@ -376,10 +375,10 @@ public class Extender {
 
             if (t.getTagType() != null) {
                 tag.setTagType(chooseNotNull(tag.getTagType(), t.getTagType()));
-                tag.setAsOf(chooseNotNull(tag.getAsOf(), t.getAsOf()));
+                tag.setAsOf(chooseNotNullOrDateNow(tag.getAsOf(), t.getAsOf()));
                 tag.setUntil(chooseNotNull(tag.getUntil(), t.getUntil()));
                 if (tag.getUntil() == null) tag.setUntil(LocalDate.of(3500, 1, 1));
-                tag.setEventDate(chooseNotNull(tag.getEventDate(), t.getEventDate()));
+                tag.setEventDate(chooseNotNullOrDateNow(tag.getEventDate(), t.getEventDate()));
                 tag.setDescription(chooseNotNull(tag.getDescription(), t.getDescription()));
                 tag.setTextValue(chooseNotNull(tag.getTextValue(), t.getTextValue()));
                 tag.setNumberValue(chooseNotNull(tag.getNumberValue(), t.getNumberValue()));

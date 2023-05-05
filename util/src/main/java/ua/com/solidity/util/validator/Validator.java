@@ -124,6 +124,9 @@ public final class Validator {
     }
 
     public static boolean isAllZeroChar(String s) {
+        if (s == null) {
+            return false;
+        }
         return s.matches("^0+$");
     }
 }

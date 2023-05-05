@@ -187,7 +187,7 @@ public class Govua1Enricher implements Enricher {
                                 if (tagType.isPresent()) {
                                     Set<YCTag> tagSet = new HashSet<>();
                                     YCTag ycTag = new YCTag();
-                                    ycTag.setAsOf(r.getRecordDate());
+                                    ycTag.setEventDate(r.getRecordDate());
                                     ycTag.setTagType(tagType.get());
                                     ycTag.setSource(GOVUA1);
                                     ycTag.setUntil(LocalDate.of(3500, 1, 1));

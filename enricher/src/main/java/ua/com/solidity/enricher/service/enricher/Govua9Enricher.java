@@ -144,7 +144,7 @@ public class Govua9Enricher implements Enricher {
 
                     YTag tag = new YTag();
                     tagType.ifPresent(tag::setTagType);
-                    tag.setAsOf(r.getLostDate());
+                    tag.setEventDate(r.getLostDate());
                     tag.setTextValue(r.getArticleCrim());
                     tag.setDescription(r.getRestraint());
                     tag.setSource(GOVUA9);

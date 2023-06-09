@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v060-0" author="ikoriachenko">
+        <loadData file="csv/matchingFL.csv"
+                  relativeToChangelogFile="true"
+                  tableName="notification_physical_tag_matching"
+                  usePreparedStatements="true">
+        </loadData>
+    </changeSet>
+
+    <changeSet id="v060-1" author="ikoriachenko">
+        <loadData file="csv/conditionFL.csv"
+                  relativeToChangelogFile="true"
+                  tableName="notification_physical_tag_condition"
+                  usePreparedStatements="true">
+        </loadData>
+    </changeSet>
+
+    <changeSet id="v060-2" author="ikoriachenko">
+        <loadData file="csv/mappingFL.csv"
+                  relativeToChangelogFile="true"
+                  tableName="notification_physical_condition_tag_type"
+                  usePreparedStatements="true">
+        </loadData>
+    </changeSet>
+
+    <changeSet id="v060-3" author="ikoriachenko">
+        <loadData file="csv/matchingUL.csv"
+                  relativeToChangelogFile="true"
+                  tableName="notification_juridical_tag_matching"
+                  usePreparedStatements="true">
+        </loadData>
+    </changeSet>
+
+    <changeSet id="v060-4" author="ikoriachenko">
+        <loadData file="csv/conditionUL.csv"
+                  relativeToChangelogFile="true"
+                  tableName="notification_juridical_tag_condition"
+                  usePreparedStatements="true">
+        </loadData>
+    </changeSet>
+
+    <changeSet id="v060-5" author="ikoriachenko">
+        <loadData file="csv/mappingUL.csv"
+                  relativeToChangelogFile="true"
+                  tableName="notification_juridical_condition_tag_type"
+                  usePreparedStatements="true">
+        </loadData>
+    </changeSet>
+
+</databaseChangeLog>

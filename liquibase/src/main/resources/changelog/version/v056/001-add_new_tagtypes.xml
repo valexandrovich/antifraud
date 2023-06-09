@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="v056-0" author="Roman Bozhok">
+        <tagDatabase tag="v055-0"/>
+    </changeSet>
+
+    <changeSet id="v056-1" author="Roman Bozhok">
+        <insert tableName="tag_type">
+            <column name="code" value="RPL"/>
+            <column name="description" value="Відношення до банку / Партнер / Лізинг"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NAI"/>
+            <column name="description" value="Негатив / Блокування / Недійстний паспорт громадянина України для виїзду закордон"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBPS"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Продаж у зв'язку із санацією"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBS"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Санація"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBPPB"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Поновлено провадження у справі про банкрутство"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBSR"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Скасовано державну реєстрацію"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBSC"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Справу закрито"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBSP"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Справу поновлено"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBL"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Ліквідовано"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBF"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Оголошення недійсне"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBBPPL"/>
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Проведення процедури ліквідації"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBWU"/>
+            <column name="description" value="Негатив / Чорний список / Розшук / Україна"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBWS"/>
+            <column name="description" value="Негатив / Чорний список / Розшук / США"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBWE"/>
+            <column name="description" value="Негатив / Чорний список / Розшук / Евросоюз"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBWO"/>
+            <column name="description" value="Негатив / Чорний список / Розшук / Інші страни"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBWI"/>
+            <column name="description" value="Негатив / Чорний список / Розшук / Інтерпол"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBSU"/>
+            <column name="description" value="Негатив / Чорний список / Санкції / Україна"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBSS"/>
+            <column name="description" value="Негатив / Чорний список / Санкції / США"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBSE"/>
+            <column name="description" value="Негатив / Чорний список / Санкції / Евросоюз"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBSO"/>
+            <column name="description" value="Негатив / Чорний список / Санкції / Інші страни"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NGFM"/>
+            <column name="description" value="Негатив / Сірий список / Чорний список фінансового моніторингу банка"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NVO"/>
+            <column name="description" value="Негатив / Сірий список / Реструктуризація боргу особи з прострочкою 90+ днів"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NVO1"/>
+            <column name="description" value="Негатив / Сірий список / Реструктуризація мобілізованих до ЗСУ"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NVO2"/>
+            <column name="description" value="Негатив / Сірий список / Реструктуризація кредитів клієнтів «Біженець»"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NVO3"/>
+            <column name="description" value="Негатив / Сірий список / Реструктуризація кредитів клієнтів «в зоні АТО / ООС»"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBN"/>
+            <column name="description" value="Негатив / Чорний список / Недієздатна особа"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBL1"/>
+            <column name="description" value="Негатив / Чорний список / Позовна робота щодо банку (Банк відповідач)"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBL2"/>
+            <column name="description" value="Негатив / Чорний список / Позовна робота банку (Банк позивач)"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBT"/>
+            <column name="description" value="Негатив / Чорний список / Негатив від 3-х осіб"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBV"/>
+            <column name="description" value="Негатив / Чорний список / Негативна верификація"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBV1"/>
+            <column name="description" value="Негатив / Чорний список / Негативна верифікація особи-партнера"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBLB"/>
+            <column name="description" value="Негатив / Чорний список / Протиправні дії щодо банку"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBDB"/>
+            <column name="description" value="Негатив / Чорний список / Списана дебиторська заборгованість"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NB7"/>
+            <column name="description" value="Негатив / Чорний список / Просрочка 7-30"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NB30"/>
+            <column name="description" value="Негатив / Чорний список / Просрочка 30-90"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NB90"/>
+            <column name="description" value="Негатив / Чорний список / Просрочка 90+"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBO"/>
+            <column name="description" value="Негатив / Чорний список / Цивільний відповідач"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBF"/>
+            <column name="description" value="Негатив / Чорний список / Фіктивна особа"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBU"/>
+            <column name="description" value="Негатив / Чорний список / Лудоман"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="NBD"/>
+            <column name="description" value="Негатив / Чорний список / Наркоман"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="SL"/>
+            <column name="description" value="Чутлива інформація / Лідер думок"/>
+        </insert>
+        <insert tableName="tag_type">
+            <column name="code" value="SD"/>
+            <column name="description" value="Чутлива інформація / Регіональний депутат"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="tag_type">
+                <where>code = 'RPL' or code = 'NAI' or code = 'NBBPS' or code = 'NBBS' or code = 'NBBPPB' or code = 'NBBSR'
+                    or code = 'NBBSC' or code = 'NBBSP' or code = 'NBBL' or code = 'NBBF' or code = 'NBBPPL'
+                    or code = 'NBWU' or code = 'NBWS' or code = 'NBWE' or code = 'NBWE' or code = 'NBWO'
+                    or code = 'NBWI' or code = 'NBSU' or code = 'NBSS' or code = 'NBSE' or code = 'NBSO'
+                    or code = 'NGFM' or code = 'NVO' or code = 'NVO1' or code = 'NVO2' or code = 'NVO3'
+                    or code = 'NBN' or code = 'NBL1' or code = 'NBL2' or code = 'NBT' or code = 'NBV'
+                    or code = 'NBV1' or code = 'NBLB' or code = 'NBDB' or code = 'NB7' or code = 'NB30'
+                    or code = 'NB90' or code = 'NBO' or code = 'NBF' or code = 'NBU' or code = 'NBD'
+                    or code = 'SL' or code = 'SD'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v056-2" author="Roman Bozhok">
+        <update tableName="tag_type">
+            <column name="physical" value="true"/>
+            <column name="juridical" value="true"/>
+            <where>code = 'RPL' or code = 'NBBPS' or code = 'NBBS' or code = 'NBBPPB' or code = 'NBBSR'
+                or code = 'NBBSC' or code = 'NBBSP' or code = 'NBBL' or code = 'NBBF' or code = 'NBBPPL'
+                or code = 'NBSU' or code = 'NBSS' or code = 'NBSE' or code = 'NBSO' or code = 'NGFM'
+                or code = 'NVO' or code = 'NVO1' or code = 'NVO2' or code = 'NVO3' or code = 'NBN'
+                or code = 'NBL1' or code = 'NBL2' or code = 'NBT' or code = 'NBV' or code = 'NBV1'
+                or code = 'NBLB' or code = 'NBDB' or code = 'NB7' or code = 'NB30' or code = 'NB90'
+                or code = 'NBO' or code = 'NBF' or code = 'NBU' or code = 'NBD' or code = 'SL'
+                or code = 'SD'</where>
+        </update>
+        <update tableName="tag_type">
+            <column name="physical" value="true"/>
+            <where>code = 'NAI' or code = 'NBWU' or code = 'NBWS' or code = 'NBWE' or code = 'NBWO'
+                or code = 'NBWI'</where>
+        </update>
+
+        <rollback>
+            <update tableName="tag_type">
+                <column name="physical" value="false"/>
+                <column name="juridical" value="false"/>
+                <where>code = 'RPL' or code = 'NBBPS' or code = 'NBBS' or code = 'NBBPPB' or code = 'NBBSR'
+                    or code = 'NBBSC' or code = 'NBBSP' or code = 'NBBL' or code = 'NBBF' or code = 'NBBPPL'
+                    or code = 'NBSU' or code = 'NBSS' or code = 'NBSE' or code = 'NBSO' or code = 'NGFM'
+                    or code = 'NVO' or code = 'NVO1' or code = 'NVO2' or code = 'NVO3' or code = 'NBN'
+                    or code = 'NBL1' or code = 'NBL2' or code = 'NBT' or code = 'NBV' or code = 'NBV1'
+                    or code = 'NBLB' or code = 'NBDB' or code = 'NB7' or code = 'NB30' or code = 'NB90'
+                    or code = 'NBO' or code = 'NBF' or code = 'NBU' or code = 'NBD' or code = 'SL'
+                    or code = 'SD'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="physical" value="false"/>
+                <where>code = 'NAI' or code = 'NBWU' or code = 'NBWS' or code = 'NBWE' or code = 'NBWO'
+                    or code = 'NBWI'</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v056-3" author="Roman Bozhok">
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Партнер"/>
+            <where>code = 'RP' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Партнер / Критично важливий"/>
+            <where>code = 'RPC' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Співробітник / Практикант"/>
+            <where>code = 'REP' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Співробітник / Штатний"/>
+            <where>code = 'RES' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Співробітник / Родич"/>
+            <where>code = 'RER' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Співробітник / Договір підряду"/>
+            <where>code = 'RED' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Відношення до банку / Клієнт"/>
+            <where>code = 'RC' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Блокування / Террорист"/>
+            <where>code = 'NAT' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Блокування / Шахрай"/>
+            <where>code = 'NAF' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Блокування / Недійсниій паспорт громадянина України"/>
+            <where>code = 'NAL' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Кримінал / Навмисні злочини"/>
+            <where>code = 'NBC1' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Адміністративна відповідальність / Рівень 1"/>
+            <where>code = 'NBA1' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Адміністративна відповідальність / Рівень 2"/>
+            <where>code = 'NBA2' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Адміністративна відповідальність / Рівень 3"/>
+            <where>code = 'NBA3' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Смерть / Підтверджена документально"/>
+            <where>code = 'NBDA' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Смерть / Непідтверджена документально"/>
+            <where>code = 'NBDN' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Порушено справу про банкрутство"/>
+            <where>code = 'NBB1' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Банкрутство / Визнан банкрутом"/>
+            <where>code = 'NBB2' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Зрадники Батьківщіни"/>
+            <where>code = 'NBB' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Реєстр безвісті зниклих"/>
+            <where>code = 'NBL' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Реєстр корупціонерів НАЗК"/>
+            <where>code = 'NBC' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Чорний список / Закон про люстрацію"/>
+            <where>code = 'NBLU' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Кримінал / Ненавмисні злочини"/>
+            <where>code = 'NGC1' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Кримінал / Податкові злочини"/>
+            <where>code = 'NGC2' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Скарги на банк"/>
+            <where>code = 'NGO' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Боржник пенсійного фонду"/>
+            <where>code = 'NGP' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Боржник за заробітною платою"/>
+            <where>code = 'NGZ' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Податковий борг"/>
+            <where>code = 'NGT' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Борг платника ЄСВ"/>
+            <where>code = 'NGE' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Виконавче провадження"/>
+            <where>code = 'NGI' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Боржник реєстр Міністерства юстиції"/>
+            <where>code = 'NGD' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Реєстр судових рішень"/>
+            <where>code = 'NGS' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Негатив / Сірий список / Проблемна особа"/>
+            <where>code = 'NGF' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Чутлива інформація / Мобілізован до ЗСУ"/>
+            <where>code = 'SM' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Чутлива інформація / Інсайдер банку"/>
+            <where>code = 'SI' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Чутлива інформація / PEP"/>
+            <where>code = 'SP' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Кредитний продукт / Кредитна картка"/>
+            <where>code = 'ILC' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Кредитний продукт / POS Кредит"/>
+            <where>code = 'ILP' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Кредитний продукт / Авто-кредит"/>
+            <where>code = 'ILA' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Кредитний продукт / Іпотека"/>
+            <where>code = 'ILM' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Кредитний продукт / Агрофабрика"/>
+            <where>code = 'IL' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Лізинг"/>
+            <where>code = 'ILS' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Директор компанії"/>
+            <where>code = 'ID' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Засновник компанії"/>
+            <where>code = 'IZ' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Головний бухгалтер компанії"/>
+            <where>code = 'IA' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / СПД"/>
+            <where>code = 'IS' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Інший продукт / Депозит"/>
+            <where>code = 'IOD' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Інший продукт / Corporate"/>
+            <where>code = 'IOC' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Інший продукт / РКО"/>
+            <where>code = 'IOR' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Інший продукт / Депозитарна ячейка"/>
+            <where>code = 'IODS' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Інший продукт / Поручитель"/>
+            <where>code = 'IOP' </where>
+        </update>
+        <update tableName="tag_type">
+            <column name="description" value="Довідкова інформація / Інший продукт / Гарантер"/>
+            <where>code = 'IOG' </where>
+        </update>
+
+        <rollback>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Партнер"/>
+                <where>code = 'RP'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Партнер / Критически важный"/>
+                <where>code = 'RPC'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Сотрудник / Практикант"/>
+                <where>code = 'REP'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Сотрудник / Штатный"/>
+                <where>code = 'RES'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Сотрудник / Родственник"/>
+                <where>code = 'RER'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Сотрудник / Договор подряда"/>
+                <where>code = 'RED'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Отношение к банку / Клиент"/>
+                <where>code = 'RC'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Блокировка / Террорист"/>
+                <where>code = 'NAT'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Блокировка / Мошенник"/>
+                <where>code = 'NAF'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Блокировка / Недействительный паспорт (книжка)"/>
+                <where>code = 'NAL'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Криминал / Умышленные преступления"/>
+                <where>code = 'NBC1'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Административная ответственность / Уровень 1"/>
+                <where>code = 'NBA1'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Административная ответственность / Уровень 2"/>
+                <where>code = 'NBA2'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Административная ответственность / Уровень 3"/>
+                <where>code = 'NBA3'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Смерть / Подтвержденная документально"/>
+                <where>code = 'NBDA'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Смерть / Неподтвержденная документально"/>
+                <where>code = 'NBDN'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Банкротство / Возбуждено дело о банкротстве"/>
+                <where>code = 'NBB1'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Банкротство / Признан банкротом"/>
+                <where>code = 'NBB2'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Предатели Родины"/>
+                <where>code = 'NBB'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Реестр безвести пропавших"/>
+                <where>code = 'NBL'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Реестр коррупционеров НАЗК"/>
+                <where>code = 'NBC'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Черный список / Закон про люстрацию"/>
+                <where>code = 'NBLU'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Криминал / Неумышленые преступления"/>
+                <where>code = 'NGC1'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Криминал / Налоговые преступления"/>
+                <where>code = 'NGC2'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Жалобы на Банк"/>
+                <where>code = 'NGO'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Должник пенсионного фонда"/>
+                <where>code = 'NGP'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Должник по зарплате"/>
+                <where>code = 'NGZ'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Налоговый долг"/>
+                <where>code = 'NGT'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Долг плательщика ЕСВ"/>
+                <where>code = 'NGE'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Исполнительное поручение"/>
+                <where>code = 'NGI'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Должник (реестр Мин.юст)"/>
+                <where>code = 'NGD'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / Реестр судебных решений"/>
+                <where>code = 'NGS'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Негатив / Серый список / ЧС Фин.мониторинга"/>
+                <where>code = 'NGF'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Чуствительная информация / Мобилизован в ЗСУ"/>
+                <where>code = 'SM'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Чуствительная информация / Инсайдер банка"/>
+                <where>code = 'SI'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Чуствительная информация / PEP"/>
+                <where>code = 'SP'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Кредитный продукт / Кредитная карта"/>
+                <where>code = 'ILC'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Кредитный продукт / POS Кредит"/>
+                <where>code = 'ILP'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Кредитный продукт / Авто-кредит"/>
+                <where>code = 'ILA'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Кредитный продукт / Ипотека"/>
+                <where>code = 'ILM'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Кредитный продукт / Агрофабрика"/>
+                <where>code = 'IL'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Лизинг"/>
+                <where>code = 'ILS'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Директор компании"/>
+                <where>code = 'ID'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Основатель  компаниии"/>
+                <where>code = 'IZ'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Главный бухгалтер компании"/>
+                <where>code = 'IA'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / СПД"/>
+                <where>code = 'IS'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Другой продукт / Депозит"/>
+                <where>code = 'IOD'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Другой продукт / Corporate"/>
+                <where>code = 'IOC'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Другой продукт / РКО"/>
+                <where>code = 'IOR'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Другой продукт / Депозитарная ячейка"/>
+                <where>code = 'IODS'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Другой продукт / Поручитель"/>
+                <where>code = 'IOP'</where>
+            </update>
+            <update tableName="tag_type">
+                <column name="description" value="Справочная информация / Другой продукт / Гарантер"/>
+                <where>code = 'IOG'</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

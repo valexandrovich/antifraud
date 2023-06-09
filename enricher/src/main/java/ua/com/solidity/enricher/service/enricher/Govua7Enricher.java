@@ -159,7 +159,7 @@ public class Govua7Enricher implements Enricher {
                 });
 
                 if (!codes.isEmpty())
-                    companyRepository.findByEdrpous(codes);
+                    savedCompanies.addAll(companyRepository.findByEdrpous(codes));
 
                 Optional<YCompanyState> state = companyStateRepository.findByState(COMPANY_STATE_CRASH);
                 Optional<TagType> tagType = tagTypeRepository.findByCode(TAG_TYPE_NGD);

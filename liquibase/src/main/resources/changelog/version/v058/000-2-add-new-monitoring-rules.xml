@@ -8,19 +8,19 @@
 
 
     <changeSet id="v058-0" author="ikoriachenko">
-        <loadData file="csv/conditionFL.csv"
-                  relativeToChangelogFile="true"
-                  tableName="notification_physical_tag_condition"
-                  usePreparedStatements="true">
-        </loadData>
+        <loadUpdateData file="csv/conditionFL.csv"
+                        primaryKey="id"
+                        relativeToChangelogFile="true"
+                        tableName="notification_physical_tag_condition">
+        </loadUpdateData>
     </changeSet>
 
     <changeSet id="v058-1" author="ikoriachenko">
-        <loadData file="csv/mappingFL.csv"
-                  relativeToChangelogFile="true"
-                  tableName="notification_physical_condition_tag_type"
-                  usePreparedStatements="true">
-        </loadData>
+        <loadUpdateData file="csv/mappingFL.csv"
+                        primaryKey="condition_id,tag_type_id"
+                        relativeToChangelogFile="true"
+                        tableName="notification_physical_condition_tag_type">
+        </loadUpdateData>
     </changeSet>
 
 </databaseChangeLog>

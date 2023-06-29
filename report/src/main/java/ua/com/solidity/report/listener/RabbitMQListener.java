@@ -147,8 +147,10 @@ public class RabbitMQListener {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
                     log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
+                    System.out.println(String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue));
                 } catch (JsonProcessingException e) {
                     log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    System.out.println(COULD_NOT_CONVERT_LOG + " notify subscribers: " + e.getMessage());
                 }
 
                 ypersonMonitoringNotificationList
@@ -213,6 +215,7 @@ public class RabbitMQListener {
                     }
                 } catch (IOException e) {
                     log.error("[physicalPackageMonitoringReport-a]", e);
+                    System.out.println("[physicalPackageMonitoringReport-a]: " + e.getMessage());
                 }
             });
         }
@@ -225,8 +228,10 @@ public class RabbitMQListener {
             jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
             log.info(SENDING_LOG, notificationQueue);
             template.convertAndSend(notificationQueue, jo);
+            System.out.println(String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue));
         } catch (JsonProcessingException e) {
             log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+            System.err.println(COULD_NOT_CONVERT_LOG + ": " +e.getMessage());
         }
     }
 
@@ -487,8 +492,10 @@ public class RabbitMQListener {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
                     log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
+                    System.out.println(String.format("Sending message={%s} to queue=[%s]", jo, notificationQueue));
                 } catch (JsonProcessingException e) {
                     log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    System.out.println(COULD_NOT_CONVERT_LOG + "juridical: " + e.getMessage());
                 }
 
                 companyPackageMonitoringNotifications

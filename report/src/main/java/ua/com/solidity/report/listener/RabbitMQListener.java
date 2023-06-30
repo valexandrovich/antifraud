@@ -106,18 +106,19 @@ public class RabbitMQListener {
     public void processMyQueue() {
         log.info("Received task from {}", reportQueue);
 
-        notifySubscribers();
-        log.info("Subscribers notified");
+        List<String> notifySubscribersMessages = notifySubscribers();
+        log.info("Subscribers notified. List of messages: " + notifySubscribersMessages);
 
-        physicalPackageMonitoringReport();
-        log.info("Package monitoring finished: Physical");
+        List<String> physicalPackageMonitoringMessages = physicalPackageMonitoringReport();
+        log.info("Package monitoring finished: Physical. List of messages: " + physicalPackageMonitoringMessages);
 
-        juridicalPackageMonitoringReport();
-        log.info("Package monitoring finished: Juridical");
+        List<String> juridicalPackageMonitoringMessages = juridicalPackageMonitoringReport();
+        log.info("Package monitoring finished: Juridical. List of messages: " + juridicalPackageMonitoringMessages);
     }
 
-    private void notifySubscribers() {
+    private List<String> notifySubscribers() {
         List<User> userList = userRepository.findAll();
+        List<String> notificationMessageList = new ArrayList<>();
 
         userList.forEach(user -> {
             List<YPersonMonitoringNotification> ypersonMonitoringNotificationList =
@@ -146,11 +147,13 @@ public class RabbitMQListener {
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
                     log.info(SENDING_LOG, notificationQueue);
+                    notificationMessageList.add(String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue));
                     template.convertAndSend(notificationQueue, jo);
                     System.out.println(String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue));
                 } catch (JsonProcessingException e) {
                     log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
                     System.out.println(COULD_NOT_CONVERT_LOG + " notify subscribers: " + e.getMessage());
+                    notificationMessageList.add(COULD_NOT_CONVERT_LOG + " notify subscribers: " + e.getMessage());
                 }
 
                 ypersonMonitoringNotificationList
@@ -163,11 +166,13 @@ public class RabbitMQListener {
                     companyMonitoringNotificationRepository.saveAll(ycompanyMonitoringNotificationList);
             }
         });
+        return notificationMessageList;
     }
 
     @Transactional
-    public void physicalPackageMonitoringReport() {
+    public List<String> physicalPackageMonitoringReport() {
         log.debug("[physicalPackageMonitoringReport] Getting matchings");
+        List<String> notificationMessageList = new ArrayList<>();
         try (Stream<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingStream = physicalTagMatchingRepository.streamAllBy()) {
 
             log.debug("[physicalPackageMonitoringReport] Iterating through matchings");
@@ -211,28 +216,35 @@ public class RabbitMQListener {
                                 .retries(2)
                                 .build();
 
-                        doSend(sendEmailRequest);
+                        String message = doSend(sendEmailRequest);
+                        notificationMessageList.add(message);
                     }
                 } catch (IOException e) {
                     log.error("[physicalPackageMonitoringReport-a]", e);
                     System.out.println("[physicalPackageMonitoringReport-a]: " + e.getMessage());
+                    notificationMessageList.add("[physicalPackageMonitoringReport-a]: " + e.getMessage());
                 }
             });
         }
+        return notificationMessageList;
     }
 
     @Transactional
-    public void doSend(SendEmailRequest sendEmailRequest) {
+    public String doSend(SendEmailRequest sendEmailRequest) {
+        String message;
         String jo;
         try {
             jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
             log.info(SENDING_LOG, notificationQueue);
             template.convertAndSend(notificationQueue, jo);
+            message = String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue);
             System.out.println(String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue));
         } catch (JsonProcessingException e) {
             log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+            message = COULD_NOT_CONVERT_LOG + ": " +e.getMessage();
             System.err.println(COULD_NOT_CONVERT_LOG + ": " +e.getMessage());
         }
+        return message;
     }
 
     @Transactional
@@ -356,9 +368,9 @@ public class RabbitMQListener {
         return built;
     }
 
-    private void juridicalPackageMonitoringReport() {
+    private List<String> juridicalPackageMonitoringReport() {
         List<NotificationJuridicalTagMatching> matchings = juridicalTagMatchingRepository.findAll();
-
+        List<String> notificationMessageList = new ArrayList<>();
         matchings.forEach(matching -> {
 
             List<YCompanyPackageMonitoringNotification> companyPackageMonitoringNotifications =
@@ -487,14 +499,19 @@ public class RabbitMQListener {
                         .retries(2)
                         .build();
 
+                String message;
                 String jo;
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
                     log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
+                    message = String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue);
+                    notificationMessageList.add(message);
                     System.out.println(String.format("Sending message={%s} to queue=[%s]", jo, notificationQueue));
                 } catch (JsonProcessingException e) {
                     log.error(COULD_NOT_CONVERT_LOG, e.getMessage());
+                    message = COULD_NOT_CONVERT_LOG + "juridical: " + e.getMessage();
+                    notificationMessageList.add(message);
                     System.out.println(COULD_NOT_CONVERT_LOG + "juridical: " + e.getMessage());
                 }
 
@@ -504,6 +521,7 @@ public class RabbitMQListener {
                     companyPackageMonitoringNotificationRepository.saveAll(companyPackageMonitoringNotifications);
             }
         });
+        return notificationMessageList;
     }
 
     private String tableCaption(String caption, Entity entity) {

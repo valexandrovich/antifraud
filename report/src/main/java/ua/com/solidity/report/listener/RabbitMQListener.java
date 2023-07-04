@@ -118,22 +118,44 @@ public class RabbitMQListener {
 
     private List<String> notifySubscribers() {
         List<User> userList = userRepository.findAll();
+
+        log.info("notifySubscribers:row120:userList size " + userList.size()); ///////////////////////////////////////
+
         List<String> notificationMessageList = new ArrayList<>();
 
         userList.forEach(user -> {
             List<YPersonMonitoringNotification> ypersonMonitoringNotificationList =
                     personMonitoringNotificationRepository.findByUserAndSent(user, false);
+
+            log.info("notifySubscribers:row127:ypersonMonitoringNotificationList size " + ypersonMonitoringNotificationList.size()); ///////////////////////////////////////
+
+
             List<YCompanyMonitoringNotification> ycompanyMonitoringNotificationList =
                     companyMonitoringNotificationRepository.findByUserAndSent(user, false);
+
+
+            log.info("notifySubscribers:row133:ycompanyMonitoringNotificationList size " + ycompanyMonitoringNotificationList.size()); ///////////////////////////////////////
 
             StringBuilder messageBuilder = new StringBuilder();
             for (YPersonMonitoringNotification ypersonMonitoringNotification : ypersonMonitoringNotificationList) {
                 messageBuilder.append(ypersonMonitoringNotification.getMessage()).append("\n");
             }
 
+
+
+            log.info("notifySubscribers:row140:Message " + messageBuilder); ///////////////////////////////////////
+
+
+
             for (YCompanyMonitoringNotification ycompanyMonitoringNotification : ycompanyMonitoringNotificationList) {
                 messageBuilder.append(ycompanyMonitoringNotification.getMessage()).append("\n");
             }
+
+
+
+            log.info("notifySubscribers:row150:Message " + messageBuilder); ///////////////////////////////////////
+
+
 
             if (messageBuilder.length() != 0) {
                 SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
@@ -146,6 +168,11 @@ public class RabbitMQListener {
                 String jo;
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
+
+
+                    log.info("notifySubscribers:row170:jo " + jo); ///////////////////////////////////////
+
+
                     log.info(SENDING_LOG, notificationQueue);
                     notificationMessageList.add(String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue));
                     template.convertAndSend(notificationQueue, jo);
@@ -175,11 +202,22 @@ public class RabbitMQListener {
         List<String> notificationMessageList = new ArrayList<>();
         try (Stream<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingStream = physicalTagMatchingRepository.streamAllBy()) {
 
+
+            log.info("physicalPackageMonitoringReport:row203:notificationPhysicalTagMatchingStream size " + notificationPhysicalTagMatchingStream.count()); ///////////////////////////////////////
+
+
             log.debug("[physicalPackageMonitoringReport] Iterating through matchings");
             notificationPhysicalTagMatchingStream.forEach(tagMatching -> {
                 log.debug("[physicalPackageMonitoringReport] Get list of people to be notified");
                 Stream<YPersonPackageMonitoringNotification> personPackageMonitoringNotifications =
                         personPackageMonitoringNotificationRepository.findByEmailAndSent(tagMatching.getEmail(), false);
+
+
+
+                log.info("physicalPackageMonitoringReport:row212:personPackageMonitoringNotifications size " + personPackageMonitoringNotifications.count()); ///////////////////////////////////////
+                personPackageMonitoringNotifications.limit(5).forEach(n -> log.info(n.getYpersonId() + " " + n.getCondition().getDescription()));  ////////////////////////////////
+
+
 
                 log.debug("[physicalPackageMonitoringReport] Create condition map");
                 Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap = new LinkedHashMap<>();
@@ -188,6 +226,11 @@ public class RabbitMQListener {
                 personPackageMonitoringNotifications.forEach(notification -> {
                     YPerson yPerson = personRepository.findWithInnsAndTagsById(notification.getYpersonId())
                             .orElse(null);
+
+
+                    log.info("physicalPackageMonitoringReport:row227:person " + (yPerson != null ? yPerson.getLastName() : "NULL")); ///////////////////////////////////////
+
+
 
                     conditionMap.computeIfAbsent(notification.getCondition(), k -> new ArrayList<>());
                     if (yPerson != null) conditionMap.get(notification.getCondition()).add(yPerson);
@@ -206,6 +249,12 @@ public class RabbitMQListener {
                 boolean built;
                 try (FileWriter writer = new FileWriter(file)) {
                     built = processPhysicalReport(writer, conditionMap);
+
+
+
+                    log.info("physicalPackageMonitoringReport:row251:built " + built); ///////////////////////////////////////
+
+
 
                     if (built) {
                         SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
@@ -235,6 +284,12 @@ public class RabbitMQListener {
         String jo;
         try {
             jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
+
+
+
+            log.info("doSend:row286: jo " + jo);  ////////////////////////////////////
+
+
             log.info(SENDING_LOG, notificationQueue);
             template.convertAndSend(notificationQueue, jo);
             message = String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue);
@@ -244,11 +299,22 @@ public class RabbitMQListener {
             message = COULD_NOT_CONVERT_LOG + ": " +e.getMessage();
             System.err.println(COULD_NOT_CONVERT_LOG + ": " +e.getMessage());
         }
+
+
+
+        log.info("doSend:row286: message " + message);  ////////////////////////////////////////
+
+
+
         return message;
     }
 
     @Transactional
     public boolean processPhysicalReport(FileWriter writer, Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap) {
+
+
+        log.info("processPhysicalReport is started");  /////////////////////////////////////////////////////////////
+
         boolean built = false;
         try {
             writer.write(FILE_HEADER);
@@ -258,6 +324,13 @@ public class RabbitMQListener {
                 List<YPerson> personList = entry.getValue();
 
                 if (!personList.isEmpty()) {
+
+
+
+                    log.info("processPhysicalReport:row307: personList isn't empty");  ////////////////////////////////////////
+
+
+
                     built = true;
                     List<String> codeList = condition.getTagTypes().stream()
                             .map(TagType::getCode)
@@ -365,22 +438,42 @@ public class RabbitMQListener {
         } catch (IOException e) {
             log.error("[physicalPackageMonitoringReport-b]", e);
         }
+
+
+        log.info("processPhysicalReport is finished");  /////////////////////////////////////////////////////////////
+
         return built;
     }
 
     private List<String> juridicalPackageMonitoringReport() {
         List<NotificationJuridicalTagMatching> matchings = juridicalTagMatchingRepository.findAll();
+
+
+        log.info("juridicalPackageMonitoringReport:row449:matching size " + matchings.size());  ///////////////////////////////////////////////
+
+
         List<String> notificationMessageList = new ArrayList<>();
         matchings.forEach(matching -> {
 
             List<YCompanyPackageMonitoringNotification> companyPackageMonitoringNotifications =
                     companyPackageMonitoringNotificationRepository.findByEmailAndSent(matching.getEmail(), false);
 
+
+
+            log.info("juridicalPackageMonitoringReport:row459:companyPackageMonitoringNotifications size " + companyPackageMonitoringNotifications.size());  ///////////////////////////////////////////////
+
+
+
             Map<NotificationJuridicalTagCondition, List<YCompany>> conditionMap = new LinkedHashMap<>();
 
             companyPackageMonitoringNotifications.forEach(notification -> {
                 YCompany yCompany = companyRepository.findWithTagsById(notification.getYcompanyId())
                         .orElse(null);
+
+
+                log.info("juridicalPackageMonitoringReport:row459:yCompany " + (yCompany != null ? yCompany.getName() : "NULL"));  ///////////////////////////////////////////////
+
+
 
                 conditionMap.computeIfAbsent(notification.getCondition(), k -> new ArrayList<>());
                 if (yCompany != null) conditionMap.get(notification.getCondition()).add(yCompany);
@@ -395,6 +488,14 @@ public class RabbitMQListener {
                 List<YCompany> companyList = entry.getValue();
 
                 if (!companyList.isEmpty()) {
+
+
+
+                    log.info("juridicalPackageMonitoringReport:row490:Company list isn't empty");  ///////////////////////////////////////////////
+
+
+
+
                     built = true;
                     List<String> codeList = condition.getTagTypes().stream()
                             .map(TagType::getCode)
@@ -491,6 +592,11 @@ public class RabbitMQListener {
             messageBuilder.append(BODY_CLOSE_HTML);
             messageBuilder.append(HTML_CLOSE_HTML);
 
+
+            log.info("juridicalPackageMonitoringReport:row593:Message " + messageBuilder);  ///////////////////////////////////////////////
+
+
+
             if (built) {
                 SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
                         .to(matching.getEmail())
@@ -503,6 +609,14 @@ public class RabbitMQListener {
                 String jo;
                 try {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
+
+
+
+                    log.info("juridicalPackageMonitoringReport:row593:jo " + jo);  ///////////////////////////////////////////////
+
+
+
+
                     log.info(SENDING_LOG, notificationQueue);
                     template.convertAndSend(notificationQueue, jo);
                     message = String.format("Sent message=[%s] to queue=[%s]", jo, notificationQueue);
@@ -517,8 +631,19 @@ public class RabbitMQListener {
 
                 companyPackageMonitoringNotifications
                         .forEach(personPackageMonitoringNotification -> personPackageMonitoringNotification.setSent(true));
-                if (!companyPackageMonitoringNotifications.isEmpty())
+                if (!companyPackageMonitoringNotifications.isEmpty()) {
                     companyPackageMonitoringNotificationRepository.saveAll(companyPackageMonitoringNotifications);
+                }
+
+
+
+
+                log.info("juridicalPackageMonitoringReport:row627:Message " + message);  ///////////////////////////////////////////////
+
+
+
+
+
             }
         });
         return notificationMessageList;

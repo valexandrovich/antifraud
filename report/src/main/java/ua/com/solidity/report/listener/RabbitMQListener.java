@@ -202,19 +202,19 @@ public class RabbitMQListener {
         List<String> notificationMessageList = new ArrayList<>();
         try (Stream<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingStream = physicalTagMatchingRepository.streamAllBy()) {
 
-
-            log.info("physicalPackageMonitoringReport:row203:notificationPhysicalTagMatchingStream size " + notificationPhysicalTagMatchingStream.count()); ///////////////////////////////////////
+            List<NotificationPhysicalTagMatching> notificationPhysicalTagMatchingList = notificationPhysicalTagMatchingStream.collect(Collectors.toList());
+            log.info("physicalPackageMonitoringReport:row203:notificationPhysicalTagMatchingStream size " + notificationPhysicalTagMatchingList.size()); ///////////////////////////////////////
 
 
             log.debug("[physicalPackageMonitoringReport] Iterating through matchings");
-            notificationPhysicalTagMatchingStream.forEach(tagMatching -> {
+            notificationPhysicalTagMatchingList.forEach(tagMatching -> {
                 log.debug("[physicalPackageMonitoringReport] Get list of people to be notified");
                 Stream<YPersonPackageMonitoringNotification> personPackageMonitoringNotifications =
                         personPackageMonitoringNotificationRepository.findByEmailAndSent(tagMatching.getEmail(), false);
 
+                List<YPersonPackageMonitoringNotification> personPackageMonitoringNotificationList = personPackageMonitoringNotifications.collect(Collectors.toList());
 
-
-                log.info("physicalPackageMonitoringReport:row212:personPackageMonitoringNotifications size " + personPackageMonitoringNotifications.count()); ///////////////////////////////////////
+                log.info("physicalPackageMonitoringReport:row212:personPackageMonitoringNotifications size " + personPackageMonitoringNotificationList.size()); ///////////////////////////////////////
                 personPackageMonitoringNotifications.limit(5).forEach(n -> log.info(n.getYpersonId() + " " + n.getCondition().getDescription()));  ////////////////////////////////
 
 

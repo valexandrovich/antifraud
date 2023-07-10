@@ -119,7 +119,7 @@ public class RabbitMQListener {
     private List<String> notifySubscribers() {
         List<User> userList = userRepository.findAll();
 
-        log.info("notifySubscribers:row120:userList size " + userList.size()); ///////////////////////////////////////
+//        log.info("notifySubscribers:row120:userList size " + userList.size()); ///////////////////////////////////////
 
         List<String> notificationMessageList = new ArrayList<>();
 
@@ -127,14 +127,14 @@ public class RabbitMQListener {
             List<YPersonMonitoringNotification> ypersonMonitoringNotificationList =
                     personMonitoringNotificationRepository.findByUserAndSent(user, false);
 
-            log.info("notifySubscribers:row127:ypersonMonitoringNotificationList size " + ypersonMonitoringNotificationList.size()); ///////////////////////////////////////
+//            log.info("notifySubscribers:row127:ypersonMonitoringNotificationList size " + ypersonMonitoringNotificationList.size()); ///////////////////////////////////////
 
 
             List<YCompanyMonitoringNotification> ycompanyMonitoringNotificationList =
                     companyMonitoringNotificationRepository.findByUserAndSent(user, false);
 
 
-            log.info("notifySubscribers:row133:ycompanyMonitoringNotificationList size " + ycompanyMonitoringNotificationList.size()); ///////////////////////////////////////
+//            log.info("notifySubscribers:row133:ycompanyMonitoringNotificationList size " + ycompanyMonitoringNotificationList.size()); ///////////////////////////////////////
 
             StringBuilder messageBuilder = new StringBuilder();
             for (YPersonMonitoringNotification ypersonMonitoringNotification : ypersonMonitoringNotificationList) {
@@ -143,7 +143,7 @@ public class RabbitMQListener {
 
 
 
-            log.info("notifySubscribers:row140:Message " + messageBuilder); ///////////////////////////////////////
+//            log.info("notifySubscribers:row140:Message " + messageBuilder); ///////////////////////////////////////
 
 
 
@@ -153,7 +153,7 @@ public class RabbitMQListener {
 
 
 
-            log.info("notifySubscribers:row150:Message " + messageBuilder); ///////////////////////////////////////
+//            log.info("notifySubscribers:row150:Message " + messageBuilder); ///////////////////////////////////////
 
 
 
@@ -170,7 +170,7 @@ public class RabbitMQListener {
                     jo = new ObjectMapper().writeValueAsString(sendEmailRequest);
 
 
-                    log.info("notifySubscribers:row170:jo " + jo); ///////////////////////////////////////
+//                    log.info("notifySubscribers:row170:jo " + jo); ///////////////////////////////////////
 
 
                     log.info(SENDING_LOG, notificationQueue);
@@ -214,8 +214,8 @@ public class RabbitMQListener {
 
                 List<YPersonPackageMonitoringNotification> personPackageMonitoringNotificationList = personPackageMonitoringNotifications.collect(Collectors.toList());
 
-                log.info("physicalPackageMonitoringReport:row212:personPackageMonitoringNotifications size " + personPackageMonitoringNotificationList.size()); ///////////////////////////////////////
-                personPackageMonitoringNotifications.limit(5).forEach(n -> log.info(n.getYpersonId() + " " + n.getCondition().getDescription()));  ////////////////////////////////
+                log.info("physicalPackageMonitoringReport:row212:personPackageMonitoringNotifications size + email " + personPackageMonitoringNotificationList.size() + "  " + tagMatching.getEmail()); ///////////////////////////////////////
+//                personPackageMonitoringNotifications.limit(5).forEach(n -> log.info(n.getYpersonId() + " " + n.getCondition().getDescription()));  ////////////////////////////////
 
 
 
@@ -223,7 +223,7 @@ public class RabbitMQListener {
                 Map<NotificationPhysicalTagCondition, List<YPerson>> conditionMap = new LinkedHashMap<>();
 
                 log.debug("[physicalPackageMonitoringReport] Mapping conditions to people to be notified");
-                personPackageMonitoringNotifications.forEach(notification -> {
+                personPackageMonitoringNotificationList.forEach(notification -> {
                     YPerson yPerson = personRepository.findWithInnsAndTagsById(notification.getYpersonId())
                             .orElse(null);
 
@@ -275,6 +275,7 @@ public class RabbitMQListener {
                 }
             });
         }
+        log.info("physicalPackageMonitoringReport FINISHED  ********************************************************"); ///////////////////////////////////////////////////////////////////
         return notificationMessageList;
     }
 
@@ -460,7 +461,7 @@ public class RabbitMQListener {
 
 
 
-            log.info("juridicalPackageMonitoringReport:row459:companyPackageMonitoringNotifications size " + companyPackageMonitoringNotifications.size());  ///////////////////////////////////////////////
+            log.info("juridicalPackageMonitoringReport:row459:companyPackageMonitoringNotifications size + email " + companyPackageMonitoringNotifications.size() + "   " + matching.getEmail());  ///////////////////////////////////////////////
 
 
 

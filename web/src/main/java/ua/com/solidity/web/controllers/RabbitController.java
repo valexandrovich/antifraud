@@ -39,7 +39,6 @@ public class RabbitController {
 			@NotNull(message = "Не повинен бути null") @RequestParam String message
 	) {
 		rabbitService.send(queue, message);
-		System.out.println(String.format("Sent message=[%s] to queue=[%s]", message, queue));
 		return ResponseEntity.ok().build();
 	}
 }

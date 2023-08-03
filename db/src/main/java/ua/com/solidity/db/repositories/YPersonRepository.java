@@ -107,7 +107,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "where p.id = :id")
     Optional<YPerson> findWithInnsAndPassportsAndTagsAndPhonesAndAddressesAndAltPeopleAndEmailsAndImportSourcesById(UUID id);
 
-    @Query("SELECT DISTINCT p FROM YPerson p " +
+    @Query("SELECT p FROM YPerson p " +
             "join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "left join fetch p.passports pass " +
@@ -128,7 +128,7 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "where i.inn in (:inns)")
     Set<YPerson> findPeopleWithInns(Set<Long> inns);
 
-    @Query("SELECT DISTINCT p FROM YPerson p " +
+    @Query("SELECT p FROM YPerson p " +
             "left join fetch p.inns i " +
             "left join fetch i.importSources i_i " +
             "join fetch p.passports pass " +

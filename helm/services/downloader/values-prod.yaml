@@ -28,7 +28,7 @@ persistentVolume:
     volumeAttributes:
       source: "//uaafis01.raiffeisenbank.com.ua/antifraud/prod"
     nodeStageSecretRef:
-      name: antifraud-volumes
+      name: antifraud-volume
       namespace: antifraudprod
 
 persistentVolumeClaim:

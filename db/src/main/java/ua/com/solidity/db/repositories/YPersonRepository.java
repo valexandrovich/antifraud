@@ -115,16 +115,9 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "left join fetch p.tags t " +
             "left join fetch t.tagType t_t " +
             "left join fetch t.importSources t_i " +
-            "left join fetch p.addresses adr " +
-            "left join fetch adr.importSources adr_i " +
-            "left join fetch p.phones ph " +
-            "left join fetch ph.importSources ph_i " +
             "left join fetch p.altPeople alt " +
             "left join fetch alt.importSources alt_i " +
-            "left join fetch p.emails e " +
-            "left join fetch e.importSources e_i " +
             "left join fetch p.importSources im " +
-            "left join fetch p.companyRelations c " +
             "where i.inn in (:inns)")
     Set<YPerson> findPeopleWithInns(Set<Long> inns);
 
@@ -136,16 +129,9 @@ public interface YPersonRepository extends JpaRepository<YPerson, UUID>, JpaSpec
             "left join fetch p.tags t " +
             "left join fetch t.tagType t_t " +
             "left join fetch t.importSources t_i " +
-            "left join fetch p.addresses adr " +
-            "left join fetch adr.importSources adr_i " +
-            "left join fetch p.phones ph " +
-            "left join fetch ph.importSources ph_i " +
             "left join fetch p.altPeople alt " +
             "left join fetch alt.importSources alt_i " +
-            "left join fetch p.emails e " +
-            "left join fetch e.importSources e_i " +
             "left join fetch p.importSources im " +
-            "left join fetch p.companyRelations c " +
             "where pass.id in (:idsPass)")
     Set<YPerson> findPeoplePassports(List<Long> idsPass);
 

@@ -383,6 +383,13 @@ public class RabbitMQListener {
             String reportPath = randomPath() + ".html";
             log.debug("[juridicalPackageMonitoringReport] Report file path to be used: {}", reportPath);
             File file = new File(mountPoint, reportPath);
+
+
+            if(!file.getParentFile().exists()){
+                file.getParentFile().mkdirs();
+            }
+
+
             boolean built = false;
             try (FileWriter writer = new FileWriter(file)) {
             writer.write(FILE_HEADER);

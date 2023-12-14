@@ -61,7 +61,7 @@ public class YPerson {
     @JsonManagedReference
     private Set<YPersonRelation> personRelations = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
     @JsonManagedReference
     private Set<YCompanyRelation> companyRelations = new HashSet<>();
 

@@ -385,7 +385,7 @@ public class RabbitMQListener {
 String reportPath = randomPath() + ".html";
 File file = new File(mountPoint, reportPath);
 if(!file.getParentFile().exists()){
-    file.getParentFile.mkdirs();
+    file.getParentFile().mkdirs();
 }
 
 

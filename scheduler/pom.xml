@@ -5,10 +5,10 @@
     <parent>
         <artifactId>otp</artifactId>
         <groupId>ua.com.solidity</groupId>
-        <version>5.4.1</version>
+        <version>5.0.256-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>5.4.1</version>
+    <version>5.0.256-SNAPSHOT</version>
 
     <artifactId>scheduler</artifactId>
 
@@ -105,13 +105,13 @@
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>common</artifactId>
-            <version>5.4.1</version>
+            <version>5.0.256-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ua.com.solidity</groupId>
             <artifactId>db</artifactId>
-            <version>5.4.1</version>
+            <version>5.0.256-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

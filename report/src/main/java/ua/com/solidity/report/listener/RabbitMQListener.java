@@ -379,25 +379,22 @@ public class RabbitMQListener {
             });
 
             StringBuilder messageBuilder = new StringBuilder();
-            log.debug("[juridicalPackageMonitoringReport] Preparing report file");
-            String reportPath = randomPath() + ".html";
-            log.debug("[juridicalPackageMonitoringReport] Report file path to be used: {}", reportPath);
-            File file = new File(mountPoint, reportPath);
 
 
-            if(!file.getParentFile().exists()){
-                file.getParentFile().mkdirs();
-            }
+            
+String reportPath = randomPath() + ".html";
+File file = new File(mountPoint, reportPath);
+if(!file.getParentFile().exists()){
+    file.getParentFile.mkdirs();
+}
 
 
             boolean built = false;
-            try (FileWriter writer = new FileWriter(file)) {
-            writer.write(FILE_HEADER);
+            messageBuilder.append(FILE_HEADER);
 
             for (Map.Entry<NotificationJuridicalTagCondition, List<YCompany>> entry : conditionMap.entrySet()) {
                 NotificationJuridicalTagCondition condition = entry.getKey();
                 List<YCompany> companyList = entry.getValue();
-
 
                 if (!companyList.isEmpty()) {
                     built = true;
@@ -414,7 +411,7 @@ public class RabbitMQListener {
 
                     String rowspan = codeList.size() > 1 ? " rowspan=\"" + codeList.size() + "\"" : "";
 
-                    writer.write(tableCaption(codesInString.toString(), Entity.COMPANY));
+                    messageBuilder.append(tableCaption(codesInString.toString(), Entity.COMPANY));
 
                     Map<YCompany, String> companyNamesMap = new HashMap<>();
                     companyList.forEach(company -> companyNamesMap.put(company, StringUtils.defaultString(company.getName(), "")));
@@ -423,98 +420,83 @@ public class RabbitMQListener {
                             .sorted(Map.Entry.comparingByValue());
 
                     companyNamesStreamSorted.forEach(entryCompanyName -> {
-                                YCompany company = entryCompanyName.getKey();
-                                String companyName = entryCompanyName.getValue();
+                        YCompany company = entryCompanyName.getKey();
+                        String companyName = entryCompanyName.getValue();
 
-                                Map<String, String> tagAsOfDatesMap = new HashMap<>();
-                                codeList.forEach(code -> {
-                                    List<String> tagAsOfDatesList = new ArrayList<>();
-                                    List<YCTag> collect = company.getTags()
-                                            .stream()
-                                            .filter(tag -> tag.getTagType().getCode().equals(code))
-                                            .sorted(Comparator.comparing(YCTag::getAsOf))
-                                            .collect(Collectors.toList());
-                                    collect.forEach(tag -> {
-                                        if (tag.getAsOf() != null) {
-                                            tagAsOfDatesList.add(tag.getAsOf().toString());
-                                        }
-                                    });
-                                    if (!tagAsOfDatesList.isEmpty()) {
-                                        String tagAsOfDatesListInString = tagAsOfDatesList.toString();
-                                        tagAsOfDatesMap.put(code, tagAsOfDatesListInString.substring(1, tagAsOfDatesListInString.length() - 1));
-                                    } else {
-                                        tagAsOfDatesMap.put(code, "");
-                                    }
-
-                                });
-
-                                try {
-                                    writer.write(TR_OPEN_HTML);
-                                    writer.write(TD_CENTER_OPEN_HTML + rowspan + ">");
-                                    if (company.getEdrpou() != null) {
-                                        writer.write(String.valueOf(company.getEdrpou()));
-                                    }
-                                    writer.write(TD_CLOSE_HTML);
-
-                                    writer.write(TD_CENTER_OPEN_HTML + rowspan + ">");
-                                    if (companyName.length() > 0) {
-                                        writer.write(companyName);
-                                    }
-                                    writer.write(TD_CLOSE_HTML);
-
-                                    if (!codeList.isEmpty()) {
-                                        writer.write(TD_OPEN_HTML);
-                                        StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
-                                        if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
-                                            tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
-                                        }
-                                        writer.write(tagTypeAsOfBuilder.toString());
-                                        writer.write(TD_CLOSE_HTML);
-                                    }
-                                    writer.write(TR_CLOSE_HTML);
-
-                                    for (int i = 1; i < codeList.size(); i++) {
-                                        writer.write(TR_OPEN_HTML);
-
-                                        writer.write(TD_OPEN_HTML);
-                                        StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
-                                        if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
-                                            tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
-                                        }
-                                        writer.write(tagTypeAsOfBuilder.toString());
-                                        writer.write(TD_CLOSE_HTML);
-
-                                        writer.write(TR_CLOSE_HTML);
-
-
-                                    }
-                                } catch (IOException e) {
-                                    log.error("[juridicalPackageMonitoringReport-b]", e);
+                        Map<String, String> tagAsOfDatesMap = new HashMap<>();
+                        codeList.forEach(code -> {
+                            List<String> tagAsOfDatesList = new ArrayList<>();
+                            List<YCTag> collect = company.getTags()
+                                    .stream()
+                                    .filter(tag -> tag.getTagType().getCode().equals(code))
+                                    .sorted(Comparator.comparing(YCTag::getAsOf))
+                                    .collect(Collectors.toList());
+                            collect.forEach(tag -> {
+                                if (tag.getAsOf() != null) {
+                                    tagAsOfDatesList.add(tag.getAsOf().toString());
                                 }
+                            });
+                            if (!tagAsOfDatesList.isEmpty()) {
+                                String tagAsOfDatesListInString = tagAsOfDatesList.toString();
+                                tagAsOfDatesMap.put(code, tagAsOfDatesListInString.substring(1, tagAsOfDatesListInString.length() - 1));
+                            } else {
+                                tagAsOfDatesMap.put(code, "");
                             }
-                        );
 
+                        });
 
-                    writer.write(TBODY_CLOSE_HTML);
-                    writer.write(TABLE_CLOSE_HTML);
+                        messageBuilder.append(TR_OPEN_HTML);
+                        messageBuilder.append(TD_CENTER_OPEN_HTML).append(rowspan).append(">");
+                        if (company.getEdrpou() != null) {
+                            messageBuilder.append(company.getEdrpou());
+                        }
+                        messageBuilder.append(TD_CLOSE_HTML);
 
+                        messageBuilder.append(TD_CENTER_OPEN_HTML).append(rowspan).append(">");
+                        if (companyName.length() > 0) {
+                            messageBuilder.append(companyName);
+                        }
+                        messageBuilder.append(TD_CLOSE_HTML);
 
+                        if (!codeList.isEmpty()) {
+                            messageBuilder.append(TD_OPEN_HTML);
+                            StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(0));
+                            if (!tagAsOfDatesMap.get(codeList.get(0)).isBlank()) {
+                                tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(0)));
+                            }
+                            messageBuilder.append(tagTypeAsOfBuilder);
+                            messageBuilder.append(TD_CLOSE_HTML);
+                        }
+                        messageBuilder.append(TR_CLOSE_HTML);
+
+                        for (int i = 1; i < codeList.size(); i++) {
+                            messageBuilder.append(TR_OPEN_HTML);
+
+                            messageBuilder.append(TD_OPEN_HTML);
+                            StringBuilder tagTypeAsOfBuilder = new StringBuilder(codeList.get(i));
+                            if (!tagAsOfDatesMap.get(codeList.get(i)).isBlank()) {
+                                tagTypeAsOfBuilder.append(" з ").append(tagAsOfDatesMap.get(codeList.get(i)));
+                            }
+                            messageBuilder.append(tagTypeAsOfBuilder);
+                            messageBuilder.append(TD_CLOSE_HTML);
+
+                            messageBuilder.append(TR_CLOSE_HTML);
+                        }
+
+                    });
+
+                    messageBuilder.append(TBODY_CLOSE_HTML);
+                    messageBuilder.append(TABLE_CLOSE_HTML);
 
                 }
             }
-
-                writer.write(BODY_CLOSE_HTML);
-                writer.write(HTML_CLOSE_HTML);
-
-            } catch (IOException e) {
-                log.error("[juridicalPackageMonitoringReport-a]", e);
-            }
+            messageBuilder.append(BODY_CLOSE_HTML);
+            messageBuilder.append(HTML_CLOSE_HTML);
             if (built) {
                 SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
                         .to(matching.getEmail())
                         .subject(JURIDICAL_MESSAGE_SUBJ)
-                        .body("See attached")
-                        .filePath(file.getAbsolutePath())
+                        .body(messageBuilder.toString())
                         .retries(2)
                         .build();
 

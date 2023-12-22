@@ -11,7 +11,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
-import javax.persistence.FetchType;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
@@ -58,23 +57,23 @@ public class YPerson {
     @Column(name = "birth_place")
     private String birthPlace;
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YPersonRelation> personRelations = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YCompanyRelation> companyRelations = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YINN> inns = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YAddress> addresses = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YAltPerson> altPeople = new HashSet<>();
 
@@ -86,15 +85,15 @@ public class YPerson {
     )
     private Set<YPassport> passports = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YTag> tags = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YEmail> emails = new HashSet<>();
 
-    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.MERGE, mappedBy = "person")
     @JsonManagedReference
     private Set<YPhone> phones = new HashSet<>();
 

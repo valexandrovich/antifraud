@@ -1,0 +1,15 @@
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: otp
+    password: otp
+
+downloader:
+  mountPoint: /Users/valex/ISMC_STORAGE/DOWNLOADER
+  proxyHost:
+  proxyPort:
+
+logging:
+  level:
+    ua.com.valexa: debug

@@ -19,6 +19,9 @@
         <module>enricher</module>
         <module>statuslogger</module>
         <module>report</module>
+
+
+        <module>downloader-ismc</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>

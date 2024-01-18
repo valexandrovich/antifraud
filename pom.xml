@@ -22,6 +22,9 @@
 
 
         <module>downloader-ismc</module>
+        <module>db-ismc</module>
+        <module>scheduler-ismc</module>
+
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>

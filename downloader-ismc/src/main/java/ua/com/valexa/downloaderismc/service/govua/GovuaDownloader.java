@@ -3,13 +3,18 @@ package ua.com.valexa.downloaderismc.service.govua;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.ls.LSOutput;
+import ua.com.valexa.common.dto.StepResponseDto;
+import ua.com.valexa.dbismc.model.enums.StepStatus;
 import ua.com.valexa.downloaderismc.service.Downloadable;
+import ua.com.valexa.downloaderismc.service.DownloaderService;
 
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
@@ -17,6 +22,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service("govua")
 @Slf4j
@@ -28,7 +34,7 @@ public class GovuaDownloader implements Downloadable {
     final static int MAX_RETRIES = 10;
 
     @Value("${downloader.mountPoint}")
-    private String mountPoint;
+    private static String mountPoint;
 
     @Value("${downloader.proxyHost}")
     private String proxyHost;
@@ -41,25 +47,34 @@ public class GovuaDownloader implements Downloadable {
     ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public void handleDownload(Long stepId, Map<String, String> parameters) {
+    public StepResponseDto handleDownload(Long stepId, Map<String, String> parameters) {
+
+        StepResponseDto stepResponseDto = new StepResponseDto();
+        stepResponseDto.setStepId(stepId);
 
         try {
             log.debug("Parsing Step Request parameters");
             RequestMetadata requestMetadata = new RequestMetadata(stepId, parameters);
             log.debug("Getting package metadata " + requestMetadata.getSourceName());
             JsonNode packageMetadata = getPackageMetadata(requestMetadata.getPackageId());
-            log.debug("Getting actual resource id "  + requestMetadata.getSourceName());
+            log.debug("Getting actual resource id " + requestMetadata.getSourceName());
             String actualResourceId = getActualResourceId(packageMetadata);
             log.debug("Getting actual revision metadata " + requestMetadata.getSourceName());
             GovUaRevisionMetadata metadata = getActualRevisionMetadata(actualResourceId);
-            String fileName =  mountPoint + System.getProperty("file.separator") +  stepId + "_" + requestMetadata.getSourceName() + "." + metadata.getFileExtension();
-            log.debug("Downloading file "  + requestMetadata.getSourceName() + "; Link " + metadata.getFileUrl());
+            String fileName = mountPoint + System.getProperty("file.separator") + stepId + "_" + requestMetadata.getSourceName() + "." + metadata.getFileExtension();
+            log.debug("Downloading file " + fileName + "  :  " + requestMetadata.getSourceName() + "; Link " + metadata.getFileUrl());
             downloadFile(metadata.fileUrl.toString(), fileName);
+            stepResponseDto.getResults().put("file", fileName);
+            stepResponseDto.setComment("Файл завантажено");
+            stepResponseDto.setStatus(StepStatus.FINISHED);
         } catch (Exception e) {
+            stepResponseDto.setStatus(StepStatus.FAILED);
+            stepResponseDto.setComment(e.getMessage());
             log.error(e.getMessage());
         }
-
+        return stepResponseDto;
     }
+
 
     public JsonNode getPackageMetadata(String packageId) throws Exception {
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -88,20 +103,20 @@ public class GovuaDownloader implements Downloadable {
     }
 
 
-    public  void downloadFile(String url, String filename) {
+    public void downloadFile(String url, String filename) {
         Proxy proxy = null;
         long fileSize = 0;
         try {
 
-            if (proxyHost != null && proxyPort != null){
+            if (proxyHost != null && proxyPort != null) {
                 log.debug("Configuring proxy: " + proxyHost + ":" + proxyPort);
-                proxy  = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+                proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
             } else {
                 log.debug("No proxy needed");
             }
             HttpURLConnection conn;
-            if (proxy != null){
-                 conn = (HttpURLConnection) new URL(url).openConnection(proxy);
+            if (proxy != null) {
+                conn = (HttpURLConnection) new URL(url).openConnection(proxy);
             } else {
                 conn = (HttpURLConnection) new URL(url).openConnection();
             }
@@ -131,7 +146,7 @@ public class GovuaDownloader implements Downloadable {
                     HttpURLConnection connection = null;
                     BufferedInputStream bis = null;
                     try {
-                        if (proxy != null){
+                        if (proxy != null) {
                             connection = (HttpURLConnection) new URL(url).openConnection(proxy);
                         } else {
                             connection = (HttpURLConnection) new URL(url).openConnection();
@@ -156,7 +171,6 @@ public class GovuaDownloader implements Downloadable {
                     } catch (IOException e) {
                         retryCount++;
                         log.warn("Retry " + retryCount + " for chunk starting at byte " + startByte);
-                        // Optionally, add a delay here before retrying
                     } finally {
                         if (bis != null) {
                             try {
@@ -175,7 +189,6 @@ public class GovuaDownloader implements Downloadable {
                     throw new IOException("Failed to download chunk after " + MAX_RETRIES + " retries.");
                 }
             }
-
             log.debug("File downloaded: " + filename);
 
         } catch (IOException e) {
@@ -187,7 +200,6 @@ public class GovuaDownloader implements Downloadable {
         if (fileSize > 0) { // Avoid division by zero
             int progressPercentage = (int) ((totalBytesRead * 100) / fileSize);
             log.debug("Download progress: " + progressPercentage + "%" + "   " + totalBytesRead / 1024 + " kb / " + fileSize / 1024 + " kb");
-//            System.out.flush();
         }
     }
 
@@ -199,7 +211,7 @@ public class GovuaDownloader implements Downloadable {
     }
 
     @Data
-    private class RequestMetadata  {
+    private class RequestMetadata {
         public RequestMetadata(Long stepId, Map<String, String> parameters) {
             if (parameters == null) {
                 throw new IllegalArgumentException("Input map cannot be null");

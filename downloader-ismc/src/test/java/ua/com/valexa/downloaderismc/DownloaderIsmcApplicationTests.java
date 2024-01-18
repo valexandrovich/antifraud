@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ua.com.valexa.common.dto.StepRequestDto;
+import ua.com.valexa.downloaderismc.service.govua.GovuaDownloader;
 
 @SpringBootTest
 class DownloaderIsmcApplicationTests {
@@ -14,10 +15,14 @@ class DownloaderIsmcApplicationTests {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    GovuaDownloader govuaDownloader;
+
     @Test
     void contextLoads() throws JsonProcessingException {
-        System.out.println(System.getProperty("path.separator"));
-        System.out.println(System.getProperty("file.separator"));
+
+
+
     }
 
 //    @Test

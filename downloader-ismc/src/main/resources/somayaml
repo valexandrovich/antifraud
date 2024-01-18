@@ -1,4 +1,10 @@
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/otp
+    username: otp
+    password: otp
+  application:
+    name: downloader-ismc
   rabbitmq:
     host: localhost
     port: 5672
@@ -13,3 +19,5 @@ downloader:
 logging:
   level:
     ua.com.valexa: debug
+
+

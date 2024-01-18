@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/otp
+    username: otp
+    password: otp
+  application:
+    name: scheduler-ismc
+  jpa:
+    hibernate:
+      ddl-auto: update
+logging:
+  level:
+    ua.com.valexa: debug
+
+
+
+server:
+  port: 10001

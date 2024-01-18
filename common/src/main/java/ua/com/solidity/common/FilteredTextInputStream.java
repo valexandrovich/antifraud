@@ -310,7 +310,7 @@ public class FilteredTextInputStream extends InputStream {
                 pushLine(lines[i], builder, encoding);
             } else {
                 if (lines[i] == null) {
-                    builder.append("WARNING: Can't display string near the position (grow up buffer size (application.properties -> filteredTextInputStream.bufferSize)");
+                    builder.append("WARNING: Can't display string near the position (grow up buffer size (application.yaml -> filteredTextInputStream.bufferSize)");
                 } else {
                     builder.append("error line : ");
                     pushLine(lines[i], builder, encoding);

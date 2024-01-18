@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/otp
+    username: otp
+    password: otp
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
